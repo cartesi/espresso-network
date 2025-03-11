@@ -248,7 +248,7 @@ jobs:
 
       - name: Test Integration
         env:
-          RUST_LOG: debug
+          RUST_LOG: info
           NEXTEST_PROFILE: integration
           INTEGRATION_TEST_SEQUENCER_VERSION: ${{ matrix.version }}
         run: |
