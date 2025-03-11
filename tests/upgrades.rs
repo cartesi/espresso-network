@@ -5,8 +5,10 @@ use espresso_types::{EpochVersion, FeeVersion, MarketplaceVersion};
 use futures::{future::join_all, StreamExt};
 use vbs::version::{StaticVersionType, Version};
 
-use crate::common::{test_stake_table_update, TestConfig};
-use crate::{common::NativeDemo, smoke::assert_native_demo_works};
+use crate::{
+    common::{test_stake_table_update, NativeDemo, TestConfig},
+    smoke::assert_native_demo_works,
+};
 
 const SEQUENCER_BLOCKS_TIMEOUT: u64 = 200;
 

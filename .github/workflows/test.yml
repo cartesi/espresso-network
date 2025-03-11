@@ -255,6 +255,9 @@ jobs:
           if [ "${{ matrix.version }}" = "99" ]; then
             export INTEGRATION_TEST_PROCESS_COMPOSE="-f process-compose.yaml -f process-compose-mp.yml"
           fi
+          if [ "${{ matrix.version }}" = "3" ]; then
+            export ESPRESSO_SEQUENCER_GENESIS_FILE="data/genesis/demo-pos.toml"
+          fi
           cargo nextest run --archive-file nextest-archive-postgres.tar.zst --verbose --no-fail-fast --nocapture \
           --workspace-remap $PWD ${{ matrix.test-name }}
         timeout-minutes: 10
