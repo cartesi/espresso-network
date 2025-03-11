@@ -157,7 +157,7 @@ impl NodeState {
                 .and_then(|upgrade| match upgrade.upgrade_type {
                     UpgradeType::Fee { chain_config } => Some(chain_config),
                     UpgradeType::Epoch { chain_config } => Some(chain_config),
-                    _ => None,
+                    UpgradeType::Marketplace { chain_config } => Some(chain_config),
                 })
         });
         chain_config?

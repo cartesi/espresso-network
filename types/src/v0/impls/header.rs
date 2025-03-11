@@ -964,11 +964,14 @@ impl BlockHeader<SeqTypes> for Header {
 
         let mut validated_state = parent_state.clone();
 
-        let chain_config = match instance_state.upgrade_chain_config(version) {
-            Some(chain_config) => chain_config,
-            None => Header::get_chain_config(&validated_state, instance_state).await?,
+        let chain_config = if version > instance_state.current_version {
+            match instance_state.upgrade_chain_config(version) {
+                Some(chain_config) => chain_config,
+                None => Header::get_chain_config(&validated_state, instance_state).await?,
+            }
+        } else {
+            Header::get_chain_config(&validated_state, instance_state).await?
         };
-
         validated_state.chain_config = chain_config.into();
 
         // Fetch the latest L1 snapshot.
