@@ -80,15 +80,14 @@ test-all:
     cargo nextest run --locked --release --workspace --features embedded-db --verbose --profile all
     cargo nextest run --locked --release --workspace --verbose --profile all
 
-test-integration:
+test-integration: build
 	INTEGRATION_TEST_SEQUENCER_VERSION=2 cargo nextest run -p tests --nocapture --profile integration test_native_demo_basic
 
-test-integration-mp:
+test-integration-mp: build
     INTEGRATION_TEST_SEQUENCER_VERSION=99 cargo nextest run -p tests --nocapture --profile integration test_native_demo_upgrade
 
-test-integration-pos:
-    @echo 'NOTE that demo-native-pos must be running for this test to succeed.'
-    INTEGRATION_TEST_SEQUENCER_VERSION=3 cargo nextest run -p tests --nocapture --profile integration test_native_demo_upgrade
+test-integration-pos: build
+    INTEGRATION_TEST_SEQUENCER_VERSION=3 ESPRESSO_SEQUENCER_GENESIS_FILE=data/genesis/demo-pos.toml cargo nextest run -p tests --nocapture --profile integration test_native_demo_upgrade
 
 clippy:
     @echo 'features: "embedded-db"'

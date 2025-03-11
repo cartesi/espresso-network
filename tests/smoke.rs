@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures::StreamExt;
 
 use crate::common::{test_stake_table_update, NativeDemo, TestConfig};
@@ -81,19 +81,13 @@ pub async fn assert_native_demo_works() -> Result<()> {
         last = new;
     }
 
-    let epoch = testing
-        .espresso
-        .current_epoch()
-        .await?
-        .context("curr epoch")?;
+    if let Some(epoch) = testing.espresso.current_epoch().await? {
+        tracing::info!("epoch before stake table update {epoch:?}");
 
-    tracing::info!("epoch before stake table update {epoch:?}");
-
-    // Check if epoch number is greater than Epoch::genesis() i.e 1
-    if epoch > 1 {
         tracing::info!("testing stake table update");
         test_stake_table_update(testing.sequencer_clients).await?;
     }
+
     Ok(())
 }
 

@@ -128,7 +128,7 @@ impl TestConfig {
         let builder_address = get_builder_address(builder_url).await;
 
         let l1_provider_url = url_from_port(dotenvy::var("ESPRESSO_SEQUENCER_L1_PORT")?)?;
-        let sequencer_api_url = url_from_port(dotenvy::var("ESPRESSO_SEQUENCER1_API_PORT")?)?;
+        let sequencer_api_url = url_from_port(dotenvy::var("ESPRESSO_SEQUENCER_API_PORT")?)?;
         let sequencer_clients = [
             dotenvy::var("ESPRESSO_SEQUENCER_API_PORT")?,
             dotenvy::var("ESPRESSO_SEQUENCER1_API_PORT")?,
