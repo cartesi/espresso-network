@@ -11404,6 +11404,7 @@ dependencies = [
  "sequencer-utils",
  "serde",
  "surf-disco",
+ "tempfile",
  "tokio",
  "tracing",
  "vbs",

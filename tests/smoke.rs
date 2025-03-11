@@ -2,8 +2,8 @@ use std::time::Instant;
 
 use anyhow::{Context, Result};
 use futures::StreamExt;
-use sequencer_utils::test_utils::setup_test;
 
+use crate::common::NativeDemo;
 use crate::common::{test_stake_table_update, TestConfig};
 
 /// We allow for no change in state across this many consecutive iterations.
@@ -11,9 +11,7 @@ const MAX_STATE_NOT_INCREMENTING: u8 = 1;
 /// We allow for no new transactions across this many consecutive iterations.
 const MAX_TXNS_NOT_INCREMENTING: u8 = 5;
 
-#[tokio::test(flavor = "multi_thread")]
-async fn test_smoke() -> Result<()> {
-    setup_test();
+pub async fn assert_native_demo_works() -> Result<()> {
     let start = Instant::now();
     dotenvy::dotenv()?;
 
@@ -23,7 +21,7 @@ async fn test_smoke() -> Result<()> {
     let _ = testing.readiness().await?;
 
     let initial = testing.test_state().await;
-    println!("Initial State:{}", initial);
+    println!("Initial State: {}", initial);
 
     let mut sub = testing
         .espresso
@@ -49,7 +47,9 @@ async fn test_smoke() -> Result<()> {
         }
 
         // test that we progress EXPECTED_BLOCK_HEIGHT blocks from where we started
-        if new.block_height.unwrap() >= testing.expected_block_height() + testing.initial_height {
+        if new.block_height.unwrap()
+            >= testing.expected_block_height() + initial.block_height.unwrap()
+        {
             println!("Reached {} block(s)!", testing.expected_block_height());
             if new.txn_count - initial.txn_count < 1 {
                 panic!("Did not receive transactions");
@@ -96,4 +96,10 @@ async fn test_smoke() -> Result<()> {
         test_stake_table_update(testing.sequencer_clients).await?;
     }
     Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_native_demo_basic() -> Result<()> {
+    let _child = NativeDemo::run(None);
+    assert_native_demo_works().await
 }

@@ -212,16 +212,14 @@ jobs:
         version: [02,03,99]
         include:
           - version: 02
-            genesis: "data/genesis/demo.toml"
-            compose: "-f process-compose.yaml"
-          
-          - version: 03
-            genesis: "data/genesis/demo-pos.toml"
-            compose: "-f process-compose.yaml"
+            test-name: test_native_demo_basic
+
+          - version: 3
+            test-name: test_native_demo_upgrade
 
           - version: 99
-            genesis: "data/genesis/demo-marketplace.toml"
-            compose: "-f process-compose.yaml -f process-compose-mp.yml"
+            test-name: test_native_demo_upgrade
+
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -248,17 +246,17 @@ jobs:
       - name: Install process-compose
         run: nix profile install nixpkgs#process-compose
 
-      - name: Run Demo-Native ${{matrix.version}}
-        run: bash -x ESPRESSO_SEQUENCER_GENESIS_FILE=${{matrix.genesis}} scripts/demo-native ${{matrix.compose}} --tui=false > ${{ env.PC_LOGS }} 2>&1 &
-
       - name: Test Integration
         env:
           RUST_LOG: debug
           NEXTEST_PROFILE: integration
           INTEGRATION_TEST_SEQUENCER_VERSION: ${{ matrix.version }}
         run: |
-          cargo nextest run --archive-file nextest-archive-postgres.tar.zst --verbose --no-fail-fast \
-          --workspace-remap $PWD $(if [ "${{ matrix.version }}" == "2" ]; then echo " smoke"; fi)
+          if [ "${{ matrix.version }}" = "99" ]; then
+            export INTEGRATION_TEST_PROCESS_COMPOSE="-f process-compose.yaml -f process-compose-mp.yml"
+          fi
+          cargo nextest run --archive-file nextest-archive-postgres.tar.zst --verbose --no-fail-fast --nocapture \
+          --workspace-remap $PWD ${{ matrix.test-name }}
         timeout-minutes: 10
 
       - name: Show end of logs

@@ -21,6 +21,7 @@ reqwest = { workspace = true, features = ["json"] }
 sequencer-utils = { path = "../utils" }
 serde = { workspace = true }
 surf-disco = { workspace = true }
+tempfile = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 vbs = { workspace = true }
