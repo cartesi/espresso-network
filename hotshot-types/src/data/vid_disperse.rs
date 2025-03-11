@@ -13,6 +13,7 @@ use jf_vid::{VidDisperse as JfVidDisperse, VidScheme};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
 
+use super::ns_table::parse_ns_table;
 use crate::{
     epoch_membership::{EpochMembership, EpochMembershipCoordinator},
     impl_has_epoch,
@@ -24,12 +25,10 @@ use crate::{
     },
     vid::{
         advz::{advz_scheme, ADVZCommitment, ADVZCommon, ADVZScheme, ADVZShare},
-        avidm::{init_avidm_param, AvidMCommitment, AvidMScheme, AvidMShare},
+        avidm::{init_avidm_param, AvidMCommitment, AvidMCommon, AvidMScheme, AvidMShare},
     },
     vote::HasViewNumber,
 };
-
-use super::ns_table::parse_ns_table;
 
 impl_has_epoch!(
     ADVZDisperse<TYPES>,
@@ -265,6 +264,8 @@ pub struct AvidMDisperse<TYPES: NodeType> {
     pub shares: BTreeMap<TYPES::SignatureKey, AvidMShare>,
     /// Length of payload in bytes
     pub payload_byte_len: usize,
+    /// VID common data sent to all storage nodes
+    pub common: AvidMCommon,
 }
 
 impl<TYPES: NodeType> HasViewNumber<TYPES> for AvidMDisperse<TYPES> {
@@ -281,6 +282,7 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
         view_number: TYPES::View,
         commit: AvidMCommitment,
         shares: &[AvidMShare],
+        common: AvidMCommon,
         membership: &EpochMembership<TYPES>,
         target_epoch: Option<TYPES::Epoch>,
         data_epoch: Option<TYPES::Epoch>,
@@ -301,6 +303,7 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
             epoch: data_epoch,
             target_epoch,
             payload_byte_len,
+            common,
         }
     }
 
@@ -326,6 +329,7 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
         let num_txns = txns.len();
 
         let avidm_param = init_avidm_param(num_nodes)?;
+        let common = avidm_param.clone();
         // TODO: get weight distribution
         let weights = vec![1u32; num_nodes];
         let ns_table = parse_ns_table(num_txns, &metadata.encode());
@@ -339,10 +343,16 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
         .wrap()
         .context(|err| error!("Failed to calculate VID disperse. Error: {}", err))?;
 
-        Ok(
-            Self::from_membership(view, commit, &shares, &target_mem, target_epoch, data_epoch)
-                .await,
+        Ok(Self::from_membership(
+            view,
+            commit,
+            &shares,
+            common,
+            &target_mem,
+            target_epoch,
+            data_epoch,
         )
+        .await)
     }
 
     /// Returns the payload length in bytes.
@@ -366,6 +376,8 @@ pub struct VidDisperseShare2<TYPES: NodeType> {
     pub share: AvidMShare,
     /// a public key of the share recipient
     pub recipient_key: TYPES::SignatureKey,
+    /// VID common data sent to all storage nodes
+    pub common: AvidMCommon,
 }
 
 impl<TYPES: NodeType> HasViewNumber<TYPES> for VidDisperseShare2<TYPES> {
@@ -387,6 +399,7 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
                 payload_commitment: vid_disperse.payload_commitment,
                 epoch: vid_disperse.epoch,
                 target_epoch: vid_disperse.target_epoch,
+                common: vid_disperse.common.clone(),
             })
             .collect()
     }
@@ -428,6 +441,7 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
             payload_commitment: first_vid_disperse_share.payload_commitment,
             shares: share_map,
             payload_byte_len,
+            common: first_vid_disperse_share.common,
         };
         let _ = it.map(|vid_disperse_share| {
             vid_disperse.shares.insert(
@@ -459,6 +473,7 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
                     payload_commitment: vid_disperse.payload_commitment,
                     epoch: vid_disperse.epoch,
                     target_epoch: vid_disperse.target_epoch,
+                    common: vid_disperse.common.clone(),
                 },
                 signature: signature.clone(),
                 _pd: PhantomData,

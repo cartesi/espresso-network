@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::Context;
 use espresso_types::{
     config::PublicNetworkConfig, FeeAccount, FeeAmount, FeeMerkleTree, Header, PubKey,
@@ -9,7 +11,6 @@ use jf_merkle_tree::{
     prelude::{MerkleProof, Sha3Node},
     MerkleTreeScheme,
 };
-use std::time::Duration;
 use surf_disco::{
     error::ClientError,
     socket::{Connection, Unsupported},
@@ -54,7 +55,7 @@ impl SequencerClient {
         height: u64,
     ) -> anyhow::Result<BoxStream<'static, Result<Header, ClientError>>> {
         self.0
-            .socket(&format!("v0/availability/stream/headers/{height}"))
+            .socket(&format!("availability/stream/headers/{height}"))
             .subscribe::<Header>()
             .await
             .context("subscribing to Espresso headers")
@@ -113,7 +114,7 @@ impl SequencerClient {
                     } else {
                         sleep(Duration::from_millis(200)).await;
                     }
-                }
+                },
             }
         };
 

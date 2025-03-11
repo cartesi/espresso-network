@@ -9,7 +9,7 @@ doc *args:
 demo *args:
     docker compose up {{args}}
 
-demo-native *args: build
+demo-native *args: (build "test" "--features fee")
     scripts/demo-native {{args}}
 
 fmt:
@@ -32,7 +32,7 @@ build profile="test" features="":
     cargo build --profile {{profile}} {{features}}
     cargo build --profile {{profile}} --manifest-path ./sequencer-sqlite/Cargo.toml {{features}}
 
-demo-native-mp *args: build
+demo-native-mp *args: (build "test" "--features fee,marketplace")
     scripts/demo-native -f process-compose.yaml -f process-compose-mp.yml {{args}}
 
 demo-native-pos *args: (build "test" "--features fee,pos")
@@ -80,17 +80,14 @@ test-all:
     cargo nextest run --locked --release --workspace --features embedded-db --verbose --profile all
     cargo nextest run --locked --release --workspace --verbose --profile all
 
-test-integration:
-	@echo 'NOTE that demo-native must be running for this test to succeed.'
-	INTEGRATION_TEST_SEQUENCER_VERSION=2 cargo nextest run --all-features --nocapture --profile integration smoke
+test-integration: (build "test" "--features fee")
+	INTEGRATION_TEST_SEQUENCER_VERSION=2 cargo nextest run -p tests --nocapture --profile integration test_native_demo_basic
 
-test-integration-mp:
-    @echo 'NOTE that demo-native-mp must be running for this test to succeed.'
-    INTEGRATION_TEST_SEQUENCER_VERSION=99 cargo nextest run --all-features --nocapture --profile integration
+test-integration-mp: (build "test" "--features fee,marketplace")
+    INTEGRATION_TEST_SEQUENCER_VERSION=99 cargo nextest run -p tests --nocapture --profile integration test_native_demo_upgrade
 
-test-integration-pos:
-    @echo 'NOTE that demo-native-pos must be running for this test to succeed.'
-    INTEGRATION_TEST_SEQUENCER_VERSION=3 cargo nextest run --all-features --nocapture --profile integration smoke
+test-integration-pos: (build "test" "--features fee,pos")
+    INTEGRATION_TEST_SEQUENCER_VERSION=3 ESPRESSO_SEQUENCER_GENESIS_FILE=data/genesis/demo-pos.toml cargo nextest run -p tests --nocapture --profile integration test_native_demo_upgrade
 
 clippy:
     @echo 'features: "embedded-db"'
@@ -99,6 +96,31 @@ clippy:
 
 check-features *args:
     cargo hack check --each-feature {{args}}
+
+check-features-ci *args:
+    # check each pair of features plus `default` and `--no-default-features`
+    cargo hack check --feature-powerset \
+        --depth 2 \
+        --exclude contract-bindings-alloy \
+        --exclude contract-bindings-ethers \
+        --exclude hotshot \
+        --exclude hotshot-builder-api \
+        --exclude hotshot-contract-adapter \
+        --exclude hotshot-events-service \
+        --exclude hotshot-example-types \
+        --exclude hotshot-libp2p-networking \
+        --exclude hotshot-macros \
+        --exclude hotshot-orchestrator \
+        --exclude hotshot-query-service \
+        --exclude hotshot-stake-table \
+        --exclude hotshot-state-prover \
+        --exclude hotshot-task \
+        --exclude hotshot-task-impls \
+        --exclude hotshot-testing \
+        --exclude hotshot-types \
+        --exclude hotshot-utils \
+        --exclude vid \
+        {{args}}
 
 # Helpful shortcuts for local development
 dev-orchestrator:
@@ -127,7 +149,7 @@ gen-bindings:
     git submodule update --init --recursive
 
     # Generate the ethers bindings
-    forge bind --contracts ./contracts/src/ --ethers --crate-name contract-bindings-ethers --bindings-path contract-bindings-ethers --select "{{REGEXP}}" --overwrite --force
+    nix develop .#legacyFoundry -c forge bind --contracts ./contracts/src/ --ethers --crate-name contract-bindings-ethers --bindings-path contract-bindings-ethers --select "{{REGEXP}}" --overwrite --force
 
     # Foundry doesn't include bytecode in the bindings for LightClient.sol, since it links with
     # libraries. However, this bytecode is still needed to link and deploy the contract. Copy it to

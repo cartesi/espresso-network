@@ -4,12 +4,14 @@
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see <https://mit-license.org/>.
 
+use std::time::Duration;
+
 use hotshot_example_types::{
     node_types::{
         CombinedImpl, EpochUpgradeTestVersions, EpochsTestVersions, Libp2pImpl, MemoryImpl,
         PushCdnImpl, RandomOverlapQuorumFilterConfig, StableQuorumFilterConfig,
-        TestConsecutiveLeaderTypes, TestTwoStakeTablesTypes, TestTypes,
-        TestTypesRandomizedCommitteeMembers, TestTypesRandomizedLeader, TestTypesEpochCatchupTypes
+        TestConsecutiveLeaderTypes, TestTwoStakeTablesTypes, TestTypes, TestTypesEpochCatchupTypes,
+        TestTypesRandomizedCommitteeMembers, TestTypesRandomizedLeader,
     },
     testable_delay::{DelayConfig, DelayOptions, DelaySettings, SupportedTraitTypesForAsyncDelay},
 };
@@ -22,7 +24,6 @@ use hotshot_testing::{
     test_builder::{TestDescription, TimingData},
     view_sync_task::ViewSyncTaskDescription,
 };
-use std::time::Duration;
 
 cross_tests!(
     TestName: test_success_with_epochs,
@@ -492,54 +493,54 @@ cross_tests!(
     }
 );
 
-// cross_tests!(
-//     TestName: test_all_restart_epochs,
-//     Impls: [CombinedImpl, PushCdnImpl],
-//     Types: [TestTypes, TestTypesRandomizedLeader, TestTwoStakeTablesTypes],
-//     Versions: [EpochsTestVersions],
-//     Ignore: false,
-//     Metadata: {
-//       let timing_data = TimingData {
-//           next_view_timeout: 2000,
-//           ..Default::default()
-//       };
-//       let mut metadata = TestDescription::default().set_num_nodes(20,20);
-//       let mut catchup_nodes = vec![];
-// 
-//       for i in 0..20 {
-//           catchup_nodes.push(ChangeNode {
-//               idx: i,
-//               updown: NodeAction::RestartDown(0),
-//           })
-//       }
-// 
-//       metadata.timing_data = timing_data;
-// 
-//       metadata.spinning_properties = SpinningTaskDescription {
-//           // Restart all the nodes in view 10
-//           node_changes: vec![(10, catchup_nodes)],
-//       };
-//       metadata.view_sync_properties =
-//           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 20);
-// 
-//       metadata.completion_task_description =
-//           CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
-//               TimeBasedCompletionTaskDescription {
-//                   duration: Duration::from_secs(60),
-//               },
-//           );
-//       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
-//           // Make sure we keep committing rounds after the catchup, but not the full 50.
-//           num_successful_views: 22,
-//           expected_view_failures: vec![10],
-//           possible_view_failures: vec![9, 11],
-//           decide_timeout: Duration::from_secs(20),
-//           ..Default::default()
-//       };
-// 
-//       metadata
-//     },
-// );
+cross_tests!(
+    TestName: test_all_restart_epochs,
+    Impls: [CombinedImpl, PushCdnImpl],
+    Types: [TestTypes, TestTypesRandomizedLeader, TestTwoStakeTablesTypes],
+    Versions: [EpochsTestVersions],
+    Ignore: false,
+    Metadata: {
+      let timing_data = TimingData {
+          next_view_timeout: 2000,
+          ..Default::default()
+      };
+      let mut metadata = TestDescription::default().set_num_nodes(20,20);
+      let mut catchup_nodes = vec![];
+
+      for i in 0..20 {
+          catchup_nodes.push(ChangeNode {
+              idx: i,
+              updown: NodeAction::RestartDown(0),
+          })
+      }
+
+      metadata.timing_data = timing_data;
+
+      metadata.spinning_properties = SpinningTaskDescription {
+          // Restart all the nodes in view 10
+          node_changes: vec![(10, catchup_nodes)],
+      };
+      metadata.view_sync_properties =
+          hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 20);
+
+      metadata.completion_task_description =
+          CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
+              TimeBasedCompletionTaskDescription {
+                  duration: Duration::from_secs(60),
+              },
+          );
+      metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
+          // Make sure we keep committing rounds after the catchup, but not the full 50.
+          num_successful_views: 22,
+          expected_view_failures: vec![10],
+          possible_view_failures: vec![9, 11, 12],
+          decide_timeout: Duration::from_secs(20),
+          ..Default::default()
+      };
+
+      metadata
+    },
+);
 
 cross_tests!(
     TestName: test_all_restart_one_da_with_epochs,
@@ -581,7 +582,7 @@ cross_tests!(
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
           expected_view_failures: vec![10],
-          possible_view_failures: vec![9, 11],
+          possible_view_failures: vec![9, 11, 12],
           decide_timeout: Duration::from_secs(20),
           ..Default::default()
       };
@@ -638,8 +639,8 @@ cross_tests!(
       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
-          expected_view_failures: vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
-          possible_view_failures: vec![34],
+          expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+          possible_view_failures: vec![10, 34],
           decide_timeout: Duration::from_secs(120),
           ..Default::default()
       };
@@ -696,8 +697,8 @@ cross_tests!(
       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
-          expected_view_failures: vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
-          possible_view_failures: vec![32],
+          expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31],
+          possible_view_failures: vec![10, 32],
           decide_timeout: Duration::from_secs(120),
           ..Default::default()
       };

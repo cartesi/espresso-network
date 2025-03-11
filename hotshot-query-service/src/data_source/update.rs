@@ -11,32 +11,33 @@
 // see <https://www.gnu.org/licenses/>.
 
 //! A generic algorithm for updating a HotShot Query Service data source with new data.
+use std::iter::once;
+
+use anyhow::{ensure, Context};
+use async_trait::async_trait;
+use futures::future::Future;
+use hotshot::types::{Event, EventType};
+use hotshot_types::{
+    data::{ns_table::parse_ns_table, Leaf2, VidCommitment, VidDisperseShare, VidShare},
+    event::LeafInfo,
+    traits::{
+        block_contents::{BlockHeader, BlockPayload, EncodeBytes, GENESIS_VID_NUM_STORAGE_NODES},
+        node_implementation::{ConsensusTime, NodeType},
+    },
+    vid::{
+        advz::advz_scheme,
+        avidm::{init_avidm_param, AvidMScheme},
+    },
+};
+use jf_vid::VidScheme;
+
 use crate::{
     availability::{
         BlockInfo, BlockQueryData, LeafQueryData, QueryablePayload, UpdateAvailabilityData,
         VidCommonQueryData,
     },
-    Payload,
+    Payload, VidCommon,
 };
-use anyhow::{ensure, Context};
-use async_trait::async_trait;
-use futures::future::Future;
-use hotshot::types::{Event, EventType};
-use hotshot_types::{data::VidCommitment, event::LeafInfo};
-use hotshot_types::{
-    data::{ns_table::parse_ns_table, Leaf2},
-    traits::{
-        block_contents::{BlockHeader, BlockPayload, EncodeBytes, GENESIS_VID_NUM_STORAGE_NODES},
-        node_implementation::{ConsensusTime, NodeType},
-    },
-    vid::advz::advz_scheme,
-};
-use hotshot_types::{
-    data::{VidDisperseShare, VidShare},
-    vid::avidm::{init_avidm_param, AvidMScheme},
-};
-use jf_vid::VidScheme;
-use std::iter::once;
 
 /// An extension trait for types which implement the update trait for each API module.
 ///
@@ -109,7 +110,7 @@ where
                             "inconsistent leaf; cannot append leaf information: {err:#}"
                         );
                         return Err(leaf2.block_header().block_number());
-                    }
+                    },
                 };
                 let block_data = leaf2
                     .block_payload()
@@ -122,12 +123,15 @@ where
                     Some(VidDisperseShare::V0(share)) => (
                         Some(VidCommonQueryData::new(
                             leaf2.block_header().clone(),
-                            Some(share.common.clone()),
+                            VidCommon::V0(share.common.clone()),
                         )),
                         Some(VidShare::V0(share.share.clone())),
                     ),
                     Some(VidDisperseShare::V1(share)) => (
-                        Some(VidCommonQueryData::new(leaf2.block_header().clone(), None)),
+                        Some(VidCommonQueryData::new(
+                            leaf2.block_header().clone(),
+                            VidCommon::V1(share.common.clone()),
+                        )),
                         Some(VidShare::V1(share.share.clone())),
                     ),
                     None => {
@@ -141,12 +145,12 @@ where
                                 Err(err) => {
                                     tracing::warn!("failed to compute genesis VID: {err:#}");
                                     (None, None)
-                                }
+                                },
                             }
                         } else {
                             (None, None)
                         }
-                    }
+                    },
                 };
 
                 if vid_common.is_none() {
@@ -185,16 +189,18 @@ fn genesis_vid<Types: NodeType>(
                 commit
             );
             Ok((
-                VidCommonQueryData::new(leaf.block_header().clone(), Some(disperse.common)),
+                VidCommonQueryData::new(
+                    leaf.block_header().clone(),
+                    VidCommon::V0(disperse.common),
+                ),
                 VidShare::V0(disperse.shares.remove(0)),
             ))
-        }
+        },
         VidCommitment::V1(commit) => {
             let avidm_param = init_avidm_param(GENESIS_VID_NUM_STORAGE_NODES)?;
             let weights = vec![1; GENESIS_VID_NUM_STORAGE_NODES];
-            tracing::error!(">>>0");
             let ns_table = parse_ns_table(bytes.len(), &leaf.block_header().metadata().encode());
-            tracing::error!(">>>1");
+
             let (calculated_commit, mut shares) =
                 AvidMScheme::ns_disperse(&avidm_param, &weights, &bytes, ns_table).unwrap();
 
@@ -206,10 +212,10 @@ fn genesis_vid<Types: NodeType>(
             );
 
             Ok((
-                VidCommonQueryData::new(leaf.block_header().clone(), None),
+                VidCommonQueryData::new(leaf.block_header().clone(), VidCommon::V1(avidm_param)),
                 VidShare::V1(shares.remove(0)),
             ))
-        }
+        },
     }
 }
 

@@ -1,16 +1,15 @@
+use std::{path::PathBuf, time::Duration};
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use client::SequencerClient;
 use espresso_types::parse_duration;
 use ethers::types::Address;
 use hotshot_types::{network::PeerConfigKeys, traits::signature_key::StakeTableEntryType};
-
 use sequencer_utils::{
     logging,
     stake_table::{update_stake_table, PermissionedStakeTableUpdate},
 };
-use std::{path::PathBuf, time::Duration};
-
 use url::Url;
 
 #[derive(Debug, Clone, Parser)]
@@ -100,7 +99,7 @@ async fn main() -> Result<()> {
         Some(path) => {
             tracing::error!("updating stake table from path: {path:?}");
             update = Some(PermissionedStakeTableUpdate::from_toml_file(&path)?);
-        }
+        },
         None => {
             let peers = opts.state_peers.context("No state peers found")?;
             let clients: Vec<SequencerClient> =
@@ -127,13 +126,13 @@ async fn main() -> Result<()> {
 
                         update = Some(PermissionedStakeTableUpdate::new(new_stakers, Vec::new()));
                         break;
-                    }
+                    },
                     Err(e) => {
                         tracing::warn!("Failed to fetch config from sequencer: {e}");
-                    }
+                    },
                 };
             }
-        }
+        },
     }
 
     update_stake_table(

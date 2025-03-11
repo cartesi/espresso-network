@@ -1,15 +1,14 @@
-use crate::v0::{
-    traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo, L1Client, PubKey,
-    Timestamp, Upgrade, UpgradeMode,
-};
-use hotshot_types::traits::states::InstanceState;
-use hotshot_types::HotShotConfig;
 use std::{collections::BTreeMap, sync::Arc};
+
+use hotshot_types::{traits::states::InstanceState, HotShotConfig};
 use vbs::version::Version;
 #[cfg(any(test, feature = "testing"))]
 use vbs::version::{StaticVersion, StaticVersionType};
 
-use super::{state::ValidatedState, UpgradeType};
+use super::{
+    state::ValidatedState, traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo,
+    L1Client, PubKey, Timestamp, Upgrade, UpgradeMode, UpgradeType,
+};
 
 /// Represents the immutable state of a node.
 ///
@@ -158,7 +157,7 @@ impl NodeState {
                 .and_then(|upgrade| match upgrade.upgrade_type {
                     UpgradeType::Fee { chain_config } => Some(chain_config),
                     UpgradeType::Epoch { chain_config } => Some(chain_config),
-                    _ => None,
+                    UpgradeType::Marketplace { chain_config } => Some(chain_config),
                 })
         });
         chain_config?
@@ -195,7 +194,7 @@ impl Upgrade {
                 config.stop_proposing_time = u64::MAX;
                 config.start_voting_time = 0;
                 config.stop_voting_time = u64::MAX;
-            }
+            },
             UpgradeMode::Time(t) => {
                 config.start_proposing_time = t.start_proposing_time.unix_timestamp();
                 config.stop_proposing_time = t.stop_proposing_time.unix_timestamp();
@@ -208,7 +207,7 @@ impl Upgrade {
                 config.stop_proposing_view = u64::MAX;
                 config.start_voting_view = 0;
                 config.stop_voting_view = u64::MAX;
-            }
+            },
         }
     }
 }
@@ -315,10 +314,8 @@ pub mod mock {
 #[cfg(test)]
 mod test {
 
-    use crate::v0::Versions;
-    use crate::{EpochVersion, FeeVersion, SequencerVersions, ViewBasedUpgrade};
-
     use super::*;
+    use crate::{v0::Versions, EpochVersion, FeeVersion, SequencerVersions, ViewBasedUpgrade};
 
     #[test]
     fn test_upgrade_chain_config_version_02() {

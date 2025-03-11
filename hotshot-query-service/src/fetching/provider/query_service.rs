@@ -10,25 +10,28 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see <https://www.gnu.org/licenses/>.
 
-use super::Provider;
-
-use crate::{
-    availability::{LeafQueryData, PayloadQueryData, VidCommonQueryData},
-    fetching::request::{LeafRequest, PayloadRequest, VidCommonRequest},
-    types::HeightIndexed,
-    Error, Payload, VidCommon,
-};
 use async_trait::async_trait;
 use committable::Committable;
 use futures::try_join;
 use hotshot_types::{
-    data::VidCommitment,
-    traits::{node_implementation::NodeType, EncodeBytes},
-    vid::advz::{advz_scheme, ADVZScheme},
+    data::{ns_table, VidCommitment},
+    traits::{block_contents::BlockHeader, node_implementation::NodeType, EncodeBytes},
+    vid::{
+        advz::{advz_scheme, ADVZScheme},
+        avidm::{init_avidm_param, AvidMScheme},
+    },
 };
 use jf_vid::VidScheme;
 use surf_disco::{Client, Url};
 use vbs::version::StaticVersionType;
+
+use super::Provider;
+use crate::{
+    availability::{LeafQueryData, PayloadQueryData, VidCommonQueryData},
+    fetching::request::{LeafRequest, PayloadRequest, VidCommonRequest},
+    types::HeightIndexed,
+    Error, Header, Payload, VidCommon,
+};
 
 /// Data availability provider backed by another instance of this query service.
 ///
@@ -67,35 +70,81 @@ where
                 ))
                 .send()
         );
+
         match res {
             Ok((payload, common)) => {
-                if let Some(common) = common.common() {
-                    // Verify that the data we retrieved is consistent with the request we made.
-                    let num_storage_nodes = ADVZScheme::get_num_storage_nodes(common) as usize;
-                    let bytes = payload.data().encode();
-                    let commit = VidCommitment::V0(
-                        match advz_scheme(num_storage_nodes).commit_only(bytes) {
-                            Ok(commit) => commit,
+                match common.common() {
+                    VidCommon::V0(common) => {
+                        // Verify that the data we retrieved is consistent with the request we made.
+                        let num_storage_nodes = ADVZScheme::get_num_storage_nodes(common) as usize;
+                        let bytes = payload.data().encode();
+                        let commit = VidCommitment::V0(
+                            match advz_scheme(num_storage_nodes).commit_only(bytes) {
+                                Ok(commit) => commit,
+                                Err(err) => {
+                                    tracing::error!(%err, "unable to compute VID commitment");
+                                    return None;
+                                },
+                            },
+                        );
+                        if commit != req.0 {
+                            tracing::error!(?req, ?commit, "received inconsistent payload");
+                            return None;
+                        }
+                    },
+                    VidCommon::V1(common) => {
+                        let header = self
+                            .client
+                            .get::<Header<Types>>(&format!(
+                                "availability/header/{}",
+                                payload.height()
+                            ))
+                            .send()
+                            .await
+                            .ok()?;
+                        let bytes = payload.data().encode();
+                        let metadata = header.metadata().encode();
+
+                        if header.payload_commitment() != req.0 {
+                            tracing::error!(?req, ?header, "received inconsistent payload");
+                            return None;
+                        }
+                        // Initialize AVIDM parameters
+                        let avidm_param = match init_avidm_param(common.total_weights) {
+                            Ok(param) => param,
                             Err(err) => {
-                                tracing::error!(%err, "unable to compute VID commitment");
+                                tracing::error!(%err, "unable to initialize AVIDM parameters");
                                 return None;
-                            }
-                        },
-                    );
-                    if commit != req.0 {
-                        tracing::error!(?req, ?commit, "received inconsistent payload");
-                        return None;
-                    }
-                    // } else {
-                    // TODO(Chengyu): should we check AVIDM?
+                            },
+                        };
+
+                        // Calculate AVIDM commitment
+                        let commit = match AvidMScheme::commit(
+                            &avidm_param,
+                            &bytes,
+                            ns_table::parse_ns_table(bytes.len(), &metadata),
+                        ) {
+                            Ok(commit) => VidCommitment::V1(commit),
+                            Err(err) => {
+                                tracing::error!(%err, "unable to compute AVIDM commitment");
+                                return None;
+                            },
+                        };
+
+                        // Compare calculated commitment with requested commitment
+                        if commit != req.0 {
+                            tracing::error!("commitment type mismatch for AVIDM check");
+                            return None;
+                        }
+                    },
                 }
 
                 Some(payload.data)
-            }
+            },
             Err(err) => {
                 tracing::error!("failed to fetch payload {req:?}: {err}");
                 None
-            }
+            },
         }
     }
 }
@@ -134,11 +183,11 @@ where
                 leaf.leaf.unfill_block_payload();
 
                 Some(leaf)
-            }
+            },
             Err(err) => {
                 tracing::error!("failed to fetch leaf {req:?}: {err}");
                 None
-            }
+            },
         }
     }
 }
@@ -148,7 +197,7 @@ impl<Types, Ver: StaticVersionType> Provider<Types, VidCommonRequest> for QueryS
 where
     Types: NodeType,
 {
-    async fn fetch(&self, req: VidCommonRequest) -> VidCommon {
+    async fn fetch(&self, req: VidCommonRequest) -> Option<VidCommon> {
         match self
             .client
             .get::<VidCommonQueryData<Types>>(&format!(
@@ -160,9 +209,9 @@ where
         {
             Ok(res) => match req.0 {
                 VidCommitment::V0(commit) => {
-                    if let Some(common) = res.common {
+                    if let VidCommon::V0(common) = res.common {
                         if ADVZScheme::is_consistent(&commit, &common).is_ok() {
-                            Some(common)
+                            Some(VidCommon::V0(common))
                         } else {
                             tracing::error!(?req, ?common, "fetched inconsistent VID common data");
                             None
@@ -171,18 +220,20 @@ where
                         tracing::error!(?req, ?res, "Expect VID common data but found None");
                         None
                     }
-                }
+                },
                 VidCommitment::V1(_) => {
-                    if res.common.is_some() {
-                        tracing::warn!(?req, ?res, "Expect no VID common data but found some.")
+                    if let VidCommon::V1(common) = res.common {
+                        Some(VidCommon::V1(common))
+                    } else {
+                        tracing::error!(?req, ?res, "Expect VID common data but found None");
+                        None
                     }
-                    None
-                }
+                },
             },
             Err(err) => {
                 tracing::error!("failed to fetch VID common {req:?}: {err}");
                 None
-            }
+            },
         }
     }
 }
@@ -190,8 +241,20 @@ where
 // These tests run the `postgres` Docker image, which doesn't work on Windows.
 #[cfg(all(test, not(target_os = "windows")))]
 mod test {
-    use super::*;
+    use std::{future::IntoFuture, time::Duration};
 
+    use committable::Committable;
+    use futures::{
+        future::{join, FutureExt},
+        stream::StreamExt,
+    };
+    use generic_array::GenericArray;
+    use hotshot_example_types::node_types::TestVersions;
+    use portpicker::pick_unused_port;
+    use rand::RngCore;
+    use tide_disco::{error::ServerError, App};
+
+    use super::*;
     use crate::{
         api::load_api,
         availability::{
@@ -219,17 +282,6 @@ mod test {
         types::HeightIndexed,
         ApiState,
     };
-    use committable::Committable;
-    use futures::{
-        future::{join, FutureExt},
-        stream::StreamExt,
-    };
-    use generic_array::GenericArray;
-    use hotshot_example_types::node_types::TestVersions;
-    use portpicker::pick_unused_port;
-    use rand::RngCore;
-    use std::{future::IntoFuture, time::Duration};
-    use tide_disco::{error::ServerError, App};
 
     type Provider = TestProvider<QueryServiceProvider<MockBase>>;
 
@@ -1201,7 +1253,7 @@ mod test {
                     .as_ref()
                     .fail_begins_writable(FailableAction::Any)
                     .await
-            }
+            },
             FailureType::Write => data_source.as_ref().fail_writes(FailableAction::Any).await,
             FailureType::Commit => data_source.as_ref().fail_commits(FailableAction::Any).await,
         }
@@ -1304,19 +1356,19 @@ mod test {
                     .as_ref()
                     .fail_one_begin_writable(FailableAction::Any)
                     .await
-            }
+            },
             FailureType::Write => {
                 data_source
                     .as_ref()
                     .fail_one_write(FailableAction::Any)
                     .await
-            }
+            },
             FailureType::Commit => {
                 data_source
                     .as_ref()
                     .fail_one_commit(FailableAction::Any)
                     .await
-            }
+            },
         }
         assert_eq!(leaves[0], data_source.get_leaf(1).await.await);
 
@@ -1882,7 +1934,7 @@ mod test {
                 for (leaf, payload) in leaves.iter().zip(payloads) {
                     assert_eq!(payload.block_hash, leaf.block_hash());
                 }
-            }
+            },
             MetadataType::Vid => {
                 let vids = data_source.subscribe_vid_common_metadata(1).await.take(3);
 
@@ -1895,7 +1947,7 @@ mod test {
                 for (leaf, vid) in leaves.iter().zip(vids) {
                     assert_eq!(vid.block_hash, leaf.block_hash());
                 }
-            }
+            },
         }
     }
 

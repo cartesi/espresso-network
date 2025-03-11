@@ -43,9 +43,7 @@ mod testing {
 #[cfg(test)]
 #[espresso_macros::generic_tests]
 mod persistence_tests {
-    use sequencer_utils::test_utils::setup_test;
     use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
-    use vbs::version::StaticVersionType;
 
     use anyhow::bail;
     use async_lock::RwLock;
@@ -54,7 +52,10 @@ mod persistence_tests {
         traits::{EventConsumer, NullEventConsumer, PersistenceOptions},
         Event, Leaf, Leaf2, NodeState, PubKey, SeqTypes, ValidatedState,
     };
-    use hotshot::types::{BLSPubKey, SignatureKey};
+    use hotshot::{
+        types::{BLSPubKey, SignatureKey},
+        InitializerEpochInfo,
+    };
     use hotshot_example_types::node_types::TestVersions;
     use hotshot_query_service::testing::mocks::MockVersions;
     use hotshot_types::{
@@ -77,9 +78,10 @@ mod persistence_tests {
         vid::avidm::{init_avidm_param, AvidMScheme},
         vote::HasViewNumber,
     };
+    use sequencer_utils::test_utils::setup_test;
+    use vbs::version::{StaticVersionType, Version};
 
     use super::{testing::TestablePersistence, *};
-    use vbs::version::Version;
 
     #[derive(Clone, Debug, Default)]
     struct EventCollector {
@@ -153,6 +155,52 @@ mod persistence_tests {
         );
     }
 
+    #[tokio::test(flavor = "multi_thread")]
+    pub async fn test_epoch_info<P: TestablePersistence>() {
+        setup_test();
+
+        let tmp = P::tmp_storage().await;
+        let storage = P::connect(&tmp).await;
+
+        // Initially, there is no saved info.
+        assert_eq!(storage.load_start_epoch_info().await.unwrap(), Vec::new());
+
+        // Store a drb result.
+        storage
+            .add_drb_result(EpochNumber::new(1), [1; 32])
+            .await
+            .unwrap();
+        assert_eq!(
+            storage.load_start_epoch_info().await.unwrap(),
+            vec![InitializerEpochInfo::<SeqTypes> {
+                epoch: EpochNumber::new(1),
+                drb_result: [1; 32],
+                block_header: None,
+            }]
+        );
+
+        // Store a second DRB result
+        storage
+            .add_drb_result(EpochNumber::new(2), [3; 32])
+            .await
+            .unwrap();
+        assert_eq!(
+            storage.load_start_epoch_info().await.unwrap(),
+            vec![
+                InitializerEpochInfo::<SeqTypes> {
+                    epoch: EpochNumber::new(1),
+                    drb_result: [1; 32],
+                    block_header: None,
+                },
+                InitializerEpochInfo::<SeqTypes> {
+                    epoch: EpochNumber::new(2),
+                    drb_result: [3; 32],
+                    block_header: None,
+                }
+            ]
+        );
+    }
+
     fn leaf_info(leaf: Leaf2) -> LeafInfo<SeqTypes> {
         LeafInfo {
             leaf,
@@ -197,6 +245,7 @@ mod persistence_tests {
             recipient_key: pubkey,
             epoch: Some(EpochNumber::new(0)),
             target_epoch: Some(EpochNumber::new(0)),
+            common: avidm_param,
         };
         let mut quorum_proposal = Proposal {
             data: QuorumProposalWrapper::<SeqTypes> {
@@ -691,6 +740,7 @@ mod persistence_tests {
             recipient_key: pubkey,
             epoch: Some(EpochNumber::new(0)),
             target_epoch: Some(EpochNumber::new(0)),
+            common: avidm_param,
         }
         .to_proposal(&privkey)
         .unwrap()
@@ -759,7 +809,7 @@ mod persistence_tests {
         let leaf_chain = chain
             .iter()
             .take(2)
-            .map(|(leaf, qc, _, _)| (leaf_info(leaf.clone()), qc.clone()))
+            .map(|(leaf, qc, ..)| (leaf_info(leaf.clone()), qc.clone()))
             .collect::<Vec<_>>();
         tracing::info!("decide with event handling failure");
         storage
@@ -806,7 +856,7 @@ mod persistence_tests {
         let leaf_chain = chain
             .iter()
             .skip(2)
-            .map(|(leaf, qc, _, _)| (leaf_info(leaf.clone()), qc.clone()))
+            .map(|(leaf, qc, ..)| (leaf_info(leaf.clone()), qc.clone()))
             .collect::<Vec<_>>();
         tracing::info!("decide successfully");
         storage
@@ -851,7 +901,7 @@ mod persistence_tests {
         tracing::info!("check decide event");
         let leaf_chain = consumer.leaf_chain().await;
         assert_eq!(leaf_chain.len(), 4, "{leaf_chain:#?}");
-        for ((leaf, _, _, _), info) in chain.iter().zip(leaf_chain.iter()) {
+        for ((leaf, ..), info) in chain.iter().zip(leaf_chain.iter()) {
             assert_eq!(info.leaf, *leaf);
             let decided_vid_share = info.vid_share.as_ref().unwrap();
             let view_number = match decided_vid_share {
@@ -894,6 +944,7 @@ mod persistence_tests {
             recipient_key: pubkey,
             epoch: None,
             target_epoch: None,
+            common: avidm_param,
         }
         .to_proposal(&privkey)
         .unwrap()

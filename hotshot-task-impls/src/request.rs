@@ -45,7 +45,7 @@ use tracing::instrument;
 use crate::{events::HotShotEvent, helpers::broadcast_event};
 
 /// Amount of time to try for a request before timing out.
-pub const REQUEST_TIMEOUT: Duration = Duration::from_millis(2000);
+pub const REQUEST_TIMEOUT: Duration = Duration::from_millis(500);
 
 /// Long running task which will request information after a proposal is received.
 /// The task will wait a it's `delay` and then send a request iteratively to peers
@@ -147,14 +147,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>> TaskState for NetworkRequest
                         .await;
                 }
                 Ok(())
-            }
+            },
             HotShotEvent::ViewChange(view, _) => {
                 let view = *view;
                 if view > self.view {
                     self.view = view;
                 }
                 Ok(())
-            }
+            },
             _ => Ok(()),
         }
     }
@@ -226,7 +226,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>> NetworkRequestState<TYPES, I
             Err(e) => {
                 tracing::warn!(e.message);
                 return;
-            }
+            },
         };
         let mut da_committee_for_view = membership_reader.da_committee_members(view).await;
         if let Ok(leader) = membership_reader.leader(view).await {

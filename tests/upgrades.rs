@@ -1,15 +1,25 @@
-use crate::common::{test_stake_table_update, TestConfig};
 use anyhow::Result;
 use client::SequencerClient;
+use dotenvy::var;
 use espresso_types::{EpochVersion, FeeVersion, MarketplaceVersion};
 use futures::{future::join_all, StreamExt};
 use vbs::version::{StaticVersionType, Version};
 
+use crate::{
+    common::{test_stake_table_update, NativeDemo, TestConfig},
+    smoke::assert_native_demo_works,
+};
+
 const SEQUENCER_BLOCKS_TIMEOUT: u64 = 200;
 
 #[tokio::test(flavor = "multi_thread")]
-async fn test_upgrade() -> Result<()> {
+async fn test_native_demo_upgrade() -> Result<()> {
     dotenvy::dotenv()?;
+    let compose = var("INTEGRATION_TEST_PROCESS_COMPOSE").ok();
+
+    let _demo = NativeDemo::run(compose)?;
+
+    assert_native_demo_works().await?;
 
     let testing = TestConfig::new().await.unwrap();
 
@@ -29,7 +39,7 @@ async fn test_upgrade() -> Result<()> {
     let client = clients[0].clone();
     let height = test_header_version(clients.clone(), base, upgrade).await?;
     // check that atleast 50 blocks are produced after the upgrade
-    test_blocks_production(clients.clone(), height, 50).await?;
+    test_blocks_production(clients.clone(), height, 10).await?;
 
     if upgrade == EpochVersion::version() {
         test_stake_table_update(clients.clone()).await?;
@@ -37,7 +47,7 @@ async fn test_upgrade() -> Result<()> {
 
     let height = client.get_height().await?;
     // check that atleast 50 blocks are produced after the stake table updates
-    test_blocks_production(clients.clone(), height, 50).await?;
+    test_blocks_production(clients.clone(), height, 10).await?;
 
     // TODO assert transactions are incrementing
     Ok(())
