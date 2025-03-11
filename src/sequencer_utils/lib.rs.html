@@ -722,14 +722,14 @@
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::error!</span>(<span class="string">"error connecting to RPC {}: {}"</span>, provider, err);
             <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
+        },
     };
     <span class="kw">let </span>chain_id = <span class="kw">match </span>provider.get_chainid().<span class="kw">await </span>{
         <span class="prelude-val">Ok</span>(id) =&gt; id.as_u64(),
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::error!</span>(<span class="string">"error getting chain ID: {}"</span>, err);
             <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
+        },
     };
     <span class="kw">let </span>mnemonic = <span class="kw">match </span>MnemonicBuilder::&lt;English&gt;::default()
         .phrase(mnemonic)
@@ -739,14 +739,14 @@
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::error!</span>(<span class="string">"error building wallet: {}"</span>, err);
             <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
+        },
     };
     <span class="kw">let </span>wallet = <span class="kw">match </span>mnemonic.build() {
         <span class="prelude-val">Ok</span>(wallet) =&gt; wallet,
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::error!</span>(<span class="string">"error opening wallet: {}"</span>, err);
             <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
+        },
     };
     <span class="kw">let </span>wallet = wallet.with_chain_id(chain_id);
     <span class="prelude-val">Some</span>(SignerMiddleware::new(provider, wallet))
@@ -832,7 +832,7 @@
                 <span class="macro">tracing::error!</span>(<span class="string">"contract revert: {:?}"</span>, e);
             }
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"error sending transaction: {:?}"</span>, err));
-        }
+        },
     };
 
     <span class="kw">let </span>hash = pending.tx_hash();
@@ -847,12 +847,12 @@
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(receipt)) =&gt; receipt,
         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"contract call {hash:x}: no receipt"</span>));
-        }
+        },
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(
                 <span class="string">"contract call {hash:x}: error getting transaction receipt: {err}"
             </span>))
-        }
+        },
     };
     <span class="kw">if </span>receipt.status != <span class="prelude-val">Some</span>(<span class="number">1</span>.into()) {
         <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow!</span>(<span class="string">"contract call {hash:x}: transaction reverted"</span>));
@@ -883,19 +883,19 @@
                 <span class="kw">if </span>i &gt;= log_retries {
                     <span class="macro">tracing::warn!</span>(<span class="string">"contract call {hash:?} (retry {i}/{retries}): error getting transaction status: {err}"</span>);
                 }
-            }
+            },
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
                 <span class="kw">if </span>i &gt;= log_retries {
                     <span class="macro">tracing::warn!</span>(
                         <span class="string">"contract call {hash:?} (retry {i}/{retries}): missing from mempool"
                     </span>);
                 }
-            }
+            },
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(tx)) <span class="kw">if </span>tx.block_number.is_none() =&gt; {
                 <span class="kw">if </span>i &gt;= log_retries {
                     <span class="macro">tracing::warn!</span>(<span class="string">"contract call {hash:?} (retry {i}/{retries}): pending"</span>);
                 }
-            }
+            },
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="kw">_</span>)) =&gt; <span class="kw">return </span><span class="bool-val">true</span>,
         }
 

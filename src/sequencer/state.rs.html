@@ -351,8 +351,7 @@
 <a href="#350" id="350">350</a>
 <a href="#351" id="351">351</a>
 <a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::fmt::Debug;
+<a href="#353" id="353">353</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::fmt::Debug;
 <span class="kw">use </span>std::{cmp::max, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
@@ -360,8 +359,7 @@
     traits::StateCatchup, v0_99::ChainConfig, BlockMerkleTree, Delta, FeeAccount, FeeMerkleTree,
     Leaf2, ValidatedState,
 };
-<span class="kw">use </span>futures::future::Future;
-<span class="kw">use </span>futures::StreamExt;
+<span class="kw">use </span>futures::{future::Future, StreamExt};
 <span class="kw">use </span>hotshot::traits::ValidatedState <span class="kw">as </span>HotShotState;
 <span class="kw">use </span>hotshot_query_service::{
     availability::{AvailabilityDataSource, LeafQueryData},
@@ -509,8 +507,8 @@
         parent_state,
         instance,
         peers,
-        <span class="kw-2">&amp;</span>parent_leaf.leaf().clone().into(),
-        <span class="kw-2">&amp;</span>proposed_leaf.leaf().clone().into(),
+        <span class="kw-2">&amp;</span>parent_leaf.leaf().clone(),
+        <span class="kw-2">&amp;</span>proposed_leaf.leaf().clone(),
     )
     .<span class="kw">await
     </span>.context(<span class="string">"computing state update"</span>)<span class="question-mark">?</span>;
@@ -654,12 +652,12 @@
                     parent_leaf = leaf;
                     parent_state = state;
                     <span class="kw">break</span>;
-                }
+                },
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::error!</span>(height = leaf.height(), <span class="string">"failed to updated state: {err:#}"</span>);
                     <span class="comment">// If we fail, delay for a second and retry.
                     </span>sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-                }
+                },
             }
         }
     }

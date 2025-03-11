@@ -227,16 +227,13 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{HashSet, VecDeque},
     sync::Arc,
     time::{Duration, Instant},
 };
 
-<span class="kw">use crate</span>::{
-    block::{BuilderStateId, ParentBlockReferences, ReceivedTransaction},
-    utils::RotatingSet,
-};
 <span class="kw">use </span>async_broadcast::Receiver;
 <span class="kw">use </span>async_lock::{Mutex, RwLock};
 <span class="kw">use </span>committable::{Commitment, Committable};
@@ -244,6 +241,11 @@
 <span class="kw">use </span>hotshot_types::{
     data::{DaProposal2, Leaf2, QuorumProposalWrapper},
     traits::{block_contents::BlockHeader, node_implementation::NodeType},
+};
+
+<span class="kw">use crate</span>::{
+    block::{BuilderStateId, ParentBlockReferences, ReceivedTransaction},
+    utils::RotatingSet,
 };
 
 <span class="attr">#[derive(derive_more::Debug, Clone)]
@@ -437,7 +439,7 @@
 
                     <span class="self">self</span>.txn_queue.write().<span class="kw">await</span>.insert(txn);
                     queue_empty = <span class="bool-val">false</span>;
-                }
+                },
 
                 <span class="prelude-val">Err</span>(async_broadcast::TryRecvError::Empty)
                 | <span class="prelude-val">Err</span>(async_broadcast::TryRecvError::Closed) =&gt; {
@@ -445,12 +447,12 @@
                     // If it's closed that's a big problem and we should
                     // probably indicate it as such.
                     </span><span class="kw">break</span>;
-                }
+                },
 
                 <span class="prelude-val">Err</span>(async_broadcast::TryRecvError::Overflowed(lost)) =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"Missed {lost} transactions due to backlog"</span>);
                     <span class="kw">continue</span>;
-                }
+                },
             }
         }
         queue_empty

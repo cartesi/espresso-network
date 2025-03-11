@@ -400,11 +400,11 @@
                     StatusCode::BAD_REQUEST,
                     <span class="string">"A signature of this light client state is already posted at this block height for this key."</span>.to_owned(),
                 ));
-            }
+            },
             std::collections::hash_map::Entry::Vacant(entry) =&gt; {
                 entry.insert(signature);
                 bundle.accumulated_weight += <span class="kw-2">*</span>weight;
-            }
+            },
         }
 
         <span class="kw">if </span>bundle.accumulated_weight &gt;= <span class="self">self</span>.threshold {
@@ -455,7 +455,7 @@
                 reason: err.to_string(),
             })<span class="question-mark">?</span>;
             Api::&lt;State, Error, ApiVer&gt;::new(toml)<span class="question-mark">?
-        </span>}
+        </span>},
     };
 
     api.get(<span class="string">"getlateststate"</span>, |_req, state| {

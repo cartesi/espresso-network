@@ -248,8 +248,7 @@
 <a href="#247" id="247">247</a>
 <a href="#248" id="248">248</a>
 <a href="#249" id="249">249</a>
-<a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#250" id="250">250</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     fmt::{Display, Formatter},
     hash::Hash,
 };
@@ -263,8 +262,7 @@
     types::{Address, Signature},
     utils::public_key_to_address,
 };
-<span class="kw">use </span>hotshot_types::traits::signature_key::BuilderSignatureKey;
-<span class="kw">use </span>hotshot_types::traits::signature_key::PrivateSignatureKey;
+<span class="kw">use </span>hotshot_types::traits::signature_key::{BuilderSignatureKey, PrivateSignatureKey};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>thiserror::Error;
 

@@ -374,7 +374,10 @@
 <a href="#373" id="373">373</a>
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::jellyfish::u256_to_field;
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::str::FromStr;
+
 <span class="kw">use </span>ark_ec::{
     short_weierstrass,
     twisted_edwards::{<span class="self">self</span>, Affine, TECurveConfig},
@@ -405,7 +408,8 @@
     PeerConfig,
 };
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::str::FromStr;
+
+<span class="kw">use </span><span class="kw">crate</span>::jellyfish::u256_to_field;
 
 <span class="comment">// TODO: (alex) maybe move these commonly shared util to a crate
 </span><span class="doccomment">/// convert a field element to U256, panic if field size is larger than 256 bit

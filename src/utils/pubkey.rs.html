@@ -61,15 +61,17 @@
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
 <a href="#62" id="62">62</a>
-<a href="#63" id="63">63</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::str::FromStr;
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::{PrivKey, PubKey};
-<span class="kw">use </span>hotshot::traits::implementations::derive_libp2p_peer_id;
-<span class="kw">use </span>hotshot::types::SignatureKey;
-<span class="kw">use </span>hotshot_types::light_client::StateSignKey;
-<span class="kw">use </span>hotshot_types::{light_client::StateKeyPair, signature_key::BLSPubKey};
+<span class="kw">use </span>hotshot::{traits::implementations::derive_libp2p_peer_id, types::SignatureKey};
+<span class="kw">use </span>hotshot_types::{
+    light_client::{StateKeyPair, StateSignKey},
+    signature_key::BLSPubKey,
+};
 <span class="kw">use </span>tagged_base64::TaggedBase64;
 
 <span class="attr">#[derive(Clone, Debug)]
@@ -110,7 +112,7 @@
         </span>(<span class="bool-val">false</span>, PrivateKey::Bls(key)) =&gt; <span class="macro">println!</span>(<span class="string">"{}"</span>, PubKey::from_private(<span class="kw-2">&amp;</span>key)),
         (<span class="bool-val">false</span>, PrivateKey::Schnorr(key)) =&gt; {
             <span class="macro">println!</span>(<span class="string">"{}"</span>, StateKeyPair::from_sign_key(key).ver_key())
-        }
+        },
 
         <span class="comment">// Libp2p
         </span>(<span class="bool-val">true</span>, PrivateKey::Bls(key)) =&gt; {
@@ -118,10 +120,10 @@
                 <span class="string">"{}"</span>,
                 derive_libp2p_peer_id::&lt;BLSPubKey&gt;(<span class="kw-2">&amp;</span>key).expect(<span class="string">"Failed to derive libp2p peer ID"</span>)
             );
-        }
+        },
         (<span class="bool-val">true</span>, <span class="kw">_</span>) =&gt; {
             <span class="macro">eprintln!</span>(<span class="string">"Key type unsupported for libp2p peer ID derivation"</span>);
-        }
+        },
     }
 }
 </code></pre></div></section></main></body></html>

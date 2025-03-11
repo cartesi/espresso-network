@@ -78,11 +78,11 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::types::HeightIndexed;
-<span class="kw">use </span>derivative::Derivative;
+</span><span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="kw">pub use </span><span class="kw">crate</span>::availability::{BlockHash, BlockId};
+<span class="kw">use </span><span class="kw">crate</span>::types::HeightIndexed;
 
 <span class="attr">#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>SyncStatus {

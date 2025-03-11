@@ -82,15 +82,15 @@
 
 </span><span class="doccomment">//! Requests for fetching resources.
 
-</span><span class="kw">use crate</span>::{
-    availability::{LeafHash, LeafQueryData, QcHash},
-    Payload, VidCommitment,
-};
-<span class="kw">use </span>derive_more::{From, Into};
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+</span><span class="kw">use </span>std::{fmt::Debug, hash::Hash};
 
-<span class="kw">use </span>std::fmt::Debug;
-<span class="kw">use </span>std::hash::Hash;
+<span class="kw">use </span>derive_more::{From, Into};
+<span class="kw">use </span>hotshot_types::{data::VidCommitment, traits::node_implementation::NodeType};
+
+<span class="kw">use crate</span>::{
+    availability::{LeafHash, LeafQueryData, QcHash},
+    Payload, VidCommon,
+};
 
 <span class="doccomment">/// A request for a resource.
 </span><span class="kw">pub trait </span>Request&lt;Types&gt;: Copy + Debug + Eq + Hash + Send {
@@ -111,7 +111,7 @@
 </span><span class="kw">pub struct </span>VidCommonRequest(<span class="kw">pub </span>VidCommitment);
 
 <span class="kw">impl</span>&lt;Types: NodeType&gt; Request&lt;Types&gt; <span class="kw">for </span>VidCommonRequest {
-    <span class="kw">type </span>Response = hotshot_types::vid::advz::ADVZCommon;
+    <span class="kw">type </span>Response = VidCommon;
 }
 
 <span class="doccomment">/// A request for a leaf with a given height.

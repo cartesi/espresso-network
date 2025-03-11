@@ -420,12 +420,10 @@
 <a href="#419" id="419">419</a>
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{state::ValidatedState, MarketplaceVersion};
-<span class="kw">use crate</span>::{
-    eth_signature_key::{EthKeyPair, SigningError},
-    v0_99::{BidTx, BidTxBody, FullNetworkTx, SolverAuctionResults},
-    FeeAccount, FeeAmount, FeeError, FeeInfo, NamespaceId,
-};
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::str::FromStr;
+
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>committable::{Commitment, Committable};
@@ -437,10 +435,16 @@
         signature_key::BuilderSignatureKey,
     },
 };
-<span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tide_disco::error::ServerError;
 <span class="kw">use </span>url::Url;
+
+<span class="kw">use super</span>::{state::ValidatedState, MarketplaceVersion};
+<span class="kw">use crate</span>::{
+    eth_signature_key::{EthKeyPair, SigningError},
+    v0_99::{BidTx, BidTxBody, FullNetworkTx, SolverAuctionResults},
+    FeeAccount, FeeAmount, FeeError, FeeInfo, NamespaceId,
+};
 
 <span class="kw">impl </span>FullNetworkTx {
     <span class="doccomment">/// Proxy for `execute` method of each transaction variant.

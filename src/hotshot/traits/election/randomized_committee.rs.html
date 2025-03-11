@@ -268,8 +268,7 @@
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#270" id="270">270</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -488,12 +487,7 @@
             .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
     }
 
-    <span class="comment">// /// Get the network topic for the committee
-    // fn committee_topic(&amp;self) -&gt; Topic {
-    //     self.committee_topic.clone()
-    // }
-
-    </span><span class="doccomment">/// Index the vector of public keys with the current view number
+    <span class="doccomment">/// Index the vector of public keys with the current view number
     </span><span class="kw">fn </span>lookup_leader(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         view_number: &lt;TYPES <span class="kw">as </span>NodeType&gt;::View,
@@ -535,6 +529,10 @@
         ))
         .unwrap()
     }
+
+    <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: TYPES::Epoch) -&gt; bool {
+        <span class="bool-val">true
+    </span>}
 
     <span class="kw">fn </span>add_drb_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _epoch: &lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch, _drb_result: DrbResult) {}
 

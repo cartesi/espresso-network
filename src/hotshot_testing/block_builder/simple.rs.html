@@ -835,7 +835,7 @@
                 <span class="kw">match </span>stream.next().<span class="kw">await </span>{
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="kw">break</span>;
-                    }
+                    },
                     <span class="prelude-val">Some</span>(evt) =&gt; <span class="kw">match </span>evt.event {
                         EventType::ViewFinished { view_number } =&gt; {
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(change) = <span class="self">self</span>.changes.remove(<span class="kw-2">&amp;</span>view_number) {
@@ -845,14 +845,14 @@
                                         should_build_blocks = <span class="bool-val">false</span>;
                                         <span class="self">self</span>.transactions.write().<span class="kw">await</span>.clear();
                                         <span class="self">self</span>.blocks.write().<span class="kw">await</span>.clear();
-                                    }
+                                    },
                                     BuilderChange::FailClaims(value) =&gt; {
                                         <span class="self">self</span>.should_fail_claims.store(value, Ordering::Relaxed);
-                                    }
+                                    },
                                 }
                                 <span class="kw">let _ </span>= <span class="self">self</span>.change_sender.broadcast(change).<span class="kw">await</span>;
                             }
-                        }
+                        },
                         EventType::Decide { leaf_chain, .. } <span class="kw">if </span>should_build_blocks =&gt; {
                             <span class="kw">let </span><span class="kw-2">mut </span>queue = <span class="self">self</span>.transactions.write().<span class="kw">await</span>;
                             <span class="kw">for </span>leaf_info <span class="kw">in </span>leaf_chain.iter() {
@@ -866,7 +866,7 @@
                                 }
                             }
                             <span class="self">self</span>.blocks.write().<span class="kw">await</span>.clear();
-                        }
+                        },
                         EventType::DaProposal { proposal, .. } <span class="kw">if </span>should_build_blocks =&gt; {
                             <span class="kw">let </span>payload = TYPES::BlockPayload::from_bytes(
                                 <span class="kw-2">&amp;</span>proposal.data.encoded_transactions,
@@ -882,7 +882,7 @@
                                     txn.claimed = <span class="prelude-val">Some</span>(now);
                                 }
                             }
-                        }
+                        },
                         EventType::Transactions { transactions } <span class="kw">if </span>should_build_blocks =&gt; {
                             <span class="kw">let </span><span class="kw-2">mut </span>queue = <span class="self">self</span>.transactions.write().<span class="kw">await</span>;
                             <span class="kw">for </span>transaction <span class="kw">in </span>transactions {
@@ -896,8 +896,8 @@
                                     );
                                 }
                             }
-                        }
-                        <span class="kw">_ </span>=&gt; {}
+                        },
+                        <span class="kw">_ </span>=&gt; {},
                     },
                 }
             }

@@ -502,10 +502,10 @@
         <span class="kw">match </span><span class="self">self</span>.<span class="number">0</span>.entry(<span class="kw-2">*</span>key.view()) {
             Entry::Vacant(entry) =&gt; {
                 entry.insert(<span class="macro">nem!</span>[key.into_subkey() =&gt; value]);
-            }
+            },
             Entry::Occupied(<span class="kw-2">mut </span>entry) =&gt; {
                 entry.get_mut().insert(key.into_subkey(), value);
-            }
+            },
         }
     }
 
@@ -540,13 +540,13 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::{cmp::Ordering, ops::Bound, sync::Arc};
 
-    <span class="kw">use crate</span>::{state::BuilderState, testing::mock};
-
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>hotshot_example_types::node_types::TestTypes;
     <span class="kw">use </span>hotshot_types::{data::ViewNumber, traits::node_implementation::ConsensusTime};
     <span class="kw">use </span>rand::{distributions::Standard, thread_rng, Rng};
     <span class="kw">use </span>tracing_test::traced_test;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use crate</span>::{state::BuilderState, testing::mock};
 
     <span class="kw">type </span>View = ViewNumber;
     <span class="kw">type </span>BuilderStateMap =

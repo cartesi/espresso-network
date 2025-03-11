@@ -114,7 +114,11 @@
 <a href="#113" id="113">113</a>
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -128,18 +132,22 @@
 
 </span><span class="attr">#![cfg(any(test, feature = <span class="string">"testing"</span>))]
 
-</span><span class="kw">use </span><span class="kw">super</span>::Provider;
-<span class="kw">use </span><span class="kw">crate</span>::fetching::Request;
+</span><span class="kw">use </span>std::{
+    fmt::Debug,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
+
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{
-    fmt::Debug,
-    sync::atomic::{AtomicBool, Ordering},
-};
 <span class="kw">use </span>tokio::sync::broadcast;
+
+<span class="kw">use </span><span class="kw">super</span>::Provider;
+<span class="kw">use </span><span class="kw">crate</span>::fetching::Request;
 
 <span class="doccomment">/// Adaptor to add test-only functionality to an existing [`Provider`].
 ///

@@ -730,7 +730,31 @@
 <a href="#729" id="729">729</a>
 <a href="#730" id="730">730</a>
 <a href="#731" id="731">731</a>
-<a href="#732" id="732">732</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -746,6 +770,7 @@
     consensus::OuterConsensus,
     data::{Leaf2, QuorumProposalWrapper, VidDisperseShare},
     drb::{compute_drb_result, DrbResult, INITIAL_DRB_RESULT},
+    epoch_membership::{EpochMembership, EpochMembershipCoordinator},
     event::{Event, EventType},
     message::{Proposal, UpgradeLock},
     simple_vote::{HasEpoch, QuorumData2, QuorumVote2},
@@ -778,13 +803,26 @@
     quorum_vote::Versions,
 };
 
-<span class="kw">async fn </span>notify_membership_of_drb_result&lt;TYPES: NodeType&gt;(
-    membership: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
-    epoch: &lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch,
+<span class="kw">async fn </span>handle_drb_result&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;&gt;(
+    membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;,
+    storage: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;I::Storage&gt;&gt;,
     drb_result: DrbResult,
 ) {
-    <span class="macro">tracing::debug!</span>(<span class="string">"Calling add_drb_result for epoch {:?}"</span>, epoch);
-    membership.write().<span class="kw">await</span>.add_drb_result(epoch, drb_result);
+    <span class="macro">tracing::debug!</span>(<span class="string">"Calling add_drb_result for epoch {:?}"</span>, membership.epoch());
+
+    <span class="comment">// membership.epoch should always be Some
+    </span><span class="kw">if let </span><span class="prelude-val">Some</span>(epoch) = membership.epoch() {
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = storage
+            .write()
+            .<span class="kw">await
+            </span>.add_drb_result(epoch, drb_result)
+            .<span class="kw">await
+        </span>{
+            <span class="macro">tracing::error!</span>(<span class="string">"Failed to store drb result for epoch {:?}: {}"</span>, epoch, e);
+        }
+    }
+
+    membership.add_drb_result(drb_result).<span class="kw">await</span>;
 }
 
 <span class="doccomment">/// Store the DRB result from the computation task to the shared `results` table.
@@ -832,11 +870,18 @@
                 .insert(epoch_number, result);
             drop(consensus_writer);
 
-            notify_membership_of_drb_result::&lt;TYPES&gt;(<span class="kw-2">&amp;</span>task_state.membership, epoch_number, result)
-                .<span class="kw">await</span>;
+            handle_drb_result::&lt;TYPES, I&gt;(
+                <span class="kw-2">&amp;</span>task_state
+                    .membership
+                    .membership_for_epoch(<span class="prelude-val">Some</span>(epoch_number))
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
+                <span class="kw-2">&amp;</span>task_state.storage,
+                result,
+            )
+            .<span class="kw">await</span>;
             task_state.drb_computation = <span class="prelude-val">None</span>;
             <span class="prelude-val">Ok</span>(result)
-        }
+        },
         <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(<span class="macro">warn!</span>(<span class="string">"Error in DRB calculation: {:?}."</span>, e)),
     }
 }
@@ -878,13 +923,14 @@
         .next_drb_result()
         .context(<span class="macro">info!</span>(<span class="string">"Proposal is missing the DRB result."</span>))<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>membership_reader = task_state.membership.read().<span class="kw">await</span>;
-
     <span class="kw">if let </span><span class="prelude-val">Some</span>(epoch_val) = epoch {
-        <span class="kw">let </span>has_stake_current_epoch =
-            membership_reader.has_stake(<span class="kw-2">&amp;</span>task_state.public_key, <span class="prelude-val">Some</span>(epoch_val));
-
-        drop(membership_reader);
+        <span class="kw">let </span>has_stake_current_epoch = task_state
+            .membership
+            .membership_for_epoch(epoch)
+            .<span class="kw">await
+            </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?
+            </span>.has_stake(<span class="kw-2">&amp;</span>task_state.public_key)
+            .<span class="kw">await</span>;
 
         <span class="kw">if </span>has_stake_current_epoch {
             <span class="kw">let </span>computed_result =
@@ -916,13 +962,17 @@
         task_state.epoch_height,
     ));
 
-    <span class="comment">// Start the new task if we're in the committee for this epoch
-    </span><span class="kw">if </span>task_state
+    <span class="kw">let </span><span class="prelude-val">Ok</span>(epoch_membership) = task_state
         .membership
-        .read()
+        .membership_for_epoch(<span class="prelude-val">Some</span>(current_epoch_number))
         .<span class="kw">await
-        </span>.has_stake(<span class="kw-2">&amp;</span>task_state.public_key, <span class="prelude-val">Some</span>(current_epoch_number))
-    {
+    else </span>{
+        <span class="macro">tracing::warn!</span>(<span class="string">"No Stake Table for Epoch = {:?}"</span>, current_epoch_number);
+        <span class="kw">return</span>;
+    };
+
+    <span class="comment">// Start the new task if we're in the committee for this epoch
+    </span><span class="kw">if </span>epoch_membership.has_stake(<span class="kw-2">&amp;</span>task_state.public_key).<span class="kw">await </span>{
         <span class="kw">let </span>new_epoch_number = current_epoch_number + <span class="number">1</span>;
 
         <span class="comment">// If a task is currently live AND has finished, join it and save the result.
@@ -941,17 +991,17 @@
                             </span>.drb_seeds_and_results
                             .results
                             .insert(<span class="kw-2">*</span>task_epoch, result);
-                        notify_membership_of_drb_result::&lt;TYPES&gt;(
-                            <span class="kw-2">&amp;</span>task_state.membership,
-                            <span class="kw-2">*</span>task_epoch,
+                        handle_drb_result::&lt;TYPES, I&gt;(
+                            <span class="kw-2">&amp;</span>epoch_membership,
+                            <span class="kw-2">&amp;</span>task_state.storage,
                             result,
                         )
                         .<span class="kw">await</span>;
                         task_state.drb_computation = <span class="prelude-val">None</span>;
-                    }
+                    },
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::error!</span>(<span class="string">"error joining DRB computation task: {e:?}"</span>);
-                    }
+                    },
                 }
             } <span class="kw">else if </span><span class="kw-2">*</span>task_epoch == new_epoch_number {
                 <span class="kw">return</span>;
@@ -1060,9 +1110,12 @@
                 </span>.drb_seeds_and_results
                 .results
                 .insert(current_epoch_number + <span class="number">1</span>, result);
-            notify_membership_of_drb_result::&lt;TYPES&gt;(
-                <span class="kw-2">&amp;</span>task_state.membership,
-                current_epoch_number + <span class="number">1</span>,
+            handle_drb_result::&lt;TYPES, I&gt;(
+                <span class="kw-2">&amp;</span>task_state
+                    .membership
+                    .membership_for_epoch(<span class="prelude-val">Some</span>(current_epoch_number + <span class="number">1</span>))
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
+                <span class="kw-2">&amp;</span>task_state.storage,
                 result,
             )
             .<span class="kw">await</span>;
@@ -1102,23 +1155,25 @@
         included_txns,
         decided_upgrade_cert,
     } = <span class="kw">if </span>version &gt;= V::Epochs::VERSION {
-        decide_from_proposal_2(
+        decide_from_proposal_2::&lt;TYPES, I&gt;(
             proposal,
             OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>task_state.consensus.inner_consensus)),
             Arc::clone(<span class="kw-2">&amp;</span>task_state.upgrade_lock.decided_upgrade_certificate),
             <span class="kw-2">&amp;</span>task_state.public_key,
             version &gt;= V::Epochs::VERSION,
-            <span class="kw-2">&amp;</span>task_state.membership,
+            task_state.membership.membership(),
+            <span class="kw-2">&amp;</span>task_state.storage,
         )
         .<span class="kw">await
     </span>} <span class="kw">else </span>{
-        decide_from_proposal::&lt;TYPES, V&gt;(
+        decide_from_proposal::&lt;TYPES, I, V&gt;(
             proposal,
             OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>task_state.consensus.inner_consensus)),
             Arc::clone(<span class="kw-2">&amp;</span>task_state.upgrade_lock.decided_upgrade_certificate),
             <span class="kw-2">&amp;</span>task_state.public_key,
             version &gt;= V::Epochs::VERSION,
-            <span class="kw-2">&amp;</span>task_state.membership,
+            task_state.membership.membership(),
+            <span class="kw-2">&amp;</span>task_state.storage,
         )
         .<span class="kw">await
     </span>};
@@ -1156,6 +1211,7 @@
             <span class="macro">tracing::debug!</span>(<span class="string">"Calling set_first_epoch for epoch {:?}"</span>, first_epoch_number);
             task_state
                 .membership
+                .membership()
                 .write()
                 .<span class="kw">await
                 </span>.set_first_epoch(first_epoch_number, INITIAL_DRB_RESULT);
@@ -1253,7 +1309,7 @@
     consensus: OuterConsensus&lt;TYPES&gt;,
     sender: Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
     receiver: InactiveReceiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
-    membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    membership: EpochMembershipCoordinator&lt;TYPES&gt;,
     public_key: TYPES::SignatureKey,
     private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
     upgrade_lock: UpgradeLock&lt;TYPES, V&gt;,
@@ -1292,7 +1348,7 @@
                 justify_qc.view_number(),
                 sender.clone(),
                 receiver.activate_cloned(),
-                Arc::clone(<span class="kw-2">&amp;</span>membership),
+                membership.clone(),
                 OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>consensus.inner_consensus)),
                 public_key.clone(),
                 private_key.clone(),
@@ -1305,10 +1361,10 @@
                 <span class="prelude-val">Some</span>((leaf, view)) =&gt; {
                     maybe_validated_view = <span class="prelude-val">Some</span>(view);
                     <span class="prelude-val">Some</span>(leaf)
-                }
+                },
                 <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
             }
-        }
+        },
     };
 
     <span class="kw">let </span>parent = maybe_parent.context(<span class="macro">info!</span>(
@@ -1388,7 +1444,7 @@
 #[allow(clippy::too_many_arguments)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>submit_vote&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt;(
     sender: Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
-    membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    membership: EpochMembership&lt;TYPES&gt;,
     public_key: TYPES::SignatureKey,
     private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
     upgrade_lock: UpgradeLock&lt;TYPES, V&gt;,
@@ -1399,20 +1455,12 @@
     extended_vote: bool,
     epoch_height: u64,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>epoch_number = option_epoch_from_block_number::&lt;TYPES&gt;(
-        leaf.with_epoch,
-        leaf.block_header().block_number(),
-        epoch_height,
-    );
-
-    <span class="kw">let </span>membership_reader = membership.read().<span class="kw">await</span>;
-    <span class="kw">let </span>committee_member_in_current_epoch = membership_reader.has_stake(<span class="kw-2">&amp;</span>public_key, epoch_number);
+    <span class="kw">let </span>committee_member_in_current_epoch = membership.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await</span>;
     <span class="comment">// If the proposed leaf is for the last block in the epoch and the node is part of the quorum committee
     // in the next epoch, the node should vote to achieve the double quorum.
     </span><span class="kw">let </span>committee_member_in_next_epoch = leaf.with_epoch
         &amp;&amp; is_last_block_in_epoch(leaf.height(), epoch_height)
-        &amp;&amp; membership_reader.has_stake(<span class="kw-2">&amp;</span>public_key, epoch_number.map(|x| x + <span class="number">1</span>));
-    drop(membership_reader);
+        &amp;&amp; membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await</span>;
 
     <span class="macro">ensure!</span>(
         committee_member_in_current_epoch || committee_member_in_next_epoch,
@@ -1426,7 +1474,7 @@
     </span><span class="kw">let </span>vote = QuorumVote2::&lt;TYPES&gt;::create_signed_vote(
         QuorumData2 {
             leaf_commit: leaf.commit(),
-            epoch: epoch_number,
+            epoch: membership.epoch(),
         },
         view_number,
         <span class="kw-2">&amp;</span>public_key,

@@ -821,7 +821,23 @@
 <a href="#820" id="820">820</a>
 <a href="#821" id="821">821</a>
 <a href="#822" id="822">822</a>
-<a href="#823" id="823">823</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -835,13 +851,35 @@
 
 </span><span class="attr">#![cfg(feature = <span class="string">"file-system-data-source"</span>)]
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">use </span>std::{
+    collections::{
+        hash_map::{Entry, HashMap},
+        BTreeMap,
+    },
+    hash::Hash,
+    ops::{Bound, Deref, RangeBounds},
+    path::Path,
+};
+
+<span class="kw">use </span>async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>atomic_store::{AtomicStore, AtomicStoreLoader, PersistenceError};
+<span class="kw">use </span>committable::Committable;
+<span class="kw">use </span>futures::future::Future;
+<span class="kw">use </span>hotshot_types::{
+    data::{VidCommitment, VidShare},
+    traits::{block_contents::BlockHeader, node_implementation::NodeType},
+};
+<span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
+<span class="kw">use </span>snafu::OptionExt;
+
+<span class="kw">use super</span>::{
     ledger_log::{Iter, LedgerLog},
     pruning::{PruneStorage, PrunedHeightStorage, PrunerConfig},
+    sql::MigrateTypes,
     Aggregate, AggregatesStorage, AvailabilityStorage, NodeStorage, PayloadMetadata,
     UpdateAggregatesStorage, UpdateAvailabilityStorage, VidCommonMetadata,
 };
-
 <span class="kw">use crate</span>::{
     availability::{
         data_source::{BlockId, LeafId},
@@ -856,23 +894,7 @@
     status::HasMetrics,
     types::HeightIndexed,
     ErrorSnafu, Header, MissingSnafu, NotFoundSnafu, Payload, QueryError, QueryResult,
-    VidCommitment, VidShare,
 };
-<span class="kw">use </span>async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>atomic_store::{AtomicStore, AtomicStoreLoader, PersistenceError};
-<span class="kw">use </span>committable::Committable;
-<span class="kw">use </span>futures::future::Future;
-<span class="kw">use </span>hotshot_types::traits::{block_contents::BlockHeader, node_implementation::NodeType};
-<span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
-<span class="kw">use </span>snafu::OptionExt;
-<span class="kw">use </span>std::collections::{
-    hash_map::{Entry, HashMap},
-    BTreeMap,
-};
-<span class="kw">use </span>std::hash::Hash;
-<span class="kw">use </span>std::ops::{Bound, Deref, RangeBounds};
-<span class="kw">use </span>std::path::Path;
 
 <span class="kw">const </span>CACHED_LEAVES_COUNT: usize = <span class="number">100</span>;
 <span class="kw">const </span>CACHED_BLOCKS_COUNT: usize = <span class="number">100</span>;
@@ -908,10 +930,10 @@
             BlockId::Number(n) =&gt; <span class="prelude-val">Ok</span>(n),
             BlockId::Hash(h) =&gt; {
                 <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="self">self</span>.index_by_block_hash.get(<span class="kw-2">&amp;</span>h).context(NotFoundSnafu)<span class="question-mark">? </span><span class="kw">as </span>usize)
-            }
+            },
             BlockId::PayloadHash(h) =&gt; {
                 <span class="prelude-val">Ok</span>(<span class="kw-2">*</span><span class="self">self</span>.index_by_payload_hash.get(<span class="kw-2">&amp;</span>h).context(NotFoundSnafu)<span class="question-mark">? </span><span class="kw">as </span>usize)
-            }
+            },
         }
     }
 
@@ -954,6 +976,16 @@
     </span>Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
 {
     <span class="kw">type </span>Pruner = ();
+}
+
+<span class="attr">#[async_trait]
+</span><span class="kw">impl</span>&lt;Types: NodeType&gt; MigrateTypes&lt;Types&gt; <span class="kw">for </span>FileSystemStorage&lt;Types&gt;
+<span class="kw">where
+    </span>Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
+{
+    <span class="kw">async fn </span>migrate_types(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="prelude-val">Ok</span>(())
+    }
 }
 
 <span class="kw">impl</span>&lt;Types: NodeType&gt; FileSystemStorage&lt;Types&gt;
@@ -1215,11 +1247,11 @@
                 iter.nth(n - <span class="number">1</span>);
             }
             n
-        }
+        },
         Bound::Excluded(n) =&gt; {
             iter.nth(n);
             n + <span class="number">1
-        </span>}
+        </span>},
         Bound::Unbounded =&gt; <span class="number">0</span>,
     };
 
@@ -1472,10 +1504,10 @@
                 <span class="comment">// Overwrite the existing entry if the new object was sequenced first.
                 </span>e.insert(pos);
             }
-        }
+        },
         Entry::Vacant(e) =&gt; {
             e.insert(pos);
-        }
+        },
     }
 }
 
@@ -1582,7 +1614,7 @@
                 // entry in `index_by_time` has a non-empty list associated with it, so this
                 // indexing is safe.
                 </span>blocks[<span class="number">0</span>]
-            }
+            },
         } <span class="kw">as </span>usize;
 
         <span class="kw">let </span><span class="kw-2">mut </span>res = TimeWindowQueryData::default();

@@ -37,11 +37,9 @@
 <a href="#36" id="36">36</a>
 <a href="#37" id="37">37</a>
 <a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
-<a href="#40" id="40">40</a></pre></div><pre class="rust"><code><span class="doccomment">//! sequencer utility programs
+<a href="#39" id="39">39</a></pre></div><pre class="rust"><code><span class="doccomment">//! sequencer utility programs
 
 </span><span class="kw">use </span>clap::{Parser, Subcommand};
-
 <span class="kw">use </span>sequencer_utils::logging;
 <span class="kw">mod </span>keygen;
 <span class="kw">mod </span>pubkey;
@@ -74,7 +72,7 @@
         Command::Pubkey(opt) =&gt; {
             pubkey::run(opt);
             <span class="prelude-val">Ok</span>(())
-        }
+        },
         Command::ResetStorage(opt) =&gt; reset_storage::run(opt).<span class="kw">await</span>,
     }
 }

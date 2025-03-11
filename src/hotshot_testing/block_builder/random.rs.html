@@ -516,7 +516,7 @@
                 <span class="kw">match </span>stream.next().<span class="kw">await </span>{
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="kw">break</span>;
-                    }
+                    },
                     <span class="prelude-val">Some</span>(evt) =&gt; {
                         <span class="kw">if let </span>EventType::ViewFinished { view_number } = evt.event {
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(change) = <span class="self">self</span>.changes.remove(<span class="kw-2">&amp;</span>view_number) {
@@ -530,18 +530,18 @@
                                                 <span class="self">self</span>.blocks.clone(),
                                             )))
                                         }
-                                    }
+                                    },
                                     BuilderChange::Down =&gt; {
                                         <span class="kw">if let </span><span class="prelude-val">Some</span>(handle) = task.take() {
                                             handle.abort();
                                         }
-                                    }
-                                    BuilderChange::FailClaims(<span class="kw">_</span>) =&gt; {}
+                                    },
+                                    BuilderChange::FailClaims(<span class="kw">_</span>) =&gt; {},
                                 }
                                 <span class="kw">let _ </span>= <span class="self">self</span>.change_sender.broadcast(change).<span class="kw">await</span>;
                             }
                         }
-                    }
+                    },
                 }
             }
         });

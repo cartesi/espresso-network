@@ -624,18 +624,40 @@
 <a href="#623" id="623">623</a>
 <a href="#624" id="624">624</a>
 <a href="#625" id="625">625</a>
-<a href="#626" id="626">626</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{cmp::Ordering, collections::HashMap, fmt::Display, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{anyhow, bail, ensure, Context};
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>committable::Commitment;
-<span class="kw">use </span>committable::Committable;
-<span class="kw">use </span>espresso_types::config::PublicNetworkConfig;
-<span class="kw">use </span>espresso_types::traits::SequencerPersistence;
+<span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>espresso_types::{
-    v0::traits::StateCatchup, v0_99::ChainConfig, BackoffParams, BlockMerkleTree, FeeAccount,
-    FeeAccountProof, FeeMerkleCommitment, FeeMerkleTree, Leaf2, NodeState,
+    config::PublicNetworkConfig, traits::SequencerPersistence, v0::traits::StateCatchup,
+    v0_99::ChainConfig, BackoffParams, BlockMerkleTree, FeeAccount, FeeAccountProof,
+    FeeMerkleCommitment, FeeMerkleTree, Leaf2, NodeState,
 };
 <span class="kw">use </span>futures::future::{Future, FutureExt, TryFuture, TryFutureExt};
 <span class="kw">use </span>hotshot_types::{
@@ -651,15 +673,13 @@
 <span class="kw">use </span>jf_merkle_tree::{prelude::MerkleNode, ForgetableMerkleTreeScheme, MerkleTreeScheme};
 <span class="kw">use </span>priority_queue::PriorityQueue;
 <span class="kw">use </span>serde::de::DeserializeOwned;
-<span class="kw">use </span>std::{cmp::Ordering, collections::HashMap, fmt::Display, time::Duration};
 <span class="kw">use </span>surf_disco::Request;
 <span class="kw">use </span>tide_disco::error::ServerError;
 <span class="kw">use </span>tokio::time::timeout;
 <span class="kw">use </span>url::Url;
 <span class="kw">use </span>vbs::version::StaticVersionType;
 
-<span class="kw">use </span><span class="kw">crate</span>::api::BlocksFrontier;
-<span class="kw">use </span><span class="kw">crate</span>::PubKey;
+<span class="kw">use crate</span>::{api::BlocksFrontier, PubKey};
 
 <span class="comment">// This newtype is probably not worth having. It's only used to be able to log
 // URLs before doing requests.
@@ -701,7 +721,7 @@
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::warn!</span>(<span class="string">"not using local catchup: {err:#}"</span>);
             Arc::new(remote)
-        }
+        },
     }
 }
 
@@ -790,15 +810,15 @@
                     requests.insert(id, <span class="bool-val">true</span>);
                     res = <span class="prelude-val">Ok</span>(t);
                     <span class="kw">break</span>;
-                }
+                },
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
                     <span class="macro">tracing::warn!</span>(id, <span class="question-mark">?</span>score, peer = %client.url, <span class="string">"error from peer: {err:#}"</span>);
                     requests.insert(id, <span class="bool-val">false</span>);
-                }
+                },
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                     <span class="macro">tracing::warn!</span>(id, <span class="question-mark">?</span>score, peer = %client.url, <span class="question-mark">?</span>timeout_dur, <span class="string">"request timed out"</span>);
                     requests.insert(id, <span class="bool-val">false</span>);
-                }
+                },
             }
         }
 
@@ -953,6 +973,16 @@
         })
         .<span class="kw">await
     </span>}
+    <span class="kw">async fn </span>try_fetch_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>, retry: usize, height: u64) -&gt; anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt; {
+        <span class="self">self</span>.fetch(retry, |client| <span class="kw">async move </span>{
+            <span class="kw">let </span>leaf = client
+                .get::&lt;Vec&lt;Leaf2&gt;&gt;(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"catchup/{}/leafchain"</span>, height))
+                .send()
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+            anyhow::Ok(leaf)
+        })
+        .<span class="kw">await
+    </span>}
 
     <span class="kw">fn </span>backoff(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>BackoffParams {
         <span class="kw-2">&amp;</span><span class="self">self</span>.backoff
@@ -1025,6 +1055,15 @@
             <span class="macro">bail!</span>(<span class="string">"chain config catchup is not supported for this data source"</span>);
         }
     }
+
+    <span class="kw">fn </span>get_leaf_chain(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _height: u64,
+    ) -&gt; <span class="kw">impl </span>Send + Future&lt;Output = anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt;&gt; {
+        <span class="kw">async </span>{
+            <span class="macro">bail!</span>(<span class="string">"leaf chain catchup is not supported for this data source"</span>);
+        }
+    }
 }
 
 <span class="kw">impl </span>CatchupStorage <span class="kw">for </span>hotshot_query_service::data_source::MetricsDataSource {}
@@ -1061,6 +1100,9 @@
     ) -&gt; anyhow::Result&lt;ChainConfig&gt; {
         <span class="self">self</span>.inner().get_chain_config(commitment).<span class="kw">await
     </span>}
+    <span class="kw">async fn </span>get_leaf_chain(<span class="kw-2">&amp;</span><span class="self">self</span>, height: u64) -&gt; anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt; {
+        <span class="self">self</span>.inner().get_leaf_chain(height).<span class="kw">await
+    </span>}
 }
 
 <span class="attr">#[derive(Debug)]
@@ -1080,6 +1122,9 @@
 <span class="kw">where
     </span>T: CatchupStorage + Send + Sync,
 {
+    <span class="kw">async fn </span>try_fetch_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>, _retry: usize, height: u64) -&gt; anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt; {
+        <span class="self">self</span>.db.get_leaf_chain(height).<span class="kw">await
+    </span>}
     <span class="comment">// TODO: add a test for the account proof validation
     // issue # 2102 (https://github.com/EspressoSystems/espresso-sequencer/issues/2102)
     </span><span class="attr">#[tracing::instrument(skip(<span class="self">self</span>, _retry, instance))]
@@ -1186,6 +1231,9 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>StateCatchup <span class="kw">for </span>NullStateCatchup {
+    <span class="kw">async fn </span>try_fetch_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>, _retry: usize, _height: u64) -&gt; anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt; {
+        <span class="macro">bail!</span>(<span class="string">"state catchup is didabled"</span>)
+    }
     <span class="kw">async fn </span>try_fetch_accounts(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _retry: usize,

@@ -473,15 +473,15 @@
         reduced.dedup();
 
         <span class="kw">match </span>reduced.len() {
-            <span class="number">0 </span>=&gt; {}
+            <span class="number">0 </span>=&gt; {},
             <span class="number">1 </span>=&gt; {
                 result.insert(<span class="kw-2">*</span>view, reduced[<span class="number">0</span>].clone());
-            }
+            },
             <span class="kw">_ </span>=&gt; {
                 <span class="macro">bail!</span>(
                     <span class="string">"We have received inconsistent leaves for view {view:?}. Leaves:\n\n{leaves:?}"
                 </span>);
-            }
+            },
         }
     }
 
@@ -729,12 +729,12 @@
         <span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(TestProgress::Finished) =&gt; {
                 <span class="kw">let _ </span>= <span class="self">self</span>.test_sender.broadcast(TestEvent::Shutdown).<span class="kw">await</span>;
-            }
+            },
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="self">self</span>.add_error(e);
                 <span class="kw">let _ </span>= <span class="self">self</span>.test_sender.broadcast(TestEvent::Shutdown).<span class="kw">await</span>;
-            }
-            <span class="prelude-val">Ok</span>(TestProgress::Incomplete) =&gt; {}
+            },
+            <span class="prelude-val">Ok</span>(TestProgress::Incomplete) =&gt; {},
         }
     }
 

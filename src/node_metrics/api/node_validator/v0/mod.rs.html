@@ -1103,43 +1103,37 @@
 <a href="#1102" id="1102">1102</a>
 <a href="#1103" id="1103">1103</a>
 <a href="#1104" id="1104">1104</a>
-<a href="#1105" id="1105">1105</a>
-<a href="#1106" id="1106">1106</a>
-<a href="#1107" id="1107">1107</a>
-<a href="#1108" id="1108">1108</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>cdn;
+<a href="#1105" id="1105">1105</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>cdn;
 <span class="kw">pub mod </span>create_node_validator_api;
 
-<span class="kw">use </span><span class="kw">crate</span>::service::client_message::{ClientMessage, InternalClientMessage};
-<span class="kw">use </span><span class="kw">crate</span>::service::data_state::{LocationDetails, NodeIdentity};
-<span class="kw">use </span><span class="kw">crate</span>::service::server_message::ServerMessage;
+<span class="kw">use </span>std::{fmt, future::Future, io::BufRead, pin::Pin, str::FromStr, time::Duration};
+
 <span class="kw">use </span>espresso_types::{BackoffParams, SeqTypes};
-<span class="kw">use </span>futures::channel::mpsc::SendError;
-<span class="kw">use </span>futures::future::Either;
 <span class="kw">use </span>futures::{
-    channel::mpsc::{<span class="self">self</span>, Sender},
+    channel::mpsc::{<span class="self">self</span>, SendError, Sender},
+    future::Either,
     FutureExt, Sink, SinkExt, Stream, StreamExt,
 };
-<span class="kw">use </span>hotshot_query_service::Leaf;
+<span class="kw">use </span>hotshot_query_service::Leaf2;
 <span class="kw">use </span>hotshot_stake_table::vec_based::StakeTable;
-<span class="kw">use </span>hotshot_types::light_client::{CircuitField, StateVerKey};
-<span class="kw">use </span>hotshot_types::signature_key::BLSPubKey;
-<span class="kw">use </span>hotshot_types::traits::{signature_key::StakeTableEntryType, stake_table::StakeTableScheme};
-<span class="kw">use </span>hotshot_types::PeerConfig;
+<span class="kw">use </span>hotshot_types::{
+    light_client::{CircuitField, StateVerKey},
+    signature_key::BLSPubKey,
+    traits::{signature_key::StakeTableEntryType, stake_table::StakeTableScheme},
+    PeerConfig,
+};
 <span class="kw">use </span>prometheus_parse::{Sample, Scrape};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::fmt;
-<span class="kw">use </span>std::future::Future;
-<span class="kw">use </span>std::io::BufRead;
-<span class="kw">use </span>std::pin::Pin;
-<span class="kw">use </span>std::str::FromStr;
-<span class="kw">use </span>std::time::Duration;
-<span class="kw">use </span>tide_disco::socket::Connection;
-<span class="kw">use </span>tide_disco::{api::ApiError, Api};
-<span class="kw">use </span>tokio::spawn;
-<span class="kw">use </span>tokio::task::JoinHandle;
-<span class="kw">use </span>tokio::time::sleep;
+<span class="kw">use </span>tide_disco::{api::ApiError, socket::Connection, Api};
+<span class="kw">use </span>tokio::{spawn, task::JoinHandle, time::sleep};
 <span class="kw">use </span>url::Url;
 <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType, Version};
+
+<span class="kw">use </span><span class="kw">crate</span>::service::{
+    client_message::{ClientMessage, InternalClientMessage},
+    data_state::{LocationDetails, NodeIdentity},
+    server_message::ServerMessage,
+};
 
 <span class="doccomment">/// CONSTANT for protocol major version
 </span><span class="kw">pub const </span>VERSION_MAJ: u16 = <span class="number">0</span>;
@@ -1172,11 +1166,11 @@
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::UnhandledSurfDisco(status, msg) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"Unhandled Surf Disco Error: {} - {}"</span>, status, msg)
-            }
+            },
 
             <span class="self">Self</span>::UnhandledTideDisco(status, msg) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"Unhandled Tide Disco Error: {} - {}"</span>, status, msg)
-            }
+            },
         }
     }
 }
@@ -1363,7 +1357,7 @@
                             <span class="comment">// let's queue up the next client message to receive
                             </span>next_client_message = socket_stream.next();
                             next_server_message = remaining_server_message;
-                        }
+                        },
                         Either::Right((server_message, remaining_client_message)) =&gt; {
                             <span class="comment">// Alright, we have a server message, we want to forward it
                             // to the down-stream client.
@@ -1385,7 +1379,7 @@
                             <span class="comment">// let's queue up the next server message to receive
                             </span>next_server_message = server_message_receiver.next();
                             next_client_message = remaining_client_message;
-                        }
+                        },
                     }
                 }
 
@@ -1435,7 +1429,7 @@
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::info!</span>(<span class="string">"retrieve stake table request failed: {}"</span>, err);
             <span class="kw">return </span><span class="prelude-val">Err</span>(err);
-        }
+        },
     };
 
     <span class="kw">let </span>public_hot_shot_config = sequencer_config.config;
@@ -1569,11 +1563,11 @@
 }
 
 <span class="kw">impl </span>LeafStreamRetriever <span class="kw">for </span>HotshotQueryServiceLeafStreamRetriever {
-    <span class="kw">type </span>Item = Leaf&lt;SeqTypes&gt;;
+    <span class="kw">type </span>Item = Leaf2&lt;SeqTypes&gt;;
     <span class="kw">type </span>ItemError = hotshot_query_service::Error;
     <span class="kw">type </span>Error = hotshot_query_service::Error;
     <span class="kw">type </span>Stream = surf_disco::socket::Connection&lt;
-        Leaf&lt;SeqTypes&gt;,
+        Leaf2&lt;SeqTypes&gt;,
         surf_disco::socket::Unsupported,
         <span class="self">Self</span>::ItemError,
         Version01,
@@ -1589,7 +1583,7 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::info!</span>(<span class="string">"retrieve block height request failed: {}"</span>, err);
                     <span class="kw">return </span><span class="prelude-val">Err</span>(err);
-                }
+                },
             };
 
             <span class="kw">let </span>latest_block_start = block_height.saturating_sub(<span class="number">50</span>);
@@ -1604,7 +1598,7 @@
                     <span class="string">"availability/stream/leaves/{}"</span>,
                     start_block_height
                 ))
-                .subscribe::&lt;espresso_types::Leaf&gt;()
+                .subscribe::&lt;espresso_types::Leaf2&gt;()
                 .<span class="kw">await</span>;
 
             <span class="kw">let </span>leaves_stream = <span class="kw">match </span>leaves_stream_result {
@@ -1612,7 +1606,7 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::info!</span>(<span class="string">"retrieve leaves stream failed: {}"</span>, err);
                     <span class="kw">return </span><span class="prelude-val">Err</span>(err);
-                }
+                },
             };
 
             <span class="prelude-val">Ok</span>(leaves_stream)
@@ -1648,8 +1642,8 @@
     /// returned state.
     </span><span class="kw">pub fn </span>new&lt;R, K&gt;(leaf_stream_retriever: R, leaf_sender: K) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>R: LeafStreamRetriever&lt;Item = Leaf&lt;SeqTypes&gt;&gt; + Send + Sync + <span class="lifetime">'static</span>,
-        K: Sink&lt;Leaf&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
+        </span>R: LeafStreamRetriever&lt;Item = Leaf2&lt;SeqTypes&gt;&gt; + Send + Sync + <span class="lifetime">'static</span>,
+        K: Sink&lt;Leaf2&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
     {
         <span class="comment">// let future = Self::process_consume_leaf_stream(leaf_stream_retriever, leaf_sender);
         </span><span class="kw">let </span>task_handle = spawn(<span class="self">Self</span>::connect_and_process_leaves(
@@ -1664,8 +1658,8 @@
 
     <span class="kw">async fn </span>connect_and_process_leaves&lt;R, K&gt;(leaf_stream_retriever: R, leaf_sender: K)
     <span class="kw">where
-        </span>R: LeafStreamRetriever&lt;Item = Leaf&lt;SeqTypes&gt;&gt;,
-        K: Sink&lt;Leaf&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
+        </span>R: LeafStreamRetriever&lt;Item = Leaf2&lt;SeqTypes&gt;&gt;,
+        K: Sink&lt;Leaf2&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
     {
         <span class="comment">// We want to try and ensure that we are connected to the HotShot Query
         // Service, and are consuming leaves.
@@ -1704,7 +1698,7 @@
         leaf_stream_receiver: <span class="kw-2">&amp;</span>R,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;R::Stream, RetrieveLeafStreamError&gt;
     <span class="kw">where
-        </span>R: LeafStreamRetriever&lt;Item = Leaf&lt;SeqTypes&gt;&gt;,
+        </span>R: LeafStreamRetriever&lt;Item = Leaf2&lt;SeqTypes&gt;&gt;,
     {
         <span class="kw">let </span>backoff_params = BackoffParams::default();
         <span class="kw">let </span><span class="kw-2">mut </span>delay = Duration::ZERO;
@@ -1729,7 +1723,7 @@
                     </span>delay = backoff_params.backoff(delay);
                     sleep(delay).<span class="kw">await</span>;
                     <span class="kw">continue</span>;
-                }
+                },
 
                 <span class="prelude-val">Ok</span>(leaves_stream) =&gt; leaves_stream,
             };
@@ -1747,8 +1741,8 @@
     /// will return.
     </span><span class="kw">async fn </span>process_consume_leaf_stream&lt;R, K&gt;(leaves_stream: R::Stream, leaf_sender: K)
     <span class="kw">where
-        </span>R: LeafStreamRetriever&lt;Item = Leaf&lt;SeqTypes&gt;&gt;,
-        K: Sink&lt;Leaf&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
+        </span>R: LeafStreamRetriever&lt;Item = Leaf2&lt;SeqTypes&gt;&gt;,
+        K: Sink&lt;Leaf2&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span><span class="kw-2">mut </span>leaf_sender = leaf_sender;
         <span class="kw">let </span><span class="kw-2">mut </span>leaves_stream = leaves_stream;
@@ -1903,7 +1897,7 @@
                     <span class="comment">// We couldn't parse the public key, so we can't create a NodeIdentity.
                     </span><span class="macro">tracing::info!</span>(<span class="string">"parsing public key failed: {}"</span>, err);
                     <span class="kw">return</span>;
-                }
+                },
             }
         } <span class="kw">else </span>{
             <span class="comment">// We were unable to find the public key in the scrape result.
@@ -1986,7 +1980,7 @@
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">tracing::info!</span>(<span class="string">"parsing public key failed: {}"</span>, err);
             <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
+        },
     };
 
     <span class="kw">let </span><span class="kw-2">mut </span>node_identity = NodeIdentity::from_public_key(public_key);
@@ -2045,7 +2039,7 @@
                 <span class="prelude-val">None </span>=&gt; {
                     <span class="macro">tracing::info!</span>(<span class="string">"node identity url stream closed"</span>);
                     <span class="kw">return</span>;
-                }
+                },
             };
 
             <span class="comment">// Alright we have a new Url to try and scrape for a Node Identity.
@@ -2057,7 +2051,7 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"get node identity from url failed.  bad base url?: {}"</span>, err);
                     <span class="kw">continue</span>;
-                }
+                },
             };
 
             <span class="kw">let </span>send_result = node_identity_sender.send(node_identity).<span class="kw">await</span>;

@@ -375,7 +375,22 @@
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -398,16 +413,18 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::Consensus,
     data::{Leaf2, QuorumProposalWrapper},
+    epoch_membership::EpochMembershipCoordinator,
     error::HotShotError,
     message::{Message, MessageKind, Proposal, RecipientList},
     request_response::ProposalRequestPayload,
     traits::{
+        block_contents::BlockHeader,
         consensus_api::ConsensusApi,
-        election::Membership,
         network::{BroadcastDelay, ConnectedNetwork, Topic},
         node_implementation::NodeType,
         signature_key::SignatureKey,
     },
+    utils::option_epoch_from_block_number,
 };
 <span class="kw">use </span>tracing::instrument;
 
@@ -445,7 +462,7 @@
     </span><span class="kw">pub </span>network: Arc&lt;I::Network&gt;,
 
     <span class="doccomment">/// Memberships used by consensus
-    </span><span class="kw">pub </span>memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// Number of blocks in an epoch, zero means there are no epochs
     </span><span class="kw">pub </span>epoch_height: u64,
@@ -492,17 +509,17 @@
                 <span class="self">self</span>.network
                     .broadcast_message(serialized_message, Topic::Global, BroadcastDelay::None)
                     .<span class="kw">await</span><span class="question-mark">?</span>;
-            }
+            },
             RecipientList::Direct(recipient) =&gt; {
                 <span class="self">self</span>.network
                     .direct_message(serialized_message, recipient)
                     .<span class="kw">await</span><span class="question-mark">?</span>;
-            }
+            },
             RecipientList::Many(recipients) =&gt; {
                 <span class="self">self</span>.network
                     .da_broadcast_message(serialized_message, recipients, BroadcastDelay::None)
                     .<span class="kw">await</span><span class="question-mark">?</span>;
-            }
+            },
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -532,7 +549,7 @@
             signed_proposal_request.commit().as_ref(),
         )<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>mem = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.memberships);
+        <span class="kw">let </span>membership_coordinator = <span class="self">self</span>.membership_coordinator.clone();
         <span class="kw">let </span>receiver = <span class="self">self</span>.internal_event_stream.<span class="number">1</span>.activate_cloned();
         <span class="kw">let </span>sender = <span class="self">self</span>.internal_event_stream.<span class="number">0</span>.clone();
         <span class="kw">let </span>epoch_height = <span class="self">self</span>.epoch_height;
@@ -562,14 +579,26 @@
                 <span class="comment">// Then, if it's `Some`, make sure that the data is correct
                 </span><span class="kw">if let </span>HotShotEvent::QuorumProposalResponseRecv(quorum_proposal) = hs_event.as_ref()
                 {
+                    <span class="kw">let </span>maybe_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
+                        quorum_proposal.data.proposal.epoch.is_some(),
+                        quorum_proposal.data.block_header().block_number(),
+                        epoch_height,
+                    );
+                    <span class="kw">let </span>membership = <span class="kw">match </span>membership_coordinator
+                        .membership_for_epoch(maybe_epoch)
+                        .<span class="kw">await
+                    </span>{
+                        Result::Ok(m) =&gt; m,
+                        <span class="prelude-val">Err</span>(e) =&gt; {
+                            <span class="macro">tracing::warn!</span>(e.message);
+                            <span class="kw">continue</span>;
+                        },
+                    };
                     <span class="comment">// Make sure that the quorum_proposal is valid
-                    </span><span class="kw">let </span>mem_reader = mem.read().<span class="kw">await</span>;
-                    <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = quorum_proposal.validate_signature(<span class="kw-2">&amp;</span>mem_reader, epoch_height)
-                    {
+                    </span><span class="kw">if let </span><span class="prelude-val">Err</span>(err) = quorum_proposal.validate_signature(<span class="kw-2">&amp;</span>membership).<span class="kw">await </span>{
                         <span class="macro">tracing::warn!</span>(<span class="string">"Invalid Proposal Received after Request.  Err {:?}"</span>, err);
                         <span class="kw">continue</span>;
                     }
-                    drop(mem_reader);
                     <span class="kw">let </span>proposed_leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal.data);
                     <span class="kw">let </span>commit = proposed_leaf.commit();
                     <span class="kw">if </span>commit == leaf_commitment {
@@ -704,11 +733,12 @@
         epoch_number: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;TYPES::SignatureKey&gt; {
         <span class="self">self</span>.hotshot
-            .memberships
-            .read()
+            .membership_coordinator
+            .membership_for_epoch(epoch_number)
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.leader(view_number)
             .<span class="kw">await
-            </span>.leader(view_number, epoch_number)
-            .context(<span class="string">"Failed to lookup leader"</span>)
+            </span>.context(<span class="string">"Failed to lookup leader"</span>)
     }
 
     <span class="comment">// Below is for testing only:

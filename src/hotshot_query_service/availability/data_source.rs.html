@@ -335,7 +335,12 @@
 <a href="#334" id="334">334</a>
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
-<a href="#337" id="337">337</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -347,15 +352,11 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use super</span>::{
-    fetch::Fetch,
-    query_data::{
-        BlockHash, BlockQueryData, LeafHash, LeafQueryData, PayloadMetadata, PayloadQueryData,
-        QueryablePayload, TransactionHash, TransactionQueryData, VidCommonMetadata,
-        VidCommonQueryData,
-    },
+</span><span class="kw">use </span>std::{
+    cmp::Ordering,
+    ops::{Bound, RangeBounds},
 };
-<span class="kw">use crate</span>::{types::HeightIndexed, Header, Payload, VidCommitment, VidShare};
+
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>derive_more::{Display, From};
@@ -363,11 +364,20 @@
     future::Future,
     stream::{BoxStream, StreamExt},
 };
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>std::{
-    cmp::Ordering,
-    ops::{Bound, RangeBounds},
+<span class="kw">use </span>hotshot_types::{
+    data::{VidCommitment, VidShare},
+    traits::node_implementation::NodeType,
 };
+
+<span class="kw">use super</span>::{
+    fetch::Fetch,
+    query_data::{
+        BlockHash, BlockQueryData, LeafHash, LeafQueryData, PayloadMetadata, PayloadQueryData,
+        QueryablePayload, TransactionHash, TransactionQueryData, VidCommonMetadata,
+        VidCommonQueryData,
+    },
+};
+<span class="kw">use crate</span>::{types::HeightIndexed, Header, Payload};
 
 <span class="attr">#[derive(Derivative, From, Display)]
 #[derivative(Ord = <span class="string">"feature_allow_slow_enum"</span>)]

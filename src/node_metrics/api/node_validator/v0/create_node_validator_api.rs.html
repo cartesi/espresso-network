@@ -466,7 +466,20 @@
 <a href="#465" id="465">465</a>
 <a href="#466" id="466">466</a>
 <a href="#467" id="467">467</a>
-<a href="#468" id="468">468</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+
+<span class="kw">use </span>async_lock::RwLock;
+<span class="kw">use </span>espresso_types::{PubKey, SeqTypes};
+<span class="kw">use </span>futures::{
+    channel::mpsc::{<span class="self">self</span>, Receiver, SendError, Sender},
+    Sink, SinkExt, Stream, StreamExt,
+};
+<span class="kw">use </span>hotshot_query_service::Leaf2;
+<span class="kw">use </span>hotshot_types::event::{Event, EventType};
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>tokio::{spawn, task::JoinHandle};
+<span class="kw">use </span>url::Url;
 
 <span class="kw">use super</span>::{get_stake_table_from_sequencer, ProcessNodeIdentityUrlStreamTask};
 <span class="kw">use </span><span class="kw">crate</span>::service::{
@@ -480,17 +493,6 @@
     data_state::{DataState, ProcessLeafStreamTask, ProcessNodeIdentityStreamTask},
     server_message::ServerMessage,
 };
-<span class="kw">use </span>async_lock::RwLock;
-<span class="kw">use </span>espresso_types::{downgrade_leaf, PubKey, SeqTypes};
-<span class="kw">use </span>futures::{
-    channel::mpsc::{<span class="self">self</span>, Receiver, SendError, Sender},
-    Sink, SinkExt, Stream, StreamExt,
-};
-<span class="kw">use </span>hotshot_query_service::Leaf;
-<span class="kw">use </span>hotshot_types::event::{Event, EventType};
-<span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>tokio::{spawn, task::JoinHandle};
-<span class="kw">use </span>url::Url;
 
 <span class="kw">pub struct </span>NodeValidatorAPI&lt;K&gt; {
     <span class="kw">pub </span>process_internal_client_message_handle: <span class="prelude-ty">Option</span>&lt;InternalClientMessageProcessingTask&gt;,
@@ -556,7 +558,7 @@
     </span><span class="kw">where
         </span>S: Stream&lt;Item = Event&lt;SeqTypes&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>,
         K1: Sink&lt;Url, Error = SendError&gt; + Send + Unpin + <span class="lifetime">'static</span>,
-        K2: Sink&lt;Leaf&lt;SeqTypes&gt;, Error = SendError&gt; + Send + Unpin + <span class="lifetime">'static</span>,
+        K2: Sink&lt;Leaf2&lt;SeqTypes&gt;, Error = SendError&gt; + Send + Unpin + <span class="lifetime">'static</span>,
     {
         <span class="kw">let </span>task_handle = spawn(<span class="self">Self</span>::process_messages(
             event_stream,
@@ -575,7 +577,7 @@
     <span class="kw">where
         </span>S: Stream&lt;Item = Event&lt;SeqTypes&gt;&gt; + Send + Unpin + <span class="lifetime">'static</span>,
         K1: Sink&lt;Url, Error = SendError&gt; + Unpin,
-        K2: Sink&lt;Leaf&lt;SeqTypes&gt;, Error = SendError&gt; + Unpin,
+        K2: Sink&lt;Leaf2&lt;SeqTypes&gt;, Error = SendError&gt; + Unpin,
     {
         <span class="kw">let </span><span class="kw-2">mut </span>event_stream = event_receiver;
         <span class="kw">let </span><span class="kw-2">mut </span>url_sender = url_sender;
@@ -587,7 +589,7 @@
                 <span class="prelude-val">None </span>=&gt; {
                     <span class="macro">tracing::info!</span>(<span class="string">"event stream closed"</span>);
                     <span class="kw">break</span>;
-                }
+                },
             };
 
             <span class="kw">let </span>Event { event, .. } = event;
@@ -596,15 +598,14 @@
                 EventType::Decide { leaf_chain, .. } =&gt; {
                     <span class="kw">for </span>leaf_info <span class="kw">in </span>leaf_chain.iter().rev() {
                         <span class="kw">let </span>leaf2 = leaf_info.leaf.clone();
-                        <span class="kw">let </span>leaf = downgrade_leaf(leaf2);
 
-                        <span class="kw">let </span>send_result = leaf_sender.send(leaf).<span class="kw">await</span>;
+                        <span class="kw">let </span>send_result = leaf_sender.send(leaf2).<span class="kw">await</span>;
                         <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = send_result {
                             <span class="macro">tracing::error!</span>(<span class="string">"leaf sender closed: {}"</span>, err);
                             <span class="macro">panic!</span>(<span class="string">"HotShotEventProcessingTask leaf sender is closed, unrecoverable, the block state will stagnate."</span>);
                         }
                     }
-                }
+                },
 
                 EventType::ExternalMessageReceived { data, .. } =&gt; {
                     <span class="kw">let </span>roll_call_info = <span class="kw">match </span>bincode::deserialize(<span class="kw-2">&amp;</span>data) {
@@ -616,12 +617,12 @@
                                 err
                             );
                             <span class="kw">continue</span>;
-                        }
+                        },
 
                         <span class="kw">_ </span>=&gt; {
                             <span class="comment">// Ignore any other potentially recognized messages
                             </span><span class="kw">continue</span>;
-                        }
+                        },
                     };
 
                     <span class="kw">let </span>public_api_url = roll_call_info.public_api_url;
@@ -632,11 +633,11 @@
                         <span class="macro">tracing::error!</span>(<span class="string">"url sender closed: {}"</span>, err);
                         <span class="macro">panic!</span>(<span class="string">"HotShotEventProcessingTask url sender is closed, unrecoverable, the node state will stagnate."</span>);
                     }
-                }
+                },
                 <span class="kw">_ </span>=&gt; {
                     <span class="comment">// Ignore all other events
                     </span><span class="kw">continue</span>;
-                }
+                },
             }
         }
     }
@@ -705,7 +706,7 @@
                 <span class="prelude-val">None </span>=&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"external message receiver closed"</span>);
                     <span class="kw">break</span>;
-                }
+                },
             };
 
             <span class="kw">match </span>external_message {
@@ -717,12 +718,12 @@
                         <span class="macro">tracing::error!</span>(<span class="string">"url sender closed: {}"</span>, err);
                         <span class="kw">break</span>;
                     }
-                }
+                },
 
                 <span class="kw">_ </span>=&gt; {
                     <span class="comment">// Ignore all other messages
                     </span><span class="kw">continue</span>;
-                }
+                },
             }
         }
     }
@@ -748,7 +749,7 @@
 </span><span class="kw">pub async fn </span>create_node_validator_processing(
     config: NodeValidatorConfig,
     internal_client_message_receiver: Receiver&lt;InternalClientMessage&lt;Sender&lt;ServerMessage&gt;&gt;&gt;,
-    leaf_receiver: Receiver&lt;Leaf&lt;SeqTypes&gt;&gt;,
+    leaf_receiver: Receiver&lt;Leaf2&lt;SeqTypes&gt;&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;NodeValidatorAPI&lt;Sender&lt;Url&gt;&gt;, CreateNodeValidatorProcessingError&gt; {
     <span class="kw">let </span>client_thread_state = ClientThreadState::&lt;Sender&lt;ServerMessage&gt;&gt;::new(
         Default::default(),
@@ -837,6 +838,10 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>futures::channel::mpsc::{<span class="self">self</span>, Sender};
+    <span class="kw">use </span>tide_disco::App;
+    <span class="kw">use </span>tokio::spawn;
+
     <span class="kw">use crate</span>::{
         api::node_validator::v0::{
             HotshotQueryServiceLeafStreamRetriever, ProcessProduceLeafStreamTask,
@@ -844,9 +849,6 @@
         },
         service::{client_message::InternalClientMessage, server_message::ServerMessage},
     };
-    <span class="kw">use </span>futures::channel::mpsc::{<span class="self">self</span>, Sender};
-    <span class="kw">use </span>tide_disco::App;
-    <span class="kw">use </span>tokio::spawn;
 
     <span class="kw">struct </span>TestState(Sender&lt;InternalClientMessage&lt;Sender&lt;ServerMessage&gt;&gt;&gt;);
 
@@ -868,14 +870,14 @@
             <span class="prelude-val">Ok</span>(node_validator_api) =&gt; node_validator_api,
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">"error defining node validator api: {:?}"</span>, err);
-            }
+            },
         };
 
         <span class="kw">match </span>app.register_module(<span class="string">"node-validator"</span>, node_validator_api) {
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {}
+            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {},
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">"error registering node validator api: {:?}"</span>, err);
-            }
+            },
         }
 
         <span class="kw">let </span>(leaf_sender, leaf_receiver) = mpsc::channel(<span class="number">10</span>);
@@ -918,7 +920,7 @@
 
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">"error defining node validator api: {:?}"</span>, err);
-            }
+            },
         };
 
         <span class="comment">// We would like to wait until being signaled

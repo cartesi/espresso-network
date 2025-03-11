@@ -920,7 +920,10 @@
 <a href="#919" id="919">919</a>
 <a href="#920" id="920">920</a>
 <a href="#921" id="921">921</a>
-<a href="#922" id="922">922</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -938,6 +941,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot_task::task::TaskState;
 <span class="kw">use </span>hotshot_types::{
+    epoch_membership::{EpochMembership, EpochMembershipCoordinator},
     message::UpgradeLock,
     simple_certificate::{
         ViewSyncCommitCertificate2, ViewSyncFinalizeCertificate2, ViewSyncPreCommitCertificate2,
@@ -947,7 +951,6 @@
         ViewSyncPreCommitData2, ViewSyncPreCommitVote2,
     },
     traits::{
-        election::Membership,
         node_implementation::{ConsensusTime, NodeType, Versions},
         signature_key::SignatureKey,
     },
@@ -997,7 +1000,7 @@
     </span><span class="kw">pub </span>cur_epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
 
     <span class="doccomment">/// Membership for the quorum
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// This Nodes Public Key
     </span><span class="kw">pub </span>public_key: TYPES::SignatureKey,
@@ -1065,9 +1068,6 @@
     <span class="doccomment">/// Round HotShot wishes to be in
     </span><span class="kw">pub </span>next_view: TYPES::View,
 
-    <span class="doccomment">/// Current epoch HotShot is in
-    </span><span class="kw">pub </span>cur_epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-
     <span class="doccomment">/// The relay index we are currently on
     </span><span class="kw">pub </span>relay: u64,
 
@@ -1084,7 +1084,7 @@
     </span><span class="kw">pub </span>id: u64,
 
     <span class="doccomment">/// Membership for the quorum
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership: EpochMembership&lt;TYPES&gt;,
 
     <span class="doccomment">/// This Nodes Public Key
     </span><span class="kw">pub </span>public_key: TYPES::SignatureKey,
@@ -1149,16 +1149,27 @@
             <span class="kw">return</span>;
         }
 
+        <span class="kw">let </span>membership = <span class="kw">match </span><span class="self">self
+            </span>.membership_coordinator
+            .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+            .<span class="kw">await
+        </span>{
+            <span class="prelude-val">Ok</span>(m) =&gt; m,
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">tracing::warn!</span>(e.message);
+                <span class="kw">return</span>;
+            },
+        };
+
         <span class="comment">// We do not have a replica task already running, so start one
         </span><span class="kw">let </span><span class="kw-2">mut </span>replica_state: ViewSyncReplicaTaskState&lt;TYPES, V&gt; = ViewSyncReplicaTaskState {
             cur_view: view,
             next_view: view,
-            cur_epoch: <span class="self">self</span>.cur_epoch,
             relay: <span class="number">0</span>,
             finalized: <span class="bool-val">false</span>,
             sent_view_change_event: <span class="bool-val">false</span>,
             timeout_task: <span class="prelude-val">None</span>,
-            membership: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+            membership,
             public_key: <span class="self">self</span>.public_key.clone(),
             private_key: <span class="self">self</span>.private_key.clone(),
             view_sync_timeout: <span class="self">self</span>.view_sync_timeout,
@@ -1192,25 +1203,25 @@
                 <span class="kw">let </span>view = certificate.view_number();
                 <span class="self">self</span>.send_to_or_create_replica(event, view, <span class="kw-2">&amp;</span>event_stream)
                     .<span class="kw">await</span>;
-            }
+            },
             HotShotEvent::ViewSyncCommitCertificateRecv(certificate) =&gt; {
                 <span class="macro">tracing::debug!</span>(<span class="string">"Received view sync cert for phase {:?}"</span>, certificate);
                 <span class="kw">let </span>view = certificate.view_number();
                 <span class="self">self</span>.send_to_or_create_replica(event, view, <span class="kw-2">&amp;</span>event_stream)
                     .<span class="kw">await</span>;
-            }
+            },
             HotShotEvent::ViewSyncFinalizeCertificateRecv(certificate) =&gt; {
                 <span class="macro">tracing::debug!</span>(<span class="string">"Received view sync cert for phase {:?}"</span>, certificate);
                 <span class="kw">let </span>view = certificate.view_number();
                 <span class="self">self</span>.send_to_or_create_replica(event, view, <span class="kw-2">&amp;</span>event_stream)
                     .<span class="kw">await</span>;
-            }
-            HotShotEvent::ViewSyncTimeout(view, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+            },
+            HotShotEvent::ViewSyncTimeout(view, ..) =&gt; {
                 <span class="macro">tracing::debug!</span>(<span class="string">"view sync timeout in main task {:?}"</span>, view);
                 <span class="kw">let </span>view = <span class="kw-2">*</span>view;
                 <span class="self">self</span>.send_to_or_create_replica(event, view, <span class="kw-2">&amp;</span>event_stream)
                     .<span class="kw">await</span>;
-            }
+            },
 
             HotShotEvent::ViewSyncPreCommitVoteRecv(<span class="kw-2">ref </span>vote) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>map = <span class="self">self</span>.pre_commit_relay_map.write().<span class="kw">await</span>;
@@ -1232,22 +1243,21 @@
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
 
+                <span class="kw">let </span>epoch_mem = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="comment">// We do not have a relay task already running, so start one
                 </span><span class="macro">ensure!</span>(
-                    <span class="self">self</span>.membership
-                        .read()
-                        .<span class="kw">await
-                        </span>.leader(vote_view + relay, <span class="self">self</span>.cur_epoch)<span class="question-mark">?
-                        </span>== <span class="self">self</span>.public_key,
+                    epoch_mem.leader(vote_view + relay).<span class="kw">await</span><span class="question-mark">? </span>== <span class="self">self</span>.public_key,
                     <span class="string">"View sync vote sent to wrong leader"
                 </span>);
 
                 <span class="kw">let </span>info = AccumulatorInfo {
                     public_key: <span class="self">self</span>.public_key.clone(),
-                    membership: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                    membership: epoch_mem,
                     view: vote_view,
                     id: <span class="self">self</span>.id,
-                    epoch: vote.data.epoch,
                 };
                 <span class="kw">let </span>vote_collector = create_vote_accumulator(
                     <span class="kw-2">&amp;</span>info,
@@ -1259,7 +1269,7 @@
                 .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 relay_map.insert(relay, vote_collector);
-            }
+            },
 
             HotShotEvent::ViewSyncCommitVoteRecv(<span class="kw-2">ref </span>vote) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>map = <span class="self">self</span>.commit_relay_map.write().<span class="kw">await</span>;
@@ -1282,21 +1292,20 @@
                 }
 
                 <span class="comment">// We do not have a relay task already running, so start one
-                </span><span class="macro">ensure!</span>(
-                    <span class="self">self</span>.membership
-                        .read()
-                        .<span class="kw">await
-                        </span>.leader(vote_view + relay, <span class="self">self</span>.cur_epoch)<span class="question-mark">?
-                        </span>== <span class="self">self</span>.public_key,
+                </span><span class="kw">let </span>epoch_mem = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="macro">ensure!</span>(
+                    epoch_mem.leader(vote_view + relay).<span class="kw">await</span><span class="question-mark">? </span>== <span class="self">self</span>.public_key,
                     <span class="macro">debug!</span>(<span class="string">"View sync vote sent to wrong leader"</span>)
                 );
 
                 <span class="kw">let </span>info = AccumulatorInfo {
                     public_key: <span class="self">self</span>.public_key.clone(),
-                    membership: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                    membership: epoch_mem,
                     view: vote_view,
                     id: <span class="self">self</span>.id,
-                    epoch: vote.data.epoch,
                 };
 
                 <span class="kw">let </span>vote_collector = create_vote_accumulator(
@@ -1308,7 +1317,7 @@
                 )
                 .<span class="kw">await</span><span class="question-mark">?</span>;
                 relay_map.insert(relay, vote_collector);
-            }
+            },
 
             HotShotEvent::ViewSyncFinalizeVoteRecv(vote) =&gt; {
                 <span class="kw">let </span><span class="kw-2">mut </span>map = <span class="self">self</span>.finalize_relay_map.write().<span class="kw">await</span>;
@@ -1330,22 +1339,21 @@
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
 
+                <span class="kw">let </span>epoch_mem = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="comment">// We do not have a relay task already running, so start one
                 </span><span class="macro">ensure!</span>(
-                    <span class="self">self</span>.membership
-                        .read()
-                        .<span class="kw">await
-                        </span>.leader(vote_view + relay, <span class="self">self</span>.cur_epoch)<span class="question-mark">?
-                        </span>== <span class="self">self</span>.public_key,
+                    epoch_mem.leader(vote_view + relay).<span class="kw">await</span><span class="question-mark">? </span>== <span class="self">self</span>.public_key,
                     <span class="macro">debug!</span>(<span class="string">"View sync vote sent to wrong leader"</span>)
                 );
 
                 <span class="kw">let </span>info = AccumulatorInfo {
                     public_key: <span class="self">self</span>.public_key.clone(),
-                    membership: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                    membership: epoch_mem,
                     view: vote_view,
                     id: <span class="self">self</span>.id,
-                    epoch: vote.data.epoch,
                 };
                 <span class="kw">let </span>vote_collector = create_vote_accumulator(
                     <span class="kw-2">&amp;</span>info,
@@ -1358,7 +1366,7 @@
                 <span class="kw">if let </span><span class="prelude-val">Ok</span>(vote_task) = vote_collector {
                     relay_map.insert(relay, vote_task);
                 }
-            }
+            },
 
             <span class="kw-2">&amp;</span>HotShotEvent::ViewChange(new_view, epoch) =&gt; {
                 <span class="kw">if </span>epoch &gt; <span class="self">self</span>.cur_epoch {
@@ -1400,7 +1408,7 @@
 
                     <span class="self">self</span>.last_garbage_collected_view = <span class="self">self</span>.cur_view - <span class="number">1</span>;
                 }
-            }
+            },
             <span class="kw-2">&amp;</span>HotShotEvent::Timeout(view_number, ..) =&gt; {
                 <span class="comment">// This is an old timeout and we can ignore it
                 </span><span class="macro">ensure!</span>(
@@ -1410,10 +1418,11 @@
 
                 <span class="self">self</span>.num_timeouts_tracked += <span class="number">1</span>;
                 <span class="kw">let </span>leader = <span class="self">self
-                    </span>.membership
-                    .read()
-                    .<span class="kw">await
-                    </span>.leader(view_number, <span class="self">self</span>.cur_epoch)<span class="question-mark">?</span>;
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">tracing::warn!</span>(
                     %leader,
                     leader_mnemonic = hotshot_types::utils::mnemonic(<span class="kw-2">&amp;</span>leader),
@@ -1444,16 +1453,16 @@
                     )
                     .<span class="kw">await</span>;
                 }
-            }
+            },
 
-            <span class="kw">_ </span>=&gt; {}
+            <span class="kw">_ </span>=&gt; {},
         }
         <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="kw">impl</span>&lt;TYPES: NodeType, V: Versions&gt; ViewSyncReplicaTaskState&lt;TYPES, V&gt; {
-    <span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, epoch = <span class="self">self</span>.cur_epoch.map(|x| <span class="kw-2">*</span>x)), name = <span class="string">"View Sync Replica Task"</span>, level = <span class="string">"error"</span>)]
+    <span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, epoch = <span class="self">self</span>.membership.epoch().map(|x| <span class="kw-2">*</span>x)), name = <span class="string">"View Sync Replica Task"</span>, level = <span class="string">"error"</span>)]
     </span><span class="doccomment">/// Handle incoming events for the view sync replica task
     </span><span class="kw">pub async fn </span>handle(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
@@ -1471,11 +1480,8 @@
                     <span class="kw">return </span><span class="prelude-val">None</span>;
                 }
 
-                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(<span class="self">self</span>.cur_epoch);
-                <span class="kw">let </span>membership_failure_threshold =
-                    membership_reader.failure_threshold(<span class="self">self</span>.cur_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>membership_stake_table = <span class="self">self</span>.membership.stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_failure_threshold = <span class="self">self</span>.membership.failure_threshold().<span class="kw">await</span>;
 
                 <span class="comment">// If certificate is not valid, return current state
                 </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = certificate
@@ -1553,7 +1559,7 @@
                         .<span class="kw">await</span>;
                     }
                 }));
-            }
+            },
 
             HotShotEvent::ViewSyncCommitCertificateRecv(certificate) =&gt; {
                 <span class="kw">let </span>last_seen_certificate = ViewSyncPhase::Commit;
@@ -1565,11 +1571,8 @@
                     <span class="kw">return </span><span class="prelude-val">None</span>;
                 }
 
-                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(<span class="self">self</span>.cur_epoch);
-                <span class="kw">let </span>membership_success_threshold =
-                    membership_reader.success_threshold(<span class="self">self</span>.cur_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>membership_stake_table = <span class="self">self</span>.membership.stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_success_threshold = <span class="self">self</span>.membership.success_threshold().<span class="kw">await</span>;
 
                 <span class="comment">// If certificate is not valid, return current state
                 </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = certificate
@@ -1629,7 +1632,10 @@
 
                 <span class="comment">// TODO: Figure out the correct way to view sync across epochs if needed
                 </span>broadcast_event(
-                    Arc::new(HotShotEvent::ViewChange(<span class="self">self</span>.next_view, <span class="self">self</span>.cur_epoch)),
+                    Arc::new(HotShotEvent::ViewChange(
+                        <span class="self">self</span>.next_view,
+                        <span class="self">self</span>.membership.epoch(),
+                    )),
                     <span class="kw-2">&amp;</span>event_stream,
                 )
                 .<span class="kw">await</span>;
@@ -1660,7 +1666,7 @@
                         .<span class="kw">await</span>;
                     }
                 }));
-            }
+            },
 
             HotShotEvent::ViewSyncFinalizeCertificateRecv(certificate) =&gt; {
                 <span class="comment">// Ignore certificate if it is for an older round
@@ -1670,11 +1676,8 @@
                     <span class="kw">return </span><span class="prelude-val">None</span>;
                 }
 
-                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(<span class="self">self</span>.cur_epoch);
-                <span class="kw">let </span>membership_success_threshold =
-                    membership_reader.success_threshold(<span class="self">self</span>.cur_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>membership_stake_table = <span class="self">self</span>.membership.stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_success_threshold = <span class="self">self</span>.membership.success_threshold().<span class="kw">await</span>;
 
                 <span class="comment">// If certificate is not valid, return current state
                 </span><span class="kw">if let </span><span class="prelude-val">Err</span>(e) = certificate
@@ -1710,12 +1713,15 @@
 
                 <span class="comment">// TODO: Figure out the correct way to view sync across epochs if needed
                 </span>broadcast_event(
-                    Arc::new(HotShotEvent::ViewChange(<span class="self">self</span>.next_view, <span class="self">self</span>.cur_epoch)),
+                    Arc::new(HotShotEvent::ViewChange(
+                        <span class="self">self</span>.next_view,
+                        <span class="self">self</span>.membership.epoch(),
+                    )),
                     <span class="kw-2">&amp;</span>event_stream,
                 )
                 .<span class="kw">await</span>;
                 <span class="kw">return </span><span class="prelude-val">Some</span>(HotShotTaskCompleted);
-            }
+            },
 
             HotShotEvent::ViewSyncTrigger(view_number) =&gt; {
                 <span class="kw">let </span>view_number = <span class="kw-2">*</span>view_number;
@@ -1724,7 +1730,7 @@
                     <span class="kw">return </span><span class="prelude-val">None</span>;
                 }
 
-                <span class="kw">let </span>epoch = <span class="self">self</span>.cur_epoch;
+                <span class="kw">let </span>epoch = <span class="self">self</span>.membership.epoch();
                 <span class="kw">let </span><span class="prelude-val">Ok</span>(vote) = ViewSyncPreCommitVote2::&lt;TYPES&gt;::create_signed_vote(
                     ViewSyncPreCommitData2 {
                         relay: <span class="number">0</span>,
@@ -1769,7 +1775,7 @@
                 }));
 
                 <span class="kw">return </span><span class="prelude-val">None</span>;
-            }
+            },
 
             HotShotEvent::ViewSyncTimeout(round, relay, last_seen_certificate) =&gt; {
                 <span class="kw">let </span>round = <span class="kw-2">*</span>round;
@@ -1785,7 +1791,7 @@
                                 ViewSyncPreCommitData2 {
                                     relay: <span class="self">self</span>.relay,
                                     round: <span class="self">self</span>.next_view,
-                                    epoch: <span class="self">self</span>.cur_epoch,
+                                    epoch: <span class="self">self</span>.membership.epoch(),
                                 },
                                 <span class="self">self</span>.next_view,
                                 <span class="kw-2">&amp;</span><span class="self">self</span>.public_key,
@@ -1803,11 +1809,11 @@
                                 <span class="kw-2">&amp;</span>event_stream,
                             )
                             .<span class="kw">await</span>;
-                        }
+                        },
                         ViewSyncPhase::Finalize =&gt; {
                             <span class="comment">// This should never occur
                             </span><span class="macro">unimplemented!</span>()
-                        }
+                        },
                     }
 
                     <span class="self">self</span>.timeout_task = <span class="prelude-val">Some</span>(spawn({
@@ -1836,7 +1842,7 @@
 
                     <span class="kw">return </span><span class="prelude-val">None</span>;
                 }
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
         }
         <span class="prelude-val">None

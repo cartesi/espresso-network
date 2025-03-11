@@ -740,18 +740,7 @@
 <a href="#739" id="739">739</a>
 <a href="#740" id="740">740</a>
 <a href="#741" id="741">741</a>
-<a href="#742" id="742">742</a>
-<a href="#743" id="743">743</a>
-<a href="#744" id="744">744</a>
-<a href="#745" id="745">745</a>
-<a href="#746" id="746">746</a>
-<a href="#747" id="747">747</a>
-<a href="#748" id="748">748</a>
-<a href="#749" id="749">749</a>
-<a href="#750" id="750">750</a>
-<a href="#751" id="751">751</a>
-<a href="#752" id="752">752</a>
-<a href="#753" id="753">753</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#742" id="742">742</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -783,6 +772,7 @@
         DaProposal, DaProposal2, Leaf, Leaf2, QuorumProposal, QuorumProposal2,
         QuorumProposalWrapper, UpgradeProposal,
     },
+    epoch_membership::EpochMembership,
     request_response::ProposalRequestPayload,
     simple_certificate::{
         DaCertificate, DaCertificate2, NextEpochQuorumCertificate2, QuorumCertificate2,
@@ -796,13 +786,12 @@
         ViewSyncPreCommitVote, ViewSyncPreCommitVote2,
     },
     traits::{
-        block_contents::BlockHeader,
         election::Membership,
         network::{DataRequest, ResponseMessage, ViewMessage},
         node_implementation::{ConsensusTime, NodeType, Versions},
         signature_key::SignatureKey,
     },
-    utils::{mnemonic, option_epoch_from_block_number},
+    utils::mnemonic,
     vote::HasViewNumber,
 };
 
@@ -926,9 +915,7 @@
     <span class="kw">fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt; {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self </span>{
             MessageKind::Consensus(message) =&gt; message.epoch_number(),
-            MessageKind::Data(
-                DataMessage::SubmitTransaction(<span class="kw">_</span>, <span class="kw">_</span>) | DataMessage::RequestData(<span class="kw">_</span>),
-            )
+            MessageKind::Data(DataMessage::SubmitTransaction(..) | DataMessage::RequestData(<span class="kw">_</span>))
             | MessageKind::External(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
             MessageKind::Data(DataMessage::DataResponse(msg)) =&gt; <span class="kw">match </span>msg {
                 ResponseMessage::Found(m) =&gt; m.epoch_number(),
@@ -1078,66 +1065,66 @@
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::Proposal2(p) =&gt; {
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ProposalRequested(req, <span class="kw">_</span>) =&gt; req.view_number,
                     GeneralConsensusMessage::ProposalResponse(proposal) =&gt; {
                         proposal.data.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ProposalResponse2(proposal) =&gt; {
                         proposal.data.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::Vote(vote_message) =&gt; vote_message.view_number(),
                     GeneralConsensusMessage::Vote2(vote_message) =&gt; vote_message.view_number(),
                     GeneralConsensusMessage::TimeoutVote(message) =&gt; message.view_number(),
                     GeneralConsensusMessage::ViewSyncPreCommitVote(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncCommitVote(message) =&gt; message.view_number(),
                     GeneralConsensusMessage::ViewSyncFinalizeVote(message) =&gt; message.view_number(),
                     GeneralConsensusMessage::ViewSyncPreCommitCertificate(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncCommitCertificate(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncFinalizeCertificate(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::TimeoutVote2(message) =&gt; message.view_number(),
                     GeneralConsensusMessage::ViewSyncPreCommitVote2(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncCommitVote2(message) =&gt; message.view_number(),
                     GeneralConsensusMessage::ViewSyncFinalizeVote2(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncPreCommitCertificate2(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncCommitCertificate2(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncFinalizeCertificate2(message) =&gt; {
                         message.view_number()
-                    }
+                    },
                     GeneralConsensusMessage::UpgradeProposal(message) =&gt; message.data.view_number(),
                     GeneralConsensusMessage::UpgradeVote(message) =&gt; message.view_number(),
                     GeneralConsensusMessage::HighQc(qc)
                     | GeneralConsensusMessage::ExtendedQc(qc, <span class="kw">_</span>) =&gt; qc.view_number(),
                 }
-            }
+            },
             SequencingMessage::Da(da_message) =&gt; {
                 <span class="kw">match </span>da_message {
                     DaConsensusMessage::DaProposal(p) =&gt; {
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.view_number()
-                    }
+                    },
                     DaConsensusMessage::DaVote(vote_message) =&gt; vote_message.view_number(),
                     DaConsensusMessage::DaCertificate(cert) =&gt; cert.view_number,
                     DaConsensusMessage::VidDisperseMsg(disperse) =&gt; disperse.data.view_number(),
@@ -1145,12 +1132,12 @@
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.view_number()
-                    }
+                    },
                     DaConsensusMessage::DaVote2(vote_message) =&gt; vote_message.view_number(),
                     DaConsensusMessage::DaCertificate2(cert) =&gt; cert.view_number,
                     DaConsensusMessage::VidDisperseMsg2(disperse) =&gt; disperse.data.view_number(),
                 }
-            }
+            },
         }
     }
 
@@ -1163,13 +1150,13 @@
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.epoch()
-                    }
+                    },
                     GeneralConsensusMessage::Proposal2(p) =&gt; {
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.epoch()
-                    }
-                    GeneralConsensusMessage::ProposalRequested(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+                    },
+                    GeneralConsensusMessage::ProposalRequested(..) =&gt; <span class="prelude-val">None</span>,
                     GeneralConsensusMessage::ProposalResponse(proposal) =&gt; proposal.data.epoch(),
                     GeneralConsensusMessage::ProposalResponse2(proposal) =&gt; proposal.data.epoch(),
                     GeneralConsensusMessage::Vote(vote_message) =&gt; vote_message.epoch(),
@@ -1180,35 +1167,35 @@
                     GeneralConsensusMessage::ViewSyncFinalizeVote(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncPreCommitCertificate(message) =&gt; {
                         message.epoch()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncCommitCertificate(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncFinalizeCertificate(message) =&gt; {
                         message.epoch()
-                    }
+                    },
                     GeneralConsensusMessage::TimeoutVote2(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncPreCommitVote2(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncCommitVote2(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncFinalizeVote2(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncPreCommitCertificate2(message) =&gt; {
                         message.epoch()
-                    }
+                    },
                     GeneralConsensusMessage::ViewSyncCommitCertificate2(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::ViewSyncFinalizeCertificate2(message) =&gt; {
                         message.epoch()
-                    }
+                    },
                     GeneralConsensusMessage::UpgradeProposal(message) =&gt; message.data.epoch(),
                     GeneralConsensusMessage::UpgradeVote(message) =&gt; message.epoch(),
                     GeneralConsensusMessage::HighQc(qc)
                     | GeneralConsensusMessage::ExtendedQc(qc, <span class="kw">_</span>) =&gt; qc.epoch(),
                 }
-            }
+            },
             SequencingMessage::Da(da_message) =&gt; {
                 <span class="kw">match </span>da_message {
                     DaConsensusMessage::DaProposal(p) =&gt; {
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.epoch()
-                    }
+                    },
                     DaConsensusMessage::DaVote(vote_message) =&gt; vote_message.epoch(),
                     DaConsensusMessage::DaCertificate(cert) =&gt; cert.epoch(),
                     DaConsensusMessage::VidDisperseMsg(disperse) =&gt; disperse.data.epoch(),
@@ -1217,11 +1204,11 @@
                         <span class="comment">// view of leader in the leaf when proposal
                         // this should match replica upon receipt
                         </span>p.data.epoch()
-                    }
+                    },
                     DaConsensusMessage::DaVote2(vote_message) =&gt; vote_message.epoch(),
                     DaConsensusMessage::DaCertificate2(cert) =&gt; cert.epoch(),
                 }
-            }
+            },
         }
     }
 }
@@ -1341,18 +1328,9 @@ where
     <span class="doccomment">/// Checks that the signature of the quorum proposal is valid.
     /// # Errors
     /// Returns an error when the proposal signature is invalid.
-    </span><span class="kw">pub fn </span>validate_signature(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        membership: <span class="kw-2">&amp;</span>TYPES::Membership,
-        epoch_height: u64,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub async fn </span>validate_signature(<span class="kw-2">&amp;</span><span class="self">self</span>, membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>view_number = <span class="self">self</span>.data.proposal.view_number();
-        <span class="kw">let </span>proposal_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
-            <span class="self">self</span>.data.proposal.epoch().is_some(),
-            <span class="self">self</span>.data.block_header().block_number(),
-            epoch_height,
-        );
-        <span class="kw">let </span>view_leader_key = membership.leader(view_number, proposal_epoch)<span class="question-mark">?</span>;
+        <span class="kw">let </span>view_leader_key = membership.leader(view_number).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>proposed_leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span><span class="self">self</span>.data);
 
         <span class="macro">ensure!</span>(
@@ -1411,7 +1389,7 @@ where
                 } <span class="kw">else </span>{
                     V::Base::VERSION
                 }
-            }
+            },
             <span class="prelude-val">None </span>=&gt; V::Base::VERSION,
         };
 
@@ -1431,7 +1409,7 @@ where
                 } <span class="kw">else </span>{
                     cert.data.old_version
                 }
-            }
+            },
             <span class="prelude-val">None </span>=&gt; V::Base::VERSION,
         }
     }
@@ -1460,7 +1438,7 @@ where
             v <span class="kw">if </span>v == V::Upgrade::VERSION =&gt; Serializer::&lt;V::Upgrade&gt;::serialize(<span class="kw-2">&amp;</span>message),
             v =&gt; {
                 <span class="macro">bail!</span>(<span class="string">"Attempted to serialize with version {}, which is incompatible. This should be impossible."</span>, v);
-            }
+            },
         };
 
         serialized_message
@@ -1487,7 +1465,7 @@ where
             v <span class="kw">if </span>v == V::Upgrade::VERSION =&gt; Serializer::&lt;V::Upgrade&gt;::deserialize(message),
             v =&gt; {
                 <span class="macro">bail!</span>(<span class="string">"Cannot deserialize message with stated version {}"</span>, v);
-            }
+            },
         }
         .wrap()
         .context(<span class="macro">info!</span>(<span class="string">"Failed to deserialize message!"</span>))<span class="question-mark">?</span>;

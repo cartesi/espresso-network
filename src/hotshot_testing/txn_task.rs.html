@@ -133,7 +133,7 @@
             <span class="kw">match </span>handles.get(idx) {
                 <span class="prelude-val">None </span>=&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"couldn't get node in txn task"</span>);
-                }
+                },
                 <span class="prelude-val">Some</span>(node) =&gt; {
                     <span class="comment">// use rand::seq::IteratorRandom;
                     // we're assuming all nodes have the same leaf.
@@ -145,7 +145,7 @@
                         .submit_transaction(txn.clone())
                         .<span class="kw">await
                         </span>.expect(<span class="string">"Could not send transaction"</span>);
-                }
+                },
             }
         }
     }

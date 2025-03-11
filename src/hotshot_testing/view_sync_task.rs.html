@@ -141,7 +141,7 @@
     </span><span class="kw">async fn </span>handle_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>, (event, id): (<span class="self">Self</span>::Event, usize)) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span>event.as_ref() {
             <span class="comment">// all the view sync events
-            </span>HotShotEvent::ViewSyncTimeout(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>)
+            </span>HotShotEvent::ViewSyncTimeout(..)
             | HotShotEvent::ViewSyncPreCommitVoteRecv(<span class="kw">_</span>)
             | HotShotEvent::ViewSyncCommitVoteRecv(<span class="kw">_</span>)
             | HotShotEvent::ViewSyncFinalizeVoteRecv(<span class="kw">_</span>)
@@ -151,12 +151,12 @@
             | HotShotEvent::ViewSyncPreCommitCertificateRecv(<span class="kw">_</span>)
             | HotShotEvent::ViewSyncCommitCertificateRecv(<span class="kw">_</span>)
             | HotShotEvent::ViewSyncFinalizeCertificateRecv(<span class="kw">_</span>)
-            | HotShotEvent::ViewSyncPreCommitCertificateSend(<span class="kw">_</span>, <span class="kw">_</span>)
-            | HotShotEvent::ViewSyncCommitCertificateSend(<span class="kw">_</span>, <span class="kw">_</span>)
-            | HotShotEvent::ViewSyncFinalizeCertificateSend(<span class="kw">_</span>, <span class="kw">_</span>)
+            | HotShotEvent::ViewSyncPreCommitCertificateSend(..)
+            | HotShotEvent::ViewSyncCommitCertificateSend(..)
+            | HotShotEvent::ViewSyncFinalizeCertificateSend(..)
             | HotShotEvent::ViewSyncTrigger(<span class="kw">_</span>) =&gt; {
                 <span class="self">self</span>.hit_view_sync.insert(id);
-            }
+            },
             <span class="kw">_ </span>=&gt; (),
         }
 
@@ -174,7 +174,7 @@
                         hit_view_sync: <span class="self">self</span>.hit_view_sync.clone(),
                     }))
                 }
-            }
+            },
         }
     }
 }

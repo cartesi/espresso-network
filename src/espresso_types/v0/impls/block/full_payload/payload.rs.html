@@ -308,14 +308,13 @@
 <a href="#307" id="307">307</a>
 <a href="#308" id="308">308</a>
 <a href="#309" id="309">309</a>
-<a href="#310" id="310">310</a>
-<a href="#311" id="311">311</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
+<a href="#310" id="310">310</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
 
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>committable::Committable;
 <span class="kw">use </span>hotshot_query_service::availability::QueryablePayload;
-<span class="kw">use </span>hotshot_types::data::ViewNumber;
 <span class="kw">use </span>hotshot_types::{
+    data::ViewNumber,
     traits::{BlockPayload, EncodeBytes},
     utils::BuilderCommitment,
     vid::advz::{ADVZCommon, ADVZScheme},
@@ -324,12 +323,11 @@
 <span class="kw">use </span>sha2::Digest;
 <span class="kw">use </span>thiserror::Error;
 
-<span class="kw">use </span><span class="kw">crate</span>::Transaction;
 <span class="kw">use crate</span>::{
     v0::impls::{NodeState, ValidatedState},
     v0_1::ChainConfig,
     Index, Iter, NamespaceId, NsIndex, NsPayload, NsPayloadBuilder, NsPayloadRange, NsTable,
-    NsTableBuilder, Payload, PayloadByteLen, SeqTypes, TxProof,
+    NsTableBuilder, Payload, PayloadByteLen, SeqTypes, Transaction, TxProof,
 };
 
 <span class="attr">#[derive(serde::Deserialize, serde::Serialize, Error, Debug, Eq, PartialEq)]
@@ -375,7 +373,7 @@
         <span class="self">self</span>.read_ns_payload(<span class="kw-2">&amp;</span>ns_payload_range)
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PayloadByteLen {
+    <span class="kw">pub fn </span>byte_len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PayloadByteLen {
         PayloadByteLen(<span class="self">self</span>.raw_payload.len())
     }
 
@@ -592,13 +590,13 @@
                     ADVZScheme::get_payload_byte_len(common)
                 );
                 <span class="kw">return </span><span class="bool-val">false</span>;
-            }
+            },
         };
 
         <span class="self">self</span>.<span class="number">0 </span>== expected
     }
 
-    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::v0::impls::block::full_payload) <span class="kw">fn </span>as_usize(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+    <span class="kw">pub fn </span>as_usize(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="self">self</span>.<span class="number">0
     </span>}
 }

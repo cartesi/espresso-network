@@ -173,14 +173,15 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{BlockSize, ChainId};
+<a href="#175" id="175">175</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::str::FromStr;
+
 <span class="kw">use </span>ethers::types::U256;
 <span class="kw">use </span>sequencer_utils::{
     impl_serde_from_string_or_integer, impl_to_fixed_bytes, ser::FromStringOrInteger,
 };
-<span class="kw">use </span>std::str::FromStr;
 
 <span class="kw">use </span><span class="kw">super</span>::parse_size;
+<span class="kw">use crate</span>::{BlockSize, ChainId};
 
 <span class="macro">impl_serde_from_string_or_integer!</span>(ChainId);
 <span class="macro">impl_to_fixed_bytes!</span>(ChainId, U256);
@@ -249,9 +250,8 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span><span class="kw">crate</span>::v0_99::{ChainConfig, ResolvableChainConfig};
-
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::v0_99::{ChainConfig, ResolvableChainConfig};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_chainid_serde_json_as_decimal() {

@@ -87,14 +87,14 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use crate</span>::{
+</span><span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>chrono::Utc;
+<span class="kw">use </span>hotshot_types::traits::metrics::Metrics;
+
+<span class="kw">use crate</span>::{
     metrics::{MetricsError, PrometheusMetrics},
     QueryError, QueryResult,
 };
-
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>chrono::Utc;
-<span class="kw">use </span>hotshot_types::traits::metrics::Metrics;
 
 <span class="kw">pub trait </span>HasMetrics {
     <span class="kw">fn </span>metrics(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>PrometheusMetrics;

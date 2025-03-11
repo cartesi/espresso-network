@@ -1908,7 +1908,8 @@
 <a href="#1907" id="1907">1907</a>
 <a href="#1908" id="1908">1908</a>
 <a href="#1909" id="1909">1909</a>
-<a href="#1910" id="1910">1910</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1910" id="1910">1910</a>
+<a href="#1911" id="1911">1911</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1941,6 +1942,7 @@
 
 <span class="kw">use crate</span>::{
     drb::DrbResult,
+    epoch_membership::EpochMembershipCoordinator,
     impl_has_epoch, impl_has_none_epoch,
     message::{convert_proposal, Proposal, UpgradeLock},
     simple_certificate::{
@@ -2282,7 +2284,7 @@
     }
 }
 
-<span class="kw">mod </span>ns_table;
+<span class="kw">pub mod </span>ns_table;
 <span class="kw">pub mod </span>vid_disperse;
 
 <span class="doccomment">/// VID dispersal data
@@ -2338,7 +2340,7 @@
     </span><span class="attr">#[allow(clippy::panic)]
     </span><span class="kw">pub async fn </span>calculate_vid_disperse&lt;V: Versions&gt;(
         payload: <span class="kw-2">&amp;</span>TYPES::BlockPayload,
-        membership: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        membership: <span class="kw-2">&amp;</span>EpochMembershipCoordinator&lt;TYPES&gt;,
         view: TYPES::View,
         target_epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
         data_epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
@@ -2414,13 +2416,13 @@
                     .into_iter()
                     .map(|share| <span class="self">Self</span>::V0(share))
                     .collect()
-            }
+            },
             VidDisperse::V1(vid_disperse) =&gt; {
                 VidDisperseShare2::&lt;TYPES&gt;::from_vid_disperse(vid_disperse)
                     .into_iter()
                     .map(|share| <span class="self">Self</span>::V1(share))
                     .collect()
-            }
+            },
         }
     }
 
@@ -2581,10 +2583,10 @@
         <span class="kw">match </span><span class="self">self </span>{
             ViewChangeEvidence::Timeout(timeout_cert) =&gt; {
                 ViewChangeEvidence2::Timeout(timeout_cert.to_tc2())
-            }
+            },
             ViewChangeEvidence::ViewSync(view_sync_cert) =&gt; {
                 ViewChangeEvidence2::ViewSync(view_sync_cert.to_vsc2())
-            }
+            },
         }
     }
 }
@@ -2614,10 +2616,10 @@
         <span class="kw">match </span><span class="self">self </span>{
             ViewChangeEvidence2::Timeout(timeout_cert) =&gt; {
                 ViewChangeEvidence::Timeout(timeout_cert.to_tc())
-            }
+            },
             ViewChangeEvidence2::ViewSync(view_sync_cert) =&gt; {
                 ViewChangeEvidence::ViewSync(view_sync_cert.to_vsc())
-            }
+            },
         }
     }
 }
@@ -3151,7 +3153,7 @@
             <span class="comment">// Easiest cases are:
             //   - no upgrade certificate on either: this is the most common case, and is always fine.
             //   - if the parent didn't have a certificate, but we see one now, it just means that we have begun an upgrade: again, this is always fine.
-            </span>(<span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {}
+            </span>(<span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {},
             <span class="comment">// If we no longer see a cert, we have to make sure that we either:
             //    - no longer care because we have passed new_version_first_view, or
             //    - no longer care because we have passed `decide_by` without deciding the certificate.
@@ -3161,13 +3163,13 @@
                     || (<span class="self">self</span>.view_number() &gt; parent_cert.data.decide_by &amp;&amp; decided_upgrade_certificate_read.is_none()),
                        <span class="string">"The new leaf is missing an upgrade certificate that was present in its parent, and should still be live."
                 </span>);
-            }
+            },
             <span class="comment">// If we both have a certificate, they should be identical.
             // Technically, this prevents us from initiating a new upgrade in the view immediately following an upgrade.
             // I think this is a fairly lax restriction.
             </span>(<span class="prelude-val">Some</span>(cert), <span class="prelude-val">Some</span>(parent_cert)) =&gt; {
                 <span class="macro">ensure!</span>(cert == parent_cert, <span class="string">"The new leaf does not extend the parent leaf, because it has attached a different upgrade certificate."</span>);
-            }
+            },
         }
 
         <span class="comment">// This check should be added once we sort out the genesis leaf/justify_qc issue.
@@ -3530,7 +3532,7 @@
             <span class="comment">// Easiest cases are:
             //   - no upgrade certificate on either: this is the most common case, and is always fine.
             //   - if the parent didn't have a certificate, but we see one now, it just means that we have begun an upgrade: again, this is always fine.
-            </span>(<span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {}
+            </span>(<span class="prelude-val">None </span>| <span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {},
             <span class="comment">// If we no longer see a cert, we have to make sure that we either:
             //    - no longer care because we have passed new_version_first_view, or
             //    - no longer care because we have passed `decide_by` without deciding the certificate.
@@ -3540,13 +3542,13 @@
                     || (<span class="self">self</span>.view_number() &gt; parent_cert.data.decide_by &amp;&amp; decided_upgrade_certificate_read.is_none()),
                        <span class="string">"The new leaf is missing an upgrade certificate that was present in its parent, and should still be live."
                 </span>);
-            }
+            },
             <span class="comment">// If we both have a certificate, they should be identical.
             // Technically, this prevents us from initiating a new upgrade in the view immediately following an upgrade.
             // I think this is a fairly lax restriction.
             </span>(<span class="prelude-val">Some</span>(cert), <span class="prelude-val">Some</span>(parent_cert)) =&gt; {
                 <span class="macro">ensure!</span>(cert == parent_cert, <span class="string">"The new leaf does not extend the parent leaf, because it has attached a different upgrade certificate."</span>);
-            }
+            },
         }
 
         <span class="comment">// This check should be added once we sort out the genesis leaf/justify_qc issue.

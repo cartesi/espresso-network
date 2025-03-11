@@ -4083,7 +4083,50 @@
 <a href="#4082" id="4082">4082</a>
 <a href="#4083" id="4083">4083</a>
 <a href="#4084" id="4084">4084</a>
-<a href="#4085" id="4085">4085</a></pre></div><pre class="rust"><code><span class="doccomment">///Module containing a contract's types and functions.
+<a href="#4085" id="4085">4085</a>
+<a href="#4086" id="4086">4086</a>
+<a href="#4087" id="4087">4087</a>
+<a href="#4088" id="4088">4088</a>
+<a href="#4089" id="4089">4089</a>
+<a href="#4090" id="4090">4090</a>
+<a href="#4091" id="4091">4091</a>
+<a href="#4092" id="4092">4092</a>
+<a href="#4093" id="4093">4093</a>
+<a href="#4094" id="4094">4094</a>
+<a href="#4095" id="4095">4095</a>
+<a href="#4096" id="4096">4096</a>
+<a href="#4097" id="4097">4097</a>
+<a href="#4098" id="4098">4098</a>
+<a href="#4099" id="4099">4099</a>
+<a href="#4100" id="4100">4100</a>
+<a href="#4101" id="4101">4101</a>
+<a href="#4102" id="4102">4102</a>
+<a href="#4103" id="4103">4103</a>
+<a href="#4104" id="4104">4104</a>
+<a href="#4105" id="4105">4105</a>
+<a href="#4106" id="4106">4106</a>
+<a href="#4107" id="4107">4107</a>
+<a href="#4108" id="4108">4108</a>
+<a href="#4109" id="4109">4109</a>
+<a href="#4110" id="4110">4110</a>
+<a href="#4111" id="4111">4111</a>
+<a href="#4112" id="4112">4112</a>
+<a href="#4113" id="4113">4113</a>
+<a href="#4114" id="4114">4114</a>
+<a href="#4115" id="4115">4115</a>
+<a href="#4116" id="4116">4116</a>
+<a href="#4117" id="4117">4117</a>
+<a href="#4118" id="4118">4118</a>
+<a href="#4119" id="4119">4119</a>
+<a href="#4120" id="4120">4120</a>
+<a href="#4121" id="4121">4121</a>
+<a href="#4122" id="4122">4122</a>
+<a href="#4123" id="4123">4123</a>
+<a href="#4124" id="4124">4124</a>
+<a href="#4125" id="4125">4125</a>
+<a href="#4126" id="4126">4126</a>
+<a href="#4127" id="4127">4127</a>
+<a href="#4128" id="4128">4128</a></pre></div><pre class="rust"><code><span class="doccomment">///Module containing a contract's types and functions.
 /**
 
 ```solidity
@@ -4100,8 +4143,9 @@ library BN254 {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>BN254 {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>BaseField(alloy::sol_types::private::primitives::aliases::U256);
@@ -4224,10 +4268,14 @@ library BN254 {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>G2Point {
-        <span class="kw">pub </span>x0: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>x1: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>y0: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>y1: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>x0: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>x1: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>y0: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>y1: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -4252,7 +4300,7 @@ library BN254 {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -4544,16 +4592,19 @@ library EdOnBN254 {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>EdOnBN254 {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="doccomment">/**```solidity
     struct EdOnBN254Point { uint256 x; uint256 y; }
     ```*/
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>EdOnBN254Point {
-        <span class="kw">pub </span>x: alloy::sol_types::private::primitives::aliases::U256,
-        <span class="kw">pub </span>y: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>x: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>y: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -4579,7 +4630,7 @@ library EdOnBN254 {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5438,8 +5489,9 @@ interface PermissionedStakeTable {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>PermissionedStakeTable {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="doccomment">/// The creation / init bytecode of the contract.
     ///
     /// ```text
@@ -5466,9 +5518,12 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>NodeInfo {
-        <span class="kw">pub </span>blsVK: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>schnorrVK: &lt;EdOnBN254::EdOnBN254Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>isDA: bool,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blsVK: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>schnorrVK: &lt;EdOnBN254::EdOnBN254Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>isDA: bool,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -5496,7 +5551,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5698,7 +5753,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5758,7 +5813,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5800,7 +5855,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>OwnableInvalidOwner {
-        <span class="kw">pub </span>owner: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>owner: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -5820,7 +5876,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5866,7 +5922,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>OwnableUnauthorizedAccount {
-        <span class="kw">pub </span>account: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>account: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -5886,7 +5943,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5932,7 +5989,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>StakerAlreadyExists {
-        <span class="kw">pub </span>_0: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -5952,7 +6010,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5997,7 +6055,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>StakerNotFound {
-        <span class="kw">pub </span>_0: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -6017,7 +6076,7 @@ interface PermissionedStakeTable {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -6383,7 +6442,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>constructorCall {
-        <span class="kw">pub </span>initialStakers:
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>initialStakers:
             alloy::sol_types::private::Vec&lt;&lt;NodeInfo <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType&gt;,
     }
     <span class="kw">const _</span>: () = {
@@ -6401,7 +6461,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6448,13 +6508,15 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>_hashBlsKeyCall {
-        <span class="kw">pub </span>blsVK: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blsVK: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="doccomment">///Container type for the return parameters of the [`_hashBlsKey((uint256,uint256,uint256,uint256))`](_hashBlsKeyCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>_hashBlsKeyReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -6476,7 +6538,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6505,7 +6567,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6586,7 +6648,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6615,7 +6677,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6675,7 +6737,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>initializedAtBlockReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -6696,7 +6759,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6725,7 +6788,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6781,13 +6844,15 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>isStakerCall {
-        <span class="kw">pub </span>staker: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>staker: &lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="doccomment">///Container type for the return parameters of the [`isStaker((uint256,uint256,uint256,uint256))`](isStakerCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>isStakerReturn {
-        <span class="kw">pub </span>_0: bool,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: bool,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -6809,7 +6874,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6838,7 +6903,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6900,7 +6965,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>ownerReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -6921,7 +6987,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -6950,7 +7016,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7029,7 +7095,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7058,7 +7124,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7114,7 +7180,8 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>transferOwnershipCall {
-        <span class="kw">pub </span>newOwner: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>newOwner: alloy::sol_types::private::Address,
     }
     <span class="doccomment">///Container type for the return parameters of the [`transferOwnership(address)`](transferOwnershipCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -7139,7 +7206,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7168,7 +7235,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7228,9 +7295,11 @@ interface PermissionedStakeTable {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>updateCall {
-        <span class="kw">pub </span>stakersToRemove:
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>stakersToRemove:
             alloy::sol_types::private::Vec&lt;&lt;BN254::G2Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType&gt;,
-        <span class="kw">pub </span>newStakers:
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>newStakers:
             alloy::sol_types::private::Vec&lt;&lt;NodeInfo <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType&gt;,
     }
     <span class="doccomment">///Container type for the return parameters of the [`update((uint256,uint256,uint256,uint256)[],((uint256,uint256,uint256,uint256),(uint256,uint256),bool)[])`](updateCall) function.
@@ -7264,7 +7333,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7296,7 +7365,7 @@ interface PermissionedStakeTable {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -7357,14 +7426,22 @@ interface PermissionedStakeTable {
     };
     <span class="doccomment">///Container for all the [`PermissionedStakeTable`](self) function calls.
     </span><span class="kw">pub enum </span>PermissionedStakeTableCalls {
-        _hashBlsKey(_hashBlsKeyCall),
-        initialize(initializeCall),
-        initializedAtBlock(initializedAtBlockCall),
-        isStaker(isStakerCall),
-        owner(ownerCall),
-        renounceOwnership(renounceOwnershipCall),
-        transferOwnership(transferOwnershipCall),
-        update(updateCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>_hashBlsKey(_hashBlsKeyCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>initialize(initializeCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>initializedAtBlock(initializedAtBlockCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>isStaker(isStakerCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>owner(ownerCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>renounceOwnership(renounceOwnershipCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>transferOwnership(transferOwnershipCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>update(updateCall),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>PermissionedStakeTableCalls {
@@ -7397,15 +7474,15 @@ interface PermissionedStakeTable {
                 <span class="self">Self</span>::initialize(<span class="kw">_</span>) =&gt; &lt;initializeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::initializedAtBlock(<span class="kw">_</span>) =&gt; {
                     &lt;initializedAtBlockCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::isStaker(<span class="kw">_</span>) =&gt; &lt;isStakerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::owner(<span class="kw">_</span>) =&gt; &lt;ownerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::renounceOwnership(<span class="kw">_</span>) =&gt; {
                     &lt;renounceOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::transferOwnership(<span class="kw">_</span>) =&gt; {
                     &lt;transferOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::update(<span class="kw">_</span>) =&gt; &lt;updateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
             }
         }
@@ -7531,28 +7608,28 @@ interface PermissionedStakeTable {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::_hashBlsKey(inner) =&gt; {
                     &lt;_hashBlsKeyCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::initialize(inner) =&gt; {
                     &lt;initializeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::initializedAtBlock(inner) =&gt; {
                     &lt;initializedAtBlockCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::isStaker(inner) =&gt; {
                     &lt;isStakerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::owner(inner) =&gt; {
                     &lt;ownerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::renounceOwnership(inner) =&gt; {
                     &lt;renounceOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::transferOwnership(inner) =&gt; {
                     &lt;transferOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::update(inner) =&gt; {
                     &lt;updateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
             }
         }
         <span class="attr">#[inline]
@@ -7560,39 +7637,45 @@ interface PermissionedStakeTable {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::_hashBlsKey(inner) =&gt; {
                     &lt;_hashBlsKeyCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::initialize(inner) =&gt; {
                     &lt;initializeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::initializedAtBlock(inner) =&gt; {
                     &lt;initializedAtBlockCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::isStaker(inner) =&gt; {
                     &lt;isStakerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::owner(inner) =&gt; {
                     &lt;ownerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::renounceOwnership(inner) =&gt; {
                     &lt;renounceOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::transferOwnership(inner) =&gt; {
                     &lt;transferOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::update(inner) =&gt; {
                     &lt;updateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
             }
         }
     }
     <span class="doccomment">///Container for all the [`PermissionedStakeTable`](self) custom errors.
     </span><span class="kw">pub enum </span>PermissionedStakeTableErrors {
-        InvalidInitialization(InvalidInitialization),
-        NotInitializing(NotInitializing),
-        OwnableInvalidOwner(OwnableInvalidOwner),
-        OwnableUnauthorizedAccount(OwnableUnauthorizedAccount),
-        StakerAlreadyExists(StakerAlreadyExists),
-        StakerNotFound(StakerNotFound),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidInitialization(InvalidInitialization),
+        <span class="attr">#[allow(missing_docs)]
+        </span>NotInitializing(NotInitializing),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OwnableInvalidOwner(OwnableInvalidOwner),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OwnableUnauthorizedAccount(OwnableUnauthorizedAccount),
+        <span class="attr">#[allow(missing_docs)]
+        </span>StakerAlreadyExists(StakerAlreadyExists),
+        <span class="attr">#[allow(missing_docs)]
+        </span>StakerNotFound(StakerNotFound),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>PermissionedStakeTableErrors {
@@ -7621,19 +7704,19 @@ interface PermissionedStakeTable {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::InvalidInitialization(<span class="kw">_</span>) =&gt; {
                     &lt;InvalidInitialization <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::NotInitializing(<span class="kw">_</span>) =&gt; {
                     &lt;NotInitializing <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::OwnableInvalidOwner(<span class="kw">_</span>) =&gt; {
                     &lt;OwnableInvalidOwner <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::OwnableUnauthorizedAccount(<span class="kw">_</span>) =&gt; {
                     &lt;OwnableUnauthorizedAccount <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::StakerAlreadyExists(<span class="kw">_</span>) =&gt; {
                     &lt;StakerAlreadyExists <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::StakerNotFound(<span class="kw">_</span>) =&gt; &lt;StakerNotFound <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR,
             }
         }
@@ -7743,24 +7826,24 @@ interface PermissionedStakeTable {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::InvalidInitialization(inner) =&gt; {
                     &lt;InvalidInitialization <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::NotInitializing(inner) =&gt; {
                     &lt;NotInitializing <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::OwnableInvalidOwner(inner) =&gt; {
                     &lt;OwnableInvalidOwner <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::OwnableUnauthorizedAccount(inner) =&gt; {
                     &lt;OwnableUnauthorizedAccount <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encoded_size(
                         inner,
                     )
-                }
+                },
                 <span class="self">Self</span>::StakerAlreadyExists(inner) =&gt; {
                     &lt;StakerAlreadyExists <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encoded_size(inner)
-                }
+                },
                 <span class="self">Self</span>::StakerNotFound(inner) =&gt; {
                     &lt;StakerNotFound <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encoded_size(inner)
-                }
+                },
             }
         }
         <span class="attr">#[inline]
@@ -7768,32 +7851,35 @@ interface PermissionedStakeTable {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::InvalidInitialization(inner) =&gt; {
                     &lt;InvalidInitialization <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::NotInitializing(inner) =&gt; {
                     &lt;NotInitializing <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::OwnableInvalidOwner(inner) =&gt; {
                     &lt;OwnableInvalidOwner <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::OwnableUnauthorizedAccount(inner) =&gt; {
                     &lt;OwnableUnauthorizedAccount <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::StakerAlreadyExists(inner) =&gt; {
                     &lt;StakerAlreadyExists <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::StakerNotFound(inner) =&gt; {
                     &lt;StakerNotFound <span class="kw">as </span>alloy_sol_types::SolError&gt;::abi_encode_raw(inner, out)
-                }
+                },
             }
         }
     }
     <span class="doccomment">///Container for all the [`PermissionedStakeTable`](self) events.
     </span><span class="kw">pub enum </span>PermissionedStakeTableEvents {
-        Initialized(Initialized),
-        OwnershipTransferred(OwnershipTransferred),
-        StakersUpdated(StakersUpdated),
+        <span class="attr">#[allow(missing_docs)]
+        </span>Initialized(Initialized),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OwnershipTransferred(OwnershipTransferred),
+        <span class="attr">#[allow(missing_docs)]
+        </span>StakersUpdated(StakersUpdated),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>PermissionedStakeTableEvents {
@@ -7836,19 +7922,19 @@ interface PermissionedStakeTable {
                         topics, data, validate,
                     )
                     .map(<span class="self">Self</span>::Initialized)
-                }
+                },
                 <span class="prelude-val">Some</span>(&lt;OwnershipTransferred <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH) =&gt; {
                     &lt;OwnershipTransferred <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(
                         topics, data, validate,
                     )
                     .map(<span class="self">Self</span>::OwnershipTransferred)
-                }
+                },
                 <span class="prelude-val">Some</span>(&lt;StakersUpdated <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH) =&gt; {
                     &lt;StakersUpdated <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(
                         topics, data, validate,
                     )
                     .map(<span class="self">Self</span>::StakersUpdated)
-                }
+                },
                 <span class="kw">_ </span>=&gt; alloy_sol_types::private::Err(alloy_sol_types::Error::InvalidLog {
                     name: &lt;<span class="self">Self </span><span class="kw">as </span>alloy_sol_types::SolEventInterface&gt;::NAME,
                     log: alloy_sol_types::private::Box::new(
@@ -7867,26 +7953,26 @@ interface PermissionedStakeTable {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::Initialized(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::OwnershipTransferred(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::StakersUpdated(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
             }
         }
         <span class="kw">fn </span>into_log_data(<span class="self">self</span>) -&gt; alloy_sol_types::private::LogData {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::Initialized(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::OwnershipTransferred(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::StakersUpdated(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
             }
         }
     }

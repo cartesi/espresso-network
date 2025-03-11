@@ -345,7 +345,15 @@
 <a href="#344" id="344">344</a>
 <a href="#345" id="345">345</a>
 <a href="#346" id="346">346</a>
-<a href="#347" id="347">347</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -354,18 +362,17 @@
 </span><span class="kw">use </span>std::{marker::PhantomData, sync::Arc, time::SystemTime};
 
 <span class="kw">use </span>async_broadcast::{Receiver, Sender};
-<span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>committable::Committable;
 <span class="kw">use </span>hotshot_task::task::TaskState;
 <span class="kw">use </span>hotshot_types::{
     data::UpgradeProposal,
+    epoch_membership::EpochMembershipCoordinator,
     event::{Event, EventType},
     message::{Proposal, UpgradeLock},
     simple_certificate::UpgradeCertificate,
     simple_vote::{UpgradeProposalData, UpgradeVote},
     traits::{
-        election::Membership,
         node_implementation::{ConsensusTime, NodeType, Versions},
         signature_key::SignatureKey,
     },
@@ -394,7 +401,7 @@
     </span><span class="kw">pub </span>cur_epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
 
     <span class="doccomment">/// Membership for Quorum Certs/votes
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// A map of `UpgradeVote` collector tasks
     </span><span class="kw">pub </span>vote_collectors: VoteCollectorsMap&lt;TYPES, UpgradeVote&lt;TYPES&gt;, UpgradeCertificate&lt;TYPES&gt;, V&gt;,
@@ -524,7 +531,12 @@
                 );
 
                 <span class="comment">// We then validate that the proposal was issued by the leader for the view.
-                </span><span class="kw">let </span>view_leader_key = <span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view, <span class="self">self</span>.cur_epoch)<span class="question-mark">?</span>;
+                </span><span class="kw">let </span>view_leader_key = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.leader(view)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="macro">ensure!</span>(
                     view_leader_key == <span class="kw-2">*</span>sender,
                     <span class="macro">info!</span>(
@@ -560,30 +572,30 @@
 
                 <span class="macro">tracing::debug!</span>(<span class="string">"Sending upgrade vote {:?}"</span>, vote.view_number());
                 broadcast_event(Arc::new(HotShotEvent::UpgradeVoteSend(vote)), <span class="kw-2">&amp;</span>tx).<span class="kw">await</span>;
-            }
+            },
             HotShotEvent::UpgradeVoteRecv(<span class="kw-2">ref </span>vote) =&gt; {
                 <span class="macro">tracing::debug!</span>(<span class="string">"Upgrade vote recv, Main Task {:?}"</span>, vote.view_number());
 
                 <span class="comment">// Check if we are the leader.
-                </span>{
-                    <span class="kw">let </span>view = vote.view_number();
-                    <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                    <span class="macro">ensure!</span>(
-                        membership_reader.leader(view, <span class="self">self</span>.cur_epoch)<span class="question-mark">? </span>== <span class="self">self</span>.public_key,
-                        <span class="macro">debug!</span>(
-                            <span class="string">"We are not the leader for view {} are we leader for next view? {}"</span>,
-                            <span class="kw-2">*</span>view,
-                            membership_reader.leader(view + <span class="number">1</span>, <span class="self">self</span>.cur_epoch)<span class="question-mark">? </span>== <span class="self">self</span>.public_key
-                        )
-                    );
-                }
+                </span><span class="kw">let </span>view = vote.view_number();
+                <span class="kw">let </span>epoch_membership = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="macro">ensure!</span>(
+                    epoch_membership.leader(view).<span class="kw">await</span><span class="question-mark">? </span>== <span class="self">self</span>.public_key,
+                    <span class="macro">debug!</span>(
+                        <span class="string">"We are not the leader for view {} are we leader for next view? {}"</span>,
+                        <span class="kw-2">*</span>view,
+                        epoch_membership.leader(view + <span class="number">1</span>).<span class="kw">await</span><span class="question-mark">? </span>== <span class="self">self</span>.public_key
+                    )
+                );
 
                 handle_vote(
                     <span class="kw-2">&amp;mut </span><span class="self">self</span>.vote_collectors,
                     vote,
                     <span class="self">self</span>.public_key.clone(),
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership,
-                    <span class="self">self</span>.cur_epoch,
+                    <span class="kw-2">&amp;</span>epoch_membership,
                     <span class="self">self</span>.id,
                     <span class="kw-2">&amp;</span>event,
                     <span class="kw-2">&amp;</span>tx,
@@ -591,7 +603,7 @@
                     EpochTransitionIndicator::NotInTransition,
                 )
                 .<span class="kw">await</span><span class="question-mark">?</span>;
-            }
+            },
             HotShotEvent::ViewChange(new_view, epoch_number) =&gt; {
                 <span class="kw">if </span><span class="kw-2">*</span>epoch_number &gt; <span class="self">self</span>.cur_epoch {
                     <span class="self">self</span>.cur_epoch = <span class="kw-2">*</span>epoch_number;
@@ -609,10 +621,14 @@
                     </span>))<span class="question-mark">?
                     </span>.as_secs();
 
-                <span class="kw">let </span>leader = <span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(
-                    TYPES::View::new(view + TYPES::UPGRADE_CONSTANTS.propose_offset),
-                    <span class="self">self</span>.cur_epoch,
-                )<span class="question-mark">?</span>;
+                <span class="kw">let </span>leader = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.cur_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.leader(TYPES::View::new(
+                        view + TYPES::UPGRADE_CONSTANTS.propose_offset,
+                    ))
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 <span class="comment">// We try to form a certificate 5 views before we're leader.
                 </span><span class="kw">if </span>view &gt;= <span class="self">self</span>.start_proposing_view
@@ -667,8 +683,8 @@
                     )
                     .<span class="kw">await</span>;
                 }
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
         <span class="prelude-val">Ok</span>(())
     }

@@ -2585,7 +2585,183 @@
 <a href="#2584" id="2584">2584</a>
 <a href="#2585" id="2585">2585</a>
 <a href="#2586" id="2586">2586</a>
-<a href="#2587" id="2587">2587</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::{bail, Context};
+<a href="#2587" id="2587">2587</a>
+<a href="#2588" id="2588">2588</a>
+<a href="#2589" id="2589">2589</a>
+<a href="#2590" id="2590">2590</a>
+<a href="#2591" id="2591">2591</a>
+<a href="#2592" id="2592">2592</a>
+<a href="#2593" id="2593">2593</a>
+<a href="#2594" id="2594">2594</a>
+<a href="#2595" id="2595">2595</a>
+<a href="#2596" id="2596">2596</a>
+<a href="#2597" id="2597">2597</a>
+<a href="#2598" id="2598">2598</a>
+<a href="#2599" id="2599">2599</a>
+<a href="#2600" id="2600">2600</a>
+<a href="#2601" id="2601">2601</a>
+<a href="#2602" id="2602">2602</a>
+<a href="#2603" id="2603">2603</a>
+<a href="#2604" id="2604">2604</a>
+<a href="#2605" id="2605">2605</a>
+<a href="#2606" id="2606">2606</a>
+<a href="#2607" id="2607">2607</a>
+<a href="#2608" id="2608">2608</a>
+<a href="#2609" id="2609">2609</a>
+<a href="#2610" id="2610">2610</a>
+<a href="#2611" id="2611">2611</a>
+<a href="#2612" id="2612">2612</a>
+<a href="#2613" id="2613">2613</a>
+<a href="#2614" id="2614">2614</a>
+<a href="#2615" id="2615">2615</a>
+<a href="#2616" id="2616">2616</a>
+<a href="#2617" id="2617">2617</a>
+<a href="#2618" id="2618">2618</a>
+<a href="#2619" id="2619">2619</a>
+<a href="#2620" id="2620">2620</a>
+<a href="#2621" id="2621">2621</a>
+<a href="#2622" id="2622">2622</a>
+<a href="#2623" id="2623">2623</a>
+<a href="#2624" id="2624">2624</a>
+<a href="#2625" id="2625">2625</a>
+<a href="#2626" id="2626">2626</a>
+<a href="#2627" id="2627">2627</a>
+<a href="#2628" id="2628">2628</a>
+<a href="#2629" id="2629">2629</a>
+<a href="#2630" id="2630">2630</a>
+<a href="#2631" id="2631">2631</a>
+<a href="#2632" id="2632">2632</a>
+<a href="#2633" id="2633">2633</a>
+<a href="#2634" id="2634">2634</a>
+<a href="#2635" id="2635">2635</a>
+<a href="#2636" id="2636">2636</a>
+<a href="#2637" id="2637">2637</a>
+<a href="#2638" id="2638">2638</a>
+<a href="#2639" id="2639">2639</a>
+<a href="#2640" id="2640">2640</a>
+<a href="#2641" id="2641">2641</a>
+<a href="#2642" id="2642">2642</a>
+<a href="#2643" id="2643">2643</a>
+<a href="#2644" id="2644">2644</a>
+<a href="#2645" id="2645">2645</a>
+<a href="#2646" id="2646">2646</a>
+<a href="#2647" id="2647">2647</a>
+<a href="#2648" id="2648">2648</a>
+<a href="#2649" id="2649">2649</a>
+<a href="#2650" id="2650">2650</a>
+<a href="#2651" id="2651">2651</a>
+<a href="#2652" id="2652">2652</a>
+<a href="#2653" id="2653">2653</a>
+<a href="#2654" id="2654">2654</a>
+<a href="#2655" id="2655">2655</a>
+<a href="#2656" id="2656">2656</a>
+<a href="#2657" id="2657">2657</a>
+<a href="#2658" id="2658">2658</a>
+<a href="#2659" id="2659">2659</a>
+<a href="#2660" id="2660">2660</a>
+<a href="#2661" id="2661">2661</a>
+<a href="#2662" id="2662">2662</a>
+<a href="#2663" id="2663">2663</a>
+<a href="#2664" id="2664">2664</a>
+<a href="#2665" id="2665">2665</a>
+<a href="#2666" id="2666">2666</a>
+<a href="#2667" id="2667">2667</a>
+<a href="#2668" id="2668">2668</a>
+<a href="#2669" id="2669">2669</a>
+<a href="#2670" id="2670">2670</a>
+<a href="#2671" id="2671">2671</a>
+<a href="#2672" id="2672">2672</a>
+<a href="#2673" id="2673">2673</a>
+<a href="#2674" id="2674">2674</a>
+<a href="#2675" id="2675">2675</a>
+<a href="#2676" id="2676">2676</a>
+<a href="#2677" id="2677">2677</a>
+<a href="#2678" id="2678">2678</a>
+<a href="#2679" id="2679">2679</a>
+<a href="#2680" id="2680">2680</a>
+<a href="#2681" id="2681">2681</a>
+<a href="#2682" id="2682">2682</a>
+<a href="#2683" id="2683">2683</a>
+<a href="#2684" id="2684">2684</a>
+<a href="#2685" id="2685">2685</a>
+<a href="#2686" id="2686">2686</a>
+<a href="#2687" id="2687">2687</a>
+<a href="#2688" id="2688">2688</a>
+<a href="#2689" id="2689">2689</a>
+<a href="#2690" id="2690">2690</a>
+<a href="#2691" id="2691">2691</a>
+<a href="#2692" id="2692">2692</a>
+<a href="#2693" id="2693">2693</a>
+<a href="#2694" id="2694">2694</a>
+<a href="#2695" id="2695">2695</a>
+<a href="#2696" id="2696">2696</a>
+<a href="#2697" id="2697">2697</a>
+<a href="#2698" id="2698">2698</a>
+<a href="#2699" id="2699">2699</a>
+<a href="#2700" id="2700">2700</a>
+<a href="#2701" id="2701">2701</a>
+<a href="#2702" id="2702">2702</a>
+<a href="#2703" id="2703">2703</a>
+<a href="#2704" id="2704">2704</a>
+<a href="#2705" id="2705">2705</a>
+<a href="#2706" id="2706">2706</a>
+<a href="#2707" id="2707">2707</a>
+<a href="#2708" id="2708">2708</a>
+<a href="#2709" id="2709">2709</a>
+<a href="#2710" id="2710">2710</a>
+<a href="#2711" id="2711">2711</a>
+<a href="#2712" id="2712">2712</a>
+<a href="#2713" id="2713">2713</a>
+<a href="#2714" id="2714">2714</a>
+<a href="#2715" id="2715">2715</a>
+<a href="#2716" id="2716">2716</a>
+<a href="#2717" id="2717">2717</a>
+<a href="#2718" id="2718">2718</a>
+<a href="#2719" id="2719">2719</a>
+<a href="#2720" id="2720">2720</a>
+<a href="#2721" id="2721">2721</a>
+<a href="#2722" id="2722">2722</a>
+<a href="#2723" id="2723">2723</a>
+<a href="#2724" id="2724">2724</a>
+<a href="#2725" id="2725">2725</a>
+<a href="#2726" id="2726">2726</a>
+<a href="#2727" id="2727">2727</a>
+<a href="#2728" id="2728">2728</a>
+<a href="#2729" id="2729">2729</a>
+<a href="#2730" id="2730">2730</a>
+<a href="#2731" id="2731">2731</a>
+<a href="#2732" id="2732">2732</a>
+<a href="#2733" id="2733">2733</a>
+<a href="#2734" id="2734">2734</a>
+<a href="#2735" id="2735">2735</a>
+<a href="#2736" id="2736">2736</a>
+<a href="#2737" id="2737">2737</a>
+<a href="#2738" id="2738">2738</a>
+<a href="#2739" id="2739">2739</a>
+<a href="#2740" id="2740">2740</a>
+<a href="#2741" id="2741">2741</a>
+<a href="#2742" id="2742">2742</a>
+<a href="#2743" id="2743">2743</a>
+<a href="#2744" id="2744">2744</a>
+<a href="#2745" id="2745">2745</a>
+<a href="#2746" id="2746">2746</a>
+<a href="#2747" id="2747">2747</a>
+<a href="#2748" id="2748">2748</a>
+<a href="#2749" id="2749">2749</a>
+<a href="#2750" id="2750">2750</a>
+<a href="#2751" id="2751">2751</a>
+<a href="#2752" id="2752">2752</a>
+<a href="#2753" id="2753">2753</a>
+<a href="#2754" id="2754">2754</a>
+<a href="#2755" id="2755">2755</a>
+<a href="#2756" id="2756">2756</a>
+<a href="#2757" id="2757">2757</a>
+<a href="#2758" id="2758">2758</a>
+<a href="#2759" id="2759">2759</a>
+<a href="#2760" id="2760">2760</a>
+<a href="#2761" id="2761">2761</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
+
+<span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_once_cell::Lazy;
 <span class="kw">use </span>async_trait::async_trait;
@@ -2595,7 +2771,7 @@
 <span class="kw">use </span>espresso_types::{
     config::PublicNetworkConfig, retain_accounts, v0::traits::SequencerPersistence,
     v0_99::ChainConfig, AccountQueryData, BlockMerkleTree, FeeAccount, FeeAccountProof,
-    FeeMerkleTree, NodeState, PubKey, Transaction, ValidatedState,
+    FeeMerkleTree, Leaf2, NodeState, PubKey, Transaction, ValidatedState,
 };
 <span class="kw">use </span>futures::{
     future::{BoxFuture, Future, FutureExt},
@@ -2605,7 +2781,6 @@
     EventFilterSet, EventsSource, EventsStreamer, StartupInfo,
 };
 <span class="kw">use </span>hotshot_query_service::data_source::ExtensibleDataSource;
-<span class="kw">use </span>hotshot_types::traits::election::Membership;
 <span class="kw">use </span>hotshot_types::{
     data::ViewNumber,
     event::Event,
@@ -2617,11 +2792,11 @@
         ValidatedState <span class="kw">as _</span>,
     },
     utils::{View, ViewInner},
+    vote::HasViewNumber,
     PeerConfig,
 };
+<span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>jf_merkle_tree::MerkleTreeScheme;
-<span class="kw">use </span>std::pin::Pin;
-<span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span><span class="self">self</span>::data_source::{HotShotConfigDataSource, NodeStateDataSource, StateSignatureDataSource};
 <span class="kw">use crate</span>::{
@@ -2772,15 +2947,19 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         epoch: <span class="prelude-ty">Option</span>&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch&gt;,
     ) -&gt; Vec&lt;PeerConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;&gt; {
-        <span class="self">self</span>.consensus()
+        <span class="kw">let </span><span class="prelude-val">Ok</span>(mem) = <span class="self">self
+            </span>.consensus()
             .<span class="kw">await
             </span>.read()
             .<span class="kw">await
-            </span>.memberships
-            .read()
+            </span>.membership_coordinator
+            .membership_for_epoch(epoch)
             .<span class="kw">await
-            </span>.stake_table(epoch)
-    }
+        else </span>{
+            <span class="kw">return </span><span class="macro">vec!</span>[];
+        };
+        mem.stake_table().<span class="kw">await
+    </span>}
 
     <span class="doccomment">/// Get the stake table for the current epoch if not provided
     </span><span class="kw">async fn </span>get_stake_table_current(
@@ -2866,7 +3045,7 @@
             <span class="prelude-val">Ok</span>(accounts) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(accounts),
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::info!</span>(<span class="string">"accounts not in memory, trying storage: {err:#}"</span>);
-            }
+            },
         }
 
         <span class="comment">// Try storage.
@@ -2903,7 +3082,7 @@
                 }
 
                 (Arc::new(state), delta.clone())
-            }
+            },
             <span class="kw">_ </span>=&gt; {
                 <span class="comment">// If we don't already have a leaf for this view, or if we don't have the view
                 // at all, we can create a new view based on the recovered leaf and add it to
@@ -2912,7 +3091,7 @@
                 </span><span class="kw">let </span><span class="kw-2">mut </span>state = ValidatedState::from_header(leaf.block_header());
                 state.fee_merkle_tree = tree.clone();
                 (Arc::new(state), <span class="prelude-val">None</span>)
-            }
+            },
         };
         <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = consensus.update_leaf(leaf, Arc::clone(<span class="kw-2">&amp;</span>state), delta) {
             <span class="macro">tracing::warn!</span>(<span class="question-mark">?</span>view, <span class="string">"cannot update fetched account state: {err:#}"</span>);
@@ -2934,7 +3113,7 @@
             <span class="prelude-val">Ok</span>(frontier) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(frontier),
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::info!</span>(<span class="string">"frontier is not in memory, trying storage: {err:#}"</span>);
-            }
+            },
         }
 
         <span class="comment">// Try storage.
@@ -2950,11 +3129,23 @@
             <span class="prelude-val">Ok</span>(cf) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(cf),
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::info!</span>(<span class="string">"chain config is not in memory, trying storage: {err:#}"</span>);
-            }
+            },
         }
 
         <span class="comment">// Try storage.
         </span><span class="self">self</span>.inner().get_chain_config(commitment).<span class="kw">await
+    </span>}
+    <span class="kw">async fn </span>get_leaf_chain(<span class="kw-2">&amp;</span><span class="self">self</span>, height: u64) -&gt; anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt; {
+        <span class="comment">// Check if we have the desired state in memory.
+        </span><span class="kw">match </span><span class="self">self</span>.as_ref().get_leaf_chain(height).<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(cf) =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(cf),
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="macro">tracing::info!</span>(<span class="string">"chain config is not in memory, trying storage: {err:#}"</span>);
+            },
+        }
+
+        <span class="comment">// Try storage.
+        </span><span class="self">self</span>.inner().get_leaf_chain(height).<span class="kw">await
     </span>}
 }
 
@@ -3047,6 +3238,48 @@
             <span class="macro">bail!</span>(<span class="string">"chain config not found"</span>)
         }
     }
+
+    <span class="kw">async fn </span>get_leaf_chain(<span class="kw-2">&amp;</span><span class="self">self</span>, height: u64) -&gt; anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>leaves = <span class="self">self
+            </span>.consensus()
+            .<span class="kw">await
+            </span>.read()
+            .<span class="kw">await
+            </span>.consensus()
+            .read()
+            .<span class="kw">await
+            </span>.undecided_leaves();
+        leaves.sort_by_key(|l| l.height());
+        <span class="kw">let </span>(position, <span class="kw-2">mut </span>last_leaf) = leaves
+            .iter()
+            .find_position(|l| l.height() == height)
+            .context(<span class="macro">format!</span>(<span class="string">"leaf chain not available for {height}"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>chain = <span class="macro">vec!</span>[last_leaf.clone()];
+        <span class="kw">for </span>leaf <span class="kw">in </span>leaves.iter().skip(position + <span class="number">1</span>) {
+            <span class="kw">if </span>leaf.justify_qc().view_number() == last_leaf.view_number() {
+                chain.push(leaf.clone());
+            } <span class="kw">else </span>{
+                <span class="kw">continue</span>;
+            }
+            <span class="kw">if </span>leaf.view_number() == last_leaf.view_number() + <span class="number">1 </span>{
+                <span class="comment">// one away from decide
+                </span>last_leaf = leaf;
+                <span class="kw">break</span>;
+            }
+            last_leaf = leaf;
+        }
+        <span class="comment">// Make sure we got one more leaf to confirm the decide
+        </span><span class="kw">for </span>leaf <span class="kw">in </span>leaves
+            .iter()
+            .skip_while(|l| l.height() &lt;= last_leaf.height())
+        {
+            <span class="kw">if </span>leaf.justify_qc().view_number() == last_leaf.view_number() {
+                chain.push(leaf.clone());
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(chain);
+            }
+        }
+        <span class="macro">bail!</span>(<span class="macro">format!</span>(<span class="string">"leaf chain not available for {height}"</span>))
+    }
 }
 
 <span class="kw">impl</span>&lt;N: ConnectedNetwork&lt;PubKey&gt;, D: Sync, V: Versions, P: SequencerPersistence&gt;
@@ -3085,17 +3318,12 @@
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">pub mod </span>test_helpers {
-    <span class="kw">use </span>committable::Committable;
-    <span class="kw">use </span>hotshot_state_prover::service::light_client_genesis_from_stake_table;
     <span class="kw">use </span>std::time::Duration;
-    <span class="kw">use </span>tempfile::TempDir;
-    <span class="kw">use </span>tokio::{spawn, time::sleep};
 
-    <span class="kw">use </span><span class="kw">crate</span>::network;
-    <span class="kw">use </span>espresso_types::MockSequencerVersions;
+    <span class="kw">use </span>committable::Committable;
     <span class="kw">use </span>espresso_types::{
         v0::traits::{NullEventConsumer, PersistenceOptions, StateCatchup},
-        MarketplaceVersion, NamespaceId, ValidatedState,
+        MarketplaceVersion, MockSequencerVersions, NamespaceId, ValidatedState,
     };
     <span class="kw">use </span>ethers::{prelude::Address, utils::Anvil};
     <span class="kw">use </span>futures::{
@@ -3104,6 +3332,7 @@
     };
     <span class="kw">use </span>hotshot::types::{Event, EventType};
     <span class="kw">use </span>hotshot_contract_adapter::light_client::{ParsedLightClientState, ParsedStakeTableState};
+    <span class="kw">use </span>hotshot_state_prover::service::light_client_genesis_from_stake_table;
     <span class="kw">use </span>hotshot_types::{
         event::LeafInfo,
         traits::{metrics::NoMetrics, node_implementation::ConsensusTime},
@@ -3113,15 +3342,16 @@
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
     <span class="kw">use </span>surf_disco::Client;
-    <span class="kw">use </span>tide_disco::error::ServerError;
-    <span class="kw">use </span>tide_disco::{Api, App, Error, StatusCode};
-    <span class="kw">use </span>tokio::task::JoinHandle;
+    <span class="kw">use </span>tempfile::TempDir;
+    <span class="kw">use </span>tide_disco::{error::ServerError, Api, App, Error, StatusCode};
+    <span class="kw">use </span>tokio::{spawn, task::JoinHandle, time::sleep};
     <span class="kw">use </span>url::Url;
     <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         catchup::NullStateCatchup,
+        network,
         persistence::no_storage,
         testing::{
             run_marketplace_builder, run_test_builder, wait_for_decide_on_handle, TestConfig,
@@ -3652,6 +3882,15 @@
                 })
             }
             .boxed()
+        })<span class="question-mark">?
+        </span>.get(<span class="string">"leafchain"</span>, |_req, _state| {
+            <span class="kw">async move </span>{
+                <span class="prelude-ty">Result</span>::&lt;Vec&lt;Leaf2&gt;, <span class="kw">_</span>&gt;::Err(hotshot_query_service::Error::catch_all(
+                    StatusCode::BAD_REQUEST,
+                    <span class="string">"No leafchain found"</span>.to_string(),
+                ))
+            }
+            .boxed()
         })<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;<span class="kw">_</span>, hotshot_query_service::Error&gt;::with_state(());
@@ -3676,13 +3915,14 @@
 <span class="attr">#[cfg(test)]
 #[espresso_macros::generic_tests]
 </span><span class="kw">mod </span>api_tests {
+    <span class="kw">use </span>std::fmt::Debug;
+
     <span class="kw">use </span>committable::Committable;
     <span class="kw">use </span>data_source::testing::TestableSequencerDataSource;
     <span class="kw">use </span>endpoints::NamespaceProofQueryData;
-    <span class="kw">use </span>espresso_types::MockSequencerVersions;
     <span class="kw">use </span>espresso_types::{
         traits::{EventConsumer, PersistenceOptions},
-        Header, Leaf, Leaf2, NamespaceId,
+        Header, Leaf2, MockSequencerVersions, NamespaceId,
     };
     <span class="kw">use </span>ethers::utils::Anvil;
     <span class="kw">use </span>futures::{future, stream::StreamExt};
@@ -3690,22 +3930,19 @@
     <span class="kw">use </span>hotshot_query_service::availability::{
         AvailabilityDataSource, BlockQueryData, VidCommonQueryData,
     };
-
-    <span class="kw">use </span>hotshot_query_service::VidCommitment;
-    <span class="kw">use </span>hotshot_types::data::vid_disperse::ADVZDisperseShare;
-    <span class="kw">use </span>hotshot_types::vid::advz::advz_scheme;
     <span class="kw">use </span>hotshot_types::{
-        data::{DaProposal, QuorumProposal2, QuorumProposalWrapper},
+        data::{
+            ns_table::parse_ns_table, vid_disperse::VidDisperseShare2, DaProposal2, EpochNumber,
+            QuorumProposal2, QuorumProposalWrapper, VidCommitment,
+        },
         event::LeafInfo,
         message::Proposal,
-        simple_certificate::QuorumCertificate,
+        simple_certificate::QuorumCertificate2,
         traits::{node_implementation::ConsensusTime, signature_key::SignatureKey, EncodeBytes},
+        vid::avidm::{init_avidm_param, AvidMScheme},
     };
-
-    <span class="kw">use </span>jf_vid::VidScheme;
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
-    <span class="kw">use </span>std::fmt::Debug;
     <span class="kw">use </span>surf_disco::Client;
     <span class="kw">use </span>test_helpers::{
         catchup_test_helper, state_signature_test_helper, status_test_helper, submit_test_helper,
@@ -3715,8 +3952,8 @@
     <span class="kw">use </span>vbs::version::StaticVersion;
 
     <span class="kw">use super</span>::{update::ApiEventConsumer, <span class="kw-2">*</span>};
-    <span class="kw">use </span><span class="kw">crate</span>::network;
     <span class="kw">use crate</span>::{
+        network,
         persistence::no_storage::NoStorage,
         testing::{wait_for_decide_on_handle, TestConfigBuilder},
     };
@@ -3810,13 +4047,12 @@
                     .send()
                     .<span class="kw">await
                     </span>.unwrap();
-
+                <span class="kw">let </span>hotshot_query_service::VidCommon::V0(common) = <span class="kw-2">&amp;</span>vid_common.common().clone()
+                <span class="kw">else </span>{
+                    <span class="macro">panic!</span>(<span class="string">"Failed to get vid V0 for namespace"</span>);
+                };
                 ns_proof
-                    .verify(
-                        header.ns_table(),
-                        <span class="kw-2">&amp;</span>header.payload_commitment(),
-                        <span class="kw-2">&amp;</span>vid_common.common().clone().unwrap(),
-                    )
+                    .verify(header.ns_table(), <span class="kw-2">&amp;</span>header.payload_commitment(), common)
                     .unwrap();
             } <span class="kw">else </span>{
                 <span class="comment">// Namespace proof should be present if ns_id exists in ns_table
@@ -3874,21 +4110,26 @@
         <span class="comment">// Create two non-consecutive leaf chains.
         </span><span class="kw">let </span><span class="kw-2">mut </span>chain1 = <span class="macro">vec!</span>[];
 
-        <span class="kw">let </span>genesis = Leaf::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
+        <span class="kw">let </span>genesis = Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
         <span class="kw">let </span>payload = genesis.block_payload().unwrap();
         <span class="kw">let </span>payload_bytes_arc = payload.encode();
-        <span class="kw">let </span>disperse = advz_scheme(<span class="number">2</span>).disperse(payload_bytes_arc.clone()).unwrap();
-        <span class="kw">let </span>payload_commitment = disperse.commit;
+
+        <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
+        <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
+
+        <span class="kw">let </span>ns_table = parse_ns_table(payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>payload.encode());
+        <span class="kw">let </span>(payload_commitment, shares) =
+            AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>payload_bytes_arc, ns_table).unwrap();
+
         <span class="kw">let </span><span class="kw-2">mut </span>quorum_proposal = QuorumProposalWrapper::&lt;SeqTypes&gt; {
             proposal: QuorumProposal2::&lt;SeqTypes&gt; {
                 block_header: genesis.block_header().clone(),
                 view_number: ViewNumber::genesis(),
-                justify_qc: QuorumCertificate::genesis::&lt;MockSequencerVersions&gt;(
+                justify_qc: QuorumCertificate2::genesis::&lt;MockSequencerVersions&gt;(
                     <span class="kw-2">&amp;</span>ValidatedState::default(),
                     <span class="kw-2">&amp;</span>NodeState::mock(),
                 )
-                .<span class="kw">await
-                </span>.to_qc2(),
+                .<span class="kw">await</span>,
                 upgrade_certificate: <span class="prelude-val">None</span>,
                 view_change_evidence: <span class="prelude-val">None</span>,
                 next_drb_result: <span class="prelude-val">None</span>,
@@ -3896,12 +4137,11 @@
                 epoch: <span class="prelude-val">None</span>,
             },
         };
-        <span class="kw">let </span><span class="kw-2">mut </span>qc = QuorumCertificate::genesis::&lt;MockSequencerVersions&gt;(
+        <span class="kw">let </span><span class="kw-2">mut </span>qc = QuorumCertificate2::genesis::&lt;MockSequencerVersions&gt;(
             <span class="kw-2">&amp;</span>ValidatedState::default(),
             <span class="kw-2">&amp;</span>NodeState::mock(),
         )
-        .<span class="kw">await
-        </span>.to_qc2();
+        .<span class="kw">await</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>justify_qc = qc.clone();
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
@@ -3919,7 +4159,7 @@
                 PubKey::sign(<span class="kw-2">&amp;</span>privkey, <span class="kw-2">&amp;</span>bincode::serialize(<span class="kw-2">&amp;</span>quorum_proposal).unwrap())
                     .expect(<span class="string">"Failed to sign quorum_proposal"</span>);
             persistence
-                .append_quorum_proposal(<span class="kw-2">&amp;</span>Proposal {
+                .append_quorum_proposal2(<span class="kw-2">&amp;</span>Proposal {
                     data: quorum_proposal.clone(),
                     signature: quorum_proposal_signature,
                     _pd: Default::default(),
@@ -3928,25 +4168,28 @@
                 </span>.unwrap();
 
             <span class="comment">// Include VID information for each leaf.
-            </span><span class="kw">let </span>share = ADVZDisperseShare::&lt;SeqTypes&gt; {
+            </span><span class="kw">let </span>share = VidDisperseShare2::&lt;SeqTypes&gt; {
                 view_number: leaf.view_number(),
                 payload_commitment,
-                share: disperse.shares[<span class="number">0</span>].clone(),
-                common: disperse.common.clone(),
+                share: shares[<span class="number">0</span>].clone(),
                 recipient_key: pubkey,
+                epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">0</span>)),
+                target_epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">0</span>)),
+                common: avidm_param.clone(),
             };
             persistence
-                .append_vid(<span class="kw-2">&amp;</span>share.to_proposal(<span class="kw-2">&amp;</span>privkey).unwrap())
+                .append_vid2(<span class="kw-2">&amp;</span>share.to_proposal(<span class="kw-2">&amp;</span>privkey).unwrap())
                 .<span class="kw">await
                 </span>.unwrap();
 
             <span class="comment">// Include payload information for each leaf.
             </span><span class="kw">let </span>block_payload_signature =
                 PubKey::sign(<span class="kw-2">&amp;</span>privkey, <span class="kw-2">&amp;</span>payload_bytes_arc).expect(<span class="string">"Failed to sign block payload"</span>);
-            <span class="kw">let </span>da_proposal_inner = DaProposal::&lt;SeqTypes&gt; {
+            <span class="kw">let </span>da_proposal_inner = DaProposal2::&lt;SeqTypes&gt; {
                 encoded_transactions: payload_bytes_arc.clone(),
                 metadata: payload.ns_table().clone(),
                 view_number: leaf.view_number(),
+                epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">0</span>)),
             };
             <span class="kw">let </span>da_proposal = Proposal {
                 data: da_proposal_inner,
@@ -3954,7 +4197,7 @@
                 _pd: Default::default(),
             };
             persistence
-                .append_da(<span class="kw-2">&amp;</span>da_proposal, VidCommitment::V0(payload_commitment))
+                .append_da2(<span class="kw-2">&amp;</span>da_proposal, VidCommitment::V1(payload_commitment))
                 .<span class="kw">await
                 </span>.unwrap();
         }
@@ -4000,8 +4243,8 @@
         </span><span class="kw">for </span>(leaf, qc) <span class="kw">in </span>chain1.iter().chain(<span class="kw-2">&amp;</span>chain2) {
             <span class="macro">tracing::info!</span>(height = leaf.height(), <span class="string">"check archive"</span>);
             <span class="kw">let </span>qd = data_source.get_leaf(leaf.height() <span class="kw">as </span>usize).<span class="kw">await</span>.<span class="kw">await</span>;
-            <span class="kw">let </span>stored_leaf: Leaf2 = qd.leaf().clone().into();
-            <span class="kw">let </span>stored_qc = qd.qc().clone().to_qc2();
+            <span class="kw">let </span>stored_leaf: Leaf2 = qd.leaf().clone();
+            <span class="kw">let </span>stored_qc = qd.qc().clone();
             <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>stored_leaf, leaf);
             <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>stored_qc, qc);
 
@@ -4070,15 +4313,13 @@
             ));
         <span class="kw">let </span>consumer = ApiEventConsumer::from(data_source.clone());
 
-        <span class="kw">let </span><span class="kw-2">mut </span>qc = QuorumCertificate::genesis::&lt;MockSequencerVersions&gt;(
+        <span class="kw">let </span><span class="kw-2">mut </span>qc = QuorumCertificate2::genesis::&lt;MockSequencerVersions&gt;(
             <span class="kw-2">&amp;</span>ValidatedState::default(),
             <span class="kw-2">&amp;</span>NodeState::mock(),
         )
-        .<span class="kw">await
-        </span>.to_qc2();
+        .<span class="kw">await</span>;
         <span class="kw">let </span>leaf =
-            Leaf::genesis::&lt;MockSequencerVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::mock())
-                .<span class="kw">await</span>;
+            Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
 
         <span class="comment">// Append the genesis leaf. We don't use this for the test, because the update function will
         // automatically fill in the missing data for genesis. We just append this to get into a
@@ -4087,7 +4328,7 @@
         persistence
             .append_decided_leaves(
                 leaf.view_number(),
-                [(<span class="kw-2">&amp;</span>leaf_info(leaf.clone().into()), qc.clone())],
+                [(<span class="kw-2">&amp;</span>leaf_info(leaf.clone()), qc.clone())],
                 <span class="kw-2">&amp;</span>consumer,
             )
             .<span class="kw">await
@@ -4125,10 +4366,7 @@
             </span>.unwrap();
 
         <span class="comment">// Check that we still processed the leaf.
-        </span><span class="macro">assert_eq!</span>(
-            leaf,
-            data_source.get_leaf(<span class="number">1</span>).<span class="kw">await</span>.<span class="kw">await</span>.leaf().clone().into()
-        );
+        </span><span class="macro">assert_eq!</span>(leaf, data_source.get_leaf(<span class="number">1</span>).<span class="kw">await</span>.<span class="kw">await</span>.leaf().clone());
         <span class="macro">assert!</span>(data_source.get_vid_common(<span class="number">1</span>).<span class="kw">await</span>.is_pending());
         <span class="macro">assert!</span>(data_source.get_block(<span class="number">1</span>).<span class="kw">await</span>.is_pending());
     }
@@ -4145,15 +4383,14 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span>committable::{Commitment, Committable};
     <span class="kw">use </span>std::{collections::BTreeMap, time::Duration};
-    <span class="kw">use </span>tokio::time::sleep;
 
+    <span class="kw">use </span>committable::{Commitment, Committable};
     <span class="kw">use </span>espresso_types::{
         config::PublicHotShotConfig,
         traits::NullEventConsumer,
         v0_1::{UpgradeMode, ViewBasedUpgrade},
-        BackoffParams, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
+        BackoffParams, EpochVersion, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
         MockSequencerVersions, SequencerVersions, TimeBasedUpgrade, Timestamp, Upgrade,
         UpgradeType, ValidatedState,
     };
@@ -4182,6 +4419,7 @@
     };
     <span class="kw">use </span>tide_disco::{app::AppHealth, error::ServerError, healthcheck::HealthStatus};
     <span class="kw">use </span>time::OffsetDateTime;
+    <span class="kw">use </span>tokio::time::sleep;
     <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType, Version};
 
     <span class="kw">use </span><span class="self">self</span>::{
@@ -4438,6 +4676,116 @@
                 <span class="kw">continue</span>;
             };
             <span class="kw">if </span>leaf_chain[<span class="number">0</span>].leaf.height() &gt; <span class="number">0 </span>{
+                <span class="kw">break</span>;
+            }
+        }
+
+        <span class="comment">// Shut down and restart replica 0. We don't just stop consensus and restart it; we fully
+        // drop the node and recreate it so it loses all of its temporary state and starts off from
+        // genesis. It should be able to catch up by listening to proposals and then rebuild its
+        // state from its peers.
+        </span><span class="macro">tracing::info!</span>(<span class="string">"shutting down node"</span>);
+        network.peers.remove(<span class="number">0</span>);
+
+        <span class="comment">// Wait for a few blocks to pass while the node is down, so it falls behind.
+        </span>network
+            .server
+            .event_stream()
+            .<span class="kw">await
+            </span>.filter(|event| future::ready(<span class="macro">matches!</span>(event.event, EventType::Decide { .. })))
+            .take(<span class="number">3</span>)
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+            .<span class="kw">await</span>;
+
+        <span class="macro">tracing::info!</span>(<span class="string">"restarting node"</span>);
+        <span class="kw">let </span>node = network
+            .cfg
+            .init_node(
+                <span class="number">1</span>,
+                ValidatedState::default(),
+                no_storage::Options,
+                StatePeers::&lt;StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;&gt;::from_urls(
+                    <span class="macro">vec!</span>[<span class="macro">format!</span>(<span class="string">"http://localhost:{port}"</span>).parse().unwrap()],
+                    Default::default(),
+                    <span class="kw-2">&amp;</span>NoMetrics,
+                ),
+                <span class="kw-2">&amp;</span>NoMetrics,
+                test_helpers::STAKE_TABLE_CAPACITY_FOR_TEST,
+                NullEventConsumer,
+                MockSequencerVersions::new(),
+                Default::default(),
+                <span class="string">"http://localhost"</span>.parse().unwrap(),
+            )
+            .<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>events = node.event_stream().<span class="kw">await</span>;
+
+        <span class="comment">// Wait for a (non-genesis) block proposed by each node, to prove that the lagging node has
+        // caught up and all nodes are in sync.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>proposers = [<span class="bool-val">false</span>; NUM_NODES];
+        <span class="kw">loop </span>{
+            <span class="kw">let </span>event = events.next().<span class="kw">await</span>.unwrap();
+            <span class="kw">let </span>EventType::Decide { leaf_chain, .. } = event.event <span class="kw">else </span>{
+                <span class="kw">continue</span>;
+            };
+            <span class="kw">for </span>LeafInfo { leaf, .. } <span class="kw">in </span>leaf_chain.iter().rev() {
+                <span class="kw">let </span>height = leaf.height();
+                <span class="kw">let </span>leaf_builder = (leaf.view_number().u64() <span class="kw">as </span>usize) % NUM_NODES;
+                <span class="kw">if </span>height == <span class="number">0 </span>{
+                    <span class="kw">continue</span>;
+                }
+
+                <span class="macro">tracing::info!</span>(
+                    <span class="string">"waiting for blocks from {proposers:?}, block {height} is from {leaf_builder}"</span>,
+                );
+                proposers[leaf_builder] = <span class="bool-val">true</span>;
+            }
+
+            <span class="kw">if </span>proposers.iter().all(|has_proposed| <span class="kw-2">*</span>has_proposed) {
+                <span class="kw">break</span>;
+            }
+        }
+    }
+
+    <span class="attr">#[ignore]
+    #[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+    </span><span class="kw">async fn </span>test_catchup_epochs() {
+        setup_test();
+
+        <span class="comment">// Start a sequencer network, using the query service for catchup.
+        </span><span class="kw">let </span>port = pick_unused_port().expect(<span class="string">"No ports free"</span>);
+        <span class="kw">let </span>anvil = Anvil::new().spawn();
+        <span class="kw">let </span>l1 = anvil.endpoint().parse().unwrap();
+        <span class="kw">const </span>EPOCH_HEIGHT: u64 = <span class="number">5</span>;
+        <span class="kw">let </span>network_config = TestConfigBuilder::default()
+            .l1_url(l1)
+            .epoch_height(EPOCH_HEIGHT)
+            .build();
+        <span class="kw">const </span>NUM_NODES: usize = <span class="number">5</span>;
+        <span class="kw">let </span>config = TestNetworkConfigBuilder::&lt;NUM_NODES, <span class="kw">_</span>, <span class="kw">_</span>&gt;::with_num_nodes()
+            .api_config(Options::with_port(port))
+            .network_config(network_config)
+            .catchups(std::array::from_fn(|<span class="kw">_</span>| {
+                StatePeers::&lt;StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;&gt;::from_urls(
+                    <span class="macro">vec!</span>[<span class="macro">format!</span>(<span class="string">"http://localhost:{port}"</span>).parse().unwrap()],
+                    Default::default(),
+                    <span class="kw-2">&amp;</span>NoMetrics,
+                )
+            }))
+            .build();
+        <span class="kw">let </span><span class="kw-2">mut </span>network = TestNetwork::new(
+            config,
+            SequencerVersions::&lt;EpochVersion, EpochVersion&gt;::new(),
+        )
+        .<span class="kw">await</span>;
+
+        <span class="comment">// Wait for replica 0 to decide in the third epoch.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>events = network.peers[<span class="number">0</span>].event_stream().<span class="kw">await</span>;
+        <span class="kw">loop </span>{
+            <span class="kw">let </span>event = events.next().<span class="kw">await</span>.unwrap();
+            <span class="kw">let </span>EventType::Decide { leaf_chain, .. } = event.event <span class="kw">else </span>{
+                <span class="kw">continue</span>;
+            };
+            <span class="kw">if </span>leaf_chain[<span class="number">0</span>].leaf.height() &gt; EPOCH_HEIGHT * <span class="number">3 </span>{
                 <span class="kw">break</span>;
             }
         }
@@ -4886,7 +5234,7 @@
                     <span class="kw">let </span>new_version = upgrade.new_version;
                     <span class="macro">assert_eq!</span>(new_version, &lt;MockSeqVersions <span class="kw">as </span>Versions&gt;::Upgrade::VERSION);
                     <span class="kw">break </span>upgrade.new_version_first_view;
-                }
+                },
                 <span class="kw">_ </span>=&gt; <span class="kw">continue</span>,
             }
         };

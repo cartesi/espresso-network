@@ -335,13 +335,13 @@
             <span class="kw">match </span>event {
                 BuilderChange::Up <span class="kw">if </span>handle.is_none() =&gt; {
                     handle = <span class="prelude-val">Some</span>(start_builder(url.clone(), source.clone()));
-                }
+                },
                 BuilderChange::Down =&gt; {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(handle) = handle.take() {
                         handle.abort();
                     }
-                }
-                <span class="kw">_ </span>=&gt; {}
+                },
+                <span class="kw">_ </span>=&gt; {},
             }
         }
     });
@@ -379,13 +379,13 @@
             <span class="kw">match </span>event {
                 BuilderChange::Up <span class="kw">if </span>handle.is_none() =&gt; {
                     handle = <span class="prelude-val">Some</span>(start_builder(url.clone(), source.clone()));
-                }
+                },
                 BuilderChange::Down =&gt; {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(handle) = handle.take() {
                         handle.abort();
                     }
-                }
-                <span class="kw">_ </span>=&gt; {}
+                },
+                <span class="kw">_ </span>=&gt; {},
             }
         }
     });

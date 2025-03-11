@@ -287,7 +287,8 @@
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
 <a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -301,16 +302,17 @@
 
 </span><span class="attr">#![cfg(feature = <span class="string">"file-system-data-source"</span>)]
 
-</span><span class="kw">use super</span>::{storage::FileSystemStorage, AvailabilityProvider, FetchingDataSource};
+</span><span class="kw">use </span>std::path::Path;
+
+<span class="kw">use </span>atomic_store::AtomicStoreLoader;
+<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+
+<span class="kw">pub use </span><span class="kw">super</span>::storage::fs::Transaction;
+<span class="kw">use super</span>::{storage::FileSystemStorage, AvailabilityProvider, FetchingDataSource};
 <span class="kw">use crate</span>::{
     availability::{query_data::QueryablePayload, QueryableHeader},
     Header, Payload,
 };
-<span class="kw">use </span>atomic_store::AtomicStoreLoader;
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>std::path::Path;
-
-<span class="kw">pub use </span><span class="kw">super</span>::storage::fs::Transaction;
 
 <span class="doccomment">/// A data source for the APIs provided in this crate, backed by the local file system.
 ///
@@ -528,14 +530,15 @@
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">mod </span>impl_testable_data_source {
+    <span class="kw">use </span>async_trait::async_trait;
+    <span class="kw">use </span>hotshot::types::Event;
+    <span class="kw">use </span>tempfile::TempDir;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         data_source::UpdateDataSource,
         testing::{consensus::DataSourceLifeCycle, mocks::MockTypes},
     };
-    <span class="kw">use </span>async_trait::async_trait;
-    <span class="kw">use </span>hotshot::types::Event;
-    <span class="kw">use </span>tempfile::TempDir;
 
     <span class="attr">#[async_trait]
     </span><span class="kw">impl</span>&lt;P: AvailabilityProvider&lt;MockTypes&gt; + Default&gt; DataSourceLifeCycle
@@ -568,11 +571,10 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span><span class="kw">super</span>::FileSystemDataSource;
-    <span class="kw">use crate</span>::{fetching::provider::NoFetching, testing::mocks::MockTypes};
-
     <span class="comment">// For some reason this is the only way to import the macro defined in another module of this
     // crate.
     </span><span class="kw">use crate</span>::<span class="kw-2">*</span>;
+    <span class="kw">use crate</span>::{fetching::provider::NoFetching, testing::mocks::MockTypes};
 
     <span class="macro">instantiate_data_source_tests!</span>(FileSystemDataSource&lt;MockTypes, NoFetching&gt;);
 }

@@ -149,7 +149,22 @@
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
 <a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -158,14 +173,12 @@
 </span><span class="doccomment">//! The election trait, used to decide which node is the leader and determine if a vote is valid.
 </span><span class="kw">use </span>std::{collections::BTreeSet, fmt::Debug, num::NonZeroU64};
 
-<span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot_utils::anytrace::Result;
 
 <span class="kw">use </span><span class="kw">super</span>::node_implementation::NodeType;
 <span class="kw">use crate</span>::{drb::DrbResult, PeerConfig};
 
-<span class="attr">#[async_trait]
-</span><span class="doccomment">/// A protocol for determining membership in and participating in a committee.
+<span class="doccomment">/// A protocol for determining membership in and participating in a committee.
 </span><span class="kw">pub trait </span>Membership&lt;TYPES: NodeType&gt;: Debug + Send + Sync {
     <span class="doccomment">/// The error type returned by methods like `lookup_leader`.
     </span><span class="kw">type </span>Error: std::fmt::Display;
@@ -276,19 +289,36 @@
     <span class="doccomment">/// Returns the threshold required to upgrade the network protocol
     </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; NonZeroU64;
 
+    <span class="doccomment">/// Returns if the stake table is available for the current Epoch
+    </span><span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch) -&gt; bool;
+
+    <span class="doccomment">/// Gets the validated block header and epoch number of the epoch root
+    /// at the given block height
+    </span><span class="kw">fn </span>get_epoch_root_and_drb(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        _block_height: u64,
+        _epoch_height: u64,
+        _epoch: TYPES::Epoch,
+    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;Output = anyhow::Result&lt;(TYPES::BlockHeader, DrbResult)&gt;&gt; + Send
+    {
+        <span class="kw">async </span>{
+            <span class="macro">anyhow::bail!</span>(<span class="string">"Not implemented"</span>);
+        }
+    }
+
     <span class="attr">#[allow(clippy::type_complexity)]
     </span><span class="doccomment">/// Handles notifications that a new epoch root has been created
     /// Is called under a read lock to the Membership. Return a callback
     /// with Some to have that callback invoked under a write lock.
     ///
     /// #3967 REVIEW NOTE: this is only called if epoch is Some. Is there any reason to do otherwise?
-    </span><span class="kw">async fn </span>add_epoch_root(
+    </span><span class="kw">fn </span>add_epoch_root(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _epoch: TYPES::Epoch,
         _block_header: TYPES::BlockHeader,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="self">Self</span>) + Send&gt;&gt; {
-        <span class="prelude-val">None
-    </span>}
+    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;Output = <span class="prelude-ty">Option</span>&lt;Box&lt;<span class="kw">dyn </span>FnOnce(<span class="kw-2">&amp;mut </span><span class="self">Self</span>) + Send&gt;&gt;&gt; + Send {
+        <span class="kw">async </span>{ <span class="prelude-val">None </span>}
+    }
 
     <span class="doccomment">/// Called to notify the Membership when a new DRB result has been calculated.
     /// Observes the same semantics as add_epoch_root

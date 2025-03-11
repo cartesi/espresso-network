@@ -1420,7 +1420,8 @@
 <a href="#1419" id="1419">1419</a>
 <a href="#1420" id="1420">1420</a>
 <a href="#1421" id="1421">1421</a>
-<a href="#1422" id="1422">1422</a></pre></div><pre class="rust"><code><span class="doccomment">//! Adversarial Espresso client.
+<a href="#1422" id="1422">1422</a>
+<a href="#1423" id="1423">1423</a></pre></div><pre class="rust"><code><span class="doccomment">//! Adversarial Espresso client.
 //!
 //! This program runs a randomized client for the Espresso query service. It is designed to hit
 //! methods and usage patterns that a normal client, such as a rollup, would not do, so that we can
@@ -1434,7 +1435,17 @@
 //! provides a healthcheck endpoint as well as a prometheus endpoint which provides metrics like the
 //! count of various types of actions performed and the number of open streams.
 
-</span><span class="kw">use </span>anyhow::{bail, ensure, Context};
+</span><span class="kw">use </span>std::{
+    borrow::Cow,
+    cmp::max,
+    collections::{BTreeMap, HashMap},
+    fmt::Debug,
+    pin::Pin,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+
+<span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>committable::Committable;
@@ -1451,6 +1462,7 @@
     metrics::PrometheusMetrics,
     node::TimeWindowQueryData,
     types::HeightIndexed,
+    VidCommon,
 };
 <span class="kw">use </span>hotshot_types::traits::{
     block_contents::BlockHeader,
@@ -1463,15 +1475,6 @@
 <span class="kw">use </span>sequencer::{api::endpoints::NamespaceProofQueryData, SequencerApiVersion};
 <span class="kw">use </span>sequencer_utils::logging;
 <span class="kw">use </span>serde::de::DeserializeOwned;
-<span class="kw">use </span>std::{
-    borrow::Cow,
-    cmp::max,
-    collections::{BTreeMap, HashMap},
-    fmt::Debug,
-    pin::Pin,
-    sync::Arc,
-    time::{Duration, Instant},
-};
 <span class="kw">use </span>strum::{EnumDiscriminants, VariantArray};
 <span class="kw">use </span>surf_disco::{error::ClientError, socket, Error, StatusCode, Url};
 <span class="kw">use </span>tide_disco::{error::ServerError, App};
@@ -1942,7 +1945,7 @@
                 <span class="prelude-val">Ok</span>(res) <span class="kw">if </span>i == <span class="number">0 </span>=&gt; {
                     <span class="comment">// Succeeded on the first try, get on with it.
                     </span><span class="kw">return </span><span class="prelude-val">Ok</span>(res);
-                }
+                },
                 <span class="prelude-val">Ok</span>(res) =&gt; {
                     <span class="comment">// Succeeded after at least one failure; retry a number of additional times to
                     // be sure the endpoint is healed.
@@ -1953,14 +1956,14 @@
                         )<span class="question-mark">?</span>;
                     }
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(res);
-                }
+                },
                 <span class="prelude-val">Err</span>(err) <span class="kw">if </span>i &lt; <span class="self">self</span>.cfg.max_retries =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"failed, will retry: {err:#}"</span>);
                     i += <span class="number">1</span>;
-                }
+                },
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(err).context(<span class="string">"failed too many times"</span>);
-                }
+                },
             }
         }
     }
@@ -2096,7 +2099,7 @@
                         obj.height()
                     );
                 }
-            }
+            },
             <span class="prelude-val">Err</span>(<span class="kw">_</span>) <span class="kw">if </span>to - from &gt; limit =&gt; {
                 <span class="macro">tracing::info!</span>(
                     limit,
@@ -2104,10 +2107,10 @@
                     to,
                     <span class="string">"range query exceeding limit failed as expected"
                 </span>);
-            }
+            },
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(err).context(<span class="string">"error in range query"</span>);
-            }
+            },
         }
 
         <span class="self">self</span>.metrics.query_range_actions[<span class="kw-2">&amp;</span>T::RESOURCE].add(<span class="number">1</span>);
@@ -2222,7 +2225,7 @@
                             );
                         }
                         <span class="kw">break </span>obj;
-                    }
+                    },
                     <span class="prelude-val">Err</span>(err) <span class="kw">if </span>refreshed.elapsed() &gt;= <span class="self">self</span>.cfg.web_socket_timeout =&gt; {
                         <span class="comment">// Streams are allowed to fail if the connection is too old. Warn about it,
                         // but refresh the connection and try again.
@@ -2240,7 +2243,7 @@
                             <span class="string">"{} stream refreshed due to connection reset"</span>,
                             <span class="self">Self</span>::singular(),
                         );
-                    }
+                    },
                     <span class="prelude-val">Err</span>(err) =&gt; {
                         <span class="comment">// Errors on a relatively fresh connection are not allowed. Close the stream
                         // since it is apparently in a bad state, and return an error.
@@ -2252,7 +2255,7 @@
                             <span class="self">Self</span>::singular(),
                             refreshed.elapsed()
                         ));
-                    }
+                    },
                 }
             };
 
@@ -2366,11 +2369,11 @@
                 <span class="comment">// The block state at height 0 is empty, so to have a valid query just adjust to
                 // querying at height 1. At height 1, the only valid index to query is 0.
                 </span>(<span class="number">1</span>, <span class="number">0</span>)
-            }
+            },
             block =&gt; {
                 <span class="comment">// At any other height, all indices between 0 and `block - 1` are valid to query.
                 </span>(block, index % (block - <span class="number">1</span>))
-            }
+            },
         };
 
         <span class="comment">// Get the header of the state snapshot we're going to query and the block commitment we're
@@ -2570,15 +2573,14 @@
             ns_proof.proof.is_some(),
             <span class="macro">format!</span>(<span class="string">"missing namespace proof for {block}:{ns}"</span>)
         );
+        <span class="kw">let </span>VidCommon::V0(common) = <span class="kw-2">&amp;</span>vid_common.common().clone() <span class="kw">else </span>{
+            <span class="macro">panic!</span>(<span class="string">"Failed to get vid V0 for namespace"</span>);
+        };
         <span class="macro">ensure!</span>(
             ns_proof
                 .proof
                 .unwrap()
-                .verify(
-                    header.ns_table(),
-                    <span class="kw-2">&amp;</span>header.payload_commitment(),
-                    <span class="kw-2">&amp;</span>vid_common.common().clone().unwrap(),
-                )
+                .verify(header.ns_table(), <span class="kw-2">&amp;</span>header.payload_commitment(), common,)
                 .is_some(),
             <span class="macro">format!</span>(<span class="string">"failure to verify namespace proof for {block}:{ns}"</span>)
         );
@@ -2766,7 +2768,7 @@
                     Resource::Payloads =&gt; <span class="self">self</span>.payloads.close_stream(id).<span class="kw">await</span>,
                 };
                 <span class="prelude-val">Ok</span>(())
-            }
+            },
             Action::PollStream {
                 resource,
                 id,
@@ -2779,16 +2781,16 @@
             },
             Action::QueryWindow { from, duration } =&gt; {
                 <span class="self">self</span>.headers.query_window(from, duration).<span class="kw">await
-            </span>}
+            </span>},
             Action::QueryNamespace { block, namespace } =&gt; {
                 <span class="self">self</span>.blocks.query_namespace(block, namespace).<span class="kw">await
-            </span>}
+            </span>},
             Action::QueryBlockState { block, index } =&gt; {
                 <span class="self">self</span>.headers.query_block_state(block, index).<span class="kw">await
-            </span>}
+            </span>},
             Action::QueryFeeState { block, builder } =&gt; {
                 <span class="self">self</span>.headers.query_fee_state(block, builder).<span class="kw">await
-            </span>}
+            </span>},
         }
     }
 }

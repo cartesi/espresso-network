@@ -350,7 +350,9 @@
 <a href="#349" id="349">349</a>
 <a href="#350" id="350">350</a>
 <a href="#351" id="351">351</a>
-<a href="#352" id="352">352</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -408,7 +410,15 @@
 //! [`AvailabilityDataSource`](crate::availability::AvailabilityDataSource) in fallibility.
 //!
 
-</span><span class="kw">use crate</span>::{
+</span><span class="kw">use </span>std::ops::RangeBounds;
+
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>futures::future::Future;
+<span class="kw">use </span>hotshot_types::{data::VidShare, traits::node_implementation::NodeType};
+<span class="kw">use </span>jf_merkle_tree::prelude::MerkleProof;
+<span class="kw">use </span>tagged_base64::TaggedBase64;
+
+<span class="kw">use crate</span>::{
     availability::{
         BlockId, BlockQueryData, LeafId, LeafQueryData, PayloadMetadata, PayloadQueryData,
         QueryableHeader, QueryablePayload, TransactionHash, TransactionQueryData,
@@ -426,14 +436,8 @@
     },
     merklized_state::{MerklizedState, Snapshot},
     node::{SyncStatus, TimeWindowQueryData, WindowStart},
-    Header, Payload, QueryResult, Transaction, VidShare,
+    Header, Payload, QueryResult, Transaction,
 };
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>futures::future::Future;
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>jf_merkle_tree::prelude::MerkleProof;
-<span class="kw">use </span>std::ops::RangeBounds;
-<span class="kw">use </span>tagged_base64::TaggedBase64;
 
 <span class="kw">pub mod </span>fail_storage;
 <span class="kw">pub mod </span>fs;

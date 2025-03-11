@@ -1683,19 +1683,15 @@
 <a href="#1682" id="1682">1682</a>
 <a href="#1683" id="1683">1683</a>
 <a href="#1684" id="1684">1684</a>
-<a href="#1685" id="1685">1685</a>
-<a href="#1686" id="1686">1686</a>
-<a href="#1687" id="1687">1687</a>
-<a href="#1688" id="1688">1688</a>
-<a href="#1689" id="1689">1689</a>
-<a href="#1690" id="1690">1690</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::{ensure, Context};
+<a href="#1685" id="1685">1685</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
+
+<span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>ark_serialize::CanonicalSerialize;
 <span class="kw">use </span>committable::{Commitment, Committable, RawCommitmentBuilder};
 <span class="kw">use </span>ethers_conv::ToAlloy;
-<span class="kw">use </span>hotshot_query_service::{
-    availability::QueryableHeader, explorer::ExplorerHeader, VidCommitment,
-};
+<span class="kw">use </span>hotshot_query_service::{availability::QueryableHeader, explorer::ExplorerHeader};
 <span class="kw">use </span>hotshot_types::{
+    data::VidCommitment,
     traits::{
         block_contents::{BlockHeader, BuilderFee},
         node_implementation::NodeType,
@@ -1703,20 +1699,18 @@
         BlockPayload, ValidatedState <span class="kw">as _</span>,
     },
     utils::BuilderCommitment,
-    <span class="comment">// vid::advz::{ADVZCommon, ADVZScheme},
-</span>};
+};
 <span class="kw">use </span>jf_merkle_tree::{AppendableMerkleTreeScheme, MerkleTreeScheme};
-<span class="comment">// use jf_vid::VidScheme;
-</span><span class="kw">use </span>serde::{
+<span class="kw">use </span>serde::{
     de::{<span class="self">self</span>, MapAccess, SeqAccess, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,
 };
 <span class="kw">use </span>serde_json::{Map, Value};
-<span class="kw">use </span>std::fmt;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>vbs::version::{StaticVersionType, Version};
 
+<span class="kw">use super</span>::{instance_state::NodeState, state::ValidatedState};
 <span class="kw">use crate</span>::{
     v0::{
         header::{EitherOrVersion, VersionedHeader},
@@ -1727,8 +1721,6 @@
     BlockMerkleCommitment, BuilderSignature, FeeAccount, FeeAmount, FeeInfo, FeeMerkleCommitment,
     Header, L1BlockInfo, L1Snapshot, Leaf2, NamespaceId, NsTable, SeqTypes, UpgradeType,
 };
-
-<span class="kw">use super</span>::{instance_state::NodeState, state::ValidatedState};
 
 <span class="kw">impl </span>v0_1::Header {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Commitment&lt;Header&gt; {
@@ -1867,7 +1859,7 @@
                     )),
                     EitherOrVersion::Version(v) =&gt; {
                         <span class="prelude-val">Err</span>(serde::de::Error::custom(<span class="macro">format!</span>(<span class="string">"invalid version {v:?}"</span>)))
-                    }
+                    },
                 }
             }
 
@@ -1904,7 +1896,7 @@
                         )),
                         EitherOrVersion::Version(v) =&gt; {
                             <span class="prelude-val">Err</span>(de::Error::custom(<span class="macro">format!</span>(<span class="string">"invalid version {v:?}"</span>)))
-                        }
+                        },
                         chain_config =&gt; <span class="prelude-val">Err</span>(de::Error::custom(<span class="macro">format!</span>(
                             <span class="string">"expected version, found chain_config {chain_config:?}"
                         </span>))),
@@ -2297,7 +2289,7 @@
                     .as_ref()
                     .fetch_chain_config(validated_cf.commit())
                     .<span class="kw">await
-            </span>}
+            </span>},
         }
     }
 }
@@ -2869,14 +2861,12 @@
     <span class="kw">use </span>ethers::{types::Address, utils::Anvil};
     <span class="kw">use </span>hotshot_query_service::testing::mocks::MockVersions;
     <span class="kw">use </span>hotshot_types::traits::signature_key::BuilderSignatureKey;
-
     <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
     <span class="kw">use </span>v0_1::{BlockMerkleTree, FeeMerkleTree, L1Client};
     <span class="kw">use </span>vbs::{bincode_serializer::BincodeSerializer, version::StaticVersion, BinarySerializer};
 
-    <span class="kw">use crate</span>::{eth_signature_key::EthKeyPair, mock::MockStateCatchup, Leaf};
-
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use crate</span>::{eth_signature_key::EthKeyPair, mock::MockStateCatchup, Leaf};
 
     <span class="attr">#[derive(Debug, Default)]
     #[must_use]

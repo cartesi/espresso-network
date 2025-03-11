@@ -2833,7 +2833,61 @@
 <a href="#2832" id="2832">2832</a>
 <a href="#2833" id="2833">2833</a>
 <a href="#2834" id="2834">2834</a>
-<a href="#2835" id="2835">2835</a></pre></div><pre class="rust"><code><span class="doccomment">///Module containing a contract's types and functions.
+<a href="#2835" id="2835">2835</a>
+<a href="#2836" id="2836">2836</a>
+<a href="#2837" id="2837">2837</a>
+<a href="#2838" id="2838">2838</a>
+<a href="#2839" id="2839">2839</a>
+<a href="#2840" id="2840">2840</a>
+<a href="#2841" id="2841">2841</a>
+<a href="#2842" id="2842">2842</a>
+<a href="#2843" id="2843">2843</a>
+<a href="#2844" id="2844">2844</a>
+<a href="#2845" id="2845">2845</a>
+<a href="#2846" id="2846">2846</a>
+<a href="#2847" id="2847">2847</a>
+<a href="#2848" id="2848">2848</a>
+<a href="#2849" id="2849">2849</a>
+<a href="#2850" id="2850">2850</a>
+<a href="#2851" id="2851">2851</a>
+<a href="#2852" id="2852">2852</a>
+<a href="#2853" id="2853">2853</a>
+<a href="#2854" id="2854">2854</a>
+<a href="#2855" id="2855">2855</a>
+<a href="#2856" id="2856">2856</a>
+<a href="#2857" id="2857">2857</a>
+<a href="#2858" id="2858">2858</a>
+<a href="#2859" id="2859">2859</a>
+<a href="#2860" id="2860">2860</a>
+<a href="#2861" id="2861">2861</a>
+<a href="#2862" id="2862">2862</a>
+<a href="#2863" id="2863">2863</a>
+<a href="#2864" id="2864">2864</a>
+<a href="#2865" id="2865">2865</a>
+<a href="#2866" id="2866">2866</a>
+<a href="#2867" id="2867">2867</a>
+<a href="#2868" id="2868">2868</a>
+<a href="#2869" id="2869">2869</a>
+<a href="#2870" id="2870">2870</a>
+<a href="#2871" id="2871">2871</a>
+<a href="#2872" id="2872">2872</a>
+<a href="#2873" id="2873">2873</a>
+<a href="#2874" id="2874">2874</a>
+<a href="#2875" id="2875">2875</a>
+<a href="#2876" id="2876">2876</a>
+<a href="#2877" id="2877">2877</a>
+<a href="#2878" id="2878">2878</a>
+<a href="#2879" id="2879">2879</a>
+<a href="#2880" id="2880">2880</a>
+<a href="#2881" id="2881">2881</a>
+<a href="#2882" id="2882">2882</a>
+<a href="#2883" id="2883">2883</a>
+<a href="#2884" id="2884">2884</a>
+<a href="#2885" id="2885">2885</a>
+<a href="#2886" id="2886">2886</a>
+<a href="#2887" id="2887">2887</a>
+<a href="#2888" id="2888">2888</a>
+<a href="#2889" id="2889">2889</a></pre></div><pre class="rust"><code><span class="doccomment">///Module containing a contract's types and functions.
 /**
 
 ```solidity
@@ -2851,8 +2905,9 @@ library BN254 {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>BN254 {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>BaseField(alloy::sol_types::private::primitives::aliases::U256);
@@ -3091,8 +3146,10 @@ library BN254 {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>G1Point {
-        <span class="kw">pub </span>x: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>y: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>x: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>y: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -3115,7 +3172,7 @@ library BN254 {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -4090,8 +4147,9 @@ interface IPlonkVerifier {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>IPlonkVerifier {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="doccomment">/// The creation / init bytecode of the contract.
     ///
     /// ```text
@@ -4118,29 +4176,52 @@ interface IPlonkVerifier {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>PlonkProof {
-        <span class="kw">pub </span>wire0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>prodPerm: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>zeta: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>zetaOmega: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval4: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>prodPermZetaOmegaEval: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>prodPerm: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>zeta: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>zetaOmega: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval4: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>prodPermZetaOmegaEval: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -4208,7 +4289,7 @@ interface IPlonkVerifier {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -4665,28 +4746,50 @@ interface IPlonkVerifier {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>VerifyingKey {
-        <span class="kw">pub </span>domainSize: alloy::sol_types::private::primitives::aliases::U256,
-        <span class="kw">pub </span>numInputs: alloy::sol_types::private::primitives::aliases::U256,
-        <span class="kw">pub </span>sigma0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigma1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigma2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigma3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigma4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>q1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>q2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>q3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>q4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qM12: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qM34: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qO: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qC: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qH1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qH2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qH3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qH4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>qEcc: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>g2LSB: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
-        <span class="kw">pub </span>g2MSB: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>domainSize: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>numInputs: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigma0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigma1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigma2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigma3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigma4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>q1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>q2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>q3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>q4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qM12: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qM34: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qO: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qC: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qH1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qH2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qH3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qH4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>qEcc: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>g2LSB: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>g2MSB: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -4752,7 +4855,7 @@ interface IPlonkVerifier {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -5254,15 +5357,19 @@ interface IPlonkVerifier {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>verifyCall {
-        <span class="kw">pub </span>verifyingKey: &lt;VerifyingKey <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>publicInput: [alloy::sol_types::private::primitives::aliases::U256; <span class="number">8usize</span>],
-        <span class="kw">pub </span>proof: &lt;PlonkProof <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>verifyingKey: &lt;VerifyingKey <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>publicInput: [alloy::sol_types::private::primitives::aliases::U256; <span class="number">8usize</span>],
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>proof: &lt;PlonkProof <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="doccomment">///Container type for the return parameters of the [`verify((uint256,uint256,(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),bytes32,bytes32),uint256[8],((uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))`](verifyCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>verifyReturn {
-        <span class="kw">pub </span>_0: bool,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: bool,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -5294,7 +5401,7 @@ interface IPlonkVerifier {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -5327,7 +5434,7 @@ interface IPlonkVerifier {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -5392,7 +5499,8 @@ interface IPlonkVerifier {
     };
     <span class="doccomment">///Container for all the [`IPlonkVerifier`](self) function calls.
     </span><span class="kw">pub enum </span>IPlonkVerifierCalls {
-        verify(verifyCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>verify(verifyCall),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>IPlonkVerifierCalls {
@@ -5457,7 +5565,7 @@ interface IPlonkVerifier {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::verify(inner) =&gt; {
                     &lt;verifyCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encoded_size(inner)
-                }
+                },
             }
         }
         <span class="attr">#[inline]
@@ -5465,7 +5573,7 @@ interface IPlonkVerifier {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::verify(inner) =&gt; {
                     &lt;verifyCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
             }
         }
     }

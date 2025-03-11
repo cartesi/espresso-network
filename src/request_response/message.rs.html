@@ -588,14 +588,14 @@
 
                 <span class="comment">// Write the request content
                 </span>bytes.extend_from_slice(request_message.to_bytes()<span class="question-mark">?</span>.as_slice());
-            }
+            },
             Message::Response(response_message) =&gt; {
                 <span class="comment">// Write the type (response)
                 </span>bytes.push(<span class="number">1</span>);
 
                 <span class="comment">// Write the response content
                 </span>bytes.extend_from_slice(response_message.to_bytes()<span class="question-mark">?</span>.as_slice());
-            }
+            },
         };
 
         <span class="prelude-val">Ok</span>(bytes)
@@ -616,13 +616,13 @@
                 </span><span class="prelude-val">Ok</span>(Message::Request(RequestMessage::from_bytes(<span class="kw-2">&amp;</span>read_to_end(
                     <span class="kw-2">&amp;mut </span>bytes,
                 )<span class="question-mark">?</span>)<span class="question-mark">?</span>))
-            }
+            },
             <span class="number">1 </span>=&gt; {
                 <span class="comment">// Read the `ResponseMessage`
                 </span><span class="prelude-val">Ok</span>(Message::Response(ResponseMessage::from_bytes(
                     <span class="kw-2">&amp;</span>read_to_end(<span class="kw-2">&amp;mut </span>bytes)<span class="question-mark">?</span>,
                 )<span class="question-mark">?</span>))
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"invalid message type"</span>)),
         }
     }
@@ -801,7 +801,7 @@
 
                     <span class="comment">// It should not be valid anymore
                     </span>(<span class="bool-val">false</span>, Duration::from_secs(<span class="number">1</span>))
-                }
+                },
 
                 <span class="number">2 </span>=&gt; {
                     <span class="comment">// Alter the timestamp
@@ -809,13 +809,13 @@
 
                     <span class="comment">// It should not be valid anymore
                     </span>(<span class="bool-val">false</span>, Duration::from_secs(<span class="number">1</span>))
-                }
+                },
 
                 <span class="number">3 </span>=&gt; {
                     <span class="comment">// Change the request ttl to be 0. This should make the request
                     // invalid immediately
                     </span>(<span class="bool-val">true</span>, Duration::from_secs(<span class="number">0</span>))
-                }
+                },
 
                 <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
             };

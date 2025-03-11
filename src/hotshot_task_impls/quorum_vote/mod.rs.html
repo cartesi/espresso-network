@@ -818,7 +818,23 @@
 <a href="#817" id="817">817</a>
 <a href="#818" id="818">818</a>
 <a href="#819" id="819">819</a>
-<a href="#820" id="820">820</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -835,24 +851,24 @@
     dependency_task::{DependencyTask, HandleDepOutput},
     task::TaskState,
 };
-<span class="kw">use </span>hotshot_types::StakeTableEntries;
 <span class="kw">use </span>hotshot_types::{
     consensus::{ConsensusMetricsValue, OuterConsensus},
     data::{Leaf2, QuorumProposalWrapper},
     drb::DrbComputation,
+    epoch_membership::EpochMembershipCoordinator,
     event::Event,
     message::{Proposal, UpgradeLock},
     simple_certificate::UpgradeCertificate,
     simple_vote::HasEpoch,
     traits::{
         block_contents::BlockHeader,
-        election::Membership,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
         storage::Storage,
     },
     utils::{epoch_from_block_number, option_epoch_from_block_number},
     vote::{Certificate, HasViewNumber},
+    StakeTableEntries,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <span class="kw">use </span>tokio::task::JoinHandle;
@@ -894,7 +910,7 @@
     </span><span class="kw">pub </span>instance_state: Arc&lt;TYPES::InstanceState&gt;,
 
     <span class="doccomment">/// Membership for Quorum certs/votes.
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// Reference to the storage.
     </span><span class="kw">pub </span>storage: Arc&lt;RwLock&lt;I::Storage&gt;&gt;,
@@ -943,7 +959,7 @@
                         <span class="prelude-val">Err</span>(e) =&gt; {
                             <span class="macro">tracing::error!</span>(<span class="string">"{e:#}"</span>);
                             <span class="kw">return</span>;
-                        }
+                        },
                     };
                     <span class="kw">let </span>proposal_payload_comm = proposal.data.block_header().payload_commitment();
                     <span class="kw">let </span>parent_commitment = parent_leaf.commit();
@@ -985,7 +1001,7 @@
                     }
                     leaf = <span class="prelude-val">Some</span>(proposed_leaf);
                     parent_view_number = <span class="prelude-val">Some</span>(parent_leaf.view_number());
-                }
+                },
                 HotShotEvent::DaCertificateValidated(cert) =&gt; {
                     <span class="kw">let </span>cert_payload_comm = <span class="kw-2">&amp;</span>cert.data().payload_commit;
                     <span class="kw">let </span>next_epoch_cert_payload_comm = cert.data().next_epoch_payload_commit;
@@ -1007,7 +1023,7 @@
                     } <span class="kw">else </span>{
                         next_epoch_payload_commitment = next_epoch_cert_payload_comm;
                     }
-                }
+                },
                 HotShotEvent::VidShareValidated(share) =&gt; {
                     <span class="kw">let </span>vid_payload_commitment = <span class="kw-2">&amp;</span>share.data.payload_commitment();
                     vid_share = <span class="prelude-val">Some</span>(share.clone());
@@ -1031,8 +1047,8 @@
                     } <span class="kw">else </span>{
                         payload_commitment = <span class="prelude-val">Some</span>(<span class="kw-2">*</span>vid_payload_commitment);
                     }
-                }
-                <span class="kw">_ </span>=&gt; {}
+                },
+                <span class="kw">_ </span>=&gt; {},
             }
         }
 
@@ -1057,7 +1073,7 @@
             OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.inner_consensus)),
             <span class="self">self</span>.sender.clone(),
             <span class="self">self</span>.receiver.clone(),
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+            <span class="self">self</span>.membership_coordinator.clone(),
             <span class="self">self</span>.public_key.clone(),
             <span class="self">self</span>.private_key.clone(),
             <span class="self">self</span>.upgrade_lock.clone(),
@@ -1074,12 +1090,24 @@
             <span class="macro">tracing::error!</span>(<span class="string">"Failed to update shared consensus state; error = {e:#}"</span>);
             <span class="kw">return</span>;
         }
-
         <span class="kw">let </span>cur_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
             leaf.with_epoch,
             leaf.height(),
             <span class="self">self</span>.epoch_height,
         );
+
+        <span class="kw">let </span>epoch_membership = <span class="kw">match </span><span class="self">self
+            </span>.membership_coordinator
+            .membership_for_epoch(cur_epoch)
+            .<span class="kw">await
+        </span>{
+            <span class="prelude-val">Ok</span>(epoch_membership) =&gt; epoch_membership,
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">tracing::warn!</span>(<span class="string">"{:?}"</span>, e);
+                <span class="kw">return</span>;
+            },
+        };
+
         <span class="macro">tracing::trace!</span>(
             <span class="string">"Sending ViewChange for view {} and epoch {:?}"</span>,
             <span class="self">self</span>.view_number + <span class="number">1</span>,
@@ -1093,7 +1121,7 @@
 
         <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = submit_vote::&lt;TYPES, I, V&gt;(
             <span class="self">self</span>.sender.clone(),
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+            epoch_membership,
             <span class="self">self</span>.public_key.clone(),
             <span class="self">self</span>.private_key.clone(),
             <span class="self">self</span>.upgrade_lock.clone(),
@@ -1137,7 +1165,7 @@
     </span><span class="kw">pub </span>network: Arc&lt;I::Network&gt;,
 
     <span class="doccomment">/// Membership for Quorum certs/votes and DA committee certs/votes.
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// In-progress DRB computation task.
     </span><span class="kw">pub </span>drb_computation: DrbComputation&lt;TYPES&gt;,
@@ -1188,21 +1216,21 @@
                         } <span class="kw">else </span>{
                             <span class="kw">return </span><span class="bool-val">false</span>;
                         }
-                    }
+                    },
                     VoteDependency::Dac =&gt; {
                         <span class="kw">if let </span>HotShotEvent::DaCertificateValidated(cert) = event {
                             cert.view_number
                         } <span class="kw">else </span>{
                             <span class="kw">return </span><span class="bool-val">false</span>;
                         }
-                    }
+                    },
                     VoteDependency::Vid =&gt; {
                         <span class="kw">if let </span>HotShotEvent::VidShareValidated(disperse) = event {
                             disperse.data.view_number()
                         } <span class="kw">else </span>{
                             <span class="kw">return </span><span class="bool-val">false</span>;
                         }
-                    }
+                    },
                 };
                 <span class="kw">if </span>event_view == view_number {
                     <span class="macro">tracing::trace!</span>(
@@ -1261,7 +1289,7 @@
                 private_key: <span class="self">self</span>.private_key.clone(),
                 consensus: OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.inner_consensus)),
                 instance_state: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.instance_state),
-                membership: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                membership_coordinator: <span class="self">self</span>.membership.clone(),
                 storage: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.storage),
                 view_number,
                 sender: event_sender.clone(),
@@ -1349,9 +1377,8 @@
                     </span>.is_leaf_forming_eqc(proposal.data.justify_qc().data.leaf_commit);
 
                 <span class="kw">if </span>version &gt;= V::Epochs::VERSION &amp;&amp; is_justify_qc_forming_eqc {
-                    <span class="kw">let _ </span>= <span class="self">self
-                        </span>.handle_eqc_voting(proposal, parent_leaf, event_sender, event_receiver)
-                        .<span class="kw">await</span>;
+                    <span class="self">self</span>.handle_eqc_voting(proposal, parent_leaf, event_sender, event_receiver)
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
                 } <span class="kw">else </span>{
                     <span class="self">self</span>.create_dependency_task_if_new(
                         proposal.data.view_number(),
@@ -1360,7 +1387,7 @@
                         Arc::clone(<span class="kw-2">&amp;</span>event),
                     );
                 }
-            }
+            },
             HotShotEvent::DaCertificateRecv(cert) =&gt; {
                 <span class="kw">let </span>view = cert.view_number;
 
@@ -1373,11 +1400,9 @@
 
                 <span class="kw">let </span>cert_epoch = cert.data.epoch;
 
-                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_da_stake_table = membership_reader.da_stake_table(cert_epoch);
-                <span class="kw">let </span>membership_da_success_threshold =
-                    membership_reader.da_success_threshold(cert_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>epoch_membership = <span class="self">self</span>.membership.membership_for_epoch(cert_epoch).<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">let </span>membership_da_stake_table = epoch_membership.da_stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_da_success_threshold = epoch_membership.da_success_threshold().<span class="kw">await</span>;
 
                 <span class="comment">// Validate the DAC.
                 </span>cert.is_valid_cert(
@@ -1405,7 +1430,7 @@
                     <span class="kw-2">&amp;</span>event_sender,
                     Arc::clone(<span class="kw-2">&amp;</span>event),
                 );
-            }
+            },
             HotShotEvent::VidShareRecv(sender, share) =&gt; {
                 <span class="kw">let </span>view = share.data.view_number();
                 <span class="comment">// Do nothing if the VID share is old
@@ -1426,18 +1451,23 @@
 
                 <span class="kw">let </span>vid_epoch = share.data.epoch();
                 <span class="kw">let </span>target_epoch = share.data.target_epoch();
-                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.membership_for_epoch(vid_epoch).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="comment">// ensure that the VID share was sent by a DA member OR the view leader
                 </span><span class="macro">ensure!</span>(
                     membership_reader
-                        .da_committee_members(view, vid_epoch)
-                        .contains(sender)
-                        || <span class="kw-2">*</span>sender == membership_reader.leader(view, vid_epoch)<span class="question-mark">?</span>,
+                        .da_committee_members(view)
+                        .<span class="kw">await
+                        </span>.contains(sender)
+                        || <span class="kw-2">*</span>sender == membership_reader.leader(view).<span class="kw">await</span><span class="question-mark">?</span>,
                     <span class="string">"VID share was not sent by a DA member or the view leader."
                 </span>);
 
-                <span class="kw">let </span>membership_total_nodes = membership_reader.total_nodes(target_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>membership_total_nodes = <span class="self">self
+                    </span>.membership
+                    .membership_for_epoch(target_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?
+                    </span>.total_nodes()
+                    .<span class="kw">await</span>;
 
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(()) = share.data.verify_share(membership_total_nodes) {
                     <span class="macro">bail!</span>(<span class="string">"Failed to verify VID share"</span>);
@@ -1464,7 +1494,7 @@
                     <span class="kw-2">&amp;</span>event_sender,
                     Arc::clone(<span class="kw-2">&amp;</span>event),
                 );
-            }
+            },
             HotShotEvent::Timeout(view, ..) =&gt; {
                 <span class="kw">let </span>view = TYPES::View::new(view.saturating_sub(<span class="number">1</span>));
                 <span class="comment">// cancel old tasks
@@ -1473,7 +1503,7 @@
                     task.abort();
                 }
                 <span class="self">self</span>.vote_dependencies = current_tasks;
-            }
+            },
             HotShotEvent::ViewChange(<span class="kw-2">mut </span>view, <span class="kw">_</span>) =&gt; {
                 view = TYPES::View::new(view.saturating_sub(<span class="number">1</span>));
                 <span class="kw">if </span>!<span class="self">self</span>.update_latest_voted_view(view).<span class="kw">await </span>{
@@ -1485,8 +1515,8 @@
                     task.abort();
                 }
                 <span class="self">self</span>.vote_dependencies = current_tasks;
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -1554,7 +1584,7 @@
             OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.inner_consensus)),
             event_sender.clone(),
             event_receiver.clone().deactivate(),
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+            <span class="self">self</span>.membership.clone(),
             <span class="self">self</span>.public_key.clone(),
             <span class="self">self</span>.private_key.clone(),
             <span class="self">self</span>.upgrade_lock.clone(),
@@ -1601,7 +1631,9 @@
 
         submit_vote::&lt;TYPES, I, V&gt;(
             event_sender.clone(),
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+            <span class="self">self</span>.membership
+                .membership_for_epoch(<span class="prelude-val">Some</span>(current_epoch))
+                .<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="self">self</span>.public_key.clone(),
             <span class="self">self</span>.private_key.clone(),
             <span class="self">self</span>.upgrade_lock.clone(),

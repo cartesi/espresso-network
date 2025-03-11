@@ -204,16 +204,16 @@
 //! implementations of [`Provider`] for various data availability sources.
 //!
 
-</span><span class="kw">use </span>async_lock::Mutex;
-<span class="kw">use </span>async_lock::Semaphore;
-<span class="kw">use </span>backoff::{backoff::Backoff, ExponentialBackoff};
-<span class="kw">use </span>derivative::Derivative;
-<span class="kw">use </span>std::{
+</span><span class="kw">use </span>std::{
     collections::{hash_map::Entry, BTreeSet, HashMap},
     fmt::Debug,
     sync::Arc,
     time::Duration,
 };
+
+<span class="kw">use </span>async_lock::{Mutex, Semaphore};
+<span class="kw">use </span>backoff::{backoff::Backoff, ExponentialBackoff};
+<span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>tokio::{spawn, time::sleep};
 
 <span class="kw">pub mod </span>provider;
@@ -305,12 +305,12 @@
                         </span>e.get_mut().extend(callbacks);
                         <span class="macro">tracing::info!</span>(<span class="question-mark">?</span>req, callbacks = <span class="question-mark">?</span>e.get(), <span class="string">"resource is already being fetched"</span>);
                         <span class="kw">return</span>;
-                    }
+                    },
                     Entry::Vacant(e) =&gt; {
                         <span class="comment">// If the object is not being fetched, we will register our own callback and
                         // then fetch it ourselves.
                         </span>e.insert(callbacks.into_iter().collect());
-                    }
+                    },
                 }
             }
 

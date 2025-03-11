@@ -307,11 +307,11 @@
     <span class="kw">match </span>(base, upgrade) {
         (FeeVersion::VERSION, MarketplaceVersion::VERSION) =&gt; {
             run::&lt;SequencerVersions&lt;FeeVersion, MarketplaceVersion&gt;&gt;(genesis, opt).<span class="kw">await
-        </span>}
+        </span>},
         (FeeVersion::VERSION, <span class="kw">_</span>) =&gt; run::&lt;SequencerVersions&lt;FeeVersion, V0_0&gt;&gt;(genesis, opt).<span class="kw">await</span>,
         (MarketplaceVersion::VERSION, <span class="kw">_</span>) =&gt; {
             run::&lt;SequencerVersions&lt;MarketplaceVersion, V0_0&gt;&gt;(genesis, opt).<span class="kw">await
-        </span>}
+        </span>},
         <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(
             <span class="string">"Invalid base ({base}) and upgrade ({upgrade}) versions specified in the toml file."
         </span>),

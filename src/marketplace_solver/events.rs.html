@@ -294,7 +294,7 @@
         </span><span class="kw">match </span>event.event {
             hotshot::types::EventType::ViewFinished { view_number } =&gt; {
                 <span class="macro">tracing::debug!</span>(<span class="string">"received view finished event {view_number:?}"</span>)
-            }
+            },
             <span class="kw">_ </span>=&gt; (),
         }
     }
@@ -304,6 +304,8 @@
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">pub mod </span>mock {
+    <span class="kw">use </span>std::{sync::Arc, time::Duration};
+
     <span class="kw">use </span>async_lock::RwLock;
     <span class="kw">use </span>espresso_types::SeqTypes;
     <span class="kw">use </span>hotshot::rand::{<span class="self">self</span>};
@@ -318,7 +320,6 @@
     };
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>rand::{rngs::OsRng, RngCore};
-    <span class="kw">use </span>std::{sync::Arc, time::Duration};
     <span class="kw">use </span>tide_disco::{App, Url};
     <span class="kw">use </span>tokio::{spawn, task::JoinHandle, time::sleep};
     <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType};
@@ -419,8 +420,7 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>espresso_types::SeqTypes;
     <span class="kw">use </span>futures::StreamExt <span class="kw">as _</span>;
-    <span class="kw">use </span>hotshot::helpers::initialize_logging;
-    <span class="kw">use </span>hotshot::types::Event;
+    <span class="kw">use </span>hotshot::{helpers::initialize_logging, types::Event};
     <span class="kw">use </span>hotshot_events_service::events_source::StartupInfo;
     <span class="kw">use </span>surf_disco::Client;
 

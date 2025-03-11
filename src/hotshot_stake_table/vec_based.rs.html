@@ -647,7 +647,7 @@
                 <span class="self">self</span>.head_total_stake -= <span class="self">self</span>.head.stake_amount[<span class="kw-2">*</span>pos];
                 <span class="self">self</span>.head.stake_amount[<span class="kw-2">*</span>pos] = U256::zero();
                 <span class="prelude-val">Ok</span>(())
-            }
+            },
             <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(StakeTableError::KeyNotFound),
         }
     }
@@ -827,7 +827,7 @@
                 <span class="self">self</span>.head_total_stake -= old_value;
                 <span class="self">self</span>.head_total_stake += value;
                 <span class="prelude-val">Ok</span>(old_value)
-            }
+            },
             <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(StakeTableError::KeyNotFound),
         }
     }

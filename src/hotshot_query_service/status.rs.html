@@ -267,7 +267,8 @@
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -292,16 +293,16 @@
 //! * snapshots of the state right now, with no way to query historical snapshots
 //! * summary statistics
 
-</span><span class="kw">use </span><span class="kw">crate</span>::api::load_api;
+</span><span class="kw">use </span>std::{borrow::Cow, fmt::Display, path::PathBuf};
+
 <span class="kw">use </span>derive_more::From;
 <span class="kw">use </span>futures::FutureExt;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>snafu::Snafu;
-<span class="kw">use </span>std::borrow::Cow;
-<span class="kw">use </span>std::fmt::Display;
-<span class="kw">use </span>std::path::PathBuf;
 <span class="kw">use </span>tide_disco::{api::ApiError, method::ReadState, Api, RequestError, StatusCode};
 <span class="kw">use </span>vbs::version::StaticVersionType;
+
+<span class="kw">use </span><span class="kw">crate</span>::api::load_api;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>data_source;
 
@@ -376,6 +377,17 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::{str::FromStr, time::Duration};
+
+    <span class="kw">use </span>async_lock::RwLock;
+    <span class="kw">use </span>futures::FutureExt;
+    <span class="kw">use </span>portpicker::pick_unused_port;
+    <span class="kw">use </span>reqwest::redirect::Policy;
+    <span class="kw">use </span>surf_disco::Client;
+    <span class="kw">use </span>tempfile::TempDir;
+    <span class="kw">use </span>tide_disco::{App, Url};
+    <span class="kw">use </span>toml::toml;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         data_source::ExtensibleDataSource,
@@ -387,16 +399,6 @@
         },
         ApiState, Error,
     };
-    <span class="kw">use </span>async_lock::RwLock;
-    <span class="kw">use </span>futures::FutureExt;
-    <span class="kw">use </span>portpicker::pick_unused_port;
-    <span class="kw">use </span>reqwest::redirect::Policy;
-    <span class="kw">use </span>std::str::FromStr;
-    <span class="kw">use </span>std::time::Duration;
-    <span class="kw">use </span>surf_disco::Client;
-    <span class="kw">use </span>tempfile::TempDir;
-    <span class="kw">use </span>tide_disco::{App, Url};
-    <span class="kw">use </span>toml::toml;
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_api() {

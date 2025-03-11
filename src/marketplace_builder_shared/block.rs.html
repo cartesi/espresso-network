@@ -132,16 +132,18 @@
 <a href="#131" id="131">131</a>
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a></pre></div><pre class="rust"><code><span class="doccomment">//! Shared types dealing with block information
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a></pre></div><pre class="rust"><code><span class="doccomment">//! Shared types dealing with block information
 
 </span><span class="kw">use </span>std::time::Instant;
 
 <span class="kw">use </span>committable::{Commitment, Committable};
-<span class="kw">use </span>hotshot_types::data::{fake_commitment, Leaf2};
-<span class="kw">use </span>hotshot_types::traits::node_implementation::ConsensusTime;
 <span class="kw">use </span>hotshot_types::{
-    data::VidCommitment,
-    traits::{block_contents::Transaction, node_implementation::NodeType},
+    data::{fake_commitment, Leaf2, VidCommitment},
+    traits::{
+        block_contents::Transaction,
+        node_implementation::{ConsensusTime, NodeType},
+    },
     utils::BuilderCommitment,
 };
 

@@ -246,18 +246,21 @@
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
 <a href="#247" id="247">247</a>
-<a href="#248" id="248">248</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see &lt;https://mit-license.org/&gt;.
 
-</span><span class="kw">use </span>async_broadcast::{Receiver, Sender};
-<span class="kw">use </span>async_lock::RwLock;
+</span><span class="kw">use </span>std::{sync::Arc, time::Instant};
+
+<span class="kw">use </span>async_broadcast::{Receiver, Sender};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot_task::task::TaskState;
 <span class="kw">use </span>hotshot_types::{
     consensus::OuterConsensus,
+    epoch_membership::EpochMembershipCoordinator,
     event::Event,
     message::UpgradeLock,
     simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, TimeoutCertificate2},
@@ -270,7 +273,6 @@
     vote::HasViewNumber,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
-<span class="kw">use </span>std::{sync::Arc, time::Instant};
 <span class="kw">use </span>tokio::task::JoinHandle;
 <span class="kw">use </span>tracing::instrument;
 
@@ -301,7 +303,7 @@
     </span><span class="kw">pub </span>network: Arc&lt;I::Network&gt;,
 
     <span class="doccomment">/// Membership for Quorum Certs/votes
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// A map of `QuorumVote` collector tasks.
     </span><span class="kw">pub </span>vote_collectors: VoteCollectorsMap&lt;TYPES, QuorumVote2&lt;TYPES&gt;, QuorumCertificate2&lt;TYPES&gt;, V&gt;,
@@ -368,14 +370,14 @@
                 </span>{
                     <span class="macro">tracing::debug!</span>(<span class="string">"Failed to handle QuorumVoteRecv event; error = {e}"</span>);
                 }
-            }
+            },
             HotShotEvent::TimeoutVoteRecv(<span class="kw-2">ref </span>vote) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(e) =
                     handle_timeout_vote_recv(vote, Arc::clone(<span class="kw-2">&amp;</span>event), <span class="kw-2">&amp;</span>sender, <span class="self">self</span>).<span class="kw">await
                 </span>{
                     <span class="macro">tracing::debug!</span>(<span class="string">"Failed to handle TimeoutVoteRecv event; error = {e}"</span>);
                 }
-            }
+            },
             HotShotEvent::ViewChange(new_view_number, epoch_number) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(e) =
                     handle_view_change(<span class="kw-2">*</span>new_view_number, <span class="kw-2">*</span>epoch_number, <span class="kw-2">&amp;</span>sender, <span class="kw-2">&amp;</span>receiver, <span class="self">self</span>)
@@ -384,12 +386,12 @@
                     <span class="macro">tracing::trace!</span>(<span class="string">"Failed to handle ViewChange event; error = {e}"</span>);
                 }
                 <span class="self">self</span>.view_start_time = Instant::now();
-            }
+            },
             HotShotEvent::Timeout(view_number, epoch) =&gt; {
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = handle_timeout(<span class="kw-2">*</span>view_number, <span class="kw-2">*</span>epoch, <span class="kw-2">&amp;</span>sender, <span class="self">self</span>).<span class="kw">await </span>{
                     <span class="macro">tracing::debug!</span>(<span class="string">"Failed to handle Timeout event; error = {e}"</span>);
                 }
-            }
+            },
             HotShotEvent::ExtendedQc2Formed(eqc) =&gt; {
                 <span class="kw">let </span>cert_view = eqc.view_number();
                 <span class="kw">let </span>cert_block_number = <span class="self">self
@@ -416,7 +418,7 @@
                     <span class="kw-2">&amp;</span>sender,
                 )
                 .<span class="kw">await</span>;
-            }
+            },
             HotShotEvent::ExtendedQcRecv(high_qc, next_epoch_high_qc, <span class="kw">_</span>) =&gt; {
                 <span class="kw">if </span>!<span class="self">self
                     </span>.consensus
@@ -431,7 +433,7 @@
                     high_qc,
                     <span class="prelude-val">Some</span>(next_epoch_high_qc),
                     <span class="kw-2">&amp;</span><span class="self">self</span>.consensus,
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership_coordinator,
                     <span class="kw-2">&amp;</span><span class="self">self</span>.upgrade_lock,
                 )
                 .<span class="kw">await
@@ -465,8 +467,8 @@
                     )
                     .<span class="kw">await</span>;
                 }
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
 
         <span class="prelude-val">Ok</span>(())

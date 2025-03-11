@@ -80,6 +80,7 @@
     marker::PhantomData,
     mem,
     net::{IpAddr, Ipv4Addr},
+    sync::Arc,
     thread::Builder,
 };
 
@@ -109,16 +110,13 @@
     BuildError, Error <span class="kw">as </span>BuilderApiError, Options <span class="kw">as </span>HotshotBuilderApiOptions,
 };
 <span class="kw">use </span>hotshot_orchestrator::client::{OrchestratorClient, ValidatorArgs};
-<span class="kw">use </span>hotshot_types::network::NetworkConfig;
-<span class="kw">use </span>marketplace_builder_core::service::{GlobalState, ProxyGlobalState};
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>tokio::{spawn, task::JoinHandle};
 <span class="comment">// Should move `STAKE_TABLE_CAPACITY` in the sequencer repo when we have variate stake table support
 </span><span class="kw">use </span>hotshot_stake_table::config::STAKE_TABLE_CAPACITY;
 <span class="kw">use </span>hotshot_types::{
     consensus::ConsensusMetricsValue,
     event::LeafInfo,
     light_client::StateKeyPair,
+    network::NetworkConfig,
     signature_key::{BLSPrivKey, BLSPubKey},
     traits::{
         block_contents::{BlockHeader, BlockPayload, EncodeBytes, GENESIS_VID_NUM_STORAGE_NODES},
@@ -131,6 +129,7 @@
 };
 <span class="kw">use </span>jf_merkle_tree::{namespaced_merkle_tree::NamespacedMerkleTreeScheme, MerkleTreeScheme};
 <span class="kw">use </span>jf_signature::bls_over_bn254::VerKey;
+<span class="kw">use </span>marketplace_builder_core::service::{GlobalState, ProxyGlobalState};
 <span class="kw">use </span>sequencer::{
     catchup::StatePeers,
     context::{Consensus, SequencerContext},
@@ -140,6 +139,7 @@
 };
 <span class="kw">use </span>surf_disco::Client;
 <span class="kw">use </span>tide_disco::{app, method::ReadState, App, Url};
+<span class="kw">use </span>tokio::{spawn, task::JoinHandle};
 <span class="kw">use </span>tracing::error;
 <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType};
 

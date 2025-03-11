@@ -101,7 +101,10 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::Result;
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{path::PathBuf, time::Duration};
+
+<span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::parse_duration;
 <span class="kw">use </span>ethers::types::Address;
@@ -109,7 +112,6 @@
     logging,
     stake_table::{update_stake_table, PermissionedStakeTableUpdate},
 };
-<span class="kw">use </span>std::{path::PathBuf, time::Duration};
 <span class="kw">use </span>url::Url;
 
 <span class="attr">#[derive(Debug, Clone, Parser)]

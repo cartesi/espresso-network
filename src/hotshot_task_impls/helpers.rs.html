@@ -970,13 +970,45 @@
 <a href="#969" id="969">969</a>
 <a href="#970" id="970">970</a>
 <a href="#971" id="971">971</a>
-<a href="#972" id="972">972</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#972" id="972">972</a>
+<a href="#973" id="973">973</a>
+<a href="#974" id="974">974</a>
+<a href="#975" id="975">975</a>
+<a href="#976" id="976">976</a>
+<a href="#977" id="977">977</a>
+<a href="#978" id="978">978</a>
+<a href="#979" id="979">979</a>
+<a href="#980" id="980">980</a>
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a>
+<a href="#985" id="985">985</a>
+<a href="#986" id="986">986</a>
+<a href="#987" id="987">987</a>
+<a href="#988" id="988">988</a>
+<a href="#989" id="989">989</a>
+<a href="#990" id="990">990</a>
+<a href="#991" id="991">991</a>
+<a href="#992" id="992">992</a>
+<a href="#993" id="993">993</a>
+<a href="#994" id="994">994</a>
+<a href="#995" id="995">995</a>
+<a href="#996" id="996">996</a>
+<a href="#997" id="997">997</a>
+<a href="#998" id="998">998</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see &lt;https://mit-license.org/&gt;.
 
-</span><span class="kw">use </span>async_broadcast::{Receiver, SendError, Sender};
+</span><span class="kw">use </span>std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::{Duration, Instant},
+};
+
+<span class="kw">use </span>async_broadcast::{Receiver, SendError, Sender};
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>either::Either;
@@ -984,6 +1016,7 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::OuterConsensus,
     data::{Leaf2, QuorumProposalWrapper, ViewChangeEvidence2},
+    epoch_membership::EpochMembershipCoordinator,
     event::{Event, EventType, LeafInfo},
     message::{Proposal, UpgradeLock},
     request_response::ProposalRequestPayload,
@@ -994,6 +1027,7 @@
         election::Membership,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
+        storage::Storage,
         BlockPayload, ValidatedState,
     },
     utils::{
@@ -1004,11 +1038,6 @@
     StakeTableEntries,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
-<span class="kw">use </span>std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-    time::{Duration, Instant},
-};
 <span class="kw">use </span>tokio::time::timeout;
 <span class="kw">use </span>tracing::instrument;
 
@@ -1021,7 +1050,7 @@
     view_number: TYPES::View,
     event_sender: Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
     event_receiver: Receiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
-    membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
     consensus: OuterConsensus&lt;TYPES&gt;,
     sender_public_key: TYPES::SignatureKey,
     sender_private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
@@ -1050,7 +1079,7 @@
     )
     .<span class="kw">await</span>;
 
-    <span class="kw">let </span>mem = Arc::clone(<span class="kw-2">&amp;</span>membership);
+    <span class="kw">let </span>mem_coordinator = membership_coordinator.clone();
     <span class="comment">// Make a background task to await the arrival of the event data.
     </span><span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(proposal)) =
         <span class="comment">// We want to explicitly timeout here so we aren't waiting around for the data.
@@ -1081,9 +1110,14 @@
                     <span class="kw">if let </span>HotShotEvent::QuorumProposalResponseRecv(quorum_proposal) =
                         hs_event.as_ref()
                     {
+                        <span class="kw">let </span>proposal_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
+                            quorum_proposal.data.proposal.epoch().is_some(),
+                            quorum_proposal.data.block_header().block_number(),
+                            epoch_height,
+                        );
+                        <span class="kw">let </span>epoch_membership = mem_coordinator.membership_for_epoch(proposal_epoch).<span class="kw">await</span>.ok()<span class="question-mark">?</span>;
                         <span class="comment">// Make sure that the quorum_proposal is valid
-                        </span><span class="kw">let </span>mem_reader = mem.read().<span class="kw">await</span>;
-                        <span class="kw">if </span>quorum_proposal.validate_signature(<span class="kw-2">&amp;</span>mem_reader, epoch_height).is_ok() {
+                        </span><span class="kw">if </span>quorum_proposal.validate_signature(<span class="kw-2">&amp;</span>epoch_membership).<span class="kw">await</span>.is_ok() {
                             proposal = <span class="prelude-val">Some</span>(quorum_proposal.clone());
                         }
 
@@ -1105,10 +1139,11 @@
 
     <span class="kw">let </span>justify_qc_epoch = justify_qc.data.epoch();
 
-    <span class="kw">let </span>membership_reader = membership.read().<span class="kw">await</span>;
-    <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(justify_qc_epoch);
-    <span class="kw">let </span>membership_success_threshold = membership_reader.success_threshold(justify_qc_epoch);
-    drop(membership_reader);
+    <span class="kw">let </span>epoch_membership = membership_coordinator
+        .membership_for_epoch(justify_qc_epoch)
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>membership_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
+    <span class="kw">let </span>membership_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
 
     justify_qc
         .is_valid_cert(
@@ -1145,17 +1180,31 @@
 }
 
 <span class="doccomment">/// Handles calling add_epoch_root and sync_l1 on Membership if necessary.
-</span><span class="kw">async fn </span>decide_epoch_root&lt;TYPES: NodeType&gt;(
+</span><span class="kw">async fn </span>decide_epoch_root&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;&gt;(
     decided_leaf: <span class="kw-2">&amp;</span>Leaf2&lt;TYPES&gt;,
     epoch_height: u64,
     membership: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    storage: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;I::Storage&gt;&gt;,
 ) {
     <span class="kw">let </span>decided_block_number = decided_leaf.block_header().block_number();
 
     <span class="comment">// Skip if this is not the expected block.
     </span><span class="kw">if </span>epoch_height != <span class="number">0 </span>&amp;&amp; is_epoch_root(decided_block_number, epoch_height) {
         <span class="kw">let </span>next_epoch_number =
-            TYPES::Epoch::new(epoch_from_block_number(decided_block_number, epoch_height) + <span class="number">1</span>);
+            TYPES::Epoch::new(epoch_from_block_number(decided_block_number, epoch_height) + <span class="number">2</span>);
+
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = storage
+            .write()
+            .<span class="kw">await
+            </span>.add_epoch_root(next_epoch_number, decided_leaf.block_header().clone())
+            .<span class="kw">await
+        </span>{
+            <span class="macro">tracing::error!</span>(
+                <span class="string">"Failed to store epoch root for epoch {:?}: {}"</span>,
+                next_epoch_number,
+                e
+            );
+        }
 
         <span class="kw">let </span>write_callback = {
             <span class="macro">tracing::debug!</span>(<span class="string">"Calling add_epoch_root for epoch {:?}"</span>, next_epoch_number);
@@ -1216,13 +1265,14 @@
 /// # Panics
 /// If the leaf chain contains no decided leaf while reaching a decided view, which should be
 /// impossible.
-</span><span class="kw">pub async fn </span>decide_from_proposal_2&lt;TYPES: NodeType&gt;(
+</span><span class="kw">pub async fn </span>decide_from_proposal_2&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;&gt;(
     proposal: <span class="kw-2">&amp;</span>QuorumProposalWrapper&lt;TYPES&gt;,
     consensus: OuterConsensus&lt;TYPES&gt;,
     existing_upgrade_cert: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;TYPES&gt;&gt;&gt;&gt;,
     public_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
     with_epochs: bool,
     membership: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    storage: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;I::Storage&gt;&gt;,
 ) -&gt; LeafChainTraversalOutcome&lt;TYPES&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>res = LeafChainTraversalOutcome::default();
     <span class="kw">let </span>consensus_reader = consensus.read().<span class="kw">await</span>;
@@ -1296,10 +1346,14 @@
         <span class="kw">let </span>epoch_height = consensus_reader.epoch_height;
         drop(consensus_reader);
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(decided_leaf_info) = res.leaf_views.last() {
-            decide_epoch_root(<span class="kw-2">&amp;</span>decided_leaf_info.leaf, epoch_height, membership).<span class="kw">await</span>;
-        } <span class="kw">else </span>{
-            <span class="macro">tracing::info!</span>(<span class="string">"No decided leaf while a view has been decided."</span>);
+        <span class="kw">for </span>decided_leaf_info <span class="kw">in </span><span class="kw-2">&amp;</span>res.leaf_views {
+            decide_epoch_root::&lt;TYPES, I&gt;(
+                <span class="kw-2">&amp;</span>decided_leaf_info.leaf,
+                epoch_height,
+                membership,
+                storage,
+            )
+            .<span class="kw">await</span>;
         }
     }
 
@@ -1337,13 +1391,14 @@
 /// # Panics
 /// If the leaf chain contains no decided leaf while reaching a decided view, which should be
 /// impossible.
-</span><span class="kw">pub async fn </span>decide_from_proposal&lt;TYPES: NodeType, V: Versions&gt;(
+</span><span class="kw">pub async fn </span>decide_from_proposal&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt;(
     proposal: <span class="kw-2">&amp;</span>QuorumProposalWrapper&lt;TYPES&gt;,
     consensus: OuterConsensus&lt;TYPES&gt;,
     existing_upgrade_cert: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;TYPES&gt;&gt;&gt;&gt;,
     public_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
     with_epochs: bool,
     membership: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    storage: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;I::Storage&gt;&gt;,
 ) -&gt; LeafChainTraversalOutcome&lt;TYPES&gt; {
     <span class="kw">let </span>consensus_reader = consensus.read().<span class="kw">await</span>;
     <span class="kw">let </span>existing_upgrade_cert_reader = existing_upgrade_cert.read().<span class="kw">await</span>;
@@ -1454,10 +1509,14 @@
     drop(consensus_reader);
 
     <span class="kw">if </span>with_epochs &amp;&amp; res.new_decided_view_number.is_some() {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(decided_leaf_info) = res.leaf_views.last() {
-            decide_epoch_root(<span class="kw-2">&amp;</span>decided_leaf_info.leaf, epoch_height, membership).<span class="kw">await</span>;
-        } <span class="kw">else </span>{
-            <span class="macro">tracing::info!</span>(<span class="string">"No decided leaf while a view has been decided."</span>);
+        <span class="kw">for </span>decided_leaf_info <span class="kw">in </span><span class="kw-2">&amp;</span>res.leaf_views {
+            decide_epoch_root::&lt;TYPES, I&gt;(
+                <span class="kw-2">&amp;</span>decided_leaf_info.leaf,
+                epoch_height,
+                membership,
+                storage,
+            )
+            .<span class="kw">await</span>;
         }
     }
 
@@ -1470,7 +1529,7 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>parent_leaf_and_state&lt;TYPES: NodeType, V: Versions&gt;(
     event_sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
     event_receiver: <span class="kw-2">&amp;</span>Receiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
-    membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    membership: EpochMembershipCoordinator&lt;TYPES&gt;,
     public_key: TYPES::SignatureKey,
     private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
     consensus: OuterConsensus&lt;TYPES&gt;,
@@ -1717,9 +1776,8 @@
     );
 
     <span class="comment">// Validate the proposal's signature. This should also catch if the leaf_commitment does not equal our calculated parent commitment
-    </span><span class="kw">let </span>membership_reader = validation_info.membership.read().<span class="kw">await</span>;
-    proposal.validate_signature(<span class="kw-2">&amp;</span>membership_reader, validation_info.epoch_height)<span class="question-mark">?</span>;
-    drop(membership_reader);
+    </span><span class="kw">let </span><span class="kw-2">mut </span>membership = validation_info.membership.clone();
+    proposal.validate_signature(<span class="kw-2">&amp;</span>membership).<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="comment">// Verify a timeout certificate OR a view sync certificate exists and is valid.
     </span><span class="kw">if </span>proposal.data.justify_qc().view_number() != view_number - <span class="number">1 </span>{
@@ -1737,12 +1795,10 @@
                     <span class="kw-2">*</span>view_number
                 );
                 <span class="kw">let </span>timeout_cert_epoch = timeout_cert.data().epoch();
+                membership = membership.get_new_epoch(timeout_cert_epoch).<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span>membership_reader = validation_info.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(timeout_cert_epoch);
-                <span class="kw">let </span>membership_success_threshold =
-                    membership_reader.success_threshold(timeout_cert_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>membership_stake_table = membership.stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_success_threshold = membership.success_threshold().<span class="kw">await</span>;
 
                 timeout_cert
                     .is_valid_cert(
@@ -1757,7 +1813,7 @@
                             <span class="kw-2">*</span>view_number, e
                         )
                     })<span class="question-mark">?</span>;
-            }
+            },
             ViewChangeEvidence2::ViewSync(view_sync_cert) =&gt; {
                 <span class="macro">ensure!</span>(
                     view_sync_cert.view_number == view_number,
@@ -1767,12 +1823,10 @@
                 );
 
                 <span class="kw">let </span>view_sync_cert_epoch = view_sync_cert.data().epoch();
+                membership = membership.get_new_epoch(view_sync_cert_epoch).<span class="kw">await</span><span class="question-mark">?</span>;
 
-                <span class="kw">let </span>membership_reader = validation_info.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(view_sync_cert_epoch);
-                <span class="kw">let </span>membership_success_threshold =
-                    membership_reader.success_threshold(view_sync_cert_epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>membership_stake_table = membership.stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_success_threshold = membership.success_threshold().<span class="kw">await</span>;
 
                 <span class="comment">// View sync certs must also be valid.
                 </span>view_sync_cert
@@ -1783,7 +1837,7 @@
                     )
                     .<span class="kw">await
                     </span>.context(|e| <span class="macro">warn!</span>(<span class="string">"Invalid view sync finalize cert provided: {}"</span>, e))<span class="question-mark">?</span>;
-            }
+            },
         }
     }
 
@@ -1816,13 +1870,13 @@
                 <span class="string">"Event sender queue overflow, Oldest event removed form queue: {:?}"</span>,
                 overflowed
             );
-        }
+        },
         <span class="prelude-val">Err</span>(SendError(e)) =&gt; {
             <span class="macro">tracing::warn!</span>(
                 <span class="string">"Event: {:?}\n Sending failed, event stream probably shutdown"</span>,
                 e
             );
-        }
+        },
     }
 }
 
@@ -1894,13 +1948,15 @@
     qc: <span class="kw-2">&amp;</span>QuorumCertificate2&lt;TYPES&gt;,
     maybe_next_epoch_qc: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
     consensus: <span class="kw-2">&amp;</span>OuterConsensus&lt;TYPES&gt;,
-    membership: <span class="kw-2">&amp;</span>Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    membership_coordinator: <span class="kw-2">&amp;</span>EpochMembershipCoordinator&lt;TYPES&gt;,
     upgrade_lock: <span class="kw-2">&amp;</span>UpgradeLock&lt;TYPES, V&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">let </span>membership_reader = membership.read().<span class="kw">await</span>;
-    <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(qc.data.epoch);
-    <span class="kw">let </span>membership_success_threshold = membership_reader.success_threshold(qc.data.epoch);
-    drop(membership_reader);
+    <span class="kw">let </span><span class="kw-2">mut </span>epoch_membership = membership_coordinator
+        .membership_for_epoch(qc.data.epoch)
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+
+    <span class="kw">let </span>membership_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
+    <span class="kw">let </span>membership_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
 
     {
         <span class="kw">let </span>consensus_reader = consensus.read().<span class="kw">await</span>;
@@ -1922,13 +1978,9 @@
         </span><span class="kw">if </span>qc.view_number() != next_epoch_qc.view_number() || qc.data != <span class="kw-2">*</span>next_epoch_qc.data {
             <span class="macro">bail!</span>(<span class="string">"Next epoch qc exists but it's not equal with qc."</span>);
         }
-
-        <span class="kw">let </span>membership_reader = membership.read().<span class="kw">await</span>;
-        <span class="kw">let </span>membership_next_stake_table =
-            membership_reader.stake_table(qc.data.epoch.map(|x| x + <span class="number">1</span>));
-        <span class="kw">let </span>membership_next_success_threshold =
-            membership_reader.success_threshold(qc.data.epoch.map(|x| x + <span class="number">1</span>));
-        drop(membership_reader);
+        epoch_membership = epoch_membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>membership_next_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
+        <span class="kw">let </span>membership_next_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
 
         <span class="comment">// Validate the next epoch qc as well
         </span>next_epoch_qc

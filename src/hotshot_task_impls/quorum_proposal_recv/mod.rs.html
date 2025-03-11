@@ -217,7 +217,22 @@
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
-<a href="#219" id="219">219</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -236,13 +251,17 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::{Consensus, OuterConsensus},
     data::{EpochNumber, Leaf, ViewChangeEvidence2},
+    epoch_membership::{<span class="self">self</span>, EpochMembership, EpochMembershipCoordinator},
     event::Event,
     message::UpgradeLock,
     simple_certificate::UpgradeCertificate,
+    simple_vote::HasEpoch,
     traits::{
+        block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
     },
+    utils::option_epoch_from_block_number,
     vote::{Certificate, HasViewNumber},
 };
 <span class="kw">use </span>hotshot_utils::anytrace::{bail, <span class="prelude-ty">Result</span>};
@@ -277,7 +296,7 @@
     </span><span class="kw">pub </span>cur_epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
 
     <span class="doccomment">/// Membership for Quorum Certs/votes
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// View timeout from config.
     </span><span class="kw">pub </span>timeout: u64,
@@ -318,7 +337,7 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) consensus: OuterConsensus&lt;TYPES&gt;,
 
     <span class="doccomment">/// Membership for Quorum Certs/votes
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership: EpochMembership&lt;TYPES&gt;,
 
     <span class="doccomment">/// Output events to application
     </span><span class="kw">pub </span>output_event_stream: async_broadcast::Sender&lt;Event&lt;TYPES&gt;&gt;,
@@ -364,12 +383,23 @@
                     <span class="macro">tracing::error!</span>(<span class="string">"Throwing away old proposal"</span>);
                     <span class="kw">return</span>;
                 }
+                <span class="kw">let </span>proposal_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
+                    proposal.data.proposal.epoch().is_some(),
+                    proposal.data.block_header().block_number(),
+                    <span class="self">self</span>.epoch_height,
+                );
+                <span class="kw">let </span><span class="prelude-val">Ok</span>(epoch_membership) =
+                    <span class="self">self</span>.membership.membership_for_epoch(proposal_epoch).<span class="kw">await
+                else </span>{
+                    <span class="macro">tracing::warn!</span>(<span class="string">"No Stake table for epoch = {:?}"</span>, proposal_epoch);
+                    <span class="kw">return</span>;
+                };
                 <span class="kw">let </span>validation_info = ValidationInfo::&lt;TYPES, I, V&gt; {
                     id: <span class="self">self</span>.id,
                     public_key: <span class="self">self</span>.public_key.clone(),
                     private_key: <span class="self">self</span>.private_key.clone(),
                     consensus: <span class="self">self</span>.consensus.clone(),
-                    membership: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                    membership: epoch_membership,
                     output_event_stream: <span class="self">self</span>.output_event_stream.clone(),
                     storage: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.storage),
                     upgrade_lock: <span class="self">self</span>.upgrade_lock.clone(),
@@ -384,10 +414,10 @@
                 )
                 .<span class="kw">await
                 </span>{
-                    <span class="prelude-val">Ok</span>(()) =&gt; {}
-                    <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">debug!</span>(<span class="question-mark">?</span>e, <span class="string">"Failed to validate the proposal"</span>),
+                    <span class="prelude-val">Ok</span>(()) =&gt; {},
+                    <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">error!</span>(<span class="question-mark">?</span>e, <span class="string">"Failed to validate the proposal"</span>),
                 }
-            }
+            },
             HotShotEvent::ViewChange(view, epoch) =&gt; {
                 <span class="kw">if </span><span class="kw-2">*</span>epoch &gt; <span class="self">self</span>.cur_epoch {
                     <span class="self">self</span>.cur_epoch = <span class="kw-2">*</span>epoch;
@@ -402,8 +432,8 @@
                 // to enter view V + 1.
                 </span><span class="kw">let </span>oldest_view_to_keep = TYPES::View::new(view.saturating_sub(<span class="number">1</span>));
                 <span class="self">self</span>.cancel_tasks(oldest_view_to_keep);
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
     }
 }

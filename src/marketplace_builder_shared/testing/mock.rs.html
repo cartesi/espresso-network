@@ -194,49 +194,39 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-<a href="#197" id="197">197</a>
-<a href="#198" id="198">198</a>
-<a href="#199" id="199">199</a>
-<a href="#200" id="200">200</a>
-<a href="#201" id="201">201</a></pre></div><pre class="rust"><code><span class="doccomment">//! A collection of generator functions for mock data used in tests
+<a href="#196" id="196">196</a></pre></div><pre class="rust"><code><span class="doccomment">//! A collection of generator functions for mock data used in tests
 </span><span class="kw">use </span>std::{marker::PhantomData, sync::Arc, time::Duration};
 
 <span class="kw">use </span>async_broadcast::broadcast;
-<span class="kw">use </span>committable::Commitment;
-<span class="kw">use </span>committable::Committable;
-<span class="kw">use </span>hotshot_example_types::block_types::{TestBlockHeader, TestBlockPayload, TestTransaction};
+<span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>hotshot_example_types::{
+    block_types::{TestBlockHeader, TestBlockPayload, TestTransaction},
     node_types::{TestTypes, TestVersions},
     state_types::{TestInstanceState, TestValidatedState},
 };
-<span class="kw">use </span>hotshot_types::data::DaProposal2;
-<span class="kw">use </span>hotshot_types::data::ViewNumber;
-<span class="kw">use </span>hotshot_types::data::{QuorumProposal2, QuorumProposalWrapper};
-<span class="kw">use </span>hotshot_types::event::LeafInfo;
-<span class="kw">use </span>hotshot_types::simple_certificate::QuorumCertificate2;
-<span class="kw">use </span>hotshot_types::simple_vote::QuorumData2;
-<span class="kw">use </span>hotshot_types::traits::block_contents::GENESIS_VID_NUM_STORAGE_NODES;
-<span class="kw">use </span>hotshot_types::traits::node_implementation::Versions;
-<span class="kw">use </span>hotshot_types::traits::EncodeBytes;
-<span class="kw">use </span>hotshot_types::vid::advz::advz_scheme;
 <span class="kw">use </span>hotshot_types::{
-    data::{random_commitment, vid_commitment, Leaf, Leaf2},
+    data::{
+        random_commitment, vid_commitment, DaProposal2, Leaf, Leaf2, QuorumProposal2,
+        QuorumProposalWrapper, ViewNumber,
+    },
+    event::LeafInfo,
     message::UpgradeLock,
-    simple_certificate::QuorumCertificate,
-    simple_vote::VersionedVoteData,
-    traits::node_implementation::{ConsensusTime, NodeType},
-    traits::BlockPayload,
+    simple_certificate::{QuorumCertificate, QuorumCertificate2},
+    simple_vote::{QuorumData2, VersionedVoteData},
+    traits::{
+        block_contents::GENESIS_VID_NUM_STORAGE_NODES,
+        node_implementation::{ConsensusTime, NodeType, Versions},
+        BlockPayload, EncodeBytes,
+    },
     utils::BuilderCommitment,
+    vid::advz::advz_scheme,
 };
 <span class="kw">use </span>jf_vid::VidScheme;
 <span class="kw">use </span>rand::{distributions::Standard, thread_rng, Rng};
 <span class="kw">use </span>vbs::version::StaticVersionType;
 
-<span class="kw">use </span><span class="kw">crate</span>::block::ParentBlockReferences;
-<span class="kw">use </span><span class="kw">crate</span>::state::BuilderState;
-
 <span class="kw">use </span><span class="kw">super</span>::constants::{TEST_CHANNEL_BUFFER_SIZE, TEST_NUM_NODES_IN_VID_COMPUTATION};
+<span class="kw">use crate</span>::{block::ParentBlockReferences, state::BuilderState};
 
 <span class="kw">pub fn </span>transaction() -&gt; TestTransaction {
     TestTransaction::new(

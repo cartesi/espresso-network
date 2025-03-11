@@ -1177,7 +1177,138 @@
 <a href="#1176" id="1176">1176</a>
 <a href="#1177" id="1177">1177</a>
 <a href="#1178" id="1178">1178</a>
-<a href="#1179" id="1179">1179</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a>
+<a href="#1239" id="1239">1239</a>
+<a href="#1240" id="1240">1240</a>
+<a href="#1241" id="1241">1241</a>
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+<a href="#1247" id="1247">1247</a>
+<a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
+<a href="#1259" id="1259">1259</a>
+<a href="#1260" id="1260">1260</a>
+<a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
+<a href="#1267" id="1267">1267</a>
+<a href="#1268" id="1268">1268</a>
+<a href="#1269" id="1269">1269</a>
+<a href="#1270" id="1270">1270</a>
+<a href="#1271" id="1271">1271</a>
+<a href="#1272" id="1272">1272</a>
+<a href="#1273" id="1273">1273</a>
+<a href="#1274" id="1274">1274</a>
+<a href="#1275" id="1275">1275</a>
+<a href="#1276" id="1276">1276</a>
+<a href="#1277" id="1277">1277</a>
+<a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
+<a href="#1287" id="1287">1287</a>
+<a href="#1288" id="1288">1288</a>
+<a href="#1289" id="1289">1289</a>
+<a href="#1290" id="1290">1290</a>
+<a href="#1291" id="1291">1291</a>
+<a href="#1292" id="1292">1292</a>
+<a href="#1293" id="1293">1293</a>
+<a href="#1294" id="1294">1294</a>
+<a href="#1295" id="1295">1295</a>
+<a href="#1296" id="1296">1296</a>
+<a href="#1297" id="1297">1297</a>
+<a href="#1298" id="1298">1298</a>
+<a href="#1299" id="1299">1299</a>
+<a href="#1300" id="1300">1300</a>
+<a href="#1301" id="1301">1301</a>
+<a href="#1302" id="1302">1302</a>
+<a href="#1303" id="1303">1303</a>
+<a href="#1304" id="1304">1304</a>
+<a href="#1305" id="1305">1305</a>
+<a href="#1306" id="1306">1306</a>
+<a href="#1307" id="1307">1307</a>
+<a href="#1308" id="1308">1308</a>
+<a href="#1309" id="1309">1309</a>
+<a href="#1310" id="1310">1310</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -1205,15 +1336,21 @@
 //! chain which is tabulated by this specific node and not subject to full consensus agreement, try
 //! the [node](crate::node) API.
 
-</span><span class="kw">use crate</span>::{api::load_api, Payload, QueryError};
+</span><span class="kw">use </span>std::{fmt::Display, path::PathBuf, time::Duration};
+
 <span class="kw">use </span>derive_more::From;
 <span class="kw">use </span>futures::{FutureExt, StreamExt, TryFutureExt, TryStreamExt};
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+<span class="kw">use </span>hotshot_types::{
+    data::{Leaf, Leaf2, QuorumProposal},
+    simple_certificate::QuorumCertificate,
+    traits::node_implementation::NodeType,
+};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>snafu::{OptionExt, Snafu};
-<span class="kw">use </span>std::{fmt::Display, path::PathBuf, time::Duration};
 <span class="kw">use </span>tide_disco::{api::ApiError, method::ReadState, Api, RequestError, StatusCode};
 <span class="kw">use </span>vbs::version::StaticVersionType;
+
+<span class="kw">use crate</span>::{api::load_api, Payload, QueryError};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>data_source;
 <span class="kw">mod </span>fetch;
@@ -1340,9 +1477,95 @@
     }
 }
 
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(bound = <span class="string">""</span>)]
+</span><span class="kw">pub struct </span>Leaf1QueryData&lt;Types: NodeType&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) leaf: Leaf&lt;Types&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) qc: QuorumCertificate&lt;Types&gt;,
+}
+
+<span class="kw">fn </span>downgrade_leaf&lt;Types: NodeType&gt;(leaf2: Leaf2&lt;Types&gt;) -&gt; Leaf&lt;Types&gt; {
+    <span class="comment">// TODO do we still need some check here?
+    // `drb_seed` no longer exists on `Leaf2`
+    // if leaf2.drb_seed != [0; 32] &amp;&amp; leaf2.drb_result != [0; 32] {
+    //     panic!("Downgrade of Leaf2 to Leaf will lose DRB information!");
+    // }
+    </span><span class="kw">let </span>quorum_proposal = QuorumProposal {
+        block_header: leaf2.block_header().clone(),
+        view_number: leaf2.view_number(),
+        justify_qc: leaf2.justify_qc().to_qc(),
+        upgrade_certificate: leaf2.upgrade_certificate(),
+        proposal_certificate: <span class="prelude-val">None</span>,
+    };
+    <span class="kw">let </span><span class="kw-2">mut </span>leaf = Leaf::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(payload) = leaf2.block_payload() {
+        leaf.fill_block_payload_unchecked(payload);
+    }
+    leaf
+}
+
+<span class="kw">fn </span>downgrade_leaf_query_data&lt;Types: NodeType&gt;(leaf: LeafQueryData&lt;Types&gt;) -&gt; Leaf1QueryData&lt;Types&gt; {
+    Leaf1QueryData {
+        leaf: downgrade_leaf(leaf.leaf),
+        qc: leaf.qc.to_qc(),
+    }
+}
+
+<span class="kw">async fn </span>get_leaf_handler&lt;Types, State&gt;(
+    req: tide_disco::RequestParams,
+    state: <span class="kw-2">&amp;</span>State,
+    timeout: Duration,
+) -&gt; <span class="prelude-ty">Result</span>&lt;LeafQueryData&lt;Types&gt;, Error&gt;
+<span class="kw">where
+    </span>State: <span class="lifetime">'static </span>+ Send + Sync + ReadState,
+    &lt;State <span class="kw">as </span>ReadState&gt;::State: Send + Sync + AvailabilityDataSource&lt;Types&gt;,
+    Types: NodeType,
+    Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
+{
+    <span class="kw">let </span>id = <span class="kw">match </span>req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
+        <span class="prelude-val">Some</span>(height) =&gt; LeafId::Number(height),
+        <span class="prelude-val">None </span>=&gt; LeafId::Hash(req.blob_param(<span class="string">"hash"</span>)<span class="question-mark">?</span>),
+    };
+    <span class="kw">let </span>fetch = state.read(|state| state.get_leaf(id).boxed()).<span class="kw">await</span>;
+    fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchLeafSnafu {
+        resource: id.to_string(),
+    })
+}
+
+<span class="kw">async fn </span>get_leaf_range_handler&lt;Types, State&gt;(
+    req: tide_disco::RequestParams,
+    state: <span class="kw-2">&amp;</span>State,
+    timeout: Duration,
+    small_object_range_limit: usize,
+) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;LeafQueryData&lt;Types&gt;&gt;, Error&gt;
+<span class="kw">where
+    </span>State: <span class="lifetime">'static </span>+ Send + Sync + ReadState,
+    &lt;State <span class="kw">as </span>ReadState&gt;::State: Send + Sync + AvailabilityDataSource&lt;Types&gt;,
+    Types: NodeType,
+    Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
+{
+    <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>until = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
+    enforce_range_limit(from, until, small_object_range_limit)<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>leaves = state
+        .read(|state| state.get_leaf_range(from..until).boxed())
+        .<span class="kw">await</span>;
+    leaves
+        .enumerate()
+        .then(|(index, fetch)| <span class="kw">async move </span>{
+            fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchLeafSnafu {
+                resource: (index + from).to_string(),
+            })
+        })
+        .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+        .<span class="kw">await
+</span>}
+
 <span class="kw">pub fn </span>define_api&lt;State, Types: NodeType, Ver: StaticVersionType + <span class="lifetime">'static</span>&gt;(
     options: <span class="kw-2">&amp;</span>Options,
     <span class="kw">_</span>: Ver,
+    api_ver: semver::Version,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;Api&lt;State, Error, Ver&gt;, ApiError&gt;
 <span class="kw">where
     </span>State: <span class="lifetime">'static </span>+ Send + Sync + ReadState,
@@ -1358,42 +1581,62 @@
     <span class="kw">let </span>small_object_range_limit = options.small_object_range_limit;
     <span class="kw">let </span>large_object_range_limit = options.large_object_range_limit;
 
-    api.with_version(<span class="string">"0.0.1"</span>.parse().unwrap())
-        .at(<span class="string">"get_leaf"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>id = <span class="kw">match </span>req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
-                    <span class="prelude-val">Some</span>(height) =&gt; LeafId::Number(height),
-                    <span class="prelude-val">None </span>=&gt; LeafId::Hash(req.blob_param(<span class="string">"hash"</span>)<span class="question-mark">?</span>),
-                };
-                <span class="kw">let </span>fetch = state.read(|state| state.get_leaf(id).boxed()).<span class="kw">await</span>;
-                fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchLeafSnafu {
-                    resource: id.to_string(),
-                })
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_leaf_range"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
-                <span class="kw">let </span>until = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
-                enforce_range_limit(from, until, small_object_range_limit)<span class="question-mark">?</span>;
+    api.with_version(api_ver.clone());
 
-                <span class="kw">let </span>leaves = state
-                    .read(|state| state.get_leaf_range(from..until).boxed())
-                    .<span class="kw">await</span>;
-                leaves
-                    .enumerate()
-                    .then(|(index, fetch)| <span class="kw">async move </span>{
-                        fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchLeafSnafu {
-                            resource: (index + from).to_string(),
-                        })
+    <span class="comment">// `LeafQueryData` now contains `Leaf2` and `QC2``, which is a breaking change.
+    // On node startup, all leaves are migrated to `Leaf2`.
+    //
+    // To maintain compatibility with nodes running an older version
+    // (which expect `LeafQueryData` with `Leaf1` and `QC1`),
+    // we downgrade `Leaf2` to `Leaf1` and `QC2` to `QC1` if the API version is V0.
+    // Otherwise, we return the new types.
+    </span><span class="kw">if </span>api_ver.major == <span class="number">0 </span>{
+        api.at(<span class="string">"get_leaf"</span>, <span class="kw">move </span>|req, state| {
+            get_leaf_handler(req, state, timeout)
+                .map(|res| res.map(downgrade_leaf_query_data))
+                .boxed()
+        })<span class="question-mark">?</span>;
+
+        api.at(<span class="string">"get_leaf_range"</span>, <span class="kw">move </span>|req, state| {
+            get_leaf_range_handler(req, state, timeout, small_object_range_limit)
+                .map(|res| {
+                    res.map(|r| {
+                        r.into_iter()
+                            .map(downgrade_leaf_query_data)
+                            .collect::&lt;Vec&lt;Leaf1QueryData&lt;<span class="kw">_</span>&gt;&gt;&gt;()
                     })
-                    .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+                })
+                .boxed()
+        })<span class="question-mark">?</span>;
+
+        api.stream(<span class="string">"stream_leaves"</span>, <span class="kw">move </span>|req, state| {
+            <span class="kw">async move </span>{
+                <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+                state
+                    .read(|state| {
+                        <span class="kw">async move </span>{
+                            <span class="prelude-val">Ok</span>(state
+                                .subscribe_leaves(height)
+                                .<span class="kw">await
+                                </span>.map(|leaf| <span class="prelude-val">Ok</span>(downgrade_leaf_query_data(leaf))))
+                        }
+                        .boxed()
+                    })
                     .<span class="kw">await
             </span>}
+            .try_flatten_stream()
             .boxed()
-        })<span class="question-mark">?
-        </span>.stream(<span class="string">"stream_leaves"</span>, <span class="kw">move </span>|req, state| {
+        })<span class="question-mark">?</span>;
+    } <span class="kw">else </span>{
+        api.at(<span class="string">"get_leaf"</span>, <span class="kw">move </span>|req, state| {
+            get_leaf_handler(req, state, timeout).boxed()
+        })<span class="question-mark">?</span>;
+
+        api.at(<span class="string">"get_leaf_range"</span>, <span class="kw">move </span>|req, state| {
+            get_leaf_range_handler(req, state, timeout, small_object_range_limit).boxed()
+        })<span class="question-mark">?</span>;
+
+        api.stream(<span class="string">"stream_leaves"</span>, <span class="kw">move </span>|req, state| {
             <span class="kw">async move </span>{
                 <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
                 state
@@ -1404,264 +1647,266 @@
             </span>}
             .try_flatten_stream()
             .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_header"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
-                    BlockId::Number(height)
-                } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
-                    BlockId::Hash(hash)
-                } <span class="kw">else </span>{
-                    BlockId::PayloadHash(req.blob_param(<span class="string">"payload-hash"</span>)<span class="question-mark">?</span>)
-                };
-                <span class="kw">let </span>fetch = state.read(|state| state.get_header(id).boxed()).<span class="kw">await</span>;
-                fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchHeaderSnafu {
-                    resource: id.to_string(),
-                })
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_header_range"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
-                <span class="kw">let </span>until = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"until"</span>)<span class="question-mark">?</span>;
-                enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
-
-                <span class="kw">let </span>headers = state
-                    .read(|state| state.get_header_range(from..until).boxed())
-                    .<span class="kw">await</span>;
-                headers
-                    .enumerate()
-                    .then(|(index, fetch)| <span class="kw">async move </span>{
-                        fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchHeaderSnafu {
-                            resource: (index + from).to_string(),
-                        })
-                    })
-                    .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-                    .<span class="kw">await
-            </span>}
-            .boxed()
-        })<span class="question-mark">?
-        </span>.stream(<span class="string">"stream_headers"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
-                state
-                    .read(|state| {
-                        <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_headers(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
-                    })
-                    .<span class="kw">await
-            </span>}
-            .try_flatten_stream()
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_block"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
-                    BlockId::Number(height)
-                } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
-                    BlockId::Hash(hash)
-                } <span class="kw">else </span>{
-                    BlockId::PayloadHash(req.blob_param(<span class="string">"payload-hash"</span>)<span class="question-mark">?</span>)
-                };
-                <span class="kw">let </span>fetch = state.read(|state| state.get_block(id).boxed()).<span class="kw">await</span>;
-                fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                    resource: id.to_string(),
-                })
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_block_range"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
-                <span class="kw">let </span>until = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
-                enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
-
-                <span class="kw">let </span>blocks = state
-                    .read(|state| state.get_block_range(from..until).boxed())
-                    .<span class="kw">await</span>;
-                blocks
-                    .enumerate()
-                    .then(|(index, fetch)| <span class="kw">async move </span>{
-                        fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                            resource: (index + from).to_string(),
-                        })
-                    })
-                    .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-                    .<span class="kw">await
-            </span>}
-            .boxed()
-        })<span class="question-mark">?
-        </span>.stream(<span class="string">"stream_blocks"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
-                state
-                    .read(|state| {
-                        <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_blocks(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
-                    })
-                    .<span class="kw">await
-            </span>}
-            .try_flatten_stream()
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_payload"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
-                    BlockId::Number(height)
-                } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
-                    BlockId::PayloadHash(hash)
-                } <span class="kw">else </span>{
-                    BlockId::Hash(req.blob_param(<span class="string">"block-hash"</span>)<span class="question-mark">?</span>)
-                };
-                <span class="kw">let </span>fetch = state.read(|state| state.get_payload(id).boxed()).<span class="kw">await</span>;
-                fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                    resource: id.to_string(),
-                })
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_payload_range"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
-                <span class="kw">let </span>until = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
-                enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
-
-                <span class="kw">let </span>payloads = state
-                    .read(|state| state.get_payload_range(from..until).boxed())
-                    .<span class="kw">await</span>;
-                payloads
-                    .enumerate()
-                    .then(|(index, fetch)| <span class="kw">async move </span>{
-                        fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                            resource: (index + from).to_string(),
-                        })
-                    })
-                    .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-                    .<span class="kw">await
-            </span>}
-            .boxed()
-        })<span class="question-mark">?
-        </span>.stream(<span class="string">"stream_payloads"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
-                state
-                    .read(|state| {
-                        <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_payloads(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
-                    })
-                    .<span class="kw">await
-            </span>}
-            .try_flatten_stream()
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_vid_common"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
-                    BlockId::Number(height)
-                } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
-                    BlockId::Hash(hash)
-                } <span class="kw">else </span>{
-                    BlockId::PayloadHash(req.blob_param(<span class="string">"payload-hash"</span>)<span class="question-mark">?</span>)
-                };
-                <span class="kw">let </span>fetch = state.read(|state| state.get_vid_common(id).boxed()).<span class="kw">await</span>;
-                fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                    resource: id.to_string(),
-                })
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.stream(<span class="string">"stream_vid_common"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
-                state
-                    .read(|state| {
-                        <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_vid_common(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
-                    })
-                    .<span class="kw">await
-            </span>}
-            .try_flatten_stream()
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_transaction"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">match </span>req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
-                    <span class="prelude-val">Some</span>(hash) =&gt; {
-                        <span class="kw">let </span>fetch = state
-                            .read(|state| state.get_transaction(hash).boxed())
-                            .<span class="kw">await</span>;
-                        fetch
-                            .with_timeout(timeout)
-                            .<span class="kw">await
-                            </span>.context(FetchTransactionSnafu {
-                                resource: hash.to_string(),
-                            })
-                    }
-                    <span class="prelude-val">None </span>=&gt; {
-                        <span class="kw">let </span>height: u64 = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
-                        <span class="kw">let </span>fetch = state
-                            .read(|state| state.get_block(height <span class="kw">as </span>usize).boxed())
-                            .<span class="kw">await</span>;
-                        <span class="kw">let </span>block = fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                            resource: height.to_string(),
-                        })<span class="question-mark">?</span>;
-                        <span class="kw">let </span>i: u64 = req.integer_param(<span class="string">"index"</span>)<span class="question-mark">?</span>;
-                        <span class="kw">let </span>index = block
-                            .payload()
-                            .nth(block.metadata(), i <span class="kw">as </span>usize)
-                            .context(InvalidTransactionIndexSnafu { height, index: i })<span class="question-mark">?</span>;
-                        TransactionQueryData::new(<span class="kw-2">&amp;</span>block, index, i)
-                            .context(InvalidTransactionIndexSnafu { height, index: i })
-                    }
-                }
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_block_summary"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>id: usize = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
-
-                <span class="kw">let </span>fetch = state.read(|state| state.get_block(id).boxed()).<span class="kw">await</span>;
-                fetch
-                    .with_timeout(timeout)
-                    .<span class="kw">await
-                    </span>.context(FetchBlockSnafu {
-                        resource: id.to_string(),
-                    })
-                    .map(BlockSummaryQueryData::from)
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_block_summary_range"</span>, <span class="kw">move </span>|req, state| {
-            <span class="kw">async move </span>{
-                <span class="kw">let </span>from: usize = req.integer_param(<span class="string">"from"</span>)<span class="question-mark">?</span>;
-                <span class="kw">let </span>until: usize = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
-                enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
-
-                <span class="kw">let </span>blocks = state
-                    .read(|state| state.get_block_range(from..until).boxed())
-                    .<span class="kw">await</span>;
-                <span class="kw">let </span>result: Vec&lt;BlockSummaryQueryData&lt;Types&gt;&gt; = blocks
-                    .enumerate()
-                    .then(|(index, fetch)| <span class="kw">async move </span>{
-                        fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
-                            resource: (index + from).to_string(),
-                        })
-                    })
-                    .map(|result| result.map(BlockSummaryQueryData::from))
-                    .try_collect()
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
-
-                <span class="prelude-val">Ok</span>(result)
-            }
-            .boxed()
-        })<span class="question-mark">?
-        </span>.at(<span class="string">"get_limits"</span>, <span class="kw">move </span>|_req, _state| {
-            <span class="kw">async move </span>{
-                <span class="prelude-val">Ok</span>(Limits {
-                    small_object_range_limit,
-                    large_object_range_limit,
-                })
-            }
-            .boxed()
         })<span class="question-mark">?</span>;
+    }
+
+    api.at(<span class="string">"get_header"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
+                BlockId::Number(height)
+            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
+                BlockId::Hash(hash)
+            } <span class="kw">else </span>{
+                BlockId::PayloadHash(req.blob_param(<span class="string">"payload-hash"</span>)<span class="question-mark">?</span>)
+            };
+            <span class="kw">let </span>fetch = state.read(|state| state.get_header(id).boxed()).<span class="kw">await</span>;
+            fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchHeaderSnafu {
+                resource: id.to_string(),
+            })
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_header_range"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>until = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"until"</span>)<span class="question-mark">?</span>;
+            enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
+
+            <span class="kw">let </span>headers = state
+                .read(|state| state.get_header_range(from..until).boxed())
+                .<span class="kw">await</span>;
+            headers
+                .enumerate()
+                .then(|(index, fetch)| <span class="kw">async move </span>{
+                    fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchHeaderSnafu {
+                        resource: (index + from).to_string(),
+                    })
+                })
+                .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+                .<span class="kw">await
+        </span>}
+        .boxed()
+    })<span class="question-mark">?
+    </span>.stream(<span class="string">"stream_headers"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+            state
+                .read(|state| {
+                    <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_headers(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
+                })
+                .<span class="kw">await
+        </span>}
+        .try_flatten_stream()
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_block"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
+                BlockId::Number(height)
+            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
+                BlockId::Hash(hash)
+            } <span class="kw">else </span>{
+                BlockId::PayloadHash(req.blob_param(<span class="string">"payload-hash"</span>)<span class="question-mark">?</span>)
+            };
+            <span class="kw">let </span>fetch = state.read(|state| state.get_block(id).boxed()).<span class="kw">await</span>;
+            fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                resource: id.to_string(),
+            })
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_block_range"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>until = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
+            enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
+
+            <span class="kw">let </span>blocks = state
+                .read(|state| state.get_block_range(from..until).boxed())
+                .<span class="kw">await</span>;
+            blocks
+                .enumerate()
+                .then(|(index, fetch)| <span class="kw">async move </span>{
+                    fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                        resource: (index + from).to_string(),
+                    })
+                })
+                .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+                .<span class="kw">await
+        </span>}
+        .boxed()
+    })<span class="question-mark">?
+    </span>.stream(<span class="string">"stream_blocks"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+            state
+                .read(|state| {
+                    <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_blocks(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
+                })
+                .<span class="kw">await
+        </span>}
+        .try_flatten_stream()
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_payload"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
+                BlockId::Number(height)
+            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
+                BlockId::PayloadHash(hash)
+            } <span class="kw">else </span>{
+                BlockId::Hash(req.blob_param(<span class="string">"block-hash"</span>)<span class="question-mark">?</span>)
+            };
+            <span class="kw">let </span>fetch = state.read(|state| state.get_payload(id).boxed()).<span class="kw">await</span>;
+            fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                resource: id.to_string(),
+            })
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_payload_range"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>from = req.integer_param::&lt;<span class="kw">_</span>, usize&gt;(<span class="string">"from"</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>until = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
+            enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
+
+            <span class="kw">let </span>payloads = state
+                .read(|state| state.get_payload_range(from..until).boxed())
+                .<span class="kw">await</span>;
+            payloads
+                .enumerate()
+                .then(|(index, fetch)| <span class="kw">async move </span>{
+                    fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                        resource: (index + from).to_string(),
+                    })
+                })
+                .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+                .<span class="kw">await
+        </span>}
+        .boxed()
+    })<span class="question-mark">?
+    </span>.stream(<span class="string">"stream_payloads"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+            state
+                .read(|state| {
+                    <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_payloads(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
+                })
+                .<span class="kw">await
+        </span>}
+        .try_flatten_stream()
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_vid_common"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>id = <span class="kw">if let </span><span class="prelude-val">Some</span>(height) = req.opt_integer_param(<span class="string">"height"</span>)<span class="question-mark">? </span>{
+                BlockId::Number(height)
+            } <span class="kw">else if let </span><span class="prelude-val">Some</span>(hash) = req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
+                BlockId::Hash(hash)
+            } <span class="kw">else </span>{
+                BlockId::PayloadHash(req.blob_param(<span class="string">"payload-hash"</span>)<span class="question-mark">?</span>)
+            };
+            <span class="kw">let </span>fetch = state.read(|state| state.get_vid_common(id).boxed()).<span class="kw">await</span>;
+            fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                resource: id.to_string(),
+            })
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.stream(<span class="string">"stream_vid_common"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>height = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+            state
+                .read(|state| {
+                    <span class="kw">async move </span>{ <span class="prelude-val">Ok</span>(state.subscribe_vid_common(height).<span class="kw">await</span>.map(<span class="prelude-val">Ok</span>)) }.boxed()
+                })
+                .<span class="kw">await
+        </span>}
+        .try_flatten_stream()
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_transaction"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">match </span>req.opt_blob_param(<span class="string">"hash"</span>)<span class="question-mark">? </span>{
+                <span class="prelude-val">Some</span>(hash) =&gt; {
+                    <span class="kw">let </span>fetch = state
+                        .read(|state| state.get_transaction(hash).boxed())
+                        .<span class="kw">await</span>;
+                    fetch
+                        .with_timeout(timeout)
+                        .<span class="kw">await
+                        </span>.context(FetchTransactionSnafu {
+                            resource: hash.to_string(),
+                        })
+                },
+                <span class="prelude-val">None </span>=&gt; {
+                    <span class="kw">let </span>height: u64 = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>fetch = state
+                        .read(|state| state.get_block(height <span class="kw">as </span>usize).boxed())
+                        .<span class="kw">await</span>;
+                    <span class="kw">let </span>block = fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                        resource: height.to_string(),
+                    })<span class="question-mark">?</span>;
+                    <span class="kw">let </span>i: u64 = req.integer_param(<span class="string">"index"</span>)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>index = block
+                        .payload()
+                        .nth(block.metadata(), i <span class="kw">as </span>usize)
+                        .context(InvalidTransactionIndexSnafu { height, index: i })<span class="question-mark">?</span>;
+                    TransactionQueryData::new(<span class="kw-2">&amp;</span>block, index, i)
+                        .context(InvalidTransactionIndexSnafu { height, index: i })
+                },
+            }
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_block_summary"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>id: usize = req.integer_param(<span class="string">"height"</span>)<span class="question-mark">?</span>;
+
+            <span class="kw">let </span>fetch = state.read(|state| state.get_block(id).boxed()).<span class="kw">await</span>;
+            fetch
+                .with_timeout(timeout)
+                .<span class="kw">await
+                </span>.context(FetchBlockSnafu {
+                    resource: id.to_string(),
+                })
+                .map(BlockSummaryQueryData::from)
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_block_summary_range"</span>, <span class="kw">move </span>|req, state| {
+        <span class="kw">async move </span>{
+            <span class="kw">let </span>from: usize = req.integer_param(<span class="string">"from"</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>until: usize = req.integer_param(<span class="string">"until"</span>)<span class="question-mark">?</span>;
+            enforce_range_limit(from, until, large_object_range_limit)<span class="question-mark">?</span>;
+
+            <span class="kw">let </span>blocks = state
+                .read(|state| state.get_block_range(from..until).boxed())
+                .<span class="kw">await</span>;
+            <span class="kw">let </span>result: Vec&lt;BlockSummaryQueryData&lt;Types&gt;&gt; = blocks
+                .enumerate()
+                .then(|(index, fetch)| <span class="kw">async move </span>{
+                    fetch.with_timeout(timeout).<span class="kw">await</span>.context(FetchBlockSnafu {
+                        resource: (index + from).to_string(),
+                    })
+                })
+                .map(|result| result.map(BlockSummaryQueryData::from))
+                .try_collect()
+                .<span class="kw">await</span><span class="question-mark">?</span>;
+
+            <span class="prelude-val">Ok</span>(result)
+        }
+        .boxed()
+    })<span class="question-mark">?
+    </span>.at(<span class="string">"get_limits"</span>, <span class="kw">move </span>|_req, _state| {
+        <span class="kw">async move </span>{
+            <span class="prelude-val">Ok</span>(Limits {
+                small_object_range_limit,
+                large_object_range_limit,
+            })
+        }
+        .boxed()
+    })<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(api)
 }
 
@@ -1674,32 +1919,32 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::{fmt::Debug, time::Duration};
+
+    <span class="kw">use </span>async_lock::RwLock;
+    <span class="kw">use </span>committable::Committable;
+    <span class="kw">use </span>futures::future::FutureExt;
+    <span class="kw">use </span>hotshot_types::{data::Leaf2, simple_certificate::QuorumCertificate2};
+    <span class="kw">use </span>portpicker::pick_unused_port;
+    <span class="kw">use </span>serde::de::DeserializeOwned;
+    <span class="kw">use </span>surf_disco::{Client, Error <span class="kw">as _</span>};
+    <span class="kw">use </span>tempfile::TempDir;
+    <span class="kw">use </span>tide_disco::App;
+    <span class="kw">use </span>toml::toml;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::data_source::storage::AvailabilityStorage;
-    <span class="kw">use </span><span class="kw">crate</span>::data_source::VersionedDataSource;
     <span class="kw">use crate</span>::{
-        data_source::ExtensibleDataSource,
+        data_source::{storage::AvailabilityStorage, ExtensibleDataSource, VersionedDataSource},
         status::StatusDataSource,
         task::BackgroundTask,
         testing::{
             consensus::{MockDataSource, MockNetwork, MockSqlDataSource},
-            mocks::{mock_transaction, MockBase, MockHeader, MockPayload, MockTypes},
+            mocks::{mock_transaction, MockBase, MockHeader, MockPayload, MockTypes, MockVersions},
             setup_test,
         },
         types::HeightIndexed,
         ApiState, Error, Header,
     };
-    <span class="kw">use </span>async_lock::RwLock;
-    <span class="kw">use </span>committable::Committable;
-    <span class="kw">use </span>futures::future::FutureExt;
-    <span class="kw">use </span>hotshot_types::{data::Leaf, simple_certificate::QuorumCertificate};
-    <span class="kw">use </span>portpicker::pick_unused_port;
-    <span class="kw">use </span>serde::de::DeserializeOwned;
-    <span class="kw">use </span>std::{fmt::Debug, time::Duration};
-    <span class="kw">use </span>surf_disco::{Client, Error <span class="kw">as _</span>};
-    <span class="kw">use </span>tempfile::TempDir;
-    <span class="kw">use </span>tide_disco::App;
-    <span class="kw">use </span>toml::toml;
 
     <span class="doccomment">/// Get the current ledger height and a list of non-empty leaf/block pairs.
     </span><span class="kw">async fn </span>get_non_empty_blocks(
@@ -1721,7 +1966,7 @@
                         <span class="kw">let </span>leaf = client.get(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"leaf/{}"</span>, i)).send().<span class="kw">await</span>.unwrap();
                         blocks.push((leaf, block));
                     }
-                }
+                },
                 <span class="prelude-val">Err</span>(Error::Availability {
                     source: <span class="kw">super</span>::Error::FetchBlock { .. },
                 }) =&gt; {
@@ -1729,7 +1974,7 @@
                         <span class="string">"found end of ledger at height {i}, non-empty blocks are {blocks:?}"</span>,
                     );
                     <span class="kw">return </span>(i, blocks);
-                }
+                },
                 <span class="prelude-val">Err</span>(err) =&gt; <span class="macro">panic!</span>(<span class="string">"unexpected error {}"</span>, err),
             }
         }
@@ -1967,7 +2212,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;<span class="kw">_</span>, Error&gt;::with_state(ApiState::from(network.data_source()));
         app.register_module(
             <span class="string">"availability"</span>,
-            define_api(<span class="kw-2">&amp;</span>Default::default(), MockBase::instance()).unwrap(),
+            define_api(
+                <span class="kw-2">&amp;</span>Default::default(),
+                MockBase::instance(),
+                <span class="string">"1.0.0"</span>.parse().unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap();
         network.spawn(
@@ -2063,10 +2313,10 @@
 
         <span class="comment">// mock up some consensus data.
         </span><span class="kw">let </span>leaf =
-            Leaf::&lt;MockTypes&gt;::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>Default::default())
+            Leaf2::&lt;MockTypes&gt;::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>Default::default())
                 .<span class="kw">await</span>;
         <span class="kw">let </span>qc =
-            QuorumCertificate::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>Default::default())
+            QuorumCertificate2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>Default::default())
                 .<span class="kw">await</span>;
         <span class="kw">let </span>leaf = LeafQueryData::new(leaf, qc).unwrap();
         <span class="kw">let </span>block = BlockQueryData::new(leaf.header().clone(), MockPayload::genesis());
@@ -2103,6 +2353,7 @@
                     ..Default::default()
                 },
                 MockBase::instance(),
+                <span class="string">"1.0.0"</span>.parse().unwrap(),
             )
             .unwrap();
         api.get(<span class="string">"get_ext"</span>, |<span class="kw">_</span>, state| {
@@ -2173,6 +2424,7 @@
                     ..Default::default()
                 },
                 MockBase::instance(),
+                <span class="string">"1.0.0"</span>.parse().unwrap(),
             )
             .unwrap(),
         )
@@ -2257,7 +2509,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;<span class="kw">_</span>, Error&gt;::with_state(ApiState::from(network.data_source()));
         app.register_module(
             <span class="string">"availability"</span>,
-            define_api(<span class="kw-2">&amp;</span>Default::default(), MockBase::instance()).unwrap(),
+            define_api(
+                <span class="kw-2">&amp;</span>Default::default(),
+                MockBase::instance(),
+                <span class="string">"1.0.0"</span>.parse().unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap();
         network.spawn(
@@ -2294,7 +2551,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;<span class="kw">_</span>, Error&gt;::with_state(ApiState::from(network.data_source()));
         app.register_module(
             <span class="string">"availability"</span>,
-            define_api(<span class="kw-2">&amp;</span>Default::default(), MockBase::instance()).unwrap(),
+            define_api(
+                <span class="kw-2">&amp;</span>Default::default(),
+                MockBase::instance(),
+                <span class="string">"1.0.0"</span>.parse().unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap();
         network.spawn(

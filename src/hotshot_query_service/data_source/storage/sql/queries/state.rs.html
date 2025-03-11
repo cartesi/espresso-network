@@ -1401,7 +1401,12 @@
 <a href="#1400" id="1400">1400</a>
 <a href="#1401" id="1401">1401</a>
 <a href="#1402" id="1402">1402</a>
-<a href="#1403" id="1403">1403</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#1403" id="1403">1403</a>
+<a href="#1404" id="1404">1404</a>
+<a href="#1405" id="1405">1405</a>
+<a href="#1406" id="1406">1406</a>
+<a href="#1407" id="1407">1407</a>
+<a href="#1408" id="1408">1408</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -1415,17 +1420,11 @@
 
 </span><span class="doccomment">//! Merklized state storage implementation for a database query engine.
 
-</span><span class="kw">use super</span>::{
-    <span class="kw">super</span>::transaction::{query_as, Transaction, TransactionMode, Write},
-    DecodeError, QueryBuilder,
+</span><span class="kw">use </span>std::{
+    collections::{HashMap, HashSet, VecDeque},
+    sync::Arc,
 };
-<span class="kw">use </span><span class="kw">crate</span>::data_source::storage::sql::sqlx::Row;
-<span class="kw">use </span><span class="kw">crate</span>::data_source::storage::{pruning::PrunedHeightStorage, sql::build_where_in};
-<span class="kw">use crate</span>::{
-    data_source::storage::{MerklizedStateHeightStorage, MerklizedStateStorage},
-    merklized_state::{MerklizedState, Snapshot},
-    QueryError, QueryResult,
-};
+
 <span class="kw">use </span>ark_serialize::CanonicalDeserialize;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::stream::TryStreamExt;
@@ -1434,10 +1433,21 @@
     prelude::{MerkleNode, MerkleProof},
     DigestAlgorithm, MerkleCommitment, ToTraversalPath,
 };
-<span class="kw">use </span>sqlx::types::BitVec;
-<span class="kw">use </span>sqlx::types::JsonValue;
-<span class="kw">use </span>std::collections::{HashMap, HashSet, VecDeque};
-<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>sqlx::types::{BitVec, JsonValue};
+
+<span class="kw">use super</span>::{
+    <span class="kw">super</span>::transaction::{query_as, Transaction, TransactionMode, Write},
+    DecodeError, QueryBuilder,
+};
+<span class="kw">use crate</span>::{
+    data_source::storage::{
+        pruning::PrunedHeightStorage,
+        sql::{build_where_in, sqlx::Row},
+        MerklizedStateHeightStorage, MerklizedStateStorage,
+    },
+    merklized_state::{MerklizedState, Snapshot},
+    QueryError, QueryResult,
+};
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl</span>&lt;Mode, Types, State, <span class="kw">const </span>ARITY: usize&gt; MerklizedStateStorage&lt;Types, State, ARITY&gt;
@@ -1551,7 +1561,7 @@
                                 .decode_error(<span class="string">"malformed merkle node value"</span>)<span class="question-mark">?</span>,
                             children: child_nodes,
                         });
-                    }
+                    },
                     <span class="comment">// If it has an entry, it's a leaf
                     </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(index), <span class="prelude-val">Some</span>(entry)) =&gt; {
                         proof_path.push_back(MerkleNode::Leaf {
@@ -1562,16 +1572,16 @@
                             elem: serde_json::from_value(entry.clone())
                                 .decode_error(<span class="string">"malformed merkle element"</span>)<span class="question-mark">?</span>,
                         });
-                    }
+                    },
                     <span class="comment">// Otherwise, it's empty.
                     </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="kw">_</span>), <span class="prelude-val">None</span>) =&gt; {
                         proof_path.push_back(MerkleNode::Empty);
-                    }
+                    },
                     <span class="kw">_ </span>=&gt; {
                         <span class="kw">return </span><span class="prelude-val">Err</span>(QueryError::Error {
                             message: <span class="string">"Invalid type of merkle node found"</span>.to_string(),
                         });
-                    }
+                    },
                 }
             }
         }
@@ -1626,7 +1636,7 @@
                         State::Digest::digest(<span class="kw-2">&amp;</span>data).map_err(|err| QueryError::Error {
                             message: <span class="macro">format!</span>(<span class="string">"failed to update digest: {err:#}"</span>),
                         })
-                    }
+                    },
                     MerkleNode::Empty =&gt; <span class="prelude-val">Ok</span>(init),
                     <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(QueryError::Error {
                         message: <span class="string">"Invalid type of Node in the proof"</span>.to_string(),
@@ -1695,7 +1705,7 @@
                 .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 (height, commit)
-            }
+            },
             Snapshot::Index(created) =&gt; {
                 <span class="kw">let </span>created = created <span class="kw">as </span>i64;
                 <span class="kw">let </span>(commit,) = query_as::&lt;(String,)&gt;(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
@@ -1710,7 +1720,7 @@
                 <span class="kw">let </span>commit = serde_json::from_value(commit.into())
                     .decode_error(<span class="string">"malformed state commitment"</span>)<span class="question-mark">?</span>;
                 (created, commit)
-            }
+            },
         };
 
         <span class="comment">// Make sure the requested snapshot is up to date.

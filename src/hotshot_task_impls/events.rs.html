@@ -651,8 +651,7 @@
 <a href="#650" id="650">650</a>
 <a href="#651" id="651">651</a>
 <a href="#652" id="652">652</a>
-<a href="#653" id="653">653</a>
-<a href="#654" id="654">654</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#653" id="653">653</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -664,10 +663,9 @@
 <span class="kw">use </span>either::Either;
 <span class="kw">use </span>hotshot_task::task::TaskEvent;
 <span class="kw">use </span>hotshot_types::{
-    data::VidCommitment,
     data::{
         DaProposal2, Leaf2, PackedBundle, QuorumProposal2, QuorumProposalWrapper, UpgradeProposal,
-        VidDisperse, VidDisperseShare,
+        VidCommitment, VidDisperse, VidDisperseShare,
     },
     message::Proposal,
     request_response::ProposalRequestPayload,
@@ -938,7 +936,7 @@
             HotShotEvent::QuorumVoteRecv(v) =&gt; <span class="prelude-val">Some</span>(v.view_number()),
             HotShotEvent::TimeoutVoteRecv(v) | HotShotEvent::TimeoutVoteSend(v) =&gt; {
                 <span class="prelude-val">Some</span>(v.view_number())
-            }
+            },
             HotShotEvent::QuorumProposalRecv(proposal, <span class="kw">_</span>)
             | HotShotEvent::QuorumProposalSend(proposal, <span class="kw">_</span>)
             | HotShotEvent::QuorumProposalValidated(proposal, <span class="kw">_</span>)
@@ -946,16 +944,16 @@
             | HotShotEvent::QuorumProposalResponseSend(<span class="kw">_</span>, proposal)
             | HotShotEvent::QuorumProposalPreliminarilyValidated(proposal) =&gt; {
                 <span class="prelude-val">Some</span>(proposal.data.view_number())
-            }
+            },
             HotShotEvent::QuorumVoteSend(vote) | HotShotEvent::ExtendedQuorumVoteSend(vote) =&gt; {
                 <span class="prelude-val">Some</span>(vote.view_number())
-            }
+            },
             HotShotEvent::DaProposalRecv(proposal, <span class="kw">_</span>)
             | HotShotEvent::DaProposalValidated(proposal, <span class="kw">_</span>)
             | HotShotEvent::DaProposalSend(proposal, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(proposal.data.view_number()),
             HotShotEvent::DaVoteRecv(vote) | HotShotEvent::DaVoteSend(vote) =&gt; {
                 <span class="prelude-val">Some</span>(vote.view_number())
-            }
+            },
             HotShotEvent::QcFormed(cert) =&gt; <span class="kw">match </span>cert {
                 either::Left(qc) =&gt; <span class="prelude-val">Some</span>(qc.view_number()),
                 either::Right(tc) =&gt; <span class="prelude-val">Some</span>(tc.view_number()),
@@ -981,41 +979,41 @@
             | HotShotEvent::ViewSyncCommitCertificateSend(cert, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(cert.view_number()),
             HotShotEvent::ViewSyncFinalizeCertificateRecv(cert)
             | HotShotEvent::ViewSyncFinalizeCertificateSend(cert, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(cert.view_number()),
-            HotShotEvent::SendPayloadCommitmentAndMetadata(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, view_number, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+            HotShotEvent::SendPayloadCommitmentAndMetadata(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, view_number, ..) =&gt; {
                 <span class="prelude-val">Some</span>(<span class="kw-2">*</span>view_number)
-            }
+            },
             HotShotEvent::BlockRecv(packed_bundle) =&gt; <span class="prelude-val">Some</span>(packed_bundle.view_number),
             HotShotEvent::Shutdown
-            | HotShotEvent::TransactionSend(<span class="kw">_</span>, <span class="kw">_</span>)
+            | HotShotEvent::TransactionSend(..)
             | HotShotEvent::TransactionsRecv(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
             HotShotEvent::VidDisperseSend(proposal, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(proposal.data.view_number()),
             HotShotEvent::VidShareRecv(<span class="kw">_</span>, proposal) | HotShotEvent::VidShareValidated(proposal) =&gt; {
                 <span class="prelude-val">Some</span>(proposal.data.view_number())
-            }
+            },
             HotShotEvent::UpgradeProposalRecv(proposal, <span class="kw">_</span>)
             | HotShotEvent::UpgradeProposalSend(proposal, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(proposal.data.view_number()),
             HotShotEvent::UpgradeVoteRecv(vote) | HotShotEvent::UpgradeVoteSend(vote) =&gt; {
                 <span class="prelude-val">Some</span>(vote.view_number())
-            }
+            },
             HotShotEvent::QuorumProposalRequestSend(req, <span class="kw">_</span>)
             | HotShotEvent::QuorumProposalRequestRecv(req, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(req.view_number),
             HotShotEvent::ViewChange(view_number, <span class="kw">_</span>)
-            | HotShotEvent::ViewSyncTimeout(view_number, <span class="kw">_</span>, <span class="kw">_</span>)
+            | HotShotEvent::ViewSyncTimeout(view_number, ..)
             | HotShotEvent::ViewSyncTrigger(view_number)
             | HotShotEvent::Timeout(view_number, ..) =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>view_number),
             HotShotEvent::DaCertificateRecv(cert) | HotShotEvent::DacSend(cert, <span class="kw">_</span>) =&gt; {
                 <span class="prelude-val">Some</span>(cert.view_number())
-            }
+            },
             HotShotEvent::DaCertificateValidated(cert) =&gt; <span class="prelude-val">Some</span>(cert.view_number),
             HotShotEvent::UpgradeCertificateFormed(cert) =&gt; <span class="prelude-val">Some</span>(cert.view_number()),
-            HotShotEvent::VidRequestSend(request, <span class="kw">_</span>, <span class="kw">_</span>)
+            HotShotEvent::VidRequestSend(request, ..)
             | HotShotEvent::VidRequestRecv(request, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(request.view),
             HotShotEvent::VidResponseSend(<span class="kw">_</span>, <span class="kw">_</span>, proposal)
             | HotShotEvent::VidResponseRecv(<span class="kw">_</span>, proposal) =&gt; <span class="prelude-val">Some</span>(proposal.data.view_number()),
             HotShotEvent::HighQcRecv(qc, <span class="kw">_</span>)
             | HotShotEvent::HighQcSend(qc, ..)
-            | HotShotEvent::ExtendedQcRecv(qc, <span class="kw">_</span>, <span class="kw">_</span>)
-            | HotShotEvent::ExtendedQcSend(qc, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(qc.view_number()),
+            | HotShotEvent::ExtendedQcRecv(qc, ..)
+            | HotShotEvent::ExtendedQcSend(qc, ..) =&gt; <span class="prelude-val">Some</span>(qc.view_number()),
         }
     }
 }
@@ -1032,20 +1030,20 @@
             ),
             HotShotEvent::QuorumVoteRecv(v) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"QuorumVoteRecv(view_number={:?})"</span>, v.view_number())
-            }
+            },
             HotShotEvent::ExtendedQuorumVoteSend(v) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ExtendedQuorumVoteSend(view_number={:?})"</span>,
                     v.view_number()
                 )
-            }
+            },
             HotShotEvent::TimeoutVoteRecv(v) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"TimeoutVoteRecv(view_number={:?})"</span>, v.view_number())
-            }
+            },
             HotShotEvent::TimeoutVoteSend(v) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"TimeoutVoteSend(view_number={:?})"</span>, v.view_number())
-            }
+            },
             HotShotEvent::DaProposalRecv(proposal, <span class="kw">_</span>) =&gt; <span class="macro">write!</span>(
                 f,
                 <span class="string">"DaProposalRecv(view_number={:?})"</span>,
@@ -1058,10 +1056,10 @@
             ),
             HotShotEvent::DaVoteRecv(vote) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"DaVoteRecv(view_number={:?})"</span>, vote.view_number())
-            }
+            },
             HotShotEvent::DaCertificateRecv(cert) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"DaCertificateRecv(view_number={:?})"</span>, cert.view_number())
-            }
+            },
             HotShotEvent::DaCertificateValidated(cert) =&gt; <span class="macro">write!</span>(
                 f,
                 <span class="string">"DaCertificateValidated(view_number={:?})"</span>,
@@ -1074,7 +1072,7 @@
             ),
             HotShotEvent::QuorumVoteSend(vote) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"QuorumVoteSend(view_number={:?})"</span>, vote.view_number())
-            }
+            },
             HotShotEvent::QuorumProposalValidated(proposal, <span class="kw">_</span>) =&gt; <span class="macro">write!</span>(
                 f,
                 <span class="string">"QuorumProposalValidated(view_number={:?})"</span>,
@@ -1087,7 +1085,7 @@
             ),
             HotShotEvent::DaVoteSend(vote) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"DaVoteSend(view_number={:?})"</span>, vote.view_number())
-            }
+            },
             HotShotEvent::QcFormed(cert) =&gt; <span class="kw">match </span>cert {
                 either::Left(qc) =&gt; <span class="macro">write!</span>(f, <span class="string">"QcFormed(view_number={:?})"</span>, qc.view_number()),
                 either::Right(tc) =&gt; <span class="macro">write!</span>(f, <span class="string">"QcFormed(view_number={:?})"</span>, tc.view_number()),
@@ -1099,26 +1097,26 @@
             HotShotEvent::NextEpochQc2Formed(cert) =&gt; <span class="kw">match </span>cert {
                 either::Left(qc) =&gt; {
                     <span class="macro">write!</span>(f, <span class="string">"NextEpochQc2Formed(view_number={:?})"</span>, qc.view_number())
-                }
+                },
                 either::Right(tc) =&gt; {
                     <span class="macro">write!</span>(f, <span class="string">"NextEpochQc2Formed(view_number={:?})"</span>, tc.view_number())
-                }
+                },
             },
             HotShotEvent::ExtendedQc2Formed(cert) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"ExtendedQc2Formed(view_number={:?})"</span>, cert.view_number())
-            }
+            },
             HotShotEvent::DacSend(cert, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"DacSend(view_number={:?})"</span>, cert.view_number())
-            }
+            },
             HotShotEvent::ViewChange(view_number, epoch_number) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ViewChange(view_number={view_number:?}, epoch_number={epoch_number:?})"
                 </span>)
-            }
-            HotShotEvent::ViewSyncTimeout(view_number, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+            },
+            HotShotEvent::ViewSyncTimeout(view_number, ..) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"ViewSyncTimeout(view_number={view_number:?})"</span>)
-            }
+            },
             HotShotEvent::ViewSyncPreCommitVoteRecv(vote) =&gt; <span class="macro">write!</span>(
                 f,
                 <span class="string">"ViewSyncPreCommitVoteRecv(view_number={:?})"</span>,
@@ -1155,59 +1153,59 @@
                     <span class="string">"ViewSyncPreCommitCertificateRecv(view_number={:?})"</span>,
                     cert.view_number()
                 )
-            }
+            },
             HotShotEvent::ViewSyncCommitCertificateRecv(cert) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ViewSyncCommitCertificateRecv(view_number={:?})"</span>,
                     cert.view_number()
                 )
-            }
+            },
             HotShotEvent::ViewSyncFinalizeCertificateRecv(cert) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ViewSyncFinalizeCertificateRecv(view_number={:?})"</span>,
                     cert.view_number()
                 )
-            }
+            },
             HotShotEvent::ViewSyncPreCommitCertificateSend(cert, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ViewSyncPreCommitCertificateSend(view_number={:?})"</span>,
                     cert.view_number()
                 )
-            }
+            },
             HotShotEvent::ViewSyncCommitCertificateSend(cert, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ViewSyncCommitCertificateSend(view_number={:?})"</span>,
                     cert.view_number()
                 )
-            }
+            },
             HotShotEvent::ViewSyncFinalizeCertificateSend(cert, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"ViewSyncFinalizeCertificateSend(view_number={:?})"</span>,
                     cert.view_number()
                 )
-            }
+            },
             HotShotEvent::ViewSyncTrigger(view_number) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"ViewSyncTrigger(view_number={view_number:?})"</span>)
-            }
+            },
             HotShotEvent::Timeout(view_number, epoch) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"Timeout(view_number={view_number:?}, epoch={epoch:?})"</span>)
-            }
+            },
             HotShotEvent::TransactionsRecv(<span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">"TransactionsRecv"</span>),
-            HotShotEvent::TransactionSend(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="macro">write!</span>(f, <span class="string">"TransactionSend"</span>),
-            HotShotEvent::SendPayloadCommitmentAndMetadata(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, view_number, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+            HotShotEvent::TransactionSend(..) =&gt; <span class="macro">write!</span>(f, <span class="string">"TransactionSend"</span>),
+            HotShotEvent::SendPayloadCommitmentAndMetadata(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, view_number, ..) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"SendPayloadCommitmentAndMetadata(view_number={view_number:?})"
                 </span>)
-            }
+            },
             HotShotEvent::BlockRecv(packed_bundle) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"BlockRecv(view_number={:?})"</span>, packed_bundle.view_number)
-            }
+            },
             HotShotEvent::VidDisperseSend(proposal, <span class="kw">_</span>) =&gt; <span class="macro">write!</span>(
                 f,
                 <span class="string">"VidDisperseSend(view_number={:?})"</span>,
@@ -1235,10 +1233,10 @@
             ),
             HotShotEvent::UpgradeVoteRecv(vote) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"UpgradeVoteRecv(view_number={:?})"</span>, vote.view_number())
-            }
+            },
             HotShotEvent::UpgradeVoteSend(vote) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"UpgradeVoteSend(view_number={:?})"</span>, vote.view_number())
-            }
+            },
             HotShotEvent::UpgradeCertificateFormed(cert) =&gt; <span class="macro">write!</span>(
                 f,
                 <span class="string">"UpgradeCertificateFormed(view_number={:?})"</span>,
@@ -1246,63 +1244,63 @@
             ),
             HotShotEvent::QuorumProposalRequestSend(view_number, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"QuorumProposalRequestSend(view_number={view_number:?})"</span>)
-            }
+            },
             HotShotEvent::QuorumProposalRequestRecv(view_number, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"QuorumProposalRequestRecv(view_number={view_number:?})"</span>)
-            }
+            },
             HotShotEvent::QuorumProposalResponseSend(<span class="kw">_</span>, proposal) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"QuorumProposalResponseSend(view_number={:?})"</span>,
                     proposal.data.view_number()
                 )
-            }
+            },
             HotShotEvent::QuorumProposalResponseRecv(proposal) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"QuorumProposalResponseRecv(view_number={:?})"</span>,
                     proposal.data.view_number()
                 )
-            }
+            },
             HotShotEvent::QuorumProposalPreliminarilyValidated(proposal) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"QuorumProposalPreliminarilyValidated(view_number={:?}"</span>,
                     proposal.data.view_number()
                 )
-            }
-            HotShotEvent::VidRequestSend(request, <span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
+            },
+            HotShotEvent::VidRequestSend(request, ..) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"VidRequestSend(view_number={:?}"</span>, request.view)
-            }
+            },
             HotShotEvent::VidRequestRecv(request, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"VidRequestRecv(view_number={:?}"</span>, request.view)
-            }
+            },
             HotShotEvent::VidResponseSend(<span class="kw">_</span>, <span class="kw">_</span>, proposal) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"VidResponseSend(view_number={:?}"</span>,
                     proposal.data.view_number()
                 )
-            }
+            },
             HotShotEvent::VidResponseRecv(<span class="kw">_</span>, proposal) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"VidResponseRecv(view_number={:?}"</span>,
                     proposal.data.view_number()
                 )
-            }
+            },
             HotShotEvent::HighQcRecv(qc, <span class="kw">_</span>) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"HighQcRecv(view_number={:?}"</span>, qc.view_number())
-            }
+            },
             HotShotEvent::HighQcSend(qc, ..) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"HighQcSend(view_number={:?}"</span>, qc.view_number())
-            }
+            },
             HotShotEvent::ExtendedQcRecv(qc, ..) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"ExtendedQcRecv(view_number={:?}"</span>, qc.view_number())
-            }
+            },
             HotShotEvent::ExtendedQcSend(qc, ..) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"ExtendedQcSend(view_number={:?}"</span>, qc.view_number())
-            }
+            },
         }
     }
 }

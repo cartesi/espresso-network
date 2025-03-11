@@ -1212,7 +1212,11 @@
 <a href="#1211" id="1211">1211</a>
 <a href="#1212" id="1212">1212</a>
 <a href="#1213" id="1213">1213</a>
-<a href="#1214" id="1214">1214</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1229,8 +1233,12 @@
 <span class="kw">use </span>futures::future::{select, Either};
 <span class="kw">use </span>hotshot_types::{
     drb::{DrbResult, INITIAL_DRB_RESULT},
+    epoch_membership::EpochMembershipCoordinator,
     message::UpgradeLock,
-    traits::{block_contents::BlockHeader, network::BroadcastDelay, node_implementation::Versions},
+    traits::{
+        block_contents::BlockHeader, election::Membership, network::BroadcastDelay,
+        node_implementation::Versions,
+    },
 };
 <span class="kw">use </span>rand::Rng;
 <span class="kw">use </span>url::Url;
@@ -1268,13 +1276,12 @@
         ViewInner,
     },
     constants::{EVENT_CHANNEL_SIZE, EXTERNAL_EVENT_CHANNEL_SIZE},
-    data::{Leaf2, QuorumProposal, QuorumProposal2},
+    data::Leaf2,
     event::{EventType, LeafInfo},
-    message::{convert_proposal, DataMessage, Message, MessageKind, Proposal},
+    message::{DataMessage, Message, MessageKind, Proposal},
     simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
     traits::{
         consensus_api::ConsensusApi,
-        election::Membership,
         network::ConnectedNetwork,
         node_implementation::{ConsensusTime, NodeType},
         signature_key::SignatureKey,
@@ -1326,7 +1333,7 @@
     </span><span class="kw">pub </span>network: Arc&lt;I::Network&gt;,
 
     <span class="doccomment">/// Memberships used by consensus
-    </span><span class="kw">pub </span>memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// the metrics that the implementor is using.
     </span>metrics: Arc&lt;ConsensusMetricsValue&gt;,
@@ -1381,7 +1388,7 @@
             private_key: <span class="self">self</span>.private_key.clone(),
             config: <span class="self">self</span>.config.clone(),
             network: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.network),
-            memberships: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.memberships),
+            membership_coordinator: <span class="self">self</span>.membership_coordinator.clone(),
             metrics: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.metrics),
             consensus: <span class="self">self</span>.consensus.clone(),
             instance_state: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.instance_state),
@@ -1417,7 +1424,7 @@
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
         nonce: u64,
         config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
         metrics: ConsensusMetricsValue,
@@ -1425,17 +1432,11 @@
         marketplace_config: MarketplaceConfig&lt;TYPES, I&gt;,
     ) -&gt; Arc&lt;<span class="self">Self</span>&gt; {
         <span class="attr">#[allow(clippy::panic)]
-        </span><span class="kw">match </span>storage
-            .migrate_consensus(
-                Into::&lt;Leaf2&lt;TYPES&gt;&gt;::into,
-                convert_proposal::&lt;TYPES, QuorumProposal&lt;TYPES&gt;, QuorumProposal2&lt;TYPES&gt;&gt;,
-            )
-            .<span class="kw">await
-        </span>{
-            <span class="prelude-val">Ok</span>(()) =&gt; {}
+        </span><span class="kw">match </span>storage.migrate_consensus().<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(()) =&gt; {},
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">"Failed to migrate consensus storage: {e}"</span>);
-            }
+            },
         }
 
         <span class="kw">let </span>internal_chan = broadcast(EVENT_CHANNEL_SIZE);
@@ -1471,7 +1472,7 @@
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
         nonce: u64,
         config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
         metrics: ConsensusMetricsValue,
@@ -1515,7 +1516,11 @@
             config.epoch_height,
         );
 
-        load_start_epoch_info(<span class="kw-2">&amp;</span>membership, <span class="kw-2">&amp;</span>initializer.start_epoch_info).<span class="kw">await</span>;
+        load_start_epoch_info(
+            membership_coordinator.membership(),
+            <span class="kw-2">&amp;</span>initializer.start_epoch_info,
+        )
+        .<span class="kw">await</span>;
 
         <span class="comment">// Insert the validated state to state map.
         </span><span class="kw">let </span><span class="kw-2">mut </span>validated_state_map = BTreeMap::default();
@@ -1582,7 +1587,7 @@
             start_view: initializer.start_view,
             start_epoch: initializer.start_epoch,
             network,
-            memberships: membership,
+            membership_coordinator,
             metrics: Arc::clone(<span class="kw-2">&amp;</span>consensus_metrics),
             internal_event_stream: (internal_tx, internal_rx.deactivate()),
             output_event_stream: (external_tx.clone(), external_rx.clone().deactivate()),
@@ -1731,13 +1736,16 @@
             HotShotError::FailedToSerialize(<span class="macro">format!</span>(<span class="string">"failed to serialize transaction: {err}"</span>))
         })<span class="question-mark">?</span>;
 
+        <span class="kw">let </span>membership = <span class="kw">match </span>api.membership_coordinator.membership_for_epoch(epoch).<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(m) =&gt; m,
+            <span class="prelude-val">Err</span>(e) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(HotShotError::InvalidState(e.message)),
+        };
+
         spawn(<span class="kw">async move </span>{
-            <span class="kw">let </span>memberships_da_committee_members = api
-                .memberships
-                .read()
+            <span class="kw">let </span>memberships_da_committee_members = membership
+                .da_committee_members(view_number)
                 .<span class="kw">await
-                </span>.da_committee_members(view_number, epoch)
-                .iter()
+                </span>.iter()
                 .cloned()
                 .collect();
 
@@ -1837,7 +1845,7 @@
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
         node_id: u64,
         config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
         metrics: ConsensusMetricsValue,
@@ -1895,7 +1903,7 @@
             hotshot: <span class="self">self</span>.clone().into(),
             storage: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.storage),
             network: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.network),
-            memberships: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.memberships),
+            membership_coordinator: <span class="self">self</span>.membership_coordinator.clone(),
             epoch_height: <span class="self">self</span>.config.epoch_height,
         };
 
@@ -1977,10 +1985,10 @@
                         <span class="kw">match </span>event {
                             Either::Left(msg) =&gt; {
                                 <span class="kw">let _ </span>= left_sender.broadcast(msg.into()).<span class="kw">await</span>;
-                            }
+                            },
                             Either::Right(msg) =&gt; {
                                 <span class="kw">let _ </span>= right_sender.broadcast(msg.into()).<span class="kw">await</span>;
-                            }
+                            },
                         }
                     }
                 }
@@ -2000,7 +2008,7 @@
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
         nonce: u64,
         config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
         metrics: ConsensusMetricsValue,
@@ -2016,7 +2024,7 @@
             private_key.clone(),
             nonce,
             config.clone(),
-            Arc::clone(<span class="kw-2">&amp;</span>memberships),
+            memberships.clone(),
             Arc::clone(<span class="kw-2">&amp;</span>network),
             initializer.clone(),
             metrics.clone(),
@@ -2077,7 +2085,7 @@
             hotshot: Arc::clone(<span class="kw-2">&amp;</span>left_system_context),
             storage: Arc::clone(<span class="kw-2">&amp;</span>left_system_context.storage),
             network: Arc::clone(<span class="kw-2">&amp;</span>left_system_context.network),
-            memberships: Arc::clone(<span class="kw-2">&amp;</span>left_system_context.memberships),
+            membership_coordinator: left_system_context.membership_coordinator.clone(),
             epoch_height,
         };
 
@@ -2089,7 +2097,7 @@
             hotshot: Arc::clone(<span class="kw-2">&amp;</span>right_system_context),
             storage: Arc::clone(<span class="kw-2">&amp;</span>right_system_context.storage),
             network: Arc::clone(<span class="kw-2">&amp;</span>right_system_context.network),
-            memberships: Arc::clone(<span class="kw-2">&amp;</span>right_system_context.memberships),
+            membership_coordinator: right_system_context.membership_coordinator.clone(),
             epoch_height,
         };
 
@@ -2203,7 +2211,7 @@
     }
 }
 
-<span class="attr">#[derive(Clone)]
+<span class="attr">#[derive(Clone, Debug, PartialEq)]
 </span><span class="kw">pub struct </span>InitializerEpochInfo&lt;TYPES: NodeType&gt; {
     <span class="kw">pub </span>epoch: TYPES::Epoch,
     <span class="kw">pub </span>drb_result: DrbResult,

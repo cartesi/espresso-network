@@ -237,8 +237,7 @@
 <a href="#236" id="236">236</a>
 <a href="#237" id="237">237</a>
 <a href="#238" id="238">238</a>
-<a href="#239" id="239">239</a>
-<a href="#240" id="240">240</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#239" id="239">239</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_channel::{Receiver, Sender};
@@ -259,7 +258,6 @@
     },
     utils::{View, ViewInner},
 };
-<span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>tokio::time::{sleep, timeout};
 <span class="kw">use </span>tracing::Instrument;
 
@@ -424,10 +422,10 @@
                     <span class="kw">let </span>leaf = proposal.data.justify_qc().data.leaf_commit;
                     <span class="self">self</span>.request((view, leaf)).<span class="kw">await</span>;
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-                }
+                },
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::info!</span>(<span class="string">"proposal missing from storage; fetching from network: {err:#}"</span>);
-                }
+                },
             }
 
             <span class="kw">let </span>future = <span class="self">self</span>.consensus.read().<span class="kw">await</span>.request_proposal(view, leaf)<span class="question-mark">?</span>;
@@ -436,7 +434,7 @@
                 </span>.context(<span class="string">"timed out fetching proposal"</span>)<span class="question-mark">?
                 </span>.context(<span class="string">"error fetching proposal"</span>)<span class="question-mark">?</span>;
             <span class="self">self</span>.persistence
-                .append_quorum_proposal(<span class="kw-2">&amp;</span>proposal)
+                .append_quorum_proposal2(<span class="kw-2">&amp;</span>proposal)
                 .<span class="kw">await
                 </span>.context(<span class="string">"error saving fetched proposal"</span>)<span class="question-mark">?</span>;
 

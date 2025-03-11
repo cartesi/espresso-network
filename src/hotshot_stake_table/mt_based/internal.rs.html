@@ -935,10 +935,10 @@
                             <span class="kw">let </span>comm = Digest::evaluate(input)
                                 .map_err(|<span class="kw">_</span>| StakeTableError::RescueError)<span class="question-mark">?</span>[<span class="number">0</span>];
                             <span class="prelude-val">Ok</span>(comm)
-                        }
+                        },
                         MerklePathEntry::Leaf { .. } =&gt; <span class="prelude-val">Err</span>(StakeTableError::MalformedProof),
                     })
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(StakeTableError::MalformedProof),
         }
     }
@@ -1085,7 +1085,7 @@
                     siblings: siblings.try_into().unwrap(),
                 });
                 <span class="prelude-val">Ok</span>(proof)
-            }
+            },
             PersistentMerkleNode::Leaf {
                 comm: <span class="kw">_</span>,
                 key,
@@ -1121,7 +1121,7 @@
                         ptr += <span class="number">1</span>;
                     }
                     children[ptr].key_by_stake(stake_number)
-                }
+                },
                 PersistentMerkleNode::Leaf {
                     comm: <span class="kw">_</span>,
                     key,
@@ -1221,7 +1221,7 @@
                     }),
                     value,
                 ))
-            }
+            },
             PersistentMerkleNode::Leaf {
                 comm: <span class="kw">_</span>,
                 key: node_key,
@@ -1253,7 +1253,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Err</span>(StakeTableError::MismatchedKey)
                 }
-            }
+            },
         }
     }
 
@@ -1298,7 +1298,7 @@
                         old_value,
                     ))
                 }
-            }
+            },
             PersistentMerkleNode::Leaf {
                 comm: <span class="kw">_</span>,
                 key: cur_key,
@@ -1321,7 +1321,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Err</span>(StakeTableError::MismatchedKey)
                 }
-            }
+            },
         }
     }
 }
@@ -1364,7 +1364,7 @@
                 <span class="comment">// put the left-most child to the last, so it is visited first.
                 </span><span class="self">self</span>.unvisited.extend(children.into_iter().rev());
                 <span class="self">self</span>.next()
-            }
+            },
             PersistentMerkleNode::Leaf {
                 comm: <span class="kw">_</span>,
                 key,

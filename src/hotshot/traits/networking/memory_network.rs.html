@@ -692,10 +692,10 @@
                 <span class="kw">match </span>res {
                     <span class="prelude-val">Ok</span>(()) =&gt; {
                         <span class="macro">trace!</span>(<span class="question-mark">?</span>key, <span class="string">"Delivered message to remote"</span>);
-                    }
+                    },
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">warn!</span>(<span class="question-mark">?</span>e, <span class="question-mark">?</span>key, <span class="string">"Error sending broadcast message to node"</span>);
-                    }
+                    },
                 }
             }
         }
@@ -746,10 +746,10 @@
                 <span class="kw">match </span>res {
                     <span class="prelude-val">Ok</span>(()) =&gt; {
                         <span class="macro">trace!</span>(<span class="question-mark">?</span>key, <span class="string">"Delivered message to remote"</span>);
-                    }
+                    },
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">warn!</span>(<span class="question-mark">?</span>e, <span class="question-mark">?</span>key, <span class="string">"Error sending broadcast message to node"</span>);
-                    }
+                    },
                 }
             }
         }
@@ -785,7 +785,7 @@
                     <span class="prelude-val">Ok</span>(()) =&gt; {
                         <span class="macro">trace!</span>(<span class="question-mark">?</span>recipient, <span class="string">"Delivered message to remote"</span>);
                         <span class="prelude-val">Ok</span>(())
-                    }
+                    },
                     <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(NetworkError::MessageSendError(<span class="macro">format!</span>(
                         <span class="string">"error sending direct message to node: {e}"</span>,
                     ))),

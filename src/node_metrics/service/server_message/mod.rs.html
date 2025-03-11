@@ -60,13 +60,15 @@
 <a href="#59" id="59">59</a>
 <a href="#60" id="60">60</a>
 <a href="#61" id="61">61</a>
-<a href="#62" id="62">62</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use super</span>::{client_id::ClientId, data_state::NodeIdentity};
 <span class="kw">use </span>bitvec::vec::BitVec;
 <span class="kw">use </span>espresso_types::SeqTypes;
 <span class="kw">use </span>hotshot_query_service::explorer::{BlockDetail, ExplorerHistograms};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="kw">use super</span>::{client_id::ClientId, data_state::NodeIdentity};
 
 <span class="doccomment">/// [ServerMessage] represents the messages that the server can send to the
 /// client for a response.

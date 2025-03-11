@@ -347,7 +347,7 @@
                 Entry::Occupied(<span class="kw-2">mut </span>entry) =&gt; merge_toml(entry.get_mut(), value),
                 Entry::Vacant(entry) =&gt; {
                     entry.insert(value);
-                }
+                },
             }
         }
     }

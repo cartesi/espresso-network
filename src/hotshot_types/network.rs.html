@@ -599,7 +599,7 @@
             <span class="prelude-val">Ok</span>(data) =&gt; data,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(NetworkConfigError::ReadFromFileError(e));
-            }
+            },
         };
 
         <span class="comment">// deserialize
@@ -646,7 +646,7 @@
             <span class="prelude-val">Ok</span>(data) =&gt; data,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(NetworkConfigError::SerializeError(e));
-            }
+            },
         };
 
         <span class="comment">// write to file

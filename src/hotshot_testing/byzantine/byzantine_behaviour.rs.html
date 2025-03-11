@@ -430,8 +430,7 @@
 <a href="#429" id="429">429</a>
 <a href="#430" id="430">430</a>
 <a href="#431" id="431">431</a>
-<a href="#432" id="432">432</a>
-<a href="#433" id="433">433</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#432" id="432">432</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
@@ -500,7 +499,7 @@
 
                 consensus.write().<span class="kw">await</span>.reset_actions();
                 result
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="macro">vec!</span>[event.clone()],
         }
     }
@@ -527,9 +526,9 @@
         _consensus: Arc&lt;RwLock&lt;Consensus&lt;TYPES&gt;&gt;&gt;,
     ) -&gt; Vec&lt;HotShotEvent&lt;TYPES&gt;&gt; {
         <span class="kw">match </span>event {
-            HotShotEvent::QuorumProposalSend(<span class="kw">_</span>, <span class="kw">_</span>) | HotShotEvent::QuorumVoteSend(<span class="kw">_</span>) =&gt; {
+            HotShotEvent::QuorumProposalSend(..) | HotShotEvent::QuorumVoteSend(<span class="kw">_</span>) =&gt; {
                 <span class="macro">vec!</span>[event.clone(), event.clone()]
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="macro">vec!</span>[event.clone()],
         }
     }
@@ -615,11 +614,11 @@
                     <span class="self">self</span>.handle_proposal_send_event(event, proposal, sender)
                         .<span class="kw">await</span>,
                 ];
-            }
+            },
             HotShotEvent::QuorumProposalValidated(proposal, <span class="kw">_</span>) =&gt; {
                 <span class="self">self</span>.validated_proposals.push(proposal.data.clone());
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
         <span class="macro">vec!</span>[event.clone()]
     }
@@ -772,13 +771,12 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         handle: <span class="kw-2">&amp;mut </span>SystemContextHandle&lt;TYPES, I, V&gt;,
         network: Arc&lt;&lt;I <span class="kw">as </span>NodeImplementation&lt;TYPES&gt;&gt;::Network&gt;,
-        membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
     ) {
         <span class="kw">let </span>network_state: NetworkEventTaskState&lt;<span class="kw">_</span>, V, <span class="kw">_</span>, <span class="kw">_</span>&gt; = NetworkEventTaskState {
             network,
             view: TYPES::View::genesis(),
             epoch: <span class="prelude-val">None</span>,
-            membership,
+            membership_coordinator: handle.membership_coordinator.clone(),
             storage: Arc::clone(<span class="kw-2">&amp;</span>handle.storage()),
             consensus: OuterConsensus::new(handle.consensus()),
             upgrade_lock: handle.hotshot.upgrade_lock.clone(),
@@ -846,7 +844,7 @@
                     .unwrap();
                     <span class="kw">return </span><span class="macro">vec!</span>[HotShotEvent::QuorumVoteSend(vote)];
                 }
-            }
+            },
             HotShotEvent::TimeoutVoteSend(vote) =&gt; {
                 <span class="comment">// Check if this view was a dishonest proposal view, if true dont send timeout
                 </span><span class="kw">let </span>dishonest_proposals = <span class="self">self</span>.dishonest_proposal_view_numbers.read().<span class="kw">await</span>;
@@ -855,11 +853,11 @@
                     // So, dont send the timeout to the next leader from this byzantine replica
                     </span><span class="kw">return </span><span class="macro">vec!</span>[];
                 }
-            }
+            },
             HotShotEvent::QuorumVoteSend(vote) =&gt; {
                 <span class="self">self</span>.votes_sent.push(vote.clone());
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
         <span class="macro">vec!</span>[event.clone()]
     }

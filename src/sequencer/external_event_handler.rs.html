@@ -148,9 +148,12 @@
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
 <a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a></pre></div><pre class="rust"><code><span class="doccomment">//! Should probably rename this to "external" or something
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a></pre></div><pre class="rust"><code><span class="doccomment">//! Should probably rename this to "external" or something
 
-</span><span class="kw">use </span><span class="kw">crate</span>::context::TaskList;
+</span><span class="kw">use </span>std::{marker::PhantomData, sync::Arc};
+
 <span class="kw">use </span>anyhow::{Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>espresso_types::{PubKey, SeqTypes};
 <span class="kw">use </span>hotshot::types::Message;
@@ -163,8 +166,9 @@
 };
 <span class="kw">use </span>request_response::network::Bytes;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::{marker::PhantomData, sync::Arc};
 <span class="kw">use </span>tokio::sync::mpsc::{Receiver, Sender};
+
+<span class="kw">use </span><span class="kw">crate</span>::context::TaskList;
 
 <span class="doccomment">/// An external message that can be sent to or received from a node
 </span><span class="attr">#[derive(Debug, Serialize, Deserialize, Clone)]
@@ -233,7 +237,7 @@
                 </span><span class="self">self</span>.request_response_sender
                     .send(request_response.into())
                     .<span class="kw">await</span><span class="question-mark">?</span>;
-            }
+            },
         }
         <span class="prelude-val">Ok</span>(())
     }
@@ -261,14 +265,14 @@
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">tracing::warn!</span>(<span class="string">"Failed to serialize direct message: {}"</span>, err);
                             <span class="kw">continue</span>;
-                        }
+                        },
                     };
 
                     <span class="comment">// Send the message to the recipient
                     </span><span class="kw">if let </span><span class="prelude-val">Err</span>(err) = network.direct_message(message_bytes, recipient).<span class="kw">await </span>{
                         <span class="macro">tracing::error!</span>(<span class="string">"Failed to send message: {:?}"</span>, err);
                     };
-                }
+                },
 
                 OutboundMessage::Broadcast(message) =&gt; {
                     <span class="comment">// Wrap it in the real message type
@@ -283,7 +287,7 @@
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">tracing::warn!</span>(<span class="string">"Failed to serialize broadcast message: {}"</span>, err);
                             <span class="kw">continue</span>;
-                        }
+                        },
                     };
 
                     <span class="comment">// Broadcast the message to the global topic
@@ -293,7 +297,7 @@
                     </span>{
                         <span class="macro">tracing::error!</span>(<span class="string">"Failed to broadcast message: {:?}"</span>, err);
                     };
-                }
+                },
             }
         }
     }

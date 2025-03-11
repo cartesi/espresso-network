@@ -1336,7 +1336,52 @@
 <a href="#1335" id="1335">1335</a>
 <a href="#1336" id="1336">1336</a>
 <a href="#1337" id="1337">1337</a>
-<a href="#1338" id="1338">1338</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1338" id="1338">1338</a>
+<a href="#1339" id="1339">1339</a>
+<a href="#1340" id="1340">1340</a>
+<a href="#1341" id="1341">1341</a>
+<a href="#1342" id="1342">1342</a>
+<a href="#1343" id="1343">1343</a>
+<a href="#1344" id="1344">1344</a>
+<a href="#1345" id="1345">1345</a>
+<a href="#1346" id="1346">1346</a>
+<a href="#1347" id="1347">1347</a>
+<a href="#1348" id="1348">1348</a>
+<a href="#1349" id="1349">1349</a>
+<a href="#1350" id="1350">1350</a>
+<a href="#1351" id="1351">1351</a>
+<a href="#1352" id="1352">1352</a>
+<a href="#1353" id="1353">1353</a>
+<a href="#1354" id="1354">1354</a>
+<a href="#1355" id="1355">1355</a>
+<a href="#1356" id="1356">1356</a>
+<a href="#1357" id="1357">1357</a>
+<a href="#1358" id="1358">1358</a>
+<a href="#1359" id="1359">1359</a>
+<a href="#1360" id="1360">1360</a>
+<a href="#1361" id="1361">1361</a>
+<a href="#1362" id="1362">1362</a>
+<a href="#1363" id="1363">1363</a>
+<a href="#1364" id="1364">1364</a>
+<a href="#1365" id="1365">1365</a>
+<a href="#1366" id="1366">1366</a>
+<a href="#1367" id="1367">1367</a>
+<a href="#1368" id="1368">1368</a>
+<a href="#1369" id="1369">1369</a>
+<a href="#1370" id="1370">1370</a>
+<a href="#1371" id="1371">1371</a>
+<a href="#1372" id="1372">1372</a>
+<a href="#1373" id="1373">1373</a>
+<a href="#1374" id="1374">1374</a>
+<a href="#1375" id="1375">1375</a>
+<a href="#1376" id="1376">1376</a>
+<a href="#1377" id="1377">1377</a>
+<a href="#1378" id="1378">1378</a>
+<a href="#1379" id="1379">1379</a>
+<a href="#1380" id="1380">1380</a>
+<a href="#1381" id="1381">1381</a>
+<a href="#1382" id="1382">1382</a>
+<a href="#1383" id="1383">1383</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1355,6 +1400,7 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::OuterConsensus,
     data::{VidDisperse, VidDisperseShare},
+    epoch_membership::EpochMembershipCoordinator,
     event::{Event, EventType, HotShotAction},
     message::{
         convert_proposal, DaConsensusMessage, DataMessage, GeneralConsensusMessage, Message,
@@ -1362,7 +1408,6 @@
     },
     simple_vote::HasEpoch,
     traits::{
-        election::Membership,
         network::{
             BroadcastDelay, ConnectedNetwork, RequestKind, ResponseMessage, Topic, TransmitType,
             ViewMessage,
@@ -1423,7 +1468,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::QuorumProposalRecv(convert_proposal(proposal), sender)
-                        }
+                        },
                         GeneralConsensusMessage::Proposal2(proposal) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1434,10 +1479,10 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::QuorumProposalRecv(convert_proposal(proposal), sender)
-                        }
+                        },
                         GeneralConsensusMessage::ProposalRequested(req, sig) =&gt; {
                             HotShotEvent::QuorumProposalRequestRecv(req, sig)
-                        }
+                        },
                         GeneralConsensusMessage::ProposalResponse(proposal) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1448,7 +1493,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::QuorumProposalResponseRecv(convert_proposal(proposal))
-                        }
+                        },
                         GeneralConsensusMessage::ProposalResponse2(proposal) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1459,21 +1504,21 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::QuorumProposalResponseRecv(convert_proposal(proposal))
-                        }
+                        },
                         GeneralConsensusMessage::Vote(vote) =&gt; {
                             <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                                 <span class="macro">tracing::warn!</span>(<span class="string">"received GeneralConsensusMessage::Vote for view {} but epochs are enabled for that view"</span>, vote.view_number());
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::QuorumVoteRecv(vote.to_vote2())
-                        }
+                        },
                         GeneralConsensusMessage::Vote2(vote) =&gt; {
                             <span class="kw">if </span>!<span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                                 <span class="macro">tracing::warn!</span>(<span class="string">"received GeneralConsensusMessage::Vote2 for view {} but epochs are not enabled for that view"</span>, vote.view_number());
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::QuorumVoteRecv(vote)
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncPreCommitVote(view_sync_message) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1484,7 +1529,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncPreCommitVoteRecv(view_sync_message.to_vote2())
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncPreCommitVote2(view_sync_message) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1495,7 +1540,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncPreCommitVoteRecv(view_sync_message)
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncPreCommitCertificate(
                             view_sync_message,
                         ) =&gt; {
@@ -1510,7 +1555,7 @@
                             HotShotEvent::ViewSyncPreCommitCertificateRecv(
                                 view_sync_message.to_vsc2(),
                             )
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncPreCommitCertificate2(
                             view_sync_message,
                         ) =&gt; {
@@ -1523,7 +1568,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncPreCommitCertificateRecv(view_sync_message)
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncCommitVote(view_sync_message) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1534,7 +1579,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncCommitVoteRecv(view_sync_message.to_vote2())
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncCommitVote2(view_sync_message) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1545,7 +1590,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncCommitVoteRecv(view_sync_message)
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncCommitCertificate(view_sync_message) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1556,7 +1601,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncCommitCertificateRecv(view_sync_message.to_vsc2())
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncCommitCertificate2(view_sync_message) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1567,7 +1612,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncCommitCertificateRecv(view_sync_message)
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncFinalizeVote(view_sync_message) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1578,7 +1623,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncFinalizeVoteRecv(view_sync_message.to_vote2())
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncFinalizeVote2(view_sync_message) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1589,7 +1634,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncFinalizeVoteRecv(view_sync_message)
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncFinalizeCertificate(view_sync_message) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1602,7 +1647,7 @@
                             HotShotEvent::ViewSyncFinalizeCertificateRecv(
                                 view_sync_message.to_vsc2(),
                             )
-                        }
+                        },
                         GeneralConsensusMessage::ViewSyncFinalizeCertificate2(
                             view_sync_message,
                         ) =&gt; {
@@ -1615,7 +1660,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::ViewSyncFinalizeCertificateRecv(view_sync_message)
-                        }
+                        },
                         GeneralConsensusMessage::TimeoutVote(message) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1626,7 +1671,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::TimeoutVoteRecv(message.to_vote2())
-                        }
+                        },
                         GeneralConsensusMessage::TimeoutVote2(message) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1637,18 +1682,18 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::TimeoutVoteRecv(message)
-                        }
+                        },
                         GeneralConsensusMessage::UpgradeProposal(message) =&gt; {
                             HotShotEvent::UpgradeProposalRecv(message, sender)
-                        }
+                        },
                         GeneralConsensusMessage::UpgradeVote(message) =&gt; {
                             <span class="macro">tracing::error!</span>(<span class="string">"Received upgrade vote!"</span>);
                             HotShotEvent::UpgradeVoteRecv(message)
-                        }
+                        },
                         GeneralConsensusMessage::HighQc(qc) =&gt; HotShotEvent::HighQcRecv(qc, sender),
                         GeneralConsensusMessage::ExtendedQc(qc, next_epoch_qc) =&gt; {
                             HotShotEvent::ExtendedQcRecv(qc, next_epoch_qc, sender)
-                        }
+                        },
                     },
                     SequencingMessage::Da(da_message) =&gt; <span class="kw">match </span>da_message {
                         DaConsensusMessage::DaProposal(proposal) =&gt; {
@@ -1661,7 +1706,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::DaProposalRecv(convert_proposal(proposal), sender)
-                        }
+                        },
                         DaConsensusMessage::DaProposal2(proposal) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1672,35 +1717,35 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::DaProposalRecv(proposal, sender)
-                        }
+                        },
                         DaConsensusMessage::DaVote(vote) =&gt; {
                             <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                                 <span class="macro">tracing::warn!</span>(<span class="string">"received DaConsensusMessage::DaVote for view {} but epochs are enabled for that view"</span>, vote.view_number());
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::DaVoteRecv(vote.clone().to_vote2())
-                        }
+                        },
                         DaConsensusMessage::DaVote2(vote) =&gt; {
                             <span class="kw">if </span>!<span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                                 <span class="macro">tracing::warn!</span>(<span class="string">"received DaConsensusMessage::DaVote2 for view {} but epochs are not enabled for that view"</span>, vote.view_number());
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::DaVoteRecv(vote.clone())
-                        }
+                        },
                         DaConsensusMessage::DaCertificate(cert) =&gt; {
                             <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(cert.view_number()).<span class="kw">await </span>{
                                 <span class="macro">tracing::warn!</span>(<span class="string">"received DaConsensusMessage::DaCertificate for view {} but epochs are enabled for that view"</span>, cert.view_number());
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::DaCertificateRecv(cert.to_dac2())
-                        }
+                        },
                         DaConsensusMessage::DaCertificate2(cert) =&gt; {
                             <span class="kw">if </span>!<span class="self">self</span>.upgrade_lock.epochs_enabled(cert.view_number()).<span class="kw">await </span>{
                                 <span class="macro">tracing::warn!</span>(<span class="string">"received DaConsensusMessage::DaCertificate2 for view {} but epochs are not enabled for that view"</span>, cert.view_number());
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::DaCertificateRecv(cert)
-                        }
+                        },
                         DaConsensusMessage::VidDisperseMsg(proposal) =&gt; {
                             <span class="kw">if </span><span class="self">self
                                 </span>.upgrade_lock
@@ -1711,7 +1756,7 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::VidShareRecv(sender, convert_proposal(proposal))
-                        }
+                        },
                         DaConsensusMessage::VidDisperseMsg2(proposal) =&gt; {
                             <span class="kw">if </span>!<span class="self">self
                                 </span>.upgrade_lock
@@ -1722,11 +1767,11 @@
                                 <span class="kw">return</span>;
                             }
                             HotShotEvent::VidShareRecv(sender, convert_proposal(proposal))
-                        }
+                        },
                     },
                 };
                 broadcast_event(Arc::new(event), <span class="kw-2">&amp;</span><span class="self">self</span>.internal_event_stream).<span class="kw">await</span>;
-            }
+            },
 
             <span class="comment">// Handle data messages
             </span>MessageKind::Data(message) =&gt; <span class="kw">match </span>message {
@@ -1741,7 +1786,7 @@
                         <span class="kw-2">&amp;</span><span class="self">self</span>.internal_event_stream,
                     )
                     .<span class="kw">await</span>;
-                }
+                },
                 DataMessage::DataResponse(response) =&gt; {
                     <span class="kw">if let </span>ResponseMessage::Found(message) = response {
                         <span class="kw">match </span>message {
@@ -1754,7 +1799,7 @@
                                     <span class="kw-2">&amp;</span><span class="self">self</span>.internal_event_stream,
                                 )
                                 .<span class="kw">await</span>;
-                            }
+                            },
                             SequencingMessage::Da(DaConsensusMessage::VidDisperseMsg2(
                                 proposal,
                             )) =&gt; {
@@ -1766,11 +1811,11 @@
                                     <span class="kw-2">&amp;</span><span class="self">self</span>.internal_event_stream,
                                 )
                                 .<span class="kw">await</span>;
-                            }
-                            <span class="kw">_ </span>=&gt; {}
+                            },
+                            <span class="kw">_ </span>=&gt; {},
                         }
                     }
-                }
+                },
                 DataMessage::RequestData(data) =&gt; {
                     <span class="kw">let </span>req_data = data.clone();
                     <span class="kw">if let </span>RequestKind::Vid(_view_number, _key) = req_data.request {
@@ -1780,7 +1825,7 @@
                         )
                         .<span class="kw">await</span>;
                     }
-                }
+                },
             },
 
             <span class="comment">// Handle external messages
@@ -1797,7 +1842,7 @@
                     <span class="kw-2">&amp;</span><span class="self">self</span>.external_event_stream,
                 )
                 .<span class="kw">await</span>;
-            }
+            },
         }
     }
 }
@@ -1819,7 +1864,7 @@
     </span><span class="kw">pub </span>epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
 
     <span class="doccomment">/// network memberships
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// Storage to store actionable events
     </span><span class="kw">pub </span>storage: Arc&lt;RwLock&lt;S&gt;&gt;,
@@ -1945,7 +1990,7 @@
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"Failed to serialize message: {}"</span>, e);
                     <span class="kw">continue</span>;
-                }
+                },
             };
 
             messages.insert(recipient, serialized_message);
@@ -1968,7 +2013,7 @@
                 <span class="kw">return</span>;
             }
             <span class="kw">match </span>net.vid_broadcast_message(messages).<span class="kw">await </span>{
-                <span class="prelude-val">Ok</span>(()) =&gt; {}
+                <span class="prelude-val">Ok</span>(()) =&gt; {},
                 <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">tracing::warn!</span>(<span class="string">"Failed to send message from network task: {:?}"</span>, e),
             }
         });
@@ -2003,7 +2048,7 @@
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"Not Sending {:?} because of storage error: {:?}"</span>, action, e);
                     <span class="prelude-val">Err</span>(())
-                }
+                },
             }
         } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(())
@@ -2056,18 +2101,20 @@
                 };
 
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Broadcast))
-            }
+            },
 
             <span class="comment">// ED Each network task is subscribed to all these message types.  Need filters per network task
             </span>HotShotEvent::QuorumVoteSend(vote) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::Vote);
                 <span class="kw">let </span>view_number = vote.view_number() + <span class="number">1</span>;
                 <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
-                    </span>.membership
-                    .read()
+                    </span>.membership_coordinator
+                    .membership_for_epoch(vote.epoch())
                     .<span class="kw">await
-                    </span>.leader(view_number, vote.epoch())
-                {
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2076,7 +2123,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
 
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
@@ -2090,7 +2137,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Direct(leader)))
-            }
+            },
             HotShotEvent::ExtendedQuorumVoteSend(vote) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::Vote);
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
@@ -2104,7 +2151,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Broadcast))
-            }
+            },
             HotShotEvent::QuorumProposalRequestSend(req, signature) =&gt; <span class="prelude-val">Some</span>((
                 req.key.clone(),
                 MessageKind::&lt;TYPES&gt;::from_consensus_message(SequencingMessage::General(
@@ -2132,11 +2179,11 @@
                     message,
                     TransmitType::Direct(sender_key),
                 ))
-            }
+            },
             HotShotEvent::VidDisperseSend(proposal, sender) =&gt; {
                 <span class="self">self</span>.handle_vid_disperse_proposal(proposal, <span class="kw-2">&amp;</span>sender).<span class="kw">await</span>;
                 <span class="prelude-val">None
-            </span>}
+            </span>},
             HotShotEvent::DaProposalSend(proposal, sender) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::DaPropose);
 
@@ -2155,12 +2202,18 @@
                 };
 
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::DaCommitteeBroadcast))
-            }
+            },
             HotShotEvent::DaVoteSend(vote) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::DaVote);
                 <span class="kw">let </span>view_number = vote.view_number();
-                <span class="kw">let </span>epoch = vote.data.epoch;
-                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view_number, epoch) {
+                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(vote.epoch())
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2169,7 +2222,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
 
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
@@ -2183,7 +2236,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Direct(leader)))
-            }
+            },
             HotShotEvent::DacSend(certificate, sender) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::DaCert);
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self
@@ -2201,10 +2254,17 @@
                 };
 
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Broadcast))
-            }
+            },
             HotShotEvent::ViewSyncPreCommitVoteSend(vote) =&gt; {
                 <span class="kw">let </span>view_number = vote.view_number() + vote.date().relay;
-                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view_number, <span class="self">self</span>.epoch) {
+                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.epoch)
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2213,7 +2273,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                     MessageKind::&lt;TYPES&gt;::from_consensus_message(SequencingMessage::General(
@@ -2226,11 +2286,18 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Direct(leader)))
-            }
+            },
             HotShotEvent::ViewSyncCommitVoteSend(vote) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::ViewSyncVote);
                 <span class="kw">let </span>view_number = vote.view_number() + vote.date().relay;
-                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view_number, <span class="self">self</span>.epoch) {
+                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.epoch)
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2239,7 +2306,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                     MessageKind::&lt;TYPES&gt;::from_consensus_message(SequencingMessage::General(
@@ -2252,11 +2319,18 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Direct(leader)))
-            }
+            },
             HotShotEvent::ViewSyncFinalizeVoteSend(vote) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::ViewSyncVote);
                 <span class="kw">let </span>view_number = vote.view_number() + vote.date().relay;
-                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view_number, <span class="self">self</span>.epoch) {
+                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.epoch)
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2265,7 +2339,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                     MessageKind::&lt;TYPES&gt;::from_consensus_message(SequencingMessage::General(
@@ -2278,7 +2352,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Direct(leader)))
-            }
+            },
             HotShotEvent::ViewSyncPreCommitCertificateSend(certificate, sender) =&gt; {
                 <span class="kw">let </span>view_number = certificate.view_number();
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
@@ -2292,7 +2366,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Broadcast))
-            }
+            },
             HotShotEvent::ViewSyncCommitCertificateSend(certificate, sender) =&gt; {
                 <span class="kw">let </span>view_number = certificate.view_number();
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
@@ -2306,7 +2380,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Broadcast))
-            }
+            },
             HotShotEvent::ViewSyncFinalizeCertificateSend(certificate, sender) =&gt; {
                 <span class="kw">let </span>view_number = certificate.view_number();
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
@@ -2320,11 +2394,18 @@
                 };
 
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Broadcast))
-            }
+            },
             HotShotEvent::TimeoutVoteSend(vote) =&gt; {
                 <span class="kw-2">*</span>maybe_action = <span class="prelude-val">Some</span>(HotShotAction::Vote);
                 <span class="kw">let </span>view_number = vote.view_number() + <span class="number">1</span>;
-                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view_number, <span class="self">self</span>.epoch) {
+                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.epoch)
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2333,7 +2414,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
                 <span class="kw">let </span>message = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(vote.view_number()).<span class="kw">await </span>{
                     MessageKind::&lt;TYPES&gt;::from_consensus_message(SequencingMessage::General(
@@ -2346,7 +2427,7 @@
                 };
 
                 <span class="prelude-val">Some</span>((vote.signing_key(), message, TransmitType::Direct(leader)))
-            }
+            },
             HotShotEvent::UpgradeProposalSend(proposal, sender) =&gt; <span class="prelude-val">Some</span>((
                 sender,
                 MessageKind::&lt;TYPES&gt;::from_consensus_message(SequencingMessage::General(
@@ -2357,7 +2438,14 @@
             HotShotEvent::UpgradeVoteSend(vote) =&gt; {
                 <span class="macro">tracing::error!</span>(<span class="string">"Sending upgrade vote!"</span>);
                 <span class="kw">let </span>view_number = vote.view_number();
-                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self</span>.membership.read().<span class="kw">await</span>.leader(view_number, <span class="self">self</span>.epoch) {
+                <span class="kw">let </span>leader = <span class="kw">match </span><span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(<span class="self">self</span>.epoch)
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(view_number)
+                    .<span class="kw">await
+                </span>{
                     <span class="prelude-val">Ok</span>(l) =&gt; l,
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::warn!</span>(
@@ -2366,7 +2454,7 @@
                             e
                         );
                         <span class="kw">return </span><span class="prelude-val">None</span>;
-                    }
+                    },
                 };
                 <span class="prelude-val">Some</span>((
                     vote.signing_key(),
@@ -2375,7 +2463,7 @@
                     )),
                     TransmitType::Direct(leader),
                 ))
-            }
+            },
             HotShotEvent::ViewChange(view, epoch) =&gt; {
                 <span class="self">self</span>.view = view;
                 <span class="kw">if </span>epoch &gt; <span class="self">self</span>.epoch {
@@ -2385,12 +2473,13 @@
                 <span class="self">self</span>.cancel_tasks(keep_view);
                 <span class="kw">let </span>net = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.network);
                 <span class="kw">let </span>epoch = <span class="self">self</span>.epoch.map(|x| x.u64());
-                <span class="kw">let </span>mem = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership);
+                <span class="kw">let </span>membership_coordinator = <span class="self">self</span>.membership_coordinator.clone();
                 spawn(<span class="kw">async move </span>{
-                    net.update_view::&lt;TYPES&gt;(<span class="kw-2">*</span>keep_view, epoch, mem).<span class="kw">await</span>;
+                    net.update_view::&lt;TYPES&gt;(<span class="kw-2">*</span>keep_view, epoch, membership_coordinator)
+                        .<span class="kw">await</span>;
                 });
                 <span class="prelude-val">None
-            </span>}
+            </span>},
             HotShotEvent::VidRequestSend(req, sender, to) =&gt; <span class="prelude-val">Some</span>((
                 sender,
                 MessageKind::Data(DataMessage::RequestData(req)),
@@ -2420,7 +2509,7 @@
                                 vid_share_proposal,
                             )),
                         )))
-                    }
+                    },
                     VidDisperseShare::V1(data) =&gt; {
                         <span class="kw">if </span>!epochs_enabled {
                             <span class="macro">tracing::warn!</span>(
@@ -2439,10 +2528,10 @@
                                 vid_share_proposal,
                             )),
                         )))
-                    }
+                    },
                 };
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Direct(to)))
-            }
+            },
             HotShotEvent::HighQcSend(quorum_cert, leader, sender) =&gt; <span class="prelude-val">Some</span>((
                 sender,
                 MessageKind::Consensus(SequencingMessage::General(
@@ -2483,11 +2572,14 @@
         <span class="kw">let </span>view_number = message.kind.view_number();
         <span class="kw">let </span>epoch = message.kind.epoch();
         <span class="kw">let </span>committee_topic = Topic::Global;
-        <span class="kw">let </span>da_committee = <span class="self">self
-            </span>.membership
-            .read()
+        <span class="kw">let </span><span class="prelude-val">Ok</span>(mem) = <span class="self">self
+            </span>.membership_coordinator
+            .membership_for_epoch(<span class="self">self</span>.epoch)
             .<span class="kw">await
-            </span>.da_committee_members(view_number, <span class="self">self</span>.epoch);
+        else </span>{
+            <span class="kw">return</span>;
+        };
+        <span class="kw">let </span>da_committee = mem.da_committee_members(view_number).<span class="kw">await</span>;
         <span class="kw">let </span>network = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.network);
         <span class="kw">let </span>storage = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.storage);
         <span class="kw">let </span>consensus = OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.inner_consensus));
@@ -2525,18 +2617,18 @@
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"Failed to serialize message: {}"</span>, e);
                     <span class="kw">return</span>;
-                }
+                },
             };
 
             <span class="kw">let </span>transmit_result = <span class="kw">match </span>transmit {
                 TransmitType::Direct(recipient) =&gt; {
                     network.direct_message(serialized_message, recipient).<span class="kw">await
-                </span>}
+                </span>},
                 TransmitType::Broadcast =&gt; {
                     network
                         .broadcast_message(serialized_message, committee_topic, broadcast_delay)
                         .<span class="kw">await
-                </span>}
+                </span>},
                 TransmitType::DaCommitteeBroadcast =&gt; {
                     network
                         .da_broadcast_message(
@@ -2545,11 +2637,11 @@
                             broadcast_delay,
                         )
                         .<span class="kw">await
-                </span>}
+                </span>},
             };
 
             <span class="kw">match </span>transmit_result {
-                <span class="prelude-val">Ok</span>(()) =&gt; {}
+                <span class="prelude-val">Ok</span>(()) =&gt; {},
                 <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">tracing::warn!</span>(<span class="string">"Failed to send message task: {:?}"</span>, e),
             }
         });
@@ -2609,14 +2701,12 @@
                 <span class="self">self</span>.parse_event(event, <span class="kw-2">&amp;mut </span>maybe_action).<span class="kw">await
             </span>{
                 <span class="comment">// Modify the values acquired by parsing the event.
-                </span><span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                (<span class="self">self</span>.modifier)(
+                </span>(<span class="self">self</span>.modifier)(
                     <span class="kw-2">&amp;mut </span>sender,
                     <span class="kw-2">&amp;mut </span>message_kind,
                     <span class="kw-2">&amp;mut </span>transmit,
-                    <span class="kw-2">&amp;</span>membership_reader,
+                    <span class="kw-2">&amp;*</span><span class="self">self</span>.membership_coordinator.membership().read().<span class="kw">await</span>,
                 );
-                drop(membership_reader);
 
                 <span class="self">self</span>.spawn_transmit_task(message_kind, maybe_action, transmit, sender)
                     .<span class="kw">await</span>;

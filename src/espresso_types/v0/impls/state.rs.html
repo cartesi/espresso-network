@@ -1871,7 +1871,10 @@
 <a href="#1870" id="1870">1870</a>
 <a href="#1871" id="1871">1871</a>
 <a href="#1872" id="1872">1872</a>
-<a href="#1873" id="1873">1873</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::bail;
+<a href="#1873" id="1873">1873</a>
+<a href="#1874" id="1874">1874</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
+
+<span class="kw">use </span>anyhow::bail;
 <span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>ethers::types::Address;
 <span class="kw">use </span>ethers_conv::ToAlloy;
@@ -1892,7 +1895,6 @@
 };
 <span class="kw">use </span>num_traits::CheckedSub;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::ops::Add;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>vbs::version::Version;
@@ -2991,7 +2993,7 @@
                 }),
                 Header::V99(<span class="kw">_</span>) =&gt; {
                     <span class="macro">panic!</span>(<span class="string">"You called `Header.next()` on unimplemented version (v3)"</span>)
-                }
+                },
             }
         }
         <span class="doccomment">/// Replaces builder signature w/ invalid one.
@@ -3020,7 +3022,7 @@
                 }),
                 Header::V99(<span class="kw">_</span>) =&gt; {
                     <span class="macro">panic!</span>(<span class="string">"You called `Header.sign()` on unimplemented version (v3)"</span>)
-                }
+                },
             }
         }
 

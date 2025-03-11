@@ -1100,7 +1100,12 @@
 <a href="#1099" id="1099">1099</a>
 <a href="#1100" id="1100">1100</a>
 <a href="#1101" id="1101">1101</a>
-<a href="#1102" id="1102">1102</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1154,7 +1159,6 @@
     data::ViewNumber,
     network::NetworkConfig,
     traits::{
-        election::Membership,
         metrics::{Counter, Gauge, Metrics, NoMetrics},
         network::{ConnectedNetwork, NetworkError, Topic},
         node_implementation::{ConsensusTime, NodeType},
@@ -1178,7 +1182,7 @@
 };
 <span class="kw">use </span>tracing::{error, info, instrument, trace, warn};
 
-<span class="kw">use </span><span class="kw">crate</span>::BroadcastDelay;
+<span class="kw">use crate</span>::{BroadcastDelay, EpochMembershipCoordinator};
 
 <span class="doccomment">/// Libp2p-specific metrics
 </span><span class="attr">#[derive(Clone, Debug)]
@@ -1392,7 +1396,7 @@
                             <span class="prelude-val">Ok</span>(network) =&gt; network,
                             <span class="prelude-val">Err</span>(err) =&gt; {
                                 <span class="macro">panic!</span>(<span class="string">"Failed to create libp2p network: {err:?}"</span>);
-                            }
+                            },
                         },
                     )
                 })
@@ -1475,7 +1479,7 @@
             }
 
             <span class="macro">format!</span>(<span class="string">"/dns/{host}/udp/{port}/quic-v1"</span>)
-        }
+        },
     };
 
     <span class="comment">// Convert the multiaddr string to a `Multiaddr`
@@ -1783,7 +1787,7 @@
                 sender.try_send(msg).map_err(|err| {
                     NetworkError::ChannelSendError(<span class="macro">format!</span>(<span class="string">"failed to send gossip message: {err}"</span>))
                 })<span class="question-mark">?</span>;
-            }
+            },
             DirectRequest(msg, _pid, chan) =&gt; {
                 sender.try_send(msg).map_err(|err| {
                     NetworkError::ChannelSendError(<span class="macro">format!</span>(
@@ -1805,12 +1809,12 @@
                 {
                     <span class="macro">error!</span>(<span class="string">"failed to ack!"</span>);
                 };
-            }
-            DirectResponse(_msg, <span class="kw">_</span>) =&gt; {}
+            },
+            DirectResponse(_msg, <span class="kw">_</span>) =&gt; {},
             NetworkEvent::IsBootstrapped =&gt; {
                 <span class="macro">error!</span>(<span class="string">"handle_recvd_events received `NetworkEvent::IsBootstrapped`, which should be impossible."</span>);
-            }
-            NetworkEvent::ConnectedPeersUpdate(<span class="kw">_</span>) =&gt; {}
+            },
+            NetworkEvent::ConnectedPeersUpdate(<span class="kw">_</span>) =&gt; {},
         }
         <span class="prelude-val">Ok</span>::&lt;(), NetworkError&gt;(())
     }
@@ -2012,7 +2016,7 @@
                 <span class="kw">return </span><span class="prelude-val">Err</span>(NetworkError::LookupError(<span class="macro">format!</span>(
                     <span class="string">"failed to look up node for direct message: {err}"
                 </span>)));
-            }
+            },
         };
 
         <span class="attr">#[cfg(feature = <span class="string">"hotshot-testing"</span>)]
@@ -2044,7 +2048,7 @@
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="self">self</span>.inner.metrics.num_failed_messages.add(<span class="number">1</span>);
                 <span class="prelude-val">Err</span>(e)
-            }
+            },
         }
     }
 
@@ -2094,21 +2098,27 @@
         <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         view: u64,
         epoch: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-        membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
     ) <span class="kw">where
         </span>TYPES: NodeType&lt;SignatureKey = T::SignatureKey&gt; + <span class="lifetime">'a</span>,
     {
         <span class="kw">let </span>future_view = &lt;TYPES <span class="kw">as </span>NodeType&gt;::View::new(view) + LOOK_AHEAD;
         <span class="kw">let </span>epoch = epoch.map(&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch::new);
 
-        <span class="kw">let </span>future_leader = <span class="kw">match </span>membership.read().<span class="kw">await</span>.leader(future_view, epoch) {
+        <span class="kw">let </span>membership = <span class="kw">match </span>membership_coordinator.membership_for_epoch(epoch).<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(m) =&gt; m,
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="kw">return </span><span class="macro">tracing::warn!</span>(e.message);
+            },
+        };
+        <span class="kw">let </span>future_leader = <span class="kw">match </span>membership.leader(future_view).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(l) =&gt; l,
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="kw">return </span><span class="macro">tracing::info!</span>(
                     <span class="string">"Failed to calculate leader for view {:?}: {e}"</span>,
                     future_view
                 );
-            }
+            },
         };
 
         <span class="kw">let _ </span>= <span class="self">self

@@ -302,7 +302,8 @@
 <a href="#301" id="301">301</a>
 <a href="#302" id="302">302</a>
 <a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -403,15 +404,6 @@
 </span><span class="kw">pub mod </span>api;
 <span class="kw">pub mod </span>service;
 
-<span class="kw">use crate</span>::{
-    api::node_validator::v0::{
-        cdn::{BroadcastRollCallTask, CdnReceiveMessagesTask},
-        create_node_validator_api::{create_node_validator_processing, NodeValidatorConfig},
-        HotshotQueryServiceLeafStreamRetriever, ProcessProduceLeafStreamTask,
-        StateClientMessageSender, STATIC_VER_0_1,
-    },
-    service::{client_message::InternalClientMessage, server_message::ServerMessage},
-};
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::{PubKey, SeqTypes};
 <span class="kw">use </span>futures::channel::mpsc::{<span class="self">self</span>, Sender};
@@ -423,6 +415,16 @@
 <span class="kw">use </span>tide_disco::App;
 <span class="kw">use </span>tokio::spawn;
 <span class="kw">use </span>url::Url;
+
+<span class="kw">use crate</span>::{
+    api::node_validator::v0::{
+        cdn::{BroadcastRollCallTask, CdnReceiveMessagesTask},
+        create_node_validator_api::{create_node_validator_processing, NodeValidatorConfig},
+        HotshotQueryServiceLeafStreamRetriever, ProcessProduceLeafStreamTask,
+        StateClientMessageSender, STATIC_VER_0_1,
+    },
+    service::{client_message::InternalClientMessage, server_message::ServerMessage},
+};
 
 <span class="doccomment">/// Options represents the configuration options that are available for running
 /// the node validator service via the [run_standalone_service] function.
@@ -537,10 +539,10 @@
         api::node_validator::v0::define_api().expect(<span class="string">"error defining node validator api"</span>);
 
     <span class="kw">match </span>app.register_module(<span class="string">"node-validator"</span>, node_validator_api) {
-        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {}
+        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {},
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">panic!</span>(<span class="string">"error registering node validator api: {:?}"</span>, err);
-        }
+        },
     }
 
     <span class="kw">let </span>(leaf_sender, leaf_receiver) = mpsc::channel(<span class="number">10</span>);
@@ -564,7 +566,7 @@
 
         <span class="prelude-val">Err</span>(err) =&gt; {
             <span class="macro">panic!</span>(<span class="string">"error defining node validator api: {:?}"</span>, err);
-        }
+        },
     };
 
     <span class="kw">let </span>_cdn_tasks = <span class="kw">if let </span><span class="prelude-val">Some</span>(cdn_broker_url_string) = options.cdn_marshal_endpoint() {
@@ -582,7 +584,7 @@
             <span class="prelude-val">Ok</span>(cdn_network) =&gt; cdn_network,
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">"error creating cdn network: {:?}"</span>, err);
-            }
+            },
         };
 
         <span class="kw">let </span>url_sender = node_validator_task_state.url_sender.clone();

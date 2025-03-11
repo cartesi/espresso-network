@@ -504,7 +504,7 @@
             QuorumProposalSend(proposal, <span class="kw">_</span>) =&gt; {
                 <span class="prelude-val">Some</span>(proposal.data.block_header().payload_commitment())
                     == null_block::commitment::&lt;V&gt;(num_storage_nodes)
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
         });
     Box::new(EventPredicate { check, info })

@@ -231,13 +231,16 @@
 <a href="#230" id="230">230</a>
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
-<a href="#233" id="233">233</a></pre></div><pre class="rust"><code><span class="kw">use </span>ark_ff::{BigInteger, PrimeField};
-<span class="kw">use </span>std::{
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     borrow::Borrow,
     iter::Take,
     marker::PhantomData,
     vec::{IntoIter, Vec},
 };
+
+<span class="kw">use </span>ark_ff::{BigInteger, PrimeField};
 
 <span class="doccomment">/// Deterministic, infallible, invertible iterator adaptor to convert from
 /// arbitrary bytes to field elements.
@@ -411,10 +414,11 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use super</span>::{bytes_to_field, field_to_bytes, PrimeField, Vec};
     <span class="kw">use </span>ark_bls12_381::Fr <span class="kw">as </span>Fr381;
     <span class="kw">use </span>ark_bn254::Fr <span class="kw">as </span>Fr254;
     <span class="kw">use </span>rand::RngCore;
+
+    <span class="kw">use super</span>::{bytes_to_field, field_to_bytes, PrimeField, Vec};
 
     <span class="kw">fn </span>bytes_to_field_iter&lt;F: PrimeField&gt;() {
         <span class="kw">let </span>byte_lens = [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">16</span>, <span class="number">31</span>, <span class="number">32</span>, <span class="number">33</span>, <span class="number">48</span>, <span class="number">65</span>, <span class="number">100</span>, <span class="number">200</span>, <span class="number">5000</span>];

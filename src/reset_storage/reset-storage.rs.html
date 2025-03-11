@@ -88,11 +88,11 @@
         Command::Fs(opt) =&gt; {
             <span class="macro">tracing::warn!</span>(<span class="string">"resetting file system storage {opt:?}"</span>);
             reset_storage(opt).<span class="kw">await
-        </span>}
+        </span>},
         Command::Sql(opt) =&gt; {
             <span class="macro">tracing::warn!</span>(<span class="string">"resetting SQL storage {opt:?}"</span>);
             reset_storage(<span class="kw-2">*</span>opt).<span class="kw">await
-        </span>}
+        </span>},
     }
 }
 

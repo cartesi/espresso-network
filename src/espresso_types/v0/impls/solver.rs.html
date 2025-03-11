@@ -93,15 +93,11 @@
 <a href="#92" id="92">92</a>
 <a href="#93" id="93">93</a>
 <a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a></pre></div><pre class="rust"><code><span class="kw">use </span>committable::{Commitment, Committable};
+<a href="#95" id="95">95</a></pre></div><pre class="rust"><code><span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>hotshot::types::SignatureKey;
 
-<span class="kw">use </span><span class="kw">crate</span>::v0::utils::Update;
-
 <span class="kw">use </span><span class="kw">super</span>::v0_99::{RollupRegistrationBody, RollupUpdatebody};
-<span class="kw">use </span><span class="kw">crate</span>::v0::utils::Update::Set;
+<span class="kw">use </span><span class="kw">crate</span>::v0::utils::{Update, Update::Set};
 
 <span class="kw">impl </span>Committable <span class="kw">for </span>RollupRegistrationBody {
     <span class="kw">fn </span>tag() -&gt; String {
@@ -151,7 +147,7 @@
                 comm = comm
                     .u64_field(<span class="string">"reserve_url"</span>, <span class="number">2</span>)
                     .var_size_bytes(url.as_str().as_ref())
-            }
+            },
             Set(<span class="prelude-val">None</span>) =&gt; comm = comm.u64_field(<span class="string">"reserve_url"</span>, <span class="number">1</span>),
             Update::Skip =&gt; comm = comm.u64_field(<span class="string">"reserve_url"</span>, <span class="number">0</span>),
         }

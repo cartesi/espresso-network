@@ -69,8 +69,8 @@
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
 <a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{queries::DecodeError, Db};
-<span class="kw">use </span>async_trait::async_trait;
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a></pre></div><pre class="rust"><code><span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>derive_more::From;
 <span class="kw">use </span>futures::stream::StreamExt;
 <span class="kw">use </span>refinery_core::{
@@ -79,6 +79,8 @@
 };
 <span class="kw">use </span>sqlx::{pool::PoolConnection, Acquire, Executor, Row};
 <span class="kw">use </span>time::{format_description::well_known::Rfc3339, OffsetDateTime};
+
+<span class="kw">use super</span>::{queries::DecodeError, Db};
 
 <span class="doccomment">/// Run migrations using a sqlx connection.
 ///

@@ -646,7 +646,9 @@
 <a href="#645" id="645">645</a>
 <a href="#646" id="646">646</a>
 <a href="#647" id="647">647</a>
-<a href="#648" id="648">648</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -660,7 +662,17 @@
 
 </span><span class="doccomment">//! Explorer storage implementation for a database query engine.
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">use </span>std::{collections::VecDeque, num::NonZeroUsize};
+
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>committable::{Commitment, Committable};
+<span class="kw">use </span>futures::stream::{<span class="self">self</span>, StreamExt, TryStreamExt};
+<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+<span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>sqlx::{types::Json, FromRow, Row};
+<span class="kw">use </span>tagged_base64::{Tagged, TaggedBase64};
+
+<span class="kw">use super</span>::{
     <span class="kw">super</span>::transaction::{query, Transaction, TransactionMode},
     Database, Db, DecodeError, BLOCK_COLUMNS,
 };
@@ -681,14 +693,6 @@
     },
     Header, Payload, QueryError, QueryResult, Transaction <span class="kw">as </span>HotshotTransaction,
 };
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>committable::{Commitment, Committable};
-<span class="kw">use </span>futures::stream::{<span class="self">self</span>, StreamExt, TryStreamExt};
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>itertools::Itertools;
-<span class="kw">use </span>sqlx::{types::Json, FromRow, Row};
-<span class="kw">use </span>std::{collections::VecDeque, num::NonZeroUsize};
-<span class="kw">use </span>tagged_base64::{Tagged, TaggedBase64};
 
 <span class="kw">impl </span>From&lt;sqlx::Error&gt; <span class="kw">for </span>GetExplorerSummaryError {
     <span class="kw">fn </span>from(err: sqlx::Error) -&gt; <span class="self">Self </span>{
@@ -930,7 +934,7 @@
         <span class="kw">let </span>query_stmt = <span class="kw">match </span>request.target {
             BlockIdentifier::Latest =&gt; {
                 query(<span class="kw-2">&amp;</span>GET_BLOCK_SUMMARIES_QUERY_FOR_LATEST).bind(request.num_blocks.get() <span class="kw">as </span>i64)
-            }
+            },
             BlockIdentifier::Height(height) =&gt; query(<span class="kw-2">&amp;</span>GET_BLOCK_SUMMARIES_QUERY_FOR_HEIGHT)
                 .bind(height <span class="kw">as </span>i64)
                 .bind(request.num_blocks.get() <span class="kw">as </span>i64),
@@ -953,10 +957,10 @@
             BlockIdentifier::Latest =&gt; query(<span class="kw-2">&amp;</span>GET_BLOCK_DETAIL_QUERY_FOR_LATEST),
             BlockIdentifier::Height(height) =&gt; {
                 query(<span class="kw-2">&amp;</span>GET_BLOCK_DETAIL_QUERY_FOR_HEIGHT).bind(height <span class="kw">as </span>i64)
-            }
+            },
             BlockIdentifier::Hash(hash) =&gt; {
                 query(<span class="kw-2">&amp;</span>GET_BLOCK_DETAIL_QUERY_FOR_HASH).bind(hash.to_string())
-            }
+            },
         };
 
         <span class="kw">let </span>query_result = query_stmt.fetch_one(<span class="self">self</span>.as_mut()).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1023,7 +1027,7 @@
 
             TransactionSummaryFilter::Block(block) =&gt; {
                 query(<span class="kw-2">&amp;</span>GET_TRANSACTION_SUMMARIES_QUERY_FOR_BLOCK).bind(<span class="kw-2">*</span>block <span class="kw">as </span>i64)
-            }
+            },
         };
 
         <span class="kw">let </span>block_stream = query_stmt
@@ -1080,10 +1084,10 @@
                 query(<span class="kw-2">&amp;</span>GET_TRANSACTION_DETAIL_QUERY_FOR_HEIGHT_AND_OFFSET)
                     .bind(height <span class="kw">as </span>i64)
                     .bind(offset <span class="kw">as </span>i64)
-            }
+            },
             TransactionIdentifier::Hash(hash) =&gt; {
                 query(<span class="kw-2">&amp;</span>GET_TRANSACTION_DETAIL_QUERY_FOR_HASH).bind(hash.to_string())
-            }
+            },
         };
 
         <span class="kw">let </span>query_row = query_stmt.fetch_one(<span class="self">self</span>.as_mut()).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1103,7 +1107,7 @@
                         key: <span class="macro">format!</span>(<span class="string">"at {height} and {offset}"</span>),
                     }),
                 )
-            }
+            },
             TransactionIdentifier::Hash(hash) =&gt; txns
                 .into_iter()
                 .enumerate()

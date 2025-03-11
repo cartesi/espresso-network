@@ -217,10 +217,9 @@
 <a href="#216" id="216">216</a>
 <a href="#217" id="217">217</a>
 <a href="#218" id="218">218</a>
-<a href="#219" id="219">219</a>
-<a href="#220" id="220">220</a></pre></div><pre class="rust"><code><span class="doccomment">//! Utility program to verify properties of headers sequenced by HotShot.
+<a href="#219" id="219">219</a></pre></div><pre class="rust"><code><span class="doccomment">//! Utility program to verify properties of headers sequenced by HotShot.
 
-</span><span class="kw">use </span>std::{cmp::max, process::exit, time::Duration};
+</span><span class="kw">use </span>std::{cmp::max, process::exit, sync::Arc, time::Duration};
 
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::{Header, L1BlockInfo};
@@ -229,7 +228,6 @@
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>sequencer::SequencerApiVersion;
 <span class="kw">use </span>sequencer_utils::logging;
-<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>surf_disco::Url;
 <span class="kw">use </span>tokio::time::sleep;
 <span class="kw">use </span>vbs::version::StaticVersionType;
@@ -354,7 +352,7 @@
 
                 <span class="comment">// Back off a bit and then retry.
                 </span>sleep(Duration::from_millis(<span class="number">100</span>)).<span class="kw">await</span>;
-            }
+            },
         }
     }
 }
@@ -367,12 +365,12 @@
                 <span class="macro">tracing::warn!</span>(<span class="string">"L1 block {height} not yet available"</span>);
                 sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
                 <span class="kw">continue</span>;
-            }
+            },
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::warn!</span>(<span class="string">"error fetching L1 block {height}: {err}"</span>);
                 sleep(Duration::from_millis(<span class="number">100</span>)).<span class="kw">await</span>;
                 <span class="kw">continue</span>;
-            }
+            },
         };
 
         <span class="kw">let </span><span class="prelude-val">Some</span>(hash) = block.hash <span class="kw">else </span>{

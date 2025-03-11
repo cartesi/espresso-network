@@ -139,10 +139,10 @@
 
 </span><span class="doccomment">//! Async task utilities.
 
-</span><span class="kw">use </span>derivative::Derivative;
+</span><span class="kw">use </span>std::{fmt::Display, sync::Arc};
+
+<span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>futures::future::Future;
-<span class="kw">use </span>std::fmt::Display;
-<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tokio::{
     spawn,
     task::{JoinError, JoinHandle},

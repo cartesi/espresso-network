@@ -131,7 +131,7 @@
             <span class="prelude-val">Err</span>(e) =&gt; {
                 <span class="macro">tracing::error!</span>(<span class="string">"Failed to write file {}; error = {}"</span>, filename, e);
                 <span class="kw">return</span>;
-            }
+            },
         };
 
         <span class="kw">for </span>(event_number, event) <span class="kw">in </span><span class="self">self</span>.events.iter().enumerate() {

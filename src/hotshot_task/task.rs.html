@@ -271,13 +271,13 @@
                             S::handle_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>.state, input, <span class="kw-2">&amp;</span><span class="self">self</span>.sender, <span class="kw-2">&amp;</span><span class="self">self</span>.receiver)
                                 .<span class="kw">await
                                 </span>.inspect_err(|e| <span class="macro">tracing::debug!</span>(<span class="string">"{e}"</span>));
-                    }
+                    },
                     <span class="prelude-val">Err</span>(RecvError::Closed) =&gt; {
                         <span class="kw">break </span><span class="self">self</span>.boxed_state();
-                    }
+                    },
                     <span class="prelude-val">Err</span>(e) =&gt; {
                         <span class="macro">tracing::error!</span>(<span class="string">"Failed to receive from event stream Error: {}"</span>, e);
-                    }
+                    },
                 }
             }
         })

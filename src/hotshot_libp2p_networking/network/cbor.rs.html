@@ -274,19 +274,19 @@
     <span class="kw">match </span>err {
         cbor4ii::serde::DecodeError::Core(DecodeError::Read(e)) =&gt; {
             io::Error::new(io::ErrorKind::Other, e.to_string())
-        }
+        },
         cbor4ii::serde::DecodeError::Core(e @ DecodeError::Unsupported { .. }) =&gt; {
             io::Error::new(io::ErrorKind::Unsupported, e.to_string())
-        }
+        },
         cbor4ii::serde::DecodeError::Core(e @ DecodeError::Eof { .. }) =&gt; {
             io::Error::new(io::ErrorKind::UnexpectedEof, e.to_string())
-        }
+        },
         cbor4ii::serde::DecodeError::Core(e) =&gt; {
             io::Error::new(io::ErrorKind::InvalidData, e.to_string())
-        }
+        },
         cbor4ii::serde::DecodeError::Custom(e) =&gt; {
             io::Error::new(io::ErrorKind::Other, e.to_string())
-        }
+        },
     }
 }
 

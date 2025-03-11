@@ -462,21 +462,21 @@
             <span class="kw">match </span>error_level {
                 Level::Trace =&gt; {
                     <span class="macro">tracing::trace!</span>(<span class="string">"{}"</span>, error.message);
-                }
+                },
                 Level::Debug =&gt; {
                     <span class="macro">tracing::debug!</span>(<span class="string">"{}"</span>, error.message);
-                }
+                },
                 Level::Info =&gt; {
                     <span class="macro">tracing::info!</span>(<span class="string">"{}"</span>, error.message);
-                }
+                },
                 Level::Warn =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"{}"</span>, error.message);
-                }
+                },
                 Level::Error =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"{}"</span>, error.message);
-                }
+                },
                 <span class="comment">// impossible
-                </span>Level::Unspecified =&gt; {}
+                </span>Level::Unspecified =&gt; {},
             }
         }
     };

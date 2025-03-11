@@ -788,7 +788,30 @@
 <a href="#787" id="787">787</a>
 <a href="#788" id="788">788</a>
 <a href="#789" id="789">789</a>
-<a href="#790" id="790">790</a></pre></div><pre class="rust"><code><span class="kw">use </span>hotshot::types::Event;
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    fmt::Display,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
+};
+
+<span class="kw">pub use </span>async_broadcast::{broadcast, RecvError, TryRecvError};
+<span class="kw">use </span>async_lock::RwLock;
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>committable::Commitment;
+<span class="kw">use </span>futures::{
+    future::BoxFuture,
+    stream::{FuturesOrdered, FuturesUnordered, StreamExt},
+    Stream, TryStreamExt,
+};
+<span class="kw">use </span>hotshot::types::Event;
 <span class="kw">use </span>hotshot_builder_api::{
     v0_1::{
         block_info::{AvailableBlockData, AvailableBlockInfo},
@@ -799,51 +822,38 @@
     },
     v0_2::block_info::AvailableBlockHeaderInputV1,
 };
-<span class="kw">use </span>hotshot_types::traits::block_contents::Transaction;
-<span class="kw">use </span>hotshot_types::traits::EncodeBytes;
 <span class="kw">use </span>hotshot_types::{
     data::VidCommitment,
     event::EventType,
     traits::{
-        block_contents::BlockPayload,
+        block_contents::{BlockPayload, Transaction},
         node_implementation::{ConsensusTime, NodeType},
         signature_key::{BuilderSignatureKey, SignatureKey},
+        EncodeBytes,
     },
     utils::BuilderCommitment,
 };
-<span class="kw">use </span>marketplace_builder_shared::coordinator::BuilderStateLookup;
-<span class="kw">use </span>marketplace_builder_shared::error::Error;
-<span class="kw">use </span>marketplace_builder_shared::state::BuilderState;
-<span class="kw">use </span>marketplace_builder_shared::utils::BuilderKeys;
 <span class="kw">use </span>marketplace_builder_shared::{
     block::{BlockId, BuilderStateId, ReceivedTransaction, TransactionSource},
-    coordinator::BuilderStateCoordinator,
+    coordinator::{BuilderStateCoordinator, BuilderStateLookup},
+    error::Error,
+    state::BuilderState,
+    utils::BuilderKeys,
 };
-<span class="kw">use </span>tide_disco::app::AppError;
-<span class="kw">use </span>tokio::spawn;
-<span class="kw">use </span>tokio::time::{sleep, timeout};
+<span class="kw">use </span>tagged_base64::TaggedBase64;
+<span class="kw">use </span>tide_disco::{app::AppError, method::ReadState, App};
+<span class="kw">use </span>tokio::{
+    spawn,
+    task::JoinHandle,
+    time::{sleep, timeout},
+};
 <span class="kw">use </span>tracing::{error, info, instrument, trace, warn};
 <span class="kw">use </span>vbs::version::StaticVersion;
 
-<span class="kw">use </span><span class="kw">crate</span>::block_size_limits::BlockSizeLimits;
-<span class="kw">use </span><span class="kw">crate</span>::block_store::{BlockInfo, BlockStore};
-<span class="kw">pub use </span>async_broadcast::{broadcast, RecvError, TryRecvError};
-<span class="kw">use </span>async_lock::RwLock;
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>committable::Commitment;
-<span class="kw">use </span>futures::{future::BoxFuture, Stream};
-<span class="kw">use </span>futures::{
-    stream::{FuturesOrdered, FuturesUnordered, StreamExt},
-    TryStreamExt,
+<span class="kw">use crate</span>::{
+    block_size_limits::BlockSizeLimits,
+    block_store::{BlockInfo, BlockStore},
 };
-<span class="kw">use </span>std::sync::atomic::AtomicUsize;
-<span class="kw">use </span>std::sync::atomic::Ordering;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::time::Duration;
-<span class="kw">use </span>std::{fmt::Display, time::Instant};
-<span class="kw">use </span>tagged_base64::TaggedBase64;
-<span class="kw">use </span>tide_disco::{method::ReadState, App};
-<span class="kw">use </span>tokio::task::JoinHandle;
 
 <span class="doccomment">/// Proportion of overall allotted time to wait for optimal builder state
 /// to appear before resorting to highest view builder state
@@ -991,7 +1001,7 @@
             <span class="kw">match </span>event.event {
                 EventType::Error { error } =&gt; {
                     <span class="macro">error!</span>(<span class="string">"Error event in HotShot: {:?}"</span>, error);
-                }
+                },
                 EventType::Transactions { transactions } =&gt; {
                     <span class="kw">let </span>this = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>);
                     spawn(<span class="kw">async move </span>{
@@ -1007,7 +1017,7 @@
                             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
                             .<span class="kw">await</span>;
                     });
-                }
+                },
                 EventType::Decide { leaf_chain, .. } =&gt; {
                     <span class="kw">let </span>prune_cutoff = leaf_chain[<span class="number">0</span>].leaf.view_number();
 
@@ -1016,16 +1026,16 @@
 
                     <span class="kw">let </span>this = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>);
                     spawn(<span class="kw">async move </span>{ this.block_store.write().<span class="kw">await</span>.prune(prune_cutoff) });
-                }
+                },
                 EventType::DaProposal { proposal, .. } =&gt; {
                     <span class="kw">let </span>coordinator = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.coordinator);
                     spawn(<span class="kw">async move </span>{ coordinator.handle_da_proposal(proposal.data).<span class="kw">await </span>});
-                }
+                },
                 EventType::QuorumProposal { proposal, .. } =&gt; {
                     <span class="kw">let </span>coordinator = Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.coordinator);
                     spawn(<span class="kw">async move </span>{ coordinator.handle_quorum_proposal(proposal.data).<span class="kw">await </span>});
-                }
-                <span class="kw">_ </span>=&gt; {}
+                },
+                <span class="kw">_ </span>=&gt; {},
             }
         }
     }
@@ -1077,10 +1087,10 @@
                 BuilderStateLookup::Found(builder) =&gt; <span class="kw">break </span><span class="prelude-val">Ok</span>(builder),
                 BuilderStateLookup::Decided =&gt; {
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::AlreadyDecided);
-                }
+                },
                 BuilderStateLookup::NotFound =&gt; {
                     sleep(check_period).<span class="kw">await</span>;
-                }
+                },
             };
         }
     }
@@ -1164,7 +1174,7 @@
                 <span class="prelude-val">Err</span>(error) =&gt; {
                     <span class="macro">warn!</span>(<span class="question-mark">?</span>error, <span class="string">"Failed to build block payload"</span>);
                     <span class="kw">return </span><span class="prelude-val">Err</span>(Error::BuildBlock(error));
-                }
+                },
             };
 
         <span class="comment">// count the number of txns
@@ -1232,7 +1242,7 @@
                 <span class="comment">// Timeout waiting for ideal state, get the highest view builder instead
                 </span><span class="macro">warn!</span>(<span class="string">"Couldn't find the ideal builder state"</span>);
                 <span class="self">self</span>.coordinator.highest_view_builder().<span class="kw">await
-            </span>}
+            </span>},
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(e)) =&gt; {
                 <span class="comment">// State already decided
                 </span><span class="kw">let </span>lowest_view = <span class="self">self</span>.coordinator.lowest_view().<span class="kw">await</span>;
@@ -1241,7 +1251,7 @@
                     <span class="string">"get_available_blocks request for decided view"
                 </span>);
                 <span class="kw">return </span><span class="prelude-val">Err</span>(e);
-            }
+            },
         };
 
         <span class="kw">let </span><span class="prelude-val">Some</span>(builder) = builder <span class="kw">else </span>{
@@ -1275,7 +1285,7 @@
                 }
 
                 <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[response])
-            }
+            },
             <span class="comment">// Success, but no block: we don't have transactions and aren't prioritizing finalization
             </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)) =&gt; <span class="prelude-val">Ok</span>(<span class="macro">vec!</span>[]),
             <span class="comment">// Error building block, try to respond with a cached one as last-ditch attempt
@@ -1285,7 +1295,7 @@
                 } <span class="kw">else </span>{
                     <span class="prelude-val">Err</span>(e)
                 }
-            }
+            },
         }
     }
 

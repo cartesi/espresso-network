@@ -18,7 +18,8 @@
 <a href="#17" id="17">17</a>
 <a href="#18" id="18">18</a>
 <a href="#19" id="19">19</a>
-<a href="#20" id="20">20</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#20" id="20">20</a>
+<a href="#21" id="21">21</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -32,6 +33,7 @@
 <span class="kw">pub type </span>AvidMParam = vid::avid_m::namespaced::NsAvidMParam;
 <span class="kw">pub type </span>AvidMCommitment = vid::avid_m::namespaced::NsAvidMCommit;
 <span class="kw">pub type </span>AvidMShare = vid::avid_m::namespaced::NsAvidMShare;
+<span class="kw">pub type </span>AvidMCommon = AvidMParam;
 
 <span class="kw">pub fn </span>init_avidm_param(num_storage_nodes: usize) -&gt; <span class="prelude-ty">Result</span>&lt;AvidMParam&gt; {
     <span class="kw">let </span>recovery_threshold = <span class="number">1 </span>&lt;&lt; num_storage_nodes.ilog2();

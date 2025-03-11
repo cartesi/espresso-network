@@ -836,7 +836,13 @@
 <a href="#835" id="835">835</a>
 <a href="#836" id="836">836</a>
 <a href="#837" id="837">837</a>
-<a href="#838" id="838">838</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -856,7 +862,35 @@
 //! database connection, so that the updated state of the database can be queried midway through a
 //! transaction.
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">use </span>std::{
+    collections::{HashMap, HashSet},
+    marker::PhantomData,
+    time::Instant,
+};
+
+<span class="kw">use </span>anyhow::{bail, Context};
+<span class="kw">use </span>ark_serialize::CanonicalSerialize;
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>committable::Committable;
+<span class="kw">use </span>derive_more::{Deref, DerefMut};
+<span class="kw">use </span>futures::{future::Future, stream::TryStreamExt};
+<span class="kw">use </span>hotshot_types::{
+    data::VidShare,
+    traits::{
+        block_contents::BlockHeader,
+        metrics::{Counter, Gauge, Histogram, Metrics},
+        node_implementation::NodeType,
+        EncodeBytes,
+    },
+};
+<span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>jf_merkle_tree::prelude::{MerkleNode, MerkleProof};
+<span class="kw">pub use </span>sqlx::Executor;
+<span class="kw">use </span>sqlx::{
+    pool::Pool, query_builder::Separated, types::BitVec, Encode, FromRow, QueryBuilder, Type,
+};
+
+<span class="kw">use super</span>::{
     queries::{
         <span class="self">self</span>,
         state::{build_hash_batch_insert, Node},
@@ -874,29 +908,7 @@
     },
     merklized_state::{MerklizedState, UpdateStateData},
     types::HeightIndexed,
-    Header, Payload, QueryError, QueryResult, VidShare,
-};
-<span class="kw">use </span>anyhow::{bail, Context};
-<span class="kw">use </span>ark_serialize::CanonicalSerialize;
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>committable::Committable;
-<span class="kw">use </span>derive_more::{Deref, DerefMut};
-<span class="kw">use </span>futures::{future::Future, stream::TryStreamExt};
-<span class="kw">use </span>hotshot_types::traits::{
-    block_contents::BlockHeader,
-    metrics::{Counter, Gauge, Histogram, Metrics},
-    node_implementation::NodeType,
-    EncodeBytes,
-};
-<span class="kw">use </span>itertools::Itertools;
-<span class="kw">use </span>jf_merkle_tree::prelude::{MerkleNode, MerkleProof};
-<span class="kw">use </span>sqlx::types::BitVec;
-<span class="kw">pub use </span>sqlx::Executor;
-<span class="kw">use </span>sqlx::{pool::Pool, query_builder::Separated, Encode, FromRow, QueryBuilder, Type};
-<span class="kw">use </span>std::{
-    collections::{HashMap, HashSet},
-    marker::PhantomData,
-    time::Instant,
+    Header, Payload, QueryError, QueryResult,
 };
 
 <span class="kw">pub type </span>Query&lt;<span class="lifetime">'q</span>&gt; = sqlx::query::Query&lt;<span class="lifetime">'q</span>, Db, &lt;Db <span class="kw">as </span>Database&gt;::Arguments&lt;<span class="lifetime">'q</span>&gt;&gt;;
@@ -1347,7 +1359,7 @@
         </span><span class="kw">let </span>leaf_json = serde_json::to_value(leaf.leaf()).context(<span class="string">"failed to serialize leaf"</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>qc_json = serde_json::to_value(leaf.qc()).context(<span class="string">"failed to serialize QC"</span>)<span class="question-mark">?</span>;
         <span class="self">self</span>.upsert(
-            <span class="string">"leaf"</span>,
+            <span class="string">"leaf2"</span>,
             [<span class="string">"height"</span>, <span class="string">"hash"</span>, <span class="string">"block_hash"</span>, <span class="string">"leaf"</span>, <span class="string">"qc"</span>],
             [<span class="string">"height"</span>],
             [(
@@ -1441,7 +1453,7 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(share) = share {
             <span class="kw">let </span>share_data = bincode::serialize(<span class="kw-2">&amp;</span>share).context(<span class="string">"failed to serialize VID share"</span>)<span class="question-mark">?</span>;
             <span class="self">self</span>.upsert(
-                <span class="string">"vid"</span>,
+                <span class="string">"vid2"</span>,
                 [<span class="string">"height"</span>, <span class="string">"common"</span>, <span class="string">"share"</span>],
                 [<span class="string">"height"</span>],
                 [(height <span class="kw">as </span>i64, common_data, share_data)],
@@ -1452,7 +1464,7 @@
             // possible that this column already exists, and we are just upserting the common data,
             // in which case we don't want to overwrite the share with NULL.
             </span><span class="self">self</span>.upsert(
-                <span class="string">"vid"</span>,
+                <span class="string">"vid2"</span>,
                 [<span class="string">"height"</span>, <span class="string">"common"</span>],
                 [<span class="string">"height"</span>],
                 [(height <span class="kw">as </span>i64, common_data)],
@@ -1516,10 +1528,10 @@
                         [<span class="number">0_u8</span>; <span class="number">32</span>].to_vec(),
                     ));
                     hashset.insert([<span class="number">0_u8</span>; <span class="number">32</span>].to_vec());
-                }
+                },
                 MerkleNode::ForgettenSubtree { .. } =&gt; {
                     <span class="macro">bail!</span>(<span class="string">"Node in the Merkle path contains a forgetten subtree"</span>);
-                }
+                },
                 MerkleNode::Leaf { value, pos, elem } =&gt; {
                     <span class="kw">let </span><span class="kw-2">mut </span>leaf_commit = Vec::new();
                     <span class="comment">// Serialize the leaf node hash value into a vector
@@ -1546,7 +1558,7 @@
                     ));
 
                     hashset.insert(leaf_commit);
-                }
+                },
                 MerkleNode::Branch { value, children } =&gt; {
                     <span class="comment">// Get hash
                     </span><span class="kw">let </span><span class="kw-2">mut </span>branch_hash = Vec::new();
@@ -1563,7 +1575,7 @@
                         <span class="kw">match </span>child {
                             MerkleNode::Empty =&gt; {
                                 children_bitvec.push(<span class="bool-val">false</span>);
-                            }
+                            },
                             MerkleNode::Branch { value, .. }
                             | MerkleNode::Leaf { value, .. }
                             | MerkleNode::ForgettenSubtree { value } =&gt; {
@@ -1575,7 +1587,7 @@
                                 children_values.push(hash);
                                 <span class="comment">// Mark the entry as 1 in bitvec to indicate a non-empty child
                                 </span>children_bitvec.push(<span class="bool-val">true</span>);
-                            }
+                            },
                         }
                     }
 
@@ -1593,7 +1605,7 @@
                     ));
                     hashset.insert(branch_hash);
                     hashset.extend(children_values);
-                }
+                },
             }
 
             <span class="comment">// advance the traversal path for the internal nodes at each iteration
@@ -1633,7 +1645,7 @@
             }
         }
 
-        Node::upsert(name, nodes.into_iter().map(|(n, <span class="kw">_</span>, <span class="kw">_</span>)| n), <span class="self">self</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        Node::upsert(name, nodes.into_iter().map(|(n, ..)| n), <span class="self">self</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     }

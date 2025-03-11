@@ -2117,17 +2117,17 @@
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::InvalidInitialization(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::NotInitializing(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::OwnableInvalidOwner(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::OwnableUnauthorizedAccount(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::StakerAlreadyExists(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::StakerNotFound(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::RevertString(s) =&gt; ::ethers::core::abi::AbiEncode::encode(s),
             }
@@ -2141,28 +2141,28 @@
                     == &lt;InvalidInitialization <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;NotInitializing <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;OwnableInvalidOwner <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;OwnableUnauthorizedAccount <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;StakerAlreadyExists <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;StakerNotFound <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
             }
         }
@@ -2532,7 +2532,7 @@
                 <span class="self">Self</span>::Initialize(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::InitializedAtBlock(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::IsStaker(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::Owner(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::RenounceOwnership(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),

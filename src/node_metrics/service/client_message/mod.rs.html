@@ -227,8 +227,11 @@
 <a href="#226" id="226">226</a>
 <a href="#227" id="227">227</a>
 <a href="#228" id="228">228</a>
-<a href="#229" id="229">229</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::client_id::ClientId;
-<span class="kw">use </span>serde::{Deserialize, Serialize};
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a></pre></div><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
+
+<span class="kw">use </span><span class="kw">super</span>::client_id::ClientId;
 
 <span class="doccomment">/// [ClientMessage] represents the messages that the client can send to the
 /// server for a request.
@@ -267,11 +270,12 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span><span class="kw">super</span>::InternalClientMessage;
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span><span class="kw">crate</span>::service::server_message::ServerMessage;
-    <span class="kw">use </span>futures::channel::mpsc::Sender;
     <span class="kw">use </span>std::iter::zip;
+
+    <span class="kw">use </span>futures::channel::mpsc::Sender;
+
+    <span class="kw">use super</span>::{InternalClientMessage, <span class="kw-2">*</span>};
+    <span class="kw">use </span><span class="kw">crate</span>::service::server_message::ServerMessage;
 
     <span class="kw">impl</span>&lt;K&gt; PartialEq <span class="kw">for </span>InternalClientMessage&lt;K&gt; {
         <span class="kw">fn </span>eq(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; bool {
@@ -370,7 +374,7 @@
                 <span class="kw">match </span>internal_client_message {
                     InternalClientMessage::Request(id, <span class="kw">_</span>) =&gt; {
                         <span class="macro">assert_eq!</span>(id, client_id);
-                    }
+                    },
                     <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unexpected InternalClientMessage"</span>),
                 }
             }

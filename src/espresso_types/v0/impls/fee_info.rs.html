@@ -478,7 +478,9 @@
 <a href="#477" id="477">477</a>
 <a href="#478" id="478">478</a>
 <a href="#479" id="479">479</a>
-<a href="#480" id="480">480</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::{bail, ensure, Context};
+<a href="#480" id="480">480</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::str::FromStr;
+
+<span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>ark_serialize::{
     CanonicalDeserialize, CanonicalSerialize, Compress, Read, SerializationError, Valid, Validate,
 };
@@ -502,7 +504,6 @@
 <span class="kw">use </span>sequencer_utils::{
     impl_serde_from_string_or_integer, impl_to_fixed_bytes, ser::FromStringOrInteger,
 };
-<span class="kw">use </span>std::str::FromStr;
 <span class="kw">use </span>thiserror::Error;
 
 <span class="kw">use crate</span>::{
@@ -870,7 +871,7 @@
                     .elem()
                     .context(<span class="string">"presence proof is missing account balance"</span>)<span class="question-mark">?
                     </span>.<span class="number">0</span>)
-            }
+            },
             FeeMerkleProof::Absence(proof) =&gt; {
                 <span class="kw">let </span>tree = FeeMerkleTree::from_commitment(comm);
                 <span class="macro">ensure!</span>(
@@ -878,7 +879,7 @@
                     <span class="string">"invalid proof"
                 </span>);
                 <span class="prelude-val">Ok</span>(<span class="number">0</span>.into())
-            }
+            },
         }
     }
 
@@ -893,11 +894,11 @@
                     proof,
                 )<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
-            }
+            },
             FeeMerkleProof::Absence(proof) =&gt; {
                 tree.non_membership_remember(FeeAccount(<span class="self">self</span>.account), proof)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
-            }
+            },
         }
     }
 }
@@ -922,14 +923,14 @@
                 <span class="comment">// This remember cannot fail, since we just constructed a valid proof, and are
                 // remembering into a tree with the same commitment.
                 </span>snapshot.remember(account, <span class="kw-2">*</span>elem, proof).unwrap();
-            }
+            },
             LookupResult::NotFound(proof) =&gt; {
                 <span class="comment">// Likewise this cannot fail.
                 </span>snapshot.non_membership_remember(account, proof).unwrap()
-            }
+            },
             LookupResult::NotInMemory =&gt; {
                 <span class="macro">bail!</span>(<span class="string">"missing account {account}"</span>);
-            }
+            },
         }
     }
 
@@ -940,9 +941,8 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>ethers::abi::Address;
 
-    <span class="kw">use crate</span>::{FeeAccount, FeeAmount, FeeInfo};
-
     <span class="kw">use </span><span class="kw">super</span>::IterableFeeInfo;
+    <span class="kw">use crate</span>::{FeeAccount, FeeAmount, FeeInfo};
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_iterable_fee_info() {

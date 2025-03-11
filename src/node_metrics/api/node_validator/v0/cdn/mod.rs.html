@@ -578,8 +578,10 @@
 <a href="#577" id="577">577</a>
 <a href="#578" id="578">578</a>
 <a href="#579" id="579">579</a>
-<a href="#580" id="580">580</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::api::node_validator::v0::create_node_validator_api::ExternalMessage;
-<span class="kw">use </span>espresso_types::{PubKey, SeqTypes};
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a></pre></div><pre class="rust"><code><span class="kw">use </span>espresso_types::{PubKey, SeqTypes};
 <span class="kw">use </span>futures::{channel::mpsc::SendError, Sink, SinkExt};
 <span class="kw">use </span>hotshot::{
     traits::NetworkError,
@@ -594,6 +596,8 @@
 };
 <span class="kw">use </span>tokio::{spawn, task::JoinHandle};
 <span class="kw">use </span>url::Url;
+
+<span class="kw">use </span><span class="kw">crate</span>::api::node_validator::v0::create_node_validator_api::ExternalMessage;
 
 <span class="doccomment">/// ConnectedNetworkConsumer represents a trait that splits up a portion of
 /// the ConnectedNetwork trait, so that the consumer only needs to be aware of
@@ -675,7 +679,7 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"error receiving message: {:?}"</span>, err);
                     <span class="kw">continue</span>;
-                }
+                },
             };
 
             <span class="comment">// We want to try and decode this message.
@@ -686,17 +690,17 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"error deserializing message: {:?}"</span>, err);
                     <span class="kw">continue</span>;
-                }
+                },
             };
 
             <span class="kw">let </span>external_message_deserialize_result = <span class="kw">match </span>message.kind {
                 MessageKind::External(external_message) =&gt; {
                     bincode::deserialize::&lt;ExternalMessage&gt;(<span class="kw-2">&amp;</span>external_message)
-                }
+                },
                 <span class="kw">_ </span>=&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"unexpected message kind: {:?}"</span>, message);
                     <span class="kw">continue</span>;
-                }
+                },
             };
 
             <span class="kw">let </span>external_message = <span class="kw">match </span>external_message_deserialize_result {
@@ -704,7 +708,7 @@
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"error deserializing message: {:?}"</span>, err);
                     <span class="kw">continue</span>;
-                }
+                },
             };
 
             <span class="kw">match </span>external_message {
@@ -717,11 +721,11 @@
                         <span class="macro">tracing::error!</span>(<span class="string">"error sending public api url: {:?}"</span>, err);
                         <span class="kw">return</span>;
                     }
-                }
+                },
 
                 <span class="kw">_ </span>=&gt; {
                     <span class="comment">// We're not concerned about other message types
-                </span>}
+                </span>},
             }
         }
     }
@@ -817,7 +821,7 @@
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::error!</span>(<span class="string">"error serializing rollcall request: {:?}"</span>, err);
                 <span class="kw">return</span>;
-            }
+            },
         };
 
         <span class="kw">let </span>hotshot_message = Message::&lt;SeqTypes&gt; {
@@ -830,7 +834,7 @@
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::error!</span>(<span class="string">"error serializing hotshot message: {:?}"</span>, err);
                 <span class="kw">return</span>;
-            }
+            },
         };
 
         <span class="kw">let </span>broadcast_result = network
@@ -858,30 +862,32 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use super</span>::{BroadcastRollCallTask, ConnectedNetworkConsumer, ConnectedNetworkPublisher};
-    <span class="kw">use </span><span class="kw">crate</span>::api::node_validator::v0::create_node_validator_api::ExternalMessage;
-    <span class="kw">use </span><span class="kw">crate</span>::api::node_validator::v0::{
-        cdn::CdnReceiveMessagesTask, create_node_validator_api::RollCallInfo,
-    };
     <span class="kw">use </span>core::panic;
+    <span class="kw">use </span>std::time::Duration;
+
     <span class="kw">use </span>espresso_types::SeqTypes;
-    <span class="kw">use </span>futures::channel::mpsc::Sender;
-    <span class="kw">use </span>futures::SinkExt;
     <span class="kw">use </span>futures::{
-        channel::mpsc::{<span class="self">self</span>},
-        StreamExt,
+        channel::mpsc::{
+            Sender, {<span class="self">self</span>},
+        },
+        SinkExt, StreamExt,
     };
-    <span class="kw">use </span>hotshot::types::SignatureKey;
     <span class="kw">use </span>hotshot::{
         traits::NetworkError,
-        types::{BLSPubKey, Message},
+        types::{BLSPubKey, Message, SignatureKey},
     };
-    <span class="kw">use </span>hotshot_types::message::{DataMessage, MessageKind};
-    <span class="kw">use </span>hotshot_types::traits::network::{BroadcastDelay, ResponseMessage};
-    <span class="kw">use </span>std::time::Duration;
-    <span class="kw">use </span>tokio::time::error::Elapsed;
-    <span class="kw">use </span>tokio::time::{sleep, timeout};
+    <span class="kw">use </span>hotshot_types::{
+        message::{DataMessage, MessageKind},
+        traits::network::{BroadcastDelay, ResponseMessage},
+    };
+    <span class="kw">use </span>tokio::time::{error::Elapsed, sleep, timeout};
     <span class="kw">use </span>url::Url;
+
+    <span class="kw">use super</span>::{BroadcastRollCallTask, ConnectedNetworkConsumer, ConnectedNetworkPublisher};
+    <span class="kw">use </span><span class="kw">crate</span>::api::node_validator::v0::{
+        cdn::CdnReceiveMessagesTask,
+        create_node_validator_api::{ExternalMessage, RollCallInfo},
+    };
 
     <span class="doccomment">/// [TestConnectedNetworkConsumer] is a test implementation of the
     /// [ConnectedNetworkConsumer] trait that allows for the simulation of
@@ -1144,7 +1150,7 @@
                     public_key,
                     BLSPubKey::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">0</span>).<span class="number">0
                 </span>);
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"unexpected external message"</span>),
         }
 

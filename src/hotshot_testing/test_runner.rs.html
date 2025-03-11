@@ -723,21 +723,29 @@
 <a href="#722" id="722">722</a>
 <a href="#723" id="723">723</a>
 <a href="#724" id="724">724</a>
-<a href="#725" id="725">725</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see &lt;https://mit-license.org/&gt;.
 
 </span><span class="attr">#![allow(clippy::panic)]
-</span><span class="kw">use </span>async_broadcast::{broadcast, Receiver, Sender};
+</span><span class="kw">use </span>std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    marker::PhantomData,
+    sync::Arc,
+};
+
+<span class="kw">use </span>async_broadcast::{broadcast, Receiver, Sender};
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>futures::future::join_all;
-<span class="kw">use </span>hotshot::InitializerEpochInfo;
 <span class="kw">use </span>hotshot::{
     traits::TestableNodeImplementation,
     types::{Event, SystemContextHandle},
-    HotShotInitializer, MarketplaceConfig, SystemContext,
+    HotShotInitializer, InitializerEpochInfo, MarketplaceConfig, SystemContext,
 };
 <span class="kw">use </span>hotshot_example_types::{
     auction_results_provider_types::TestAuctionResultsProvider,
@@ -747,11 +755,12 @@
 };
 <span class="kw">use </span>hotshot_fakeapi::fake_solver::FakeSolverState;
 <span class="kw">use </span>hotshot_task_impls::events::HotShotEvent;
-<span class="kw">use </span>hotshot_types::drb::INITIAL_DRB_RESULT;
 <span class="kw">use </span>hotshot_types::{
     consensus::ConsensusMetricsValue,
     constants::EVENT_CHANNEL_SIZE,
     data::Leaf2,
+    drb::INITIAL_DRB_RESULT,
+    epoch_membership::EpochMembershipCoordinator,
     simple_certificate::QuorumCertificate2,
     traits::{
         election::Membership,
@@ -759,11 +768,6 @@
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
     },
     HotShotConfig, ValidatorConfig,
-};
-<span class="kw">use </span>std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    marker::PhantomData,
-    sync::Arc,
 };
 <span class="kw">use </span>tide_disco::Url;
 <span class="kw">use </span>tokio::{spawn, task::JoinHandle};
@@ -1005,12 +1009,12 @@
                 <span class="prelude-val">Ok</span>(res) =&gt; <span class="kw">match </span>res {
                     TestResult::Pass =&gt; {
                         <span class="macro">info!</span>(<span class="string">"Task shut down successfully"</span>);
-                    }
+                    },
                     TestResult::Fail(e) =&gt; error_list.push(e),
                 },
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"Error Joining the test task {:?}"</span>, e);
-                }
+                },
             }
         }
 
@@ -1284,14 +1288,14 @@
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(task) = builder_tasks.pop() {
                         task.start(Box::new(handle.event_stream()))
                     }
-                }
+                },
                 std::cmp::Ordering::Equal =&gt; {
                     <span class="comment">// If we have more builder tasks than DA nodes, pin them all on the last node.
                     </span><span class="kw">while let </span><span class="prelude-val">Some</span>(task) = builder_tasks.pop() {
                         task.start(Box::new(handle.event_stream()))
                     }
-                }
-                std::cmp::Ordering::Greater =&gt; {}
+                },
+                std::cmp::Ordering::Greater =&gt; {},
             }
 
             <span class="self">self</span>.nodes.push(Node {
@@ -1321,13 +1325,14 @@
         <span class="comment">// Get key pair for certificate aggregation
         </span><span class="kw">let </span>private_key = validator_config.private_key.clone();
         <span class="kw">let </span>public_key = validator_config.public_key.clone();
+        <span class="kw">let </span>epoch_height = config.epoch_height;
 
         SystemContext::new(
             public_key,
             private_key,
             node_id,
             config,
-            Arc::new(RwLock::new(memberships)),
+            EpochMembershipCoordinator::new(Arc::new(RwLock::new(memberships)), epoch_height),
             network,
             initializer,
             ConsensusMetricsValue::default(),
@@ -1359,13 +1364,14 @@
         <span class="comment">// Get key pair for certificate aggregation
         </span><span class="kw">let </span>private_key = validator_config.private_key.clone();
         <span class="kw">let </span>public_key = validator_config.public_key.clone();
+        <span class="kw">let </span>epoch_height = config.epoch_height;
 
         SystemContext::new_from_channels(
             public_key,
             private_key,
             node_id,
             config,
-            memberships,
+            EpochMembershipCoordinator::new(memberships, epoch_height),
             network,
             initializer,
             ConsensusMetricsValue::default(),

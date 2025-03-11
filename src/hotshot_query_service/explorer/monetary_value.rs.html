@@ -574,7 +574,8 @@
 <a href="#573" id="573">573</a>
 <a href="#574" id="574">574</a>
 <a href="#575" id="575">575</a>
-<a href="#576" id="576">576</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -586,14 +587,15 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span><span class="kw">super</span>::currency::{CurrencyCode, CurrencyMismatchError};
-<span class="kw">use </span>itertools::Itertools;
-<span class="kw">use </span>serde::{Deserialize, Serialize, Serializer};
-<span class="kw">use </span>std::fmt::Display;
-<span class="kw">use </span>std::{
-    fmt::Debug,
+</span><span class="kw">use </span>std::{
+    fmt::{Debug, Display},
     ops::{Add, Sub},
 };
+
+<span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>serde::{Deserialize, Serialize, Serializer};
+
+<span class="kw">use </span><span class="kw">super</span>::currency::{CurrencyCode, CurrencyMismatchError};
 
 <span class="attr">#[derive(Debug, Clone, PartialEq, Eq)]
 </span><span class="doccomment">/// [MonetaryValue]s is a struct that paris a [CurrencyCode] with a value.
@@ -771,7 +773,7 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(E::custom(
                 <span class="string">"no non-breaking space found in expected MonetaryValue"</span>,
             ))
-        }
+        },
     };
 
     <span class="kw">let </span>first: String = value.chars().take(index).collect();
@@ -820,7 +822,7 @@
                 .collect();
 
             (pre_decimal_string, <span class="prelude-val">Some</span>(post_decimal_string))
-        }
+        },
     }
 }
 
@@ -865,7 +867,7 @@
                     + <span class="number">10i128</span>.pow(significant_digits - num_digits) * post_decimal_value);
 
             <span class="prelude-val">Ok</span>(value)
-        }
+        },
     }
 }
 
@@ -982,7 +984,7 @@
                 <span class="kw">let </span>result = <span class="kw">match </span>result {
                     <span class="prelude-val">Err</span>(err) =&gt; {
                         <span class="macro">panic!</span>(<span class="string">"{} failed to parse: {}"</span>, value, err);
-                    }
+                    },
                     <span class="prelude-val">Ok</span>(result) =&gt; result,
                 };
 
@@ -1012,7 +1014,7 @@
                 <span class="kw">let </span>result = <span class="kw">match </span>result {
                     <span class="prelude-val">Err</span>(err) =&gt; {
                         <span class="macro">panic!</span>(<span class="string">"{} failed to parse: {}"</span>, value, err);
-                    }
+                    },
                     <span class="prelude-val">Ok</span>(result) =&gt; result,
                 };
 

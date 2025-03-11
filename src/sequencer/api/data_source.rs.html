@@ -198,14 +198,21 @@
 <a href="#197" id="197">197</a>
 <a href="#198" id="198">198</a>
 <a href="#199" id="199">199</a>
-<a href="#200" id="200">200</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::Context;
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>committable::Commitment;
 <span class="kw">use </span>espresso_types::{
     config::PublicNetworkConfig,
     v0::traits::{PersistenceOptions, SequencerPersistence},
     v0_99::ChainConfig,
-    FeeAccount, FeeAccountProof, FeeMerkleTree, NodeState, PubKey, Transaction,
+    FeeAccount, FeeAccountProof, FeeMerkleTree, Leaf2, NodeState, PubKey, Transaction,
 };
 <span class="kw">use </span>futures::future::Future;
 <span class="kw">use </span>hotshot_query_service::{
@@ -215,11 +222,13 @@
     node::NodeDataSource,
     status::StatusDataSource,
 };
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
 <span class="kw">use </span>hotshot_types::{
     data::ViewNumber,
     light_client::StateSignatureRequestBody,
-    traits::{network::ConnectedNetwork, node_implementation::Versions},
+    traits::{
+        network::ConnectedNetwork,
+        node_implementation::{NodeType, Versions},
+    },
     PeerConfig,
 };
 <span class="kw">use </span>tide_disco::Url;
@@ -377,6 +386,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         commitment: Commitment&lt;ChainConfig&gt;,
     ) -&gt; <span class="kw">impl </span>Send + Future&lt;Output = anyhow::Result&lt;ChainConfig&gt;&gt;;
+
+    <span class="kw">fn </span>get_leaf_chain(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        height: u64,
+    ) -&gt; <span class="kw">impl </span>Send + Future&lt;Output = anyhow::Result&lt;Vec&lt;Leaf2&gt;&gt;&gt;;
 }
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]

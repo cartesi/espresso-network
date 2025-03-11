@@ -304,10 +304,10 @@
         <span class="kw">match </span>value {
             BuilderApiError::Request(source) | BuilderApiError::TxnUnpack(source) =&gt; {
                 <span class="self">Self</span>::Api(source.to_string())
-            }
+            },
             BuilderApiError::TxnSubmit(source) | BuilderApiError::BuilderAddress(source) =&gt; {
                 <span class="self">Self</span>::Api(source.to_string())
-            }
+            },
             BuilderApiError::Custom { message, .. } =&gt; <span class="self">Self</span>::Api(message),
             BuilderApiError::BlockAvailable { source, .. }
             | BuilderApiError::BlockClaim { source, .. } =&gt; <span class="kw">match </span>source {

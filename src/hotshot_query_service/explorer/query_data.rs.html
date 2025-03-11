@@ -898,7 +898,10 @@
 <a href="#897" id="897">897</a>
 <a href="#898" id="898">898</a>
 <a href="#899" id="899">899</a>
-<a href="#900" id="900">900</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -910,25 +913,28 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">use </span>std::{
+    collections::VecDeque,
+    fmt::{Debug, Display},
+    num::{NonZeroUsize, TryFromIntError},
+};
+
+<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+<span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>tide_disco::StatusCode;
+<span class="kw">use </span>time::format_description::well_known::Rfc3339;
+
+<span class="kw">use super</span>::{
     errors::{BadQuery, ExplorerAPIError, InvalidLimit, NotFound, QueryError, Unimplemented},
     monetary_value::MonetaryValue,
     traits::{ExplorerHeader, ExplorerTransaction},
 };
 <span class="kw">use crate</span>::{
     availability::{BlockQueryData, QueryableHeader, QueryablePayload, TransactionHash},
+    node::BlockHash,
+    types::HeightIndexed,
     Header, Payload, Resolvable, Transaction,
 };
-<span class="kw">use crate</span>::{node::BlockHash, types::HeightIndexed};
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::{
-    collections::VecDeque,
-    fmt::{Debug, Display},
-    num::{NonZeroUsize, TryFromIntError},
-};
-<span class="kw">use </span>tide_disco::StatusCode;
-<span class="kw">use </span>time::format_description::well_known::Rfc3339;
 
 <span class="doccomment">/// BlockIdentifier is an enum that represents multiple ways of referring to
 /// a specific Block.  These use cases are specific to a Block Explorer and
@@ -979,7 +985,7 @@
             TransactionIdentifier::Latest =&gt; <span class="macro">write!</span>(f, <span class="string">"latest"</span>),
             TransactionIdentifier::HeightAndOffset(height, offset) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"{} {}"</span>, height, offset)
-            }
+            },
             TransactionIdentifier::Hash(hash) =&gt; <span class="macro">write!</span>(f, <span class="string">"{}"</span>, hash),
         }
     }

@@ -19,14 +19,16 @@
 <a href="#18" id="18">18</a>
 <a href="#19" id="19">19</a>
 <a href="#20" id="20">20</a>
-<a href="#21" id="21">21</a></pre></div><pre class="rust"><code><span class="doccomment">//! This file contains the [`DataSource`] trait. This trait allows the [`RequestResponseProtocol`]
+<a href="#21" id="21">21</a>
+<a href="#22" id="22">22</a></pre></div><pre class="rust"><code><span class="doccomment">//! This file contains the [`DataSource`] trait. This trait allows the [`RequestResponseProtocol`]
 //! to calculate/derive a response for a specific request. In the confirmation layer the implementer
 //! would be something like a [`FeeMerkleTree`] for fee catchup
 
-</span><span class="kw">use </span><span class="kw">super</span>::request::{Request, Response};
-<span class="kw">use </span>anyhow::Result;
+</span><span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>request_response::data_source::DataSource <span class="kw">as </span>DataSourceTrait;
+
+<span class="kw">use </span><span class="kw">super</span>::request::{Request, Response};
 
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub struct </span>DataSource {}

@@ -2396,7 +2396,19 @@
 <a href="#2395" id="2395">2395</a>
 <a href="#2396" id="2396">2396</a>
 <a href="#2397" id="2397">2397</a>
-<a href="#2398" id="2398">2398</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#2398" id="2398">2398</a>
+<a href="#2399" id="2399">2399</a>
+<a href="#2400" id="2400">2400</a>
+<a href="#2401" id="2401">2401</a>
+<a href="#2402" id="2402">2402</a>
+<a href="#2403" id="2403">2403</a>
+<a href="#2404" id="2404">2404</a>
+<a href="#2405" id="2405">2405</a>
+<a href="#2406" id="2406">2406</a>
+<a href="#2407" id="2407">2407</a>
+<a href="#2408" id="2408">2408</a>
+<a href="#2409" id="2409">2409</a>
+<a href="#2410" id="2410">2410</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -2471,23 +2483,55 @@
 //! different request for the same object, one that permitted an active fetch. Or it may have been
 //! fetched [proactively](#proactive-fetching).
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">use </span>std::{
+    cmp::{max, min},
+    fmt::{Debug, Display},
+    iter::repeat_with,
+    marker::PhantomData,
+    ops::{Bound, Range, RangeBounds},
+    sync::Arc,
+    time::Duration,
+};
+
+<span class="kw">use </span>anyhow::{bail, Context};
+<span class="kw">use </span>async_lock::Semaphore;
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>backoff::{backoff::Backoff, ExponentialBackoff, ExponentialBackoffBuilder};
+<span class="kw">use </span>derivative::Derivative;
+<span class="kw">use </span>futures::{
+    channel::oneshot,
+    future::{<span class="self">self</span>, join_all, BoxFuture, Either, Future, FutureExt},
+    stream::{<span class="self">self</span>, BoxStream, StreamExt},
+};
+<span class="kw">use </span>hotshot_types::{
+    data::VidShare,
+    traits::{
+        metrics::{Gauge, Metrics},
+        node_implementation::NodeType,
+    },
+};
+<span class="kw">use </span>jf_merkle_tree::{prelude::MerkleProof, MerkleTreeScheme};
+<span class="kw">use </span>tagged_base64::TaggedBase64;
+<span class="kw">use </span>tokio::{spawn, time::sleep};
+<span class="kw">use </span>tracing::Instrument;
+
+<span class="kw">use super</span>::{
     notifier::Notifier,
     storage::{
         pruning::{PruneStorage, PrunedHeightDataSource, PrunedHeightStorage},
+        sql::MigrateTypes,
         Aggregate, AggregatesStorage, AvailabilityStorage, ExplorerStorage,
         MerklizedStateHeightStorage, MerklizedStateStorage, NodeStorage, UpdateAggregatesStorage,
         UpdateAvailabilityStorage,
     },
     Transaction, VersionedDataSource,
 };
-<span class="kw">use </span><span class="kw">crate</span>::availability::HeaderQueryData;
 <span class="kw">use crate</span>::{
     availability::{
-        AvailabilityDataSource, BlockId, BlockInfo, BlockQueryData, Fetch, FetchStream, LeafId,
-        LeafQueryData, PayloadMetadata, PayloadQueryData, QueryableHeader, QueryablePayload,
-        TransactionHash, TransactionQueryData, UpdateAvailabilityData, VidCommonMetadata,
-        VidCommonQueryData,
+        AvailabilityDataSource, BlockId, BlockInfo, BlockQueryData, Fetch, FetchStream,
+        HeaderQueryData, LeafId, LeafQueryData, PayloadMetadata, PayloadQueryData, QueryableHeader,
+        QueryablePayload, TransactionHash, TransactionQueryData, UpdateAvailabilityData,
+        VidCommonMetadata, VidCommonQueryData,
     },
     explorer::{<span class="self">self</span>, ExplorerDataSource},
     fetching::{<span class="self">self</span>, request, Provider},
@@ -2499,35 +2543,8 @@
     status::{HasMetrics, StatusDataSource},
     task::BackgroundTask,
     types::HeightIndexed,
-    Header, Payload, QueryError, QueryResult, VidShare,
+    Header, Payload, QueryError, QueryResult,
 };
-<span class="kw">use </span>anyhow::{bail, Context};
-<span class="kw">use </span>async_lock::Semaphore;
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>backoff::{backoff::Backoff, ExponentialBackoff, ExponentialBackoffBuilder};
-<span class="kw">use </span>derivative::Derivative;
-<span class="kw">use </span>futures::{
-    channel::oneshot,
-    future::{<span class="self">self</span>, join_all, BoxFuture, Either, Future, FutureExt},
-    stream::{<span class="self">self</span>, BoxStream, StreamExt},
-};
-<span class="kw">use </span>hotshot_types::traits::{
-    metrics::{Gauge, Metrics},
-    node_implementation::NodeType,
-};
-<span class="kw">use </span>jf_merkle_tree::{prelude::MerkleProof, MerkleTreeScheme};
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{
-    cmp::{max, min},
-    fmt::{Debug, Display},
-    iter::repeat_with,
-    marker::PhantomData,
-    ops::{Bound, Range, RangeBounds},
-    time::Duration,
-};
-<span class="kw">use </span>tagged_base64::TaggedBase64;
-<span class="kw">use </span>tokio::{spawn, time::sleep};
-<span class="kw">use </span>tracing::Instrument;
 
 <span class="kw">mod </span>block;
 <span class="kw">mod </span>header;
@@ -2767,7 +2784,7 @@
     </span>Types: NodeType,
     Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
     Header&lt;Types&gt;: QueryableHeader&lt;Types&gt;,
-    S: PruneStorage + VersionedDataSource + HasMetrics + <span class="lifetime">'static</span>,
+    S: PruneStorage + VersionedDataSource + HasMetrics + MigrateTypes&lt;Types&gt; + <span class="lifetime">'static</span>,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; S::ReadOnly&lt;<span class="lifetime">'a</span>&gt;:
         AvailabilityStorage&lt;Types&gt; + PrunedHeightStorage + NodeStorage&lt;Types&gt; + AggregatesStorage,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; S::Transaction&lt;<span class="lifetime">'a</span>&gt;: UpdateAvailabilityStorage&lt;Types&gt; + UpdateAggregatesStorage&lt;Types&gt;,
@@ -2861,15 +2878,15 @@
             <span class="kw">match </span>storage.prune(<span class="kw-2">&amp;mut </span>pruner).<span class="kw">await </span>{
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(height)) =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"Pruned to height {height}"</span>);
-                }
+                },
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"pruner run complete."</span>);
                     <span class="kw">break</span>;
-                }
+                },
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"pruner run failed: {e:?}"</span>);
                     <span class="kw">break</span>;
-                }
+                },
             }
         }
     }
@@ -2880,7 +2897,7 @@
     </span>Types: NodeType,
     Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
     Header&lt;Types&gt;: QueryableHeader&lt;Types&gt;,
-    S: VersionedDataSource + PruneStorage + HasMetrics + <span class="lifetime">'static</span>,
+    S: VersionedDataSource + PruneStorage + HasMetrics + MigrateTypes&lt;Types&gt; + <span class="lifetime">'static</span>,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; S::Transaction&lt;<span class="lifetime">'a</span>&gt;: UpdateAvailabilityStorage&lt;Types&gt; + UpdateAggregatesStorage&lt;Types&gt;,
     <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; S::ReadOnly&lt;<span class="lifetime">'a</span>&gt;:
         AvailabilityStorage&lt;Types&gt; + NodeStorage&lt;Types&gt; + PrunedHeightStorage + AggregatesStorage,
@@ -2908,6 +2925,13 @@
         <span class="kw">let </span>aggregator_metrics = AggregatorMetrics::new(builder.storage.metrics());
 
         <span class="kw">let </span>fetcher = Arc::new(Fetcher::new(builder).<span class="kw">await</span><span class="question-mark">?</span>);
+
+        <span class="comment">// Migrate the old types to new PoS types
+        // This is a one-time operation that should be done before starting the data source
+        // It migrates leaf1 storage to leaf2
+        // and vid to vid2
+        </span>fetcher.storage.migrate_types().<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="kw">let </span>scanner = <span class="kw">if </span>proactive_fetching &amp;&amp; !leaf_only {
             <span class="prelude-val">Some</span>(BackgroundTask::spawn(
                 <span class="string">"proactive scanner"</span>,
@@ -3364,7 +3388,7 @@
                     <span class="question-mark">?</span>req,
                     <span class="string">"unable to fetch object; spawning a task to retry: {err:#}"
                 </span>);
-            }
+            },
         }
 
         <span class="comment">// We'll use this channel to get the object back if we successfully load it on retry.
@@ -3392,14 +3416,14 @@
                             </span><span class="macro">tracing::info!</span>(<span class="question-mark">?</span>req, <span class="string">"object was ready after retries"</span>);
                             send.send(obj).ok();
                             <span class="kw">break</span>;
-                        }
+                        },
                         <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
                             <span class="comment">// The object was not immediately available after all, but we have
                             // successfully spawned a fetch for it if possible. The spawned fetch
                             // will notify the original request once it completes.
                             </span><span class="macro">tracing::info!</span>(<span class="question-mark">?</span>req, <span class="string">"spawned fetch after retries"</span>);
                             <span class="kw">break</span>;
-                        }
+                        },
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">tracing::warn!</span>(
                                 <span class="question-mark">?</span>req,
@@ -3410,7 +3434,7 @@
                             <span class="kw">if let </span><span class="prelude-val">Some</span>(next_delay) = backoff.next_backoff() {
                                 delay = next_delay;
                             }
-                        }
+                        },
                     }
                 }
             }
@@ -3445,12 +3469,12 @@
                 </span><span class="macro">tracing::debug!</span>(<span class="question-mark">?</span>req, <span class="string">"object missing from local storage, will try to fetch"</span>);
                 <span class="self">self</span>.fetch::&lt;T&gt;(<span class="kw-2">&amp;mut </span>tx, req).<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-            }
+            },
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="comment">// An error occurred while querying the database. We don't know if we need to fetch
                 // the object or not. Return an error so we can try again.
                 </span><span class="macro">bail!</span>(<span class="string">"failed to fetch resource {req:?} from local storage: {err:#}"</span>);
-            }
+            },
         }
     }
 
@@ -3611,13 +3635,13 @@
                         <span class="prelude-val">None </span>=&gt; passive(T::Request::from(chunk.start + i), passive_fetch),
                     })
                     .collect();
-            }
+            },
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::warn!</span>(
                     <span class="question-mark">?</span>chunk,
                     <span class="string">"unable to fetch chunk; spawning a task to retry: {err:#}"
                 </span>);
-            }
+            },
         }
 
         <span class="comment">// We'll use these channels to get the objects back that we successfully load on retry.
@@ -3659,7 +3683,7 @@
                                     }
                                 }
                                 <span class="kw">break</span>;
-                            }
+                            },
                             <span class="prelude-val">Err</span>(err) =&gt; {
                                 <span class="macro">tracing::warn!</span>(
                                     <span class="question-mark">?</span>chunk,
@@ -3670,7 +3694,7 @@
                                 <span class="kw">if let </span><span class="prelude-val">Some</span>(next_delay) = backoff.next_backoff() {
                                     delay = next_delay;
                                 }
-                            }
+                            },
                         }
                     }
                 }
@@ -3819,7 +3843,7 @@
                             backoff = min(<span class="number">2 </span>* backoff, max_backoff);
                             metrics.backoff.set(backoff.as_secs() <span class="kw">as </span>usize);
                             <span class="kw">continue</span>;
-                        }
+                        },
                     };
                     <span class="kw">let </span>heights = <span class="kw">match </span>Heights::load(<span class="kw-2">&amp;mut </span>tx).<span class="kw">await </span>{
                         <span class="prelude-val">Ok</span>(heights) =&gt; heights,
@@ -3830,7 +3854,7 @@
                             backoff = min(<span class="number">2 </span>* backoff, max_backoff);
                             metrics.backoff.set(backoff.as_secs() <span class="kw">as </span>usize);
                             <span class="kw">continue</span>;
-                        }
+                        },
                     };
                     metrics.retries.set(<span class="number">0</span>);
                     <span class="kw">break </span>heights;
@@ -3964,7 +3988,7 @@
                         <span class="macro">tracing::error!</span>(<span class="string">"unable to open read tx: {err:#}"</span>);
                         sleep(Duration::from_secs(<span class="number">5</span>)).<span class="kw">await</span>;
                         <span class="kw">continue</span>;
-                    }
+                    },
                 };
                 <span class="kw">match </span>tx.load_prev_aggregate().<span class="kw">await </span>{
                     <span class="prelude-val">Ok</span>(agg) =&gt; <span class="kw">break </span>agg,
@@ -3972,7 +3996,7 @@
                         <span class="macro">tracing::error!</span>(<span class="string">"unable to load previous aggregate: {err:#}"</span>);
                         sleep(Duration::from_secs(<span class="number">5</span>)).<span class="kw">await</span>;
                         <span class="kw">continue</span>;
-                    }
+                    },
                 }
             };
 
@@ -4016,7 +4040,7 @@
                     <span class="kw">match </span>res {
                         <span class="prelude-val">Ok</span>(()) =&gt; {
                             <span class="kw">break</span>;
-                        }
+                        },
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">tracing::warn!</span>(
                                 num_blocks,
@@ -4024,7 +4048,7 @@
                                 <span class="string">"failed to update aggregates for chunk: {err:#}"
                             </span>);
                             sleep(Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-                        }
+                        },
                     }
                 }
                 metrics.height.set(height <span class="kw">as </span>usize);
@@ -4588,7 +4612,7 @@
                     <span class="string">"error loading resource from local storage, will try to fetch: {err:#}"
                 </span>);
                 <span class="prelude-val">None
-            </span>}
+            </span>},
         }
     }
 }
@@ -4707,7 +4731,7 @@
                     //   dropped. If this happens, things are very broken in any case, and it is
                     //   better to panic loudly than simply block forever.
                     </span><span class="macro">panic!</span>(<span class="string">"notifier dropped without satisfying request {req:?}"</span>);
-                }
+                },
             }
         })
         .boxed(),

@@ -1123,7 +1123,12 @@
 <a href="#1122" id="1122">1122</a>
 <a href="#1123" id="1123">1123</a>
 <a href="#1124" id="1124">1124</a>
-<a href="#1125" id="1125">1125</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1148,6 +1153,7 @@
 <span class="kw">use crate</span>::{
     data::{Leaf2, QuorumProposalWrapper, VidCommitment, VidDisperse, VidDisperseShare},
     drb::DrbSeedsAndResults,
+    epoch_membership::EpochMembershipCoordinator,
     error::HotShotError,
     event::{HotShotAction, LeafInfo},
     message::{Proposal, UpgradeLock},
@@ -1713,7 +1719,7 @@
                 // because the leader of view n + 1 may propose to the DA (and we would vote)
                 // before the leader of view n.
                 </span><span class="kw">return </span><span class="bool-val">true</span>;
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="bool-val">true</span>,
         };
         <span class="kw">if </span>view &gt; <span class="kw-2">*</span>old_view {
@@ -2046,6 +2052,10 @@
         <span class="self">self</span>.saved_leaves.get(<span class="kw-2">&amp;</span>leaf).unwrap().clone()
     }
 
+    <span class="kw">pub fn </span>undecided_leaves(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Leaf2&lt;TYPES&gt;&gt; {
+        <span class="self">self</span>.saved_leaves.values().cloned().collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+    }
+
     <span class="doccomment">/// Gets the validated state with the given view number, if in the state map.
     </span><span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>, view_number: TYPES::View) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Arc&lt;TYPES::ValidatedState&gt;&gt; {
@@ -2087,7 +2097,7 @@
         consensus: OuterConsensus&lt;TYPES&gt;,
         view: &lt;TYPES <span class="kw">as </span>NodeType&gt;::View,
         target_epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;,
-        membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
         private_key: <span class="kw-2">&amp;</span>&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
         upgrade_lock: <span class="kw-2">&amp;</span>UpgradeLock&lt;TYPES, V&gt;,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;()&gt; {
@@ -2102,7 +2112,7 @@
 
         <span class="kw">let </span>vid = VidDisperse::calculate_vid_disperse::&lt;V&gt;(
             <span class="kw-2">&amp;</span>payload_with_metadata.payload,
-            <span class="kw-2">&amp;</span>membership,
+            <span class="kw-2">&amp;</span>membership_coordinator,
             view,
             target_epoch,
             epoch,

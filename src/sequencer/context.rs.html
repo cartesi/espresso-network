@@ -567,7 +567,22 @@
 <a href="#566" id="566">566</a>
 <a href="#567" id="567">567</a>
 <a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::Context;
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    fmt::{Debug, Display},
+    sync::Arc,
+    time::Duration,
+};
+
+<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>espresso_types::{
@@ -587,6 +602,7 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::ConsensusMetricsValue,
     data::{Leaf2, ViewNumber},
+    epoch_membership::EpochMembershipCoordinator,
     network::NetworkConfig,
     traits::{
         metrics::Metrics,
@@ -597,8 +613,6 @@
 };
 <span class="kw">use </span>parking_lot::Mutex;
 <span class="kw">use </span>request_response::{network::Bytes, RequestResponse, RequestResponseConfig};
-<span class="kw">use </span>std::{fmt::Debug, time::Duration};
-<span class="kw">use </span>std::{fmt::Display, sync::Arc};
 <span class="kw">use </span>tokio::{
     spawn,
     sync::mpsc::{channel, Receiver},
@@ -713,14 +727,16 @@
         )));
 
         <span class="kw">let </span>persistence = Arc::new(persistence);
-        <span class="kw">let </span>memberships = Arc::new(async_lock::RwLock::new(membership));
+        <span class="kw">let </span>coordinator =
+            EpochMembershipCoordinator::new(Arc::new(RwLock::new(membership)), config.epoch_height);
+        <span class="kw">let </span>membership = coordinator.membership().clone();
 
         <span class="kw">let </span>handle = SystemContext::init(
             validator_config.public_key,
             validator_config.private_key.clone(),
             instance_state.node_id,
             config.clone(),
-            memberships.clone(),
+            coordinator,
             network.clone(),
             initializer,
             ConsensusMetricsValue::new(metrics),
@@ -755,7 +771,9 @@
             request_response_config,
             RequestResponseSender::new(outbound_message_sender),
             request_response_receiver,
-            RecipientSource { memberships },
+            RecipientSource {
+                memberships: membership,
+            },
             DataSource {},
         );
 

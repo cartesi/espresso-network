@@ -1133,7 +1133,7 @@
                 </span>query.progress = DHTProgress::NotStarted;
                 query.backoff.start_next(<span class="bool-val">false</span>);
                 <span class="macro">error!</span>(<span class="string">"Error publishing to DHT: {e:?} for peer {:?}"</span>, <span class="self">self</span>.peer_id);
-            }
+            },
             <span class="prelude-val">Ok</span>(qid) =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Published record to DHT with qid {:?}"</span>, qid);
                 <span class="kw">let </span>query = KadPutQuery {
@@ -1141,7 +1141,7 @@
                     ..query
                 };
                 <span class="self">self</span>.dht_handler.put_record(qid, query);
-            }
+            },
         }
     }
 
@@ -1165,20 +1165,20 @@
                     ClientRequest::BeginBootstrap =&gt; {
                         <span class="macro">debug!</span>(<span class="string">"Beginning Libp2p bootstrap"</span>);
                         <span class="kw">let _ </span>= <span class="self">self</span>.swarm.behaviour_mut().dht.bootstrap();
-                    }
+                    },
                     ClientRequest::LookupPeer(pid, chan) =&gt; {
                         <span class="kw">let </span>id = <span class="self">self</span>.swarm.behaviour_mut().dht.get_closest_peers(pid);
                         <span class="self">self</span>.dht_handler
                             .in_progress_get_closest_peers
                             .insert(id, chan);
-                    }
+                    },
                     ClientRequest::GetRoutingTable(chan) =&gt; {
                         <span class="self">self</span>.dht_handler
                             .print_routing_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>.swarm.behaviour_mut().dht);
                         <span class="kw">if </span>chan.send(()).is_err() {
                             <span class="macro">warn!</span>(<span class="string">"Tried to notify client but client not tracking anymore"</span>);
                         }
-                    }
+                    },
                     ClientRequest::PutDHT { key, value, notify } =&gt; {
                         <span class="kw">let </span>query = KadPutQuery {
                             progress: DHTProgress::NotStarted,
@@ -1188,17 +1188,17 @@
                             backoff: ExponentialBackoff::default(),
                         };
                         <span class="self">self</span>.put_record(query);
-                    }
+                    },
                     ClientRequest::GetConnectedPeerNum(s) =&gt; {
                         <span class="kw">if </span>s.send(<span class="self">self</span>.num_connected()).is_err() {
                             <span class="macro">error!</span>(<span class="string">"error sending peer number to client"</span>);
                         }
-                    }
+                    },
                     ClientRequest::GetConnectedPeers(s) =&gt; {
                         <span class="kw">if </span>s.send(<span class="self">self</span>.connected_pids()).is_err() {
                             <span class="macro">error!</span>(<span class="string">"error sending peer set to client"</span>);
                         }
-                    }
+                    },
                     ClientRequest::GetDHT {
                         key,
                         notify,
@@ -1212,20 +1212,20 @@
                             retry_count,
                             <span class="kw-2">&amp;mut </span><span class="self">self</span>.swarm.behaviour_mut().dht,
                         );
-                    }
+                    },
                     ClientRequest::IgnorePeers(_peers) =&gt; {
                         <span class="comment">// NOTE used by test with conductor only
-                    </span>}
+                    </span>},
                     ClientRequest::Shutdown =&gt; {
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(listener_id) = <span class="self">self</span>.listener_id {
                             <span class="self">self</span>.swarm.remove_listener(listener_id);
                         }
 
                         <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
-                    }
+                    },
                     ClientRequest::GossipMsg(topic, contents) =&gt; {
                         behaviour.publish_gossip(Topic::new(topic.clone()), contents.clone());
-                    }
+                    },
                     ClientRequest::Subscribe(t, chan) =&gt; {
                         behaviour.subscribe_gossip(<span class="kw-2">&amp;</span>t);
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(chan) = chan {
@@ -1233,7 +1233,7 @@
                                 <span class="macro">error!</span>(<span class="string">"finished subscribing but response channel dropped"</span>);
                             }
                         }
-                    }
+                    },
                     ClientRequest::Unsubscribe(t, chan) =&gt; {
                         behaviour.unsubscribe_gossip(<span class="kw-2">&amp;</span>t);
                         <span class="kw">if let </span><span class="prelude-val">Some</span>(chan) = chan {
@@ -1241,7 +1241,7 @@
                                 <span class="macro">error!</span>(<span class="string">"finished unsubscribing but response channel dropped"</span>);
                             }
                         }
-                    }
+                    },
                     ClientRequest::DirectRequest {
                         pid,
                         contents,
@@ -1256,23 +1256,23 @@
                             retry_count,
                         };
                         <span class="self">self</span>.direct_message_state.add_direct_request(req, id);
-                    }
+                    },
                     ClientRequest::DirectResponse(chan, msg) =&gt; {
                         behaviour.add_direct_response(chan, msg);
-                    }
+                    },
                     ClientRequest::AddKnownPeers(peers) =&gt; {
                         <span class="self">self</span>.add_known_peers(<span class="kw-2">&amp;</span>peers);
-                    }
+                    },
                     ClientRequest::Prune(pid) =&gt; {
                         <span class="kw">if </span><span class="self">self</span>.swarm.disconnect_peer_id(pid).is_err() {
                             <span class="macro">warn!</span>(<span class="string">"Could not disconnect from {:?}"</span>, pid);
                         }
-                    }
+                    },
                 }
-            }
+            },
             <span class="prelude-val">None </span>=&gt; {
                 <span class="macro">error!</span>(<span class="string">"Error receiving msg in main behaviour loop: channel closed"</span>);
-            }
+            },
         }
         <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>)
     }
@@ -1314,7 +1314,7 @@
                 </span>send_to_client
                     .send(NetworkEvent::ConnectedPeersUpdate(<span class="self">self</span>.num_connected()))
                     .map_err(|err| NetworkError::ChannelSendError(err.to_string()))<span class="question-mark">?</span>;
-            }
+            },
             SwarmEvent::ConnectionClosed {
                 connection_id: <span class="kw">_</span>,
                 peer_id,
@@ -1338,13 +1338,13 @@
                 </span>send_to_client
                     .send(NetworkEvent::ConnectedPeersUpdate(<span class="self">self</span>.num_connected()))
                     .map_err(|err| NetworkError::ChannelSendError(err.to_string()))<span class="question-mark">?</span>;
-            }
+            },
             SwarmEvent::Dialing {
                 peer_id,
                 connection_id: <span class="kw">_</span>,
             } =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Attempting to dial {:?}"</span>, peer_id);
-            }
+            },
             SwarmEvent::ListenerClosed {
                 listener_id: <span class="kw">_</span>,
                 addresses: <span class="kw">_</span>,
@@ -1364,7 +1364,7 @@
                 connection_id: <span class="kw">_</span>,
                 local_addr: <span class="kw">_</span>,
                 send_back_addr: <span class="kw">_</span>,
-            } =&gt; {}
+            } =&gt; {},
             SwarmEvent::Behaviour(b) =&gt; {
                 <span class="kw">let </span>maybe_event = <span class="kw">match </span>b {
                     NetworkEventInternal::DHTEvent(e) =&gt; <span class="self">self
@@ -1394,7 +1394,7 @@
                             }
                         }
                         <span class="prelude-val">None
-                    </span>}
+                    </span>},
                     NetworkEventInternal::GossipEvent(e) =&gt; <span class="kw">match </span><span class="kw-2">*</span>e {
                         GossipEvent::Message {
                             propagation_source: _peer_id,
@@ -1404,25 +1404,25 @@
                         GossipEvent::Subscribed { peer_id, topic } =&gt; {
                             <span class="macro">debug!</span>(<span class="string">"Peer {:?} subscribed to topic {:?}"</span>, peer_id, topic);
                             <span class="prelude-val">None
-                        </span>}
+                        </span>},
                         GossipEvent::Unsubscribed { peer_id, topic } =&gt; {
                             <span class="macro">debug!</span>(<span class="string">"Peer {:?} unsubscribed from topic {:?}"</span>, peer_id, topic);
                             <span class="prelude-val">None
-                        </span>}
+                        </span>},
                         GossipEvent::GossipsubNotSupported { peer_id } =&gt; {
                             <span class="macro">warn!</span>(<span class="string">"Peer {:?} does not support gossipsub"</span>, peer_id);
                             <span class="prelude-val">None
-                        </span>}
+                        </span>},
                     },
                     NetworkEventInternal::DMEvent(e) =&gt; <span class="self">self
                         </span>.direct_message_state
                         .handle_dm_event(e, <span class="self">self</span>.resend_tx.clone()),
                     NetworkEventInternal::AutonatEvent(e) =&gt; {
                         <span class="kw">match </span>e {
-                            autonat::Event::InboundProbe(<span class="kw">_</span>) =&gt; {}
+                            autonat::Event::InboundProbe(<span class="kw">_</span>) =&gt; {},
                             autonat::Event::OutboundProbe(e) =&gt; <span class="kw">match </span>e {
                                 autonat::OutboundProbeEvent::Request { .. }
-                                | autonat::OutboundProbeEvent::Response { .. } =&gt; {}
+                                | autonat::OutboundProbeEvent::Response { .. } =&gt; {},
                                 autonat::OutboundProbeEvent::Error {
                                     probe_id: <span class="kw">_</span>,
                                     peer,
@@ -1432,14 +1432,14 @@
                                         <span class="string">"AutoNAT Probe failed to peer {:?} with error: {:?}"</span>,
                                         peer, error
                                     );
-                                }
+                                },
                             },
                             autonat::Event::StatusChanged { old, new } =&gt; {
                                 <span class="macro">debug!</span>(<span class="string">"AutoNAT Status changed. Old: {:?}, New: {:?}"</span>, old, new);
-                            }
+                            },
                         };
                         <span class="prelude-val">None
-                    </span>}
+                    </span>},
                 };
 
                 <span class="kw">if let </span><span class="prelude-val">Some</span>(event) = maybe_event {
@@ -1448,14 +1448,14 @@
                         .send(event)
                         .map_err(|err| NetworkError::ChannelSendError(err.to_string()))<span class="question-mark">?</span>;
                 }
-            }
+            },
             SwarmEvent::OutgoingConnectionError {
                 connection_id: <span class="kw">_</span>,
                 peer_id,
                 error,
             } =&gt; {
                 <span class="macro">warn!</span>(<span class="string">"Outgoing connection error to {:?}: {:?}"</span>, peer_id, error);
-            }
+            },
             SwarmEvent::IncomingConnectionError {
                 connection_id: <span class="kw">_</span>,
                 local_addr: <span class="kw">_</span>,
@@ -1463,29 +1463,29 @@
                 error,
             } =&gt; {
                 <span class="macro">warn!</span>(<span class="string">"Incoming connection error: {:?}"</span>, error);
-            }
+            },
             SwarmEvent::ListenerError {
                 listener_id: <span class="kw">_</span>,
                 error,
             } =&gt; {
                 <span class="macro">warn!</span>(<span class="string">"Listener error: {:?}"</span>, error);
-            }
+            },
             SwarmEvent::ExternalAddrConfirmed { address } =&gt; {
                 <span class="kw">let </span>my_id = <span class="kw-2">*</span><span class="self">self</span>.swarm.local_peer_id();
                 <span class="self">self</span>.swarm
                     .behaviour_mut()
                     .dht
                     .add_address(<span class="kw-2">&amp;</span>my_id, address.clone());
-            }
+            },
             SwarmEvent::NewExternalAddrOfPeer { peer_id, address } =&gt; {
                 <span class="self">self</span>.swarm
                     .behaviour_mut()
                     .dht
                     .add_address(<span class="kw-2">&amp;</span>peer_id, address.clone());
-            }
+            },
             <span class="kw">_ </span>=&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Unhandled swarm event {:?}"</span>, event);
-            }
+            },
         }
         <span class="prelude-val">Ok</span>(())
     }

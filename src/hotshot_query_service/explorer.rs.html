@@ -940,7 +940,11 @@
 <a href="#939" id="939">939</a>
 <a href="#940" id="940">940</a>
 <a href="#941" id="941">941</a>
-<a href="#942" id="942">942</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -959,9 +963,7 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>query_data;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>traits;
 
-<span class="kw">use </span><span class="self">self</span>::errors::InvalidLimit;
-<span class="kw">use </span><span class="kw">crate</span>::availability::{QueryableHeader, QueryablePayload};
-<span class="kw">use crate</span>::{api::load_api, Header, Payload, Transaction};
+<span class="kw">use </span>std::{fmt::Display, num::NonZeroUsize, path::Path};
 
 <span class="kw">pub use </span>currency::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>data_source::<span class="kw-2">*</span>;
@@ -970,13 +972,16 @@
 <span class="kw">pub use </span>monetary_value::<span class="kw-2">*</span>;
 <span class="kw">pub use </span>query_data::<span class="kw-2">*</span>;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::fmt::Display;
-<span class="kw">use </span>std::num::NonZeroUsize;
-<span class="kw">use </span>std::path::Path;
-<span class="kw">use </span>tide_disco::StatusCode;
-<span class="kw">use </span>tide_disco::{api::ApiError, method::ReadState, Api};
+<span class="kw">use </span>tide_disco::{api::ApiError, method::ReadState, Api, StatusCode};
 <span class="kw">pub use </span>traits::<span class="kw-2">*</span>;
 <span class="kw">use </span>vbs::version::StaticVersionType;
+
+<span class="kw">use </span><span class="self">self</span>::errors::InvalidLimit;
+<span class="kw">use crate</span>::{
+    api::load_api,
+    availability::{QueryableHeader, QueryablePayload},
+    Header, Payload, Transaction,
+};
 
 <span class="doccomment">/// [Error] is an enum that represents the various errors that can be returned
 /// from the Explorer API.
@@ -1250,7 +1255,7 @@
                         ) {
                             (<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(height)), <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(offset)), <span class="kw">_</span>) =&gt; {
                                 TransactionIdentifier::HeightAndOffset(height, offset)
-                            }
+                            },
                             (<span class="kw">_</span>, <span class="kw">_</span>, <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(hash))) =&gt; TransactionIdentifier::Hash(hash),
                             <span class="kw">_ </span>=&gt; TransactionIdentifier::Latest,
                         },
@@ -1283,7 +1288,7 @@
                 ) {
                     (<span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(height)), <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(offset)), <span class="kw">_</span>) =&gt; {
                         TransactionIdentifier::HeightAndOffset(height, offset)
-                    }
+                    },
                     (<span class="kw">_</span>, <span class="kw">_</span>, <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(hash))) =&gt; TransactionIdentifier::Hash(hash),
                     <span class="kw">_ </span>=&gt; TransactionIdentifier::Latest,
                 };
@@ -1335,6 +1340,13 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::{cmp::min, time::Duration};
+
+    <span class="kw">use </span>futures::StreamExt;
+    <span class="kw">use </span>portpicker::pick_unused_port;
+    <span class="kw">use </span>surf_disco::Client;
+    <span class="kw">use </span>tide_disco::App;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         availability,
@@ -1345,11 +1357,6 @@
         },
         ApiState, Error,
     };
-    <span class="kw">use </span>futures::StreamExt;
-    <span class="kw">use </span>portpicker::pick_unused_port;
-    <span class="kw">use </span>std::{cmp::min, time::Duration};
-    <span class="kw">use </span>surf_disco::Client;
-    <span class="kw">use </span>tide_disco::App;
 
     <span class="kw">async fn </span>validate(client: <span class="kw-2">&amp;</span>Client&lt;Error, MockBase&gt;) {
         <span class="kw">let </span>explorer_summary_response: ExplorerSummaryResponse&lt;MockTypes&gt; =
@@ -1820,6 +1827,7 @@
                     ..Default::default()
                 },
                 MockBase::instance(),
+                <span class="string">"0.0.1"</span>.parse().unwrap(),
             )
             .unwrap(),
         )

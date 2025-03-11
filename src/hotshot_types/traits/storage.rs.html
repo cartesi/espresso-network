@@ -165,7 +165,9 @@
 <a href="#164" id="164">164</a>
 <a href="#165" id="165">165</a>
 <a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -185,12 +187,12 @@
 <span class="kw">use </span><span class="kw">super</span>::node_implementation::NodeType;
 <span class="kw">use crate</span>::{
     consensus::{CommitmentMap, View},
-    data::VidCommitment,
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
         DaProposal, DaProposal2, Leaf, Leaf2, QuorumProposal, QuorumProposal2,
-        QuorumProposalWrapper, VidDisperseShare,
+        QuorumProposalWrapper, VidCommitment, VidDisperseShare,
     },
+    drb::DrbResult,
     event::HotShotAction,
     message::{convert_proposal, Proposal},
     simple_certificate::{
@@ -221,7 +223,7 @@
                     _pd: std::marker::PhantomData,
                 })
                 .<span class="kw">await
-            </span>}
+            </span>},
             VidDisperseShare::V1(share) =&gt; {
                 <span class="self">self</span>.append_vid2(<span class="kw-2">&amp;</span>Proposal {
                     data: share.clone(),
@@ -229,7 +231,7 @@
                     _pd: std::marker::PhantomData,
                 })
                 .<span class="kw">await
-            </span>}
+            </span>},
         }
     }
     <span class="doccomment">/// Add a proposal to the stored DA proposals.
@@ -322,14 +324,16 @@
         decided_upgrade_certificate: <span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;TYPES&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
     <span class="doccomment">/// Migrate leaves from `Leaf` to `Leaf2`, and proposals from `QuorumProposal` to `QuorumProposal2`
-    </span><span class="kw">async fn </span>migrate_consensus(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _convert_leaf: <span class="kw">fn</span>(Leaf&lt;TYPES&gt;) -&gt; Leaf2&lt;TYPES&gt;,
-        _convert_proposal: <span class="kw">fn</span>(
-            Proposal&lt;TYPES, QuorumProposal&lt;TYPES&gt;&gt;,
-        ) -&gt; Proposal&lt;TYPES, QuorumProposal2&lt;TYPES&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">async fn </span>migrate_consensus(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="prelude-val">Ok</span>(())
     }
+    <span class="doccomment">/// Add a drb result
+    </span><span class="kw">async fn </span>add_drb_result(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch, drb_result: DrbResult) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+    <span class="doccomment">/// Add an epoch block header
+    </span><span class="kw">async fn </span>add_epoch_root(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: TYPES::Epoch,
+        block_header: TYPES::BlockHeader,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 }
 </code></pre></div></section></main></body></html>

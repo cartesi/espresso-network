@@ -305,7 +305,10 @@
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a></pre></div><pre class="rust"><code><span class="kw">use </span>anyhow::{bail, ensure, Context};
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{sync::Arc, time::Duration};
+
+<span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>clap::{Parser, Subcommand};
 <span class="kw">use </span>client::SequencerClient;
 <span class="kw">use </span>contract_bindings_ethers::fee_contract::FeeContract;
@@ -317,7 +320,6 @@
 };
 <span class="kw">use </span>futures::stream::StreamExt;
 <span class="kw">use </span>sequencer_utils::logging;
-<span class="kw">use </span>std::{sync::Arc, time::Duration};
 <span class="kw">use </span>surf_disco::Url;
 
 <span class="doccomment">/// Command-line utility for working with the Espresso bridge.
@@ -520,7 +522,7 @@
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::warn!</span>(<span class="string">"error in header stream: {err:#}"</span>);
                 <span class="kw">continue</span>;
-            }
+            },
         };
         <span class="kw">let </span><span class="prelude-val">Some</span>(l1_finalized) = header.l1_finalized() <span class="kw">else </span>{
             <span class="kw">continue</span>;

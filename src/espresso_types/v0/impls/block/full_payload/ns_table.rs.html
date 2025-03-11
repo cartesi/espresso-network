@@ -330,11 +330,7 @@
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a></pre></div><pre class="rust"><code><span class="doccomment">//! Types related to a namespace table.
+<a href="#332" id="332">332</a></pre></div><pre class="rust"><code><span class="doccomment">//! Types related to a namespace table.
 //!
 //! All code that needs to know the binary format of a namespace table is
 //! restricted to this file.
@@ -482,11 +478,7 @@
 
     </span><span class="doccomment">/// Read subslice range for the `index`th namespace from the namespace
     /// table.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ns_range(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        index: <span class="kw-2">&amp;</span>NsIndex,
-        payload_byte_len: <span class="kw-2">&amp;</span>PayloadByteLen,
-    ) -&gt; NsPayloadRange {
+    </span><span class="kw">pub fn </span>ns_range(<span class="kw-2">&amp;</span><span class="self">self</span>, index: <span class="kw-2">&amp;</span>NsIndex, payload_byte_len: <span class="kw-2">&amp;</span>PayloadByteLen) -&gt; NsPayloadRange {
         <span class="kw">let </span>end = <span class="self">self
             </span>.read_ns_offset_unchecked(index)
             .min(payload_byte_len.as_usize());

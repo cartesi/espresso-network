@@ -959,12 +959,12 @@
                 [<span class="number">0x08</span>, <span class="number">0xc3</span>, <span class="number">0x79</span>, <span class="number">0xa0</span>] =&gt; <span class="bool-val">true</span>,
                 <span class="kw">_ if </span>selector == &lt;InvalidPlonkArgs <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;UnsupportedDegree <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;WrongPlonkVK <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; <span class="bool-val">true</span>,
                 <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
             }

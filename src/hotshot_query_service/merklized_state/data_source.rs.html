@@ -152,9 +152,7 @@
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#154" id="154">154</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -172,21 +170,19 @@
 //! and provides methods for querying and reconstructing the snapshot.
 //!
 
-</span><span class="kw">use </span>ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+</span><span class="kw">use </span>std::{cmp::Ordering, fmt::Debug, str::FromStr};
+
+<span class="kw">use </span>ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>derive_more::Display;
 <span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-
 <span class="kw">use </span>jf_merkle_tree::{
     prelude::MerkleProof, DigestAlgorithm, Element, ForgetableMerkleTreeScheme, Index,
     MerkleCommitment, NodeValue, ToTraversalPath,
 };
 <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
-<span class="kw">use </span>std::{fmt::Debug, str::FromStr};
 <span class="kw">use </span>tagged_base64::TaggedBase64;
-
-<span class="kw">use </span>std::cmp::Ordering;
 
 <span class="kw">use </span><span class="kw">crate</span>::QueryResult;
 

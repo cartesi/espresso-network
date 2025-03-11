@@ -448,7 +448,8 @@
 <a href="#447" id="447">447</a>
 <a href="#448" id="448">448</a>
 <a href="#449" id="449">449</a>
-<a href="#450" id="450">450</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -462,7 +463,12 @@
 
 </span><span class="attr">#![cfg(feature = <span class="string">"sql-data-source"</span>)]
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">pub use </span>anyhow::Error;
+<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+<span class="kw">pub use </span>refinery::Migration;
+<span class="kw">pub use </span>sql::Transaction;
+
+<span class="kw">use super</span>::{
     fetching::{<span class="self">self</span>},
     storage::sql::{<span class="self">self</span>, SqlStorage},
     AvailabilityProvider, FetchingDataSource,
@@ -472,11 +478,6 @@
     availability::{QueryableHeader, QueryablePayload},
     Header, Payload,
 };
-<span class="kw">pub use </span>anyhow::Error;
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">pub use </span>refinery::Migration;
-
-<span class="kw">pub use </span>sql::Transaction;
 
 <span class="kw">pub type </span>Builder&lt;Types, Provider&gt; = fetching::Builder&lt;Types, SqlStorage, Provider&gt;;
 
@@ -768,15 +769,15 @@
 <span class="comment">// These tests run the `postgres` Docker image, which doesn't work on Windows.
 </span><span class="attr">#[cfg(all(any(test, feature = <span class="string">"testing"</span>), not(target_os = <span class="string">"windows"</span>)))]
 </span><span class="kw">pub mod </span>testing {
+    <span class="kw">use </span>async_trait::async_trait;
+    <span class="kw">use </span>hotshot::types::Event;
+    <span class="kw">pub use </span>sql::testing::TmpDb;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         data_source::UpdateDataSource,
         testing::{consensus::DataSourceLifeCycle, mocks::MockTypes},
     };
-    <span class="kw">use </span>async_trait::async_trait;
-    <span class="kw">use </span>hotshot::types::Event;
-
-    <span class="kw">pub use </span>sql::testing::TmpDb;
 
     <span class="attr">#[async_trait]
     </span><span class="kw">impl</span>&lt;P: AvailabilityProvider&lt;MockTypes&gt; + Default&gt; DataSourceLifeCycle
@@ -822,17 +823,20 @@
 </span><span class="attr">#[cfg(all(test, not(target_os = <span class="string">"windows"</span>)))]
 </span><span class="kw">mod </span>generic_test {
     <span class="kw">use </span><span class="kw">super</span>::SqlDataSource;
-    <span class="kw">use crate</span>::{fetching::provider::NoFetching, testing::mocks::MockTypes};
-
     <span class="comment">// For some reason this is the only way to import the macro defined in another module of this
     // crate.
     </span><span class="kw">use crate</span>::<span class="kw-2">*</span>;
+    <span class="kw">use crate</span>::{fetching::provider::NoFetching, testing::mocks::MockTypes};
 
     <span class="macro">instantiate_data_source_tests!</span>(SqlDataSource&lt;MockTypes, NoFetching&gt;);
 }
 
 <span class="attr">#[cfg(all(test, not(target_os = <span class="string">"windows"</span>)))]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>hotshot_example_types::state_types::{TestInstanceState, TestValidatedState};
+    <span class="kw">use </span>hotshot_types::{data::VidShare, vid::advz::advz_scheme};
+    <span class="kw">use </span>jf_vid::VidScheme;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         availability::{
@@ -846,9 +850,6 @@
         fetching::provider::NoFetching,
         testing::{consensus::DataSourceLifeCycle, mocks::MockTypes, setup_test},
     };
-    <span class="kw">use </span>hotshot_example_types::state_types::{TestInstanceState, TestValidatedState};
-    <span class="kw">use </span>hotshot_types::{data::VidShare, vid::advz::advz_scheme};
-    <span class="kw">use </span>jf_vid::VidScheme;
 
     <span class="kw">type </span>D = SqlDataSource&lt;MockTypes, NoFetching&gt;;
 
@@ -872,7 +873,8 @@
             <span class="kw-2">&amp;</span>TestInstanceState::default(),
         )
         .<span class="kw">await</span>;
-        <span class="kw">let </span>common = VidCommonQueryData::new(leaf.header().clone(), <span class="prelude-val">Some</span>(disperse.common));
+        <span class="kw">let </span>common =
+            VidCommonQueryData::new(leaf.header().clone(), <span class="kw">crate</span>::VidCommon::V0(disperse.common));
         ds.append(BlockInfo::new(leaf, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(common.clone()), <span class="prelude-val">None</span>))
             .<span class="kw">await
             </span>.unwrap();

@@ -409,7 +409,7 @@
                             .map(Result::unwrap),
                     );
                 }
-            }
+            },
             GenerationStrategy::Random {
                 min_per_view,
                 max_per_view,
@@ -436,7 +436,7 @@
 
                     <span class="self">self</span>.txn_nonce += <span class="number">1</span>;
                 }
-            }
+            },
             GenerationStrategy::Flood {
                 min_tx_size,
                 max_tx_size,
@@ -460,7 +460,7 @@
 
                     <span class="self">self</span>.txn_nonce += <span class="number">1</span>;
                 }
-            }
+            },
         };
     }
 }
@@ -507,7 +507,7 @@
                             .publish_transaction_async(txn)
                             .<span class="kw">await
                             </span>.expect(<span class="string">"Failed to submit transaction to public mempool"</span>);
-                    }
+                    },
                     SubmissionEndpoint::Private =&gt; {
                         <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = private_mempool_client
                             .post::&lt;()&gt;(<span class="string">"submit"</span>)
@@ -520,17 +520,17 @@
                                 <span class="comment">// If we can't reach the builder altogether, test should fail
                                 </span>builder::Error::Request(request_error) =&gt; {
                                     <span class="macro">panic!</span>(<span class="string">"Builder API not available: {request_error}"</span>)
-                                }
+                                },
                                 <span class="comment">// If the builder returns an error, we will re-submit this transaction
                                 // on the next view, so we return it to the queue and break
                                 </span>error =&gt; {
                                     <span class="macro">tracing::warn!</span>(<span class="question-mark">?</span>error, <span class="string">"Builder API error"</span>);
                                     <span class="self">self</span>.txn_queue.push_front(txn);
                                     <span class="kw">break</span>;
-                                }
+                                },
                             };
                         }
-                    }
+                    },
                 }
             }
         }

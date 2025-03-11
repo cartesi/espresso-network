@@ -474,9 +474,9 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span>serde::ser::SerializeStruct;
-<span class="kw">use </span>serde::{Deserialize, Serialize, Serializer};
-<span class="kw">use </span>std::fmt::{Debug, Display};
+</span><span class="kw">use </span>std::fmt::{Debug, Display};
+
+<span class="kw">use </span>serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 <span class="kw">use </span>tide_disco::StatusCode;
 
 <span class="doccomment">/// [ExplorerAPIError] is a trait that represents an error that can be returned
@@ -881,7 +881,7 @@
             <span class="kw">let </span>want = query_error;
 
             <span class="kw">match </span><span class="kw-2">&amp;</span>have.error {
-                <span class="kw">crate</span>::QueryError::NotFound =&gt; {}
+                <span class="kw">crate</span>::QueryError::NotFound =&gt; {},
                 <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"deserialized QueryError mismatch: have: {have}, want: {want}"</span>),
             }
         }

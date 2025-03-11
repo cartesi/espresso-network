@@ -222,20 +222,18 @@
 <a href="#221" id="221">221</a>
 <a href="#222" id="222">222</a>
 <a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a>
-<a href="#225" id="225">225</a></pre></div><pre class="rust"><code><span class="doccomment">//! This executable generates the solidity files with hardcoded verifying keys for
+<a href="#224" id="224">224</a></pre></div><pre class="rust"><code><span class="doccomment">//! This executable generates the solidity files with hardcoded verifying keys for
 //! LightClient updates by running `cargo run -p gen-vk-contract --release`.
 //! LightClientMock updates by running `cargo run -p gen-vk-contract --release -- --mock`.
 //! Adapted from [CAPE project][https://github.com/EspressoSystems/cape/blob/main/contracts/rust/src/bin/gen-vk-libraries.rs]
 
 </span><span class="kw">use </span>std::{fs::OpenOptions, io::Write, path::PathBuf, process::Command};
 
+<span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>ethers::core::abi::AbiEncode;
 <span class="kw">use </span>hotshot_contract_adapter::jellyfish::ParsedVerifyingKey;
 <span class="kw">use </span>hotshot_stake_table::config::STAKE_TABLE_CAPACITY;
 <span class="kw">use </span>jf_pcs::prelude::UnivariateUniversalParams;
-
-<span class="kw">use </span>clap::Parser;
 
 <span class="attr">#[derive(Parser)]
 </span><span class="kw">struct </span>Cli {

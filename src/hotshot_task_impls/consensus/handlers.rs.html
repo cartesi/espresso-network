@@ -429,7 +429,13 @@
 <a href="#428" id="428">428</a>
 <a href="#429" id="429">429</a>
 <a href="#430" id="430">430</a>
-<a href="#431" id="431">431</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -442,10 +448,7 @@
 <span class="kw">use </span>hotshot_types::{
     event::{Event, EventType},
     simple_vote::{HasEpoch, QuorumVote2, TimeoutData2, TimeoutVote2},
-    traits::{
-        election::Membership,
-        node_implementation::{ConsensusTime, NodeImplementation, NodeType},
-    },
+    traits::node_implementation::{ConsensusTime, NodeImplementation, NodeType},
     utils::EpochTransitionIndicator,
     vote::{HasViewNumber, Vote},
 };
@@ -478,12 +481,14 @@
         .read()
         .<span class="kw">await
         </span>.is_high_qc_for_last_block();
-    <span class="kw">let </span>we_are_leader = task_state
-        .membership
-        .read()
+    <span class="kw">let </span>epoch_membership = task_state
+        .membership_coordinator
+        .membership_for_epoch(vote.data.epoch)
         .<span class="kw">await
-        </span>.leader(vote.view_number() + <span class="number">1</span>, vote.data.epoch)<span class="question-mark">?
-        </span>== task_state.public_key;
+        </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>we_are_leader =
+        epoch_membership.leader(vote.view_number() + <span class="number">1</span>).<span class="kw">await</span><span class="question-mark">? </span>== task_state.public_key;
     <span class="macro">ensure!</span>(
         in_transition || we_are_leader,
         <span class="macro">info!</span>(
@@ -501,8 +506,7 @@
         <span class="kw-2">&amp;mut </span>task_state.vote_collectors,
         vote,
         task_state.public_key.clone(),
-        <span class="kw-2">&amp;</span>task_state.membership,
-        vote.data.epoch,
+        <span class="kw-2">&amp;</span>epoch_membership,
         task_state.id,
         <span class="kw-2">&amp;</span>event,
         sender,
@@ -511,20 +515,19 @@
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(vote_epoch) = vote.epoch() {
+    <span class="kw">if </span>vote.epoch().is_some() {
         <span class="comment">// If the vote sender belongs to the next epoch, collect it separately to form the second QC
-        </span><span class="kw">let </span>has_stake = task_state
-            .membership
-            .read()
-            .<span class="kw">await
-            </span>.has_stake(<span class="kw-2">&amp;</span>vote.signing_key(), <span class="prelude-val">Some</span>(vote_epoch + <span class="number">1</span>));
+        </span><span class="kw">let </span>has_stake = epoch_membership
+            .next_epoch()
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.has_stake(<span class="kw-2">&amp;</span>vote.signing_key())
+            .<span class="kw">await</span>;
         <span class="kw">if </span>has_stake {
             handle_vote(
                 <span class="kw-2">&amp;mut </span>task_state.next_epoch_vote_collectors,
                 <span class="kw-2">&amp;</span>vote.clone().into(),
                 task_state.public_key.clone(),
-                <span class="kw-2">&amp;</span>task_state.membership,
-                vote.data.epoch,
+                <span class="kw-2">&amp;</span>epoch_membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.clone(),
                 task_state.id,
                 <span class="kw-2">&amp;</span>event,
                 sender,
@@ -549,14 +552,14 @@
     sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
     task_state: <span class="kw-2">&amp;mut </span>ConsensusTaskState&lt;TYPES, I, V&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>epoch_membership = task_state
+        .membership_coordinator
+        .membership_for_epoch(task_state.cur_epoch)
+        .<span class="kw">await
+        </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?</span>;
     <span class="comment">// Are we the leader for this view?
     </span><span class="macro">ensure!</span>(
-        task_state
-            .membership
-            .read()
-            .<span class="kw">await
-            </span>.leader(vote.view_number() + <span class="number">1</span>, task_state.cur_epoch)<span class="question-mark">?
-            </span>== task_state.public_key,
+        epoch_membership.leader(vote.view_number() + <span class="number">1</span>).<span class="kw">await</span><span class="question-mark">? </span>== task_state.public_key,
         <span class="macro">info!</span>(
             <span class="string">"We are not the leader for view {:?}"</span>,
             vote.view_number() + <span class="number">1
@@ -567,8 +570,10 @@
         <span class="kw-2">&amp;mut </span>task_state.timeout_vote_collectors,
         vote,
         task_state.public_key.clone(),
-        <span class="kw-2">&amp;</span>task_state.membership,
-        vote.data.epoch,
+        <span class="kw-2">&amp;</span>task_state
+            .membership_coordinator
+            .membership_for_epoch(vote.data.epoch)
+            .<span class="kw">await</span><span class="question-mark">?</span>,
         task_state.id,
         <span class="kw-2">&amp;</span>event,
         sender,
@@ -632,10 +637,11 @@
         .<span class="kw">await</span>;
     } <span class="kw">else </span>{
         <span class="kw">let </span>leader = task_state
-            .membership
-            .read()
-            .<span class="kw">await
-            </span>.leader(new_view_number, task_state.cur_epoch)<span class="question-mark">?</span>;
+            .membership_coordinator
+            .membership_for_epoch(task_state.cur_epoch)
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.leader(new_view_number)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
         broadcast_event(
             Arc::new(HotShotEvent::HighQcSend(
                 high_qc,
@@ -736,10 +742,12 @@
     </span>std::mem::replace(<span class="kw-2">&amp;mut </span>task_state.timeout_task, new_timeout_task).abort();
 
     <span class="kw">let </span>old_view_leader_key = task_state
-        .membership
-        .read()
+        .membership_coordinator
+        .membership_for_epoch(task_state.cur_epoch)
         .<span class="kw">await
-        </span>.leader(old_view_number, task_state.cur_epoch)<span class="question-mark">?</span>;
+        </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?
+        </span>.leader(old_view_number)
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
     <span class="kw">let </span>consensus_reader = task_state.consensus.read().<span class="kw">await</span>;
     consensus_reader
@@ -798,10 +806,12 @@
 
     <span class="macro">ensure!</span>(
         task_state
-            .membership
-            .read()
+            .membership_coordinator
+            .membership_for_epoch(epoch)
             .<span class="kw">await
-            </span>.has_stake(<span class="kw-2">&amp;</span>task_state.public_key, epoch),
+            </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?
+            </span>.has_stake(<span class="kw-2">&amp;</span>task_state.public_key)
+            .<span class="kw">await</span>,
         <span class="macro">debug!</span>(
             <span class="string">"We were not chosen for the consensus committee for view {:?}"</span>,
             view_number
@@ -847,10 +857,12 @@
     .<span class="kw">await</span>;
 
     <span class="kw">let </span>leader = task_state
-        .membership
-        .read()
+        .membership_coordinator
+        .membership_for_epoch(task_state.cur_epoch)
         .<span class="kw">await
-        </span>.leader(view_number, task_state.cur_epoch);
+        </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?
+        </span>.leader(view_number)
+        .<span class="kw">await</span>;
 
     <span class="kw">let </span>consensus_reader = task_state.consensus.read().<span class="kw">await</span>;
     consensus_reader.metrics.number_of_timeouts.add(<span class="number">1</span>);

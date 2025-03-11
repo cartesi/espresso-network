@@ -170,9 +170,11 @@
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a></pre></div><pre class="rust"><code><span class="kw">use </span>atomic::Atomic;
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::atomic::Ordering;
+
+<span class="kw">use </span>atomic::Atomic;
 <span class="kw">use </span>coarsetime::{Duration, Instant};
-<span class="kw">use </span>std::sync::atomic::Ordering;
 
 <span class="attr">#[derive(Debug, Clone, Copy, bytemuck::NoUninit)]
 #[repr(C)]

@@ -183,60 +183,24 @@
 <a href="#182" id="182">182</a>
 <a href="#183" id="183">183</a>
 <a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-<a href="#197" id="197">197</a>
-<a href="#198" id="198">198</a>
-<a href="#199" id="199">199</a>
-<a href="#200" id="200">200</a>
-<a href="#201" id="201">201</a>
-<a href="#202" id="202">202</a>
-<a href="#203" id="203">203</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashSet;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::time::Duration;
+<a href="#185" id="185">185</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
 
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>espresso_types::v0_99::BidTxBody;
-<span class="kw">use </span>tokio::{spawn, time::sleep};
-
-<span class="kw">use </span>espresso_types::v0_99::RollupRegistration;
-
-<span class="kw">use </span>espresso_types::MarketplaceVersion;
-<span class="kw">use </span>espresso_types::SeqTypes;
-<span class="kw">use </span>hotshot::types::EventType;
-
-<span class="kw">use </span>hotshot::types::Event;
-
-<span class="kw">use </span>hotshot_types::traits::node_implementation::Versions;
+<span class="kw">use </span>espresso_types::{
+    eth_signature_key::EthKeyPair,
+    v0_99::{BidTxBody, RollupRegistration},
+    FeeAmount, MarketplaceVersion, NamespaceId, SeqTypes,
+};
+<span class="kw">use </span>hotshot::types::{Event, EventType};
+<span class="kw">use </span>hotshot_types::traits::node_implementation::{NodeType, Versions};
 <span class="kw">use </span>marketplace_builder_core::hooks::BuilderHooks;
-
-<span class="kw">use </span>espresso_types::FeeAmount;
-
-<span class="kw">use </span>espresso_types::eth_signature_key::EthKeyPair;
-
-<span class="kw">use </span>espresso_types::NamespaceId;
-
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-
-<span class="kw">use </span>marketplace_solver::SolverError;
-<span class="kw">use </span>marketplace_solver::SOLVER_API_PATH;
+<span class="kw">use </span>marketplace_solver::{SolverError, SOLVER_API_PATH};
 <span class="kw">use </span>sequencer::SequencerApiVersion;
 <span class="kw">use </span>surf_disco::Client;
-
 <span class="kw">use </span>tide_disco::Url;
-<span class="kw">use </span>tracing::error;
-<span class="kw">use </span>tracing::info;
+<span class="kw">use </span>tokio::{spawn, time::sleep};
+<span class="kw">use </span>tracing::{error, info};
 
 <span class="doccomment">/// Configurations for bid submission.
 </span><span class="kw">pub struct </span>BidConfig {
@@ -270,11 +234,11 @@
                 }
             }
             <span class="prelude-val">Some</span>(namespaces_to_skip)
-        }
+        },
         <span class="prelude-val">Err</span>(e) =&gt; {
             <span class="macro">error!</span>(<span class="string">"Failed to get the registered rollups: {:?}."</span>, e);
             <span class="prelude-val">None
-        </span>}
+        </span>},
     }
 }
 
@@ -333,7 +297,7 @@
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">error!</span>(<span class="string">"Failed to sign the bid txn: {:?}."</span>, e);
                     <span class="kw">return</span>;
-                }
+                },
             };
 
             <span class="kw">let </span>solver_client = connect_to_solver(solver_base_url);
@@ -375,12 +339,12 @@
             <span class="prelude-val">Some</span>(namespaces_to_skip) =&gt; {
                 transactions.retain(|txn| !namespaces_to_skip.contains(<span class="kw-2">&amp;</span>txn.namespace()));
                 transactions
-            }
+            },
             <span class="comment">// Solver connection has failed and we don't have up-to-date information on this
             </span><span class="prelude-val">None </span>=&gt; {
                 <span class="macro">error!</span>(<span class="string">"Not accepting transactions due to outdated information"</span>);
                 Vec::new()
-            }
+            },
         }
     }
 

@@ -489,16 +489,16 @@
 <a href="#488" id="488">488</a>
 <a href="#489" id="489">489</a>
 <a href="#490" id="490">490</a>
-<a href="#491" id="491">491</a></pre></div><pre class="rust"><code><span class="kw">use </span>ark_bn254::{Bn254, Fq, Fr, G1Affine, G2Affine};
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a></pre></div><pre class="rust"><code><span class="kw">use </span>ark_bn254::{Bn254, Fq, Fr, G1Affine, G2Affine};
 <span class="kw">use </span>ark_ec::{AffineRepr, CurveGroup};
 <span class="kw">use </span>ark_ed_on_bn254::{EdwardsConfig <span class="kw">as </span>EdOnBn254Config, Fq <span class="kw">as </span>FqEd254};
 <span class="kw">use </span>ark_ff::field_hashers::{DefaultFieldHasher, HashToField};
-<span class="kw">use </span>ark_poly::domain::radix2::Radix2EvaluationDomain;
-<span class="kw">use </span>ark_poly::EvaluationDomain;
+<span class="kw">use </span>ark_poly::{domain::radix2::Radix2EvaluationDomain, EvaluationDomain};
 <span class="kw">use </span>ark_std::rand::{rngs::StdRng, Rng, SeedableRng};
 <span class="kw">use </span>clap::{Parser, ValueEnum};
 <span class="kw">use </span>diff_test_bn254::ParsedG2Point;
-
 <span class="kw">use </span>ethers::{
     abi::{AbiDecode, AbiEncode, Address},
     types::{Bytes, U256},
@@ -508,15 +508,19 @@
     gen_plonk_proof_for_test, MockLedger, MockSystemParam, STAKE_TABLE_CAPACITY,
 };
 <span class="kw">use </span>jf_pcs::prelude::Commitment;
-<span class="kw">use </span>jf_plonk::proof_system::structs::{Proof, VerifyingKey};
-<span class="kw">use </span>jf_plonk::proof_system::PlonkKzgSnark;
 <span class="kw">use </span>jf_plonk::{
+    proof_system::{
+        structs::{Proof, VerifyingKey},
+        PlonkKzgSnark,
+    },
     testing_apis::Verifier,
     transcript::{PlonkTranscript, SolidityTranscript},
 };
-<span class="kw">use </span>jf_signature::bls_over_bn254::{hash_to_curve, KeyPair <span class="kw">as </span>BLSKeyPair, Signature};
-<span class="kw">use </span>jf_signature::constants::CS_ID_BLS_BN254;
-<span class="kw">use </span>jf_signature::schnorr::KeyPair <span class="kw">as </span>SchnorrKeyPair;
+<span class="kw">use </span>jf_signature::{
+    bls_over_bn254::{hash_to_curve, KeyPair <span class="kw">as </span>BLSKeyPair, Signature},
+    constants::CS_ID_BLS_BN254,
+    schnorr::KeyPair <span class="kw">as </span>SchnorrKeyPair,
+};
 <span class="kw">use </span>sha3::Keccak256;
 
 <span class="attr">#[derive(Parser)]
@@ -593,7 +597,7 @@
                 field_to_u256(domain.group_gen),
             );
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::EvalDomainElements =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">2 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=logSize, arg2=length"</span>);
@@ -608,7 +612,7 @@
                 .map(field_to_u256)
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::EvalDataGen =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">3 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=logSize, arg2=zeta, arg3=publicInput"</span>);
@@ -629,7 +633,7 @@
                 field_to_u256(pi_eval),
             );
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::TranscriptAppendMsg =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">2 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=transcript, arg2=message"</span>);
@@ -644,7 +648,7 @@
             &lt;SolidityTranscript <span class="kw">as </span>PlonkTranscript&lt;Fr&gt;&gt;::append_message(<span class="kw-2">&amp;mut </span>t, <span class="kw-2">&amp;</span>[], <span class="kw-2">&amp;</span>msg).unwrap();
             <span class="kw">let </span>res: ParsedTranscript = t.into();
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (res,).encode_hex());
-        }
+        },
         Action::TranscriptAppendField =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">2 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=transcript, arg2=fieldElement"</span>);
@@ -656,7 +660,7 @@
             t.append_field_elem::&lt;Bn254&gt;(<span class="kw-2">&amp;</span>[], <span class="kw-2">&amp;</span>field).unwrap();
             <span class="kw">let </span>res: ParsedTranscript = t.into();
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (res,).encode_hex());
-        }
+        },
         Action::TranscriptAppendGroup =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">2 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=transcript, arg2=groupElement"</span>);
@@ -670,7 +674,7 @@
                 .unwrap();
             <span class="kw">let </span>res: ParsedTranscript = t.into();
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (res,).encode_hex());
-        }
+        },
         Action::TranscriptGetChal =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">1 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=transcript"</span>);
@@ -684,7 +688,7 @@
             <span class="kw">let </span>updated_t: ParsedTranscript = t.into();
             <span class="kw">let </span>res = (updated_t, field_to_u256(chal));
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::TranscriptAppendVkAndPi =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">3 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=transcript, arg2=verifyingKey, arg3=publicInput"</span>);
@@ -701,7 +705,7 @@
 
             <span class="kw">let </span>res: ParsedTranscript = t.into();
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (res,).encode_hex());
-        }
+        },
         Action::TranscriptAppendProofEvals =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">1 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=transcript"</span>);
@@ -723,7 +727,7 @@
             <span class="kw">let </span>t_updated: ParsedTranscript = t.into();
             <span class="kw">let </span>res = (t_updated, proof_parsed);
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::PlonkConstants =&gt; {
             <span class="kw">let </span>coset_k = coset_k();
             <span class="kw">let </span>open_key = open_key();
@@ -741,7 +745,7 @@
                 field_to_u256::&lt;Fq&gt;(open_key.beta_h.y().unwrap().c0),
             );
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::PlonkComputeChal =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">4 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=verifyingKey, arg2=publicInput, arg3=proof, arg4=extraTranscriptInitMsg"</span>);
@@ -766,9 +770,9 @@
                 .unwrap()
                 .into();
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (chal,).encode_hex());
-        }
+        },
         Action::PlonkVerify =&gt; {
-            <span class="kw">let </span>(proof, vk, public_input, <span class="kw">_</span>, <span class="kw">_</span>): (
+            <span class="kw">let </span>(proof, vk, public_input, ..): (
                 Proof&lt;Bn254&gt;,
                 VerifyingKey&lt;Bn254&gt;,
                 Vec&lt;Fr&gt;,
@@ -795,7 +799,7 @@
 
             <span class="kw">let </span>res = (vk_parsed, pi_parsed, proof_parsed);
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::DummyProof =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>rng = jf_utils::test_rng();
             <span class="kw">if </span>!cli.args.is_empty() {
@@ -804,10 +808,10 @@
             }
             <span class="kw">let </span>proof = ParsedPlonkProof::dummy(<span class="kw-2">&amp;mut </span>rng);
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (proof,).encode_hex());
-        }
+        },
         Action::TestOnly =&gt; {
             <span class="macro">println!</span>(<span class="string">"args: {:?}"</span>, cli.args);
-        }
+        },
         Action::GenClientWallet =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">2 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=senderAddress arg2=seed"</span>);
@@ -849,7 +853,7 @@
                 sender_address,
             );
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::GenRandomG2Point =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">1 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=exponent"</span>);
@@ -861,7 +865,7 @@
             <span class="kw">let </span>point_parsed: ParsedG2Point = point.into();
             <span class="kw">let </span>res = point_parsed;
             <span class="macro">println!</span>(<span class="string">"{}"</span>, (res.encode_hex()));
-        }
+        },
         Action::MockGenesis =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">1 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=numInitValidators"</span>);
@@ -873,7 +877,7 @@
 
             <span class="kw">let </span>res = (ledger.get_state(), ledger.get_stake_table_state());
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::MockConsecutiveFinalizedStates =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">1 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=numInitValidators"</span>);
@@ -904,7 +908,7 @@
 
             <span class="kw">let </span>res = (new_states, proofs);
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::MockSkipBlocks =&gt; {
             <span class="kw">if </span>cli.args.is_empty() || cli.args.len() &gt; <span class="number">2 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=numBlockSkipped,arg2(opt)=requireValidProof"</span>);
@@ -935,7 +939,7 @@
                 (state_parsed, proof_parsed)
             };
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::GenBLSHashes =&gt; {
             <span class="kw">if </span>cli.args.len() != <span class="number">1 </span>{
                 <span class="macro">panic!</span>(<span class="string">"Should provide arg1=message"</span>);
@@ -955,7 +959,7 @@
 
             <span class="kw">let </span>res = (fq_u256, hash_to_curve_elem_parsed);
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
         Action::GenBLSSig =&gt; {
             <span class="kw">let </span><span class="kw-2">mut </span>rng = jf_utils::test_rng();
 
@@ -977,7 +981,7 @@
 
             <span class="kw">let </span>res = (vk_parsed, sig_parsed);
             <span class="macro">println!</span>(<span class="string">"{}"</span>, res.encode_hex());
-        }
+        },
     };
 }
 </code></pre></div></section></main></body></html>

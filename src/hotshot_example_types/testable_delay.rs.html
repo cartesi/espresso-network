@@ -217,16 +217,16 @@
     <span class="doccomment">/// Add a delay from settings
     </span><span class="kw">async fn </span>handle_async_delay(settings: <span class="kw-2">&amp;</span>DelaySettings) {
         <span class="kw">match </span>settings.delay_option {
-            DelayOptions::None =&gt; {}
+            DelayOptions::None =&gt; {},
             DelayOptions::Fixed =&gt; {
                 sleep(Duration::from_millis(settings.fixed_time_in_milliseconds)).<span class="kw">await</span>;
-            }
+            },
             DelayOptions::Random =&gt; {
                 <span class="kw">let </span>sleep_in_millis = rand::thread_rng().gen_range(
                     settings.min_time_in_milliseconds..=settings.max_time_in_milliseconds,
                 );
                 sleep(Duration::from_millis(sleep_in_millis)).<span class="kw">await</span>;
-            }
+            },
         }
     }
 
@@ -256,7 +256,7 @@
             <span class="kw">_ </span>=&gt; {
                 <span class="macro">assert_eq!</span>(<span class="self">self</span>.index, <span class="number">3</span>, <span class="string">"Need to ensure that newly added or removed `SupportedTraitTypesForAsyncDelay` enum is handled in iterator"</span>);
                 <span class="kw">return </span><span class="prelude-val">None</span>;
-            }
+            },
         };
         <span class="self">self</span>.index += <span class="number">1</span>;
         supported_type

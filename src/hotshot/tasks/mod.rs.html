@@ -563,12 +563,7 @@
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
 <a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a>
-<a href="#566" id="566">566</a>
-<a href="#567" id="567">567</a>
-<a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a>
-<a href="#570" id="570">570</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#565" id="565">565</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -615,8 +610,9 @@
 
 <span class="kw">use crate</span>::{
     genesis_epoch_from_version, tasks::task_state::CreateTaskState, types::SystemContextHandle,
-    ConsensusApi, ConsensusMetricsValue, ConsensusTaskRegistry, HotShotConfig, HotShotInitializer,
-    MarketplaceConfig, NetworkTaskRegistry, SignatureKey, SystemContext, Versions,
+    ConsensusApi, ConsensusMetricsValue, ConsensusTaskRegistry, EpochMembershipCoordinator,
+    HotShotConfig, HotShotInitializer, MarketplaceConfig, NetworkTaskRegistry, SignatureKey,
+    SystemContext, Versions,
 };
 
 <span class="doccomment">/// event for global event stream
@@ -652,7 +648,7 @@
 ) {
     <span class="kw">let </span>state = NetworkResponseState::&lt;TYPES, V&gt;::new(
         handle.hotshot.consensus(),
-        Arc::clone(<span class="kw-2">&amp;</span>handle.memberships),
+        handle.membership_coordinator.clone(),
         handle.public_key().clone(),
         handle.private_key().clone(),
         handle.hotshot.id,
@@ -760,13 +756,12 @@
 &gt;(
     handle: <span class="kw-2">&amp;mut </span>SystemContextHandle&lt;TYPES, I, V&gt;,
     network: Arc&lt;NET&gt;,
-    membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
 ) {
     <span class="kw">let </span>network_state: NetworkEventTaskState&lt;<span class="kw">_</span>, V, <span class="kw">_</span>, <span class="kw">_</span>&gt; = NetworkEventTaskState {
         network,
         view: TYPES::View::genesis(),
         epoch: genesis_epoch_from_version::&lt;V, TYPES&gt;(),
-        membership,
+        membership_coordinator: handle.membership_coordinator.clone(),
         storage: Arc::clone(<span class="kw-2">&amp;</span>handle.storage()),
         consensus: OuterConsensus::new(handle.consensus()),
         upgrade_lock: handle.hotshot.upgrade_lock.clone(),
@@ -850,13 +845,13 @@
                     <span class="kw">if </span><span class="macro">matches!</span>(event.as_ref(), HotShotEvent::Shutdown) {
                         <span class="kw">return</span>;
                     }
-                }
+                },
                 <span class="prelude-val">Err</span>(RecvError::Closed) =&gt; {
                     <span class="kw">return</span>;
-                }
+                },
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"Shutdown event monitor channel recv error: {}"</span>, e);
-                }
+                },
             }
         }
     }
@@ -892,7 +887,7 @@
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
         nonce: u64,
         config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+        memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
         metrics: ConsensusMetricsValue,
@@ -900,12 +895,13 @@
         marketplace_config: MarketplaceConfig&lt;TYPES, I&gt;,
     ) -&gt; SystemContextHandle&lt;TYPES, I, V&gt; {
         <span class="kw">let </span>epoch_height = config.epoch_height;
+
         <span class="kw">let </span>hotshot = SystemContext::new(
             public_key,
             private_key,
             nonce,
             config,
-            memberships,
+            memberships.clone(),
             network,
             initializer,
             metrics,
@@ -927,7 +923,7 @@
             hotshot: Arc::clone(<span class="kw-2">&amp;</span>hotshot),
             storage: Arc::clone(<span class="kw-2">&amp;</span>hotshot.storage),
             network: Arc::clone(<span class="kw-2">&amp;</span>hotshot.network),
-            memberships: Arc::clone(<span class="kw-2">&amp;</span>hotshot.memberships),
+            membership_coordinator: memberships.clone(),
             epoch_height,
         };
 
@@ -1087,9 +1083,8 @@
     <span class="doccomment">/// Adds the `NetworkEventTaskState` tasks possibly modifying them as well.
     </span><span class="kw">fn </span>add_network_event_tasks(<span class="kw-2">&amp;</span><span class="self">self</span>, handle: <span class="kw-2">&amp;mut </span>SystemContextHandle&lt;TYPES, I, V&gt;) {
         <span class="kw">let </span>network = Arc::clone(<span class="kw-2">&amp;</span>handle.network);
-        <span class="kw">let </span>memberships = Arc::clone(<span class="kw-2">&amp;</span>handle.memberships);
 
-        <span class="self">self</span>.add_network_event_task(handle, network, memberships);
+        <span class="self">self</span>.add_network_event_task(handle, network);
     }
 
     <span class="doccomment">/// Adds a `NetworkEventTaskState` task. Can be reimplemented to modify its behaviour.
@@ -1097,9 +1092,8 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         handle: <span class="kw-2">&amp;mut </span>SystemContextHandle&lt;TYPES, I, V&gt;,
         channel: Arc&lt;&lt;I <span class="kw">as </span>NodeImplementation&lt;TYPES&gt;&gt;::Network&gt;,
-        membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
     ) {
-        add_network_event_task(handle, channel, membership);
+        add_network_event_task(handle, channel);
     }
 }
 
@@ -1132,10 +1126,6 @@
 </span><span class="kw">pub fn </span>add_network_event_tasks&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt;(
     handle: <span class="kw-2">&amp;mut </span>SystemContextHandle&lt;TYPES, I, V&gt;,
 ) {
-    add_network_event_task(
-        handle,
-        Arc::clone(<span class="kw-2">&amp;</span>handle.network),
-        Arc::clone(<span class="kw-2">&amp;</span>handle.memberships),
-    );
+    add_network_event_task(handle, Arc::clone(<span class="kw-2">&amp;</span>handle.network));
 }
 </code></pre></div></section></main></body></html>

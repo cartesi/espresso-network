@@ -1456,10 +1456,21 @@
 <a href="#1455" id="1455">1455</a>
 <a href="#1456" id="1456">1456</a>
 <a href="#1457" id="1457">1457</a>
-<a href="#1458" id="1458">1458</a>
-<a href="#1459" id="1459">1459</a>
-<a href="#1460" id="1460">1460</a>
-<a href="#1461" id="1461">1461</a></pre></div><pre class="rust"><code><span class="kw">use </span>hotshot_types::{
+<a href="#1458" id="1458">1458</a></pre></div><pre class="rust"><code><span class="kw">use </span>core::panic;
+<span class="kw">use </span>std::{
+    cmp::PartialEq,
+    collections::{hash_map::Entry, HashMap, HashSet, VecDeque},
+    fmt::Debug,
+    marker::PhantomData,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+
+<span class="kw">use </span>async_broadcast::{broadcast, Receiver <span class="kw">as </span>BroadcastReceiver, Sender <span class="kw">as </span>BroadcastSender};
+<span class="kw">use </span>async_lock::RwLock;
+<span class="kw">use </span>committable::{Commitment, Committable};
+<span class="kw">use </span>futures::StreamExt;
+<span class="kw">use </span>hotshot_types::{
     data::{DaProposal2, Leaf2, QuorumProposalWrapper},
     message::Proposal,
     traits::{
@@ -1470,29 +1481,13 @@
     utils::BuilderCommitment,
 };
 <span class="kw">use </span>marketplace_builder_shared::block::{BlockId, BuilderStateId, ParentBlockReferences};
-
-<span class="kw">use </span>committable::{Commitment, Committable};
-
-<span class="kw">use </span><span class="kw">crate</span>::service::{GlobalState, ReceivedTransaction};
-<span class="kw">use </span>async_broadcast::broadcast;
-<span class="kw">use </span>async_broadcast::Receiver <span class="kw">as </span>BroadcastReceiver;
-<span class="kw">use </span>async_broadcast::Sender <span class="kw">as </span>BroadcastSender;
-<span class="kw">use </span>async_lock::RwLock;
-<span class="kw">use </span>core::panic;
-<span class="kw">use </span>futures::StreamExt;
-
 <span class="kw">use </span>tokio::{
     spawn,
     sync::{mpsc::UnboundedSender, oneshot},
     time::sleep,
 };
 
-<span class="kw">use </span>std::collections::{HashMap, HashSet, VecDeque};
-<span class="kw">use </span>std::fmt::Debug;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::time::Instant;
-<span class="kw">use </span>std::{cmp::PartialEq, marker::PhantomData};
-<span class="kw">use </span>std::{collections::hash_map::Entry, time::Duration};
+<span class="kw">use </span><span class="kw">crate</span>::service::{GlobalState, ReceivedTransaction};
 
 <span class="kw">pub type </span>TxTimeStamp = u128;
 
@@ -1756,7 +1751,7 @@
                 <span class="prelude-val">Some</span>(parent_block_references) =&gt; {
                     parent_block_references.leaf_commit == justify_qc.data.leaf_commit
                         &amp;&amp; parent_block_references.view_number == justify_qc.view_number
-                }
+                },
             },
         )
         .map(|(builder_state_id, <span class="kw">_</span>)| builder_state_id.clone())
@@ -2563,15 +2558,15 @@
                     }
                     <span class="self">self</span>.txns_in_queue.insert(tx.commit);
                     <span class="self">self</span>.tx_queue.push_back(tx);
-                }
+                },
                 <span class="prelude-val">Err</span>(async_broadcast::TryRecvError::Empty)
                 | <span class="prelude-val">Err</span>(async_broadcast::TryRecvError::Closed) =&gt; {
                     <span class="kw">break</span>;
-                }
+                },
                 <span class="prelude-val">Err</span>(async_broadcast::TryRecvError::Overflowed(lost)) =&gt; {
                     <span class="macro">tracing::warn!</span>(<span class="string">"Missed {lost} transactions due to backlog"</span>);
                     <span class="kw">continue</span>;
-                }
+                },
             }
         }
     }
@@ -2583,20 +2578,19 @@
 
     <span class="kw">use </span>async_broadcast::broadcast;
     <span class="kw">use </span>committable::RawCommitmentBuilder;
-    <span class="kw">use </span>hotshot_example_types::block_types::TestTransaction;
-    <span class="kw">use </span>hotshot_example_types::node_types::TestTypes;
-    <span class="kw">use </span>hotshot_example_types::node_types::TestVersions;
-    <span class="kw">use </span>hotshot_types::data::Leaf2;
-    <span class="kw">use </span>hotshot_types::data::QuorumProposalWrapper;
-    <span class="kw">use </span>hotshot_types::data::ViewNumber;
-    <span class="kw">use </span>hotshot_types::traits::node_implementation::{ConsensusTime, NodeType};
-    <span class="kw">use </span>hotshot_types::utils::BuilderCommitment;
+    <span class="kw">use </span>hotshot_example_types::{
+        block_types::TestTransaction,
+        node_types::{TestTypes, TestVersions},
+    };
+    <span class="kw">use </span>hotshot_types::{
+        data::{Leaf2, QuorumProposalWrapper, ViewNumber},
+        traits::node_implementation::{ConsensusTime, NodeType},
+        utils::BuilderCommitment,
+    };
     <span class="kw">use </span>marketplace_builder_shared::testing::constants::TEST_NUM_NODES_IN_VID_COMPUTATION;
     <span class="kw">use </span>tracing_subscriber::EnvFilter;
 
-    <span class="kw">use </span><span class="kw">super</span>::DAProposalInfo;
-    <span class="kw">use </span><span class="kw">super</span>::MessageType;
-    <span class="kw">use </span><span class="kw">super</span>::ParentBlockReferences;
+    <span class="kw">use super</span>::{DAProposalInfo, MessageType, ParentBlockReferences};
     <span class="kw">use </span><span class="kw">crate</span>::testing::{calc_builder_commitment, calc_proposal_msg, create_builder_state};
 
     <span class="doccomment">/// This test the function `process_da_proposal`.

@@ -148,19 +148,19 @@
                     <span class="prelude-val">Some</span>(InputEvent::BootstrapFinished) =&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"Bootstrap finished"</span>);
                         <span class="self">self</span>.in_progress = <span class="bool-val">false</span>;
-                    }
+                    },
                     <span class="prelude-val">Some</span>(InputEvent::ShutdownBootstrap) =&gt; {
                         <span class="macro">tracing::info!</span>(<span class="string">"ShutdownBootstrap received, shutting down"</span>);
                         <span class="kw">break</span>;
-                    }
+                    },
                     <span class="prelude-val">Some</span>(InputEvent::StartBootstrap) =&gt; {
                         <span class="macro">tracing::warn!</span>(<span class="string">"Trying to start bootstrap that's already in progress"</span>);
                         <span class="kw">continue</span>;
-                    }
+                    },
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"Bootstrap channel closed, exiting loop"</span>);
                         <span class="kw">break</span>;
-                    }
+                    },
                 }
             } <span class="kw">else if let </span><span class="prelude-val">Ok</span>(maybe_event) = timeout(Duration::from_secs(<span class="number">120</span>), <span class="self">self</span>.rx.next()).<span class="kw">await
             </span>{
@@ -168,18 +168,18 @@
                     <span class="prelude-val">Some</span>(InputEvent::StartBootstrap) =&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"Start bootstrap in bootstrap task"</span>);
                         <span class="self">self</span>.bootstrap();
-                    }
+                    },
                     <span class="prelude-val">Some</span>(InputEvent::ShutdownBootstrap) =&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"ShutdownBootstrap received, shutting down"</span>);
                         <span class="kw">break</span>;
-                    }
+                    },
                     <span class="prelude-val">Some</span>(InputEvent::BootstrapFinished) =&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"not in progress got bootstrap finished"</span>);
-                    }
+                    },
                     <span class="prelude-val">None </span>=&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"Bootstrap channel closed, exiting loop"</span>);
                         <span class="kw">break</span>;
-                    }
+                    },
                 }
             } <span class="kw">else </span>{
                 <span class="macro">tracing::debug!</span>(<span class="string">"Start bootstrap in bootstrap task after timeout"</span>);

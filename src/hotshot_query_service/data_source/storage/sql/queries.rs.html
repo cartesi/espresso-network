@@ -384,7 +384,9 @@
 <a href="#383" id="383">383</a>
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a></pre></div><pre class="rust"><code><span class="attr">#![allow(clippy::needless_lifetimes)]
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a></pre></div><pre class="rust"><code><span class="attr">#![allow(clippy::needless_lifetimes)]
 </span><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
@@ -399,28 +401,30 @@
 
 </span><span class="doccomment">//! Immutable query functionality of a SQL database.
 
-</span><span class="kw">use super</span>::{Database, Db, Query, QueryAs, Transaction};
-<span class="kw">use crate</span>::{
-    availability::{
-        BlockId, BlockQueryData, LeafQueryData, PayloadQueryData, QueryablePayload,
-        VidCommonQueryData,
-    },
-    data_source::storage::{PayloadMetadata, VidCommonMetadata},
-    Header, Leaf, Payload, QueryError, QueryResult,
+</span><span class="kw">use </span>std::{
+    fmt::Display,
+    ops::{Bound, RangeBounds},
 };
+
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>hotshot_types::{
-    simple_certificate::QuorumCertificate,
+    simple_certificate::QuorumCertificate2,
     traits::{
         block_contents::{BlockHeader, BlockPayload},
         node_implementation::NodeType,
     },
 };
 <span class="kw">use </span>sqlx::{Arguments, FromRow, Row};
-<span class="kw">use </span>std::{
-    fmt::Display,
-    ops::{Bound, RangeBounds},
+
+<span class="kw">use super</span>::{Database, Db, Query, QueryAs, Transaction};
+<span class="kw">use crate</span>::{
+    availability::{
+        BlockId, BlockQueryData, LeafQueryData, PayloadQueryData, QueryablePayload,
+        VidCommonQueryData,
+    },
+    data_source::storage::{PayloadMetadata, VidCommonMetadata},
+    Header, Leaf2, Payload, QueryError, QueryResult,
 };
 
 <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">mod </span>availability;
@@ -524,20 +528,20 @@
         <span class="kw">match </span>range.start_bound() {
             Bound::Included(n) =&gt; {
                 bounds.push(<span class="macro">format!</span>(<span class="string">"{column} &gt;= {}"</span>, <span class="self">self</span>.bind(<span class="kw-2">*</span>n <span class="kw">as </span>i64)<span class="question-mark">?</span>));
-            }
+            },
             Bound::Excluded(n) =&gt; {
                 bounds.push(<span class="macro">format!</span>(<span class="string">"{column} &gt; {}"</span>, <span class="self">self</span>.bind(<span class="kw-2">*</span>n <span class="kw">as </span>i64)<span class="question-mark">?</span>));
-            }
-            Bound::Unbounded =&gt; {}
+            },
+            Bound::Unbounded =&gt; {},
         }
         <span class="kw">match </span>range.end_bound() {
             Bound::Included(n) =&gt; {
                 bounds.push(<span class="macro">format!</span>(<span class="string">"{column} &lt;= {}"</span>, <span class="self">self</span>.bind(<span class="kw-2">*</span>n <span class="kw">as </span>i64)<span class="question-mark">?</span>));
-            }
+            },
             Bound::Excluded(n) =&gt; {
                 bounds.push(<span class="macro">format!</span>(<span class="string">"{column} &lt; {}"</span>, <span class="self">self</span>.bind(<span class="kw-2">*</span>n <span class="kw">as </span>i64)<span class="question-mark">?</span>));
-            }
-            Bound::Unbounded =&gt; {}
+            },
+            Bound::Unbounded =&gt; {},
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>where_clause = bounds.join(<span class="string">" AND "</span>);
@@ -557,10 +561,10 @@
 {
     <span class="kw">fn </span>from_row(row: <span class="kw-2">&amp;</span><span class="lifetime">'r </span>&lt;Db <span class="kw">as </span>Database&gt;::Row) -&gt; sqlx::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>leaf = row.try_get(<span class="string">"leaf"</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>leaf: Leaf&lt;Types&gt; = serde_json::from_value(leaf).decode_error(<span class="string">"malformed leaf"</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>leaf: Leaf2&lt;Types&gt; = serde_json::from_value(leaf).decode_error(<span class="string">"malformed leaf"</span>)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>qc = row.try_get(<span class="string">"qc"</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>qc: QuorumCertificate&lt;Types&gt; =
+        <span class="kw">let </span>qc: QuorumCertificate2&lt;Types&gt; =
             serde_json::from_value(qc).decode_error(<span class="string">"malformed QC"</span>)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ leaf, qc })

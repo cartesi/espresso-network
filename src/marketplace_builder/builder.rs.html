@@ -782,13 +782,14 @@
 <a href="#781" id="781">781</a>
 <a href="#782" id="782">782</a>
 <a href="#783" id="783">783</a>
-<a href="#784" id="784">784</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{arch::global_asm, collections::HashSet, num::NonZeroUsize, time::Duration};
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{arch::global_asm, collections::HashSet, num::NonZeroUsize, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_broadcast::{
     broadcast, Receiver <span class="kw">as </span>BroadcastReceiver, RecvError, Sender <span class="kw">as </span>BroadcastSender, TryRecvError,
 };
-
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>espresso_types::{
     eth_signature_key::EthKeyPair,
@@ -827,7 +828,6 @@
 <span class="kw">use </span>marketplace_builder_shared::block::ParentBlockReferences;
 <span class="kw">use </span>marketplace_solver::SolverError;
 <span class="kw">use </span>sequencer::{catchup::StatePeers, L1Params, NetworkParams, SequencerApiVersion};
-<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>surf::http::headers::ACCEPT;
 <span class="kw">use </span>surf_disco::Client;
 <span class="kw">use </span>tide_disco::{app, method::ReadState, App, Url};
@@ -993,8 +993,7 @@
 
     <span class="kw">use </span>anyhow::Error;
     <span class="kw">use </span>async_lock::RwLock;
-    <span class="kw">use </span>committable::Commitment;
-    <span class="kw">use </span>committable::Committable;
+    <span class="kw">use </span>committable::{Commitment, Committable};
     <span class="kw">use </span>espresso_types::{
         mock::MockStateCatchup,
         v0_99::{RollupRegistration, RollupRegistrationBody},
@@ -1004,20 +1003,23 @@
     <span class="kw">use </span>ethers::{core::k256::elliptic_curve::rand_core::block, utils::Anvil};
     <span class="kw">use </span>futures::{Stream, StreamExt};
     <span class="kw">use </span>hooks::connect_to_solver;
-    <span class="kw">use </span>hotshot::helpers::initialize_logging;
-    <span class="kw">use </span>hotshot::types::{
-        BLSPrivKey,
-        EventType::{Decide, <span class="kw-2">*</span>},
+    <span class="kw">use </span>hotshot::{
+        helpers::initialize_logging,
+        rand,
+        types::{
+            BLSPrivKey, EventType,
+            EventType::{Decide, <span class="kw-2">*</span>},
+        },
     };
-    <span class="kw">use </span>hotshot::{rand, types::EventType};
     <span class="kw">use </span>hotshot_builder_api::v0_99::builder::BuildError;
     <span class="kw">use </span>hotshot_events_service::{
         events::{Error <span class="kw">as </span>EventStreamApiError, Options <span class="kw">as </span>EventStreamingApiOptions},
         events_source::{EventConsumer, EventsStreamer},
     };
-    <span class="kw">use </span>hotshot_query_service::{availability::LeafQueryData, VidCommitment};
+    <span class="kw">use </span>hotshot_query_service::availability::LeafQueryData;
     <span class="kw">use </span>hotshot_types::{
         bundle::Bundle,
+        data::VidCommitment,
         event::LeafInfo,
         light_client::StateKeyPair,
         signature_key::BLSPubKey,
@@ -1031,14 +1033,16 @@
     <span class="kw">use </span>marketplace_solver::{testing::MockSolver, SolverError};
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>sequencer::{
-        api::test_helpers::TestNetworkConfigBuilder,
+        api::{
+            fs::DataSource,
+            options::HotshotEvents,
+            test_helpers::{TestNetwork, TestNetworkConfigBuilder},
+            Options,
+        },
+        persistence,
         persistence::no_storage::{<span class="self">self</span>, NoStorage},
         testing::TestConfigBuilder,
         SequencerApiVersion,
-    };
-    <span class="kw">use </span>sequencer::{
-        api::{fs::DataSource, options::HotshotEvents, test_helpers::TestNetwork, Options},
-        persistence,
     };
     <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
     <span class="kw">use </span>surf_disco::{
@@ -1391,7 +1395,7 @@
                     get_bundle(builder_client, parent_view_number, parent_commitment).<span class="kw">await</span>,
                     parent_view_number,
                 )
-            }
+            },
             Mempool::Private =&gt; {
                 submit_and_get_bundle_with_private_mempool(
                     builder_client,
@@ -1399,7 +1403,7 @@
                     urls,
                 )
                 .<span class="kw">await
-            </span>}
+            </span>},
         };
 
         <span class="macro">assert_eq!</span>(bundle.transactions, <span class="macro">vec!</span>[registered_transaction.clone()]);
@@ -1511,7 +1515,7 @@
                     get_bundle(builder_client, parent_view_number, parent_commitment).<span class="kw">await</span>,
                     parent_view_number,
                 )
-            }
+            },
             Mempool::Private =&gt; {
                 submit_and_get_bundle_with_private_mempool(
                     builder_client,
@@ -1519,7 +1523,7 @@
                     urls,
                 )
                 .<span class="kw">await
-            </span>}
+            </span>},
         };
 
         <span class="macro">assert_eq!</span>(bundle.transactions, <span class="macro">vec!</span>[unregistered_transaction.clone()]);

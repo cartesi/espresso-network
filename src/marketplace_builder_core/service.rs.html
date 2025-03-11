@@ -440,22 +440,19 @@
 <a href="#439" id="439">439</a>
 <a href="#440" id="440">440</a>
 <a href="#441" id="441">441</a>
-<a href="#442" id="442">442</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::time::Duration;
-
-<span class="kw">use </span>marketplace_builder_shared::{
-    block::{BuilderStateId, ReceivedTransaction, TransactionSource},
-    coordinator::{BuilderStateCoordinator, BuilderStateLookup},
-    state::BuilderState,
-    utils::BuilderKeys,
+<a href="#442" id="442">442</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    fmt::Display,
+    sync::Arc,
+    time::{Duration, Instant},
 };
 
 <span class="kw">pub use </span>async_broadcast::{broadcast, RecvError, TryRecvError};
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>committable::{Commitment, Committable};
-<span class="kw">use </span>futures::{future::BoxFuture, stream::FuturesUnordered, Stream};
 <span class="kw">use </span>futures::{
-    stream::{FuturesOrdered, StreamExt},
-    TryStreamExt,
+    future::BoxFuture,
+    stream::{FuturesOrdered, FuturesUnordered, StreamExt},
+    Stream, TryStreamExt,
 };
 <span class="kw">use </span>hotshot::types::Event;
 <span class="kw">use </span>hotshot_builder_api::{
@@ -465,25 +462,28 @@
         data_source::{AcceptsTxnSubmits, BuilderDataSource},
     },
 };
-<span class="kw">use </span>hotshot_types::bundle::Bundle;
-<span class="kw">use </span>hotshot_types::traits::block_contents::{BuilderFee, Transaction};
 <span class="kw">use </span>hotshot_types::{
+    bundle::Bundle,
     data::VidCommitment,
     event::EventType,
     traits::{
+        block_contents::{BuilderFee, Transaction},
         node_implementation::{ConsensusTime, NodeType},
         signature_key::{BuilderSignatureKey, SignatureKey},
     },
 };
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{fmt::Display, time::Instant};
+<span class="kw">pub use </span>marketplace_builder_shared::utils::EventServiceStream;
+<span class="kw">use </span>marketplace_builder_shared::{
+    block::{BuilderStateId, ReceivedTransaction, TransactionSource},
+    coordinator::{BuilderStateCoordinator, BuilderStateLookup},
+    state::BuilderState,
+    utils::BuilderKeys,
+};
 <span class="kw">use </span>tagged_base64::TaggedBase64;
 <span class="kw">use </span>tide_disco::{app::AppError, method::ReadState, App};
 <span class="kw">use </span>tokio::{spawn, task::JoinHandle, time::sleep};
 <span class="kw">use </span>tracing::Level;
 <span class="kw">use </span>vbs::version::StaticVersion;
-
-<span class="kw">pub use </span>marketplace_builder_shared::utils::EventServiceStream;
 
 <span class="kw">use </span><span class="kw">crate</span>::hooks::BuilderHooks;
 
@@ -631,7 +631,7 @@
             <span class="kw">match </span>event.event {
                 EventType::Error { error } =&gt; {
                     <span class="macro">tracing::error!</span>(<span class="string">"Error event in HotShot: {:?}"</span>, error);
-                }
+                },
                 EventType::Transactions { transactions } =&gt; {
                     <span class="kw">let </span>hooks = Arc::clone(<span class="kw-2">&amp;</span>hooks);
                     <span class="kw">let </span>coordinator = Arc::clone(<span class="kw-2">&amp;</span>coordinator);
@@ -650,20 +650,20 @@
                             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
                             .<span class="kw">await</span>;
                     });
-                }
+                },
                 EventType::Decide { leaf_chain, .. } =&gt; {
                     <span class="kw">let </span>coordinator = Arc::clone(<span class="kw-2">&amp;</span>coordinator);
                     spawn(<span class="kw">async move </span>{ coordinator.handle_decide(leaf_chain).<span class="kw">await </span>});
-                }
+                },
                 EventType::DaProposal { proposal, .. } =&gt; {
                     <span class="kw">let </span>coordinator = Arc::clone(<span class="kw-2">&amp;</span>coordinator);
                     spawn(<span class="kw">async move </span>{ coordinator.handle_da_proposal(proposal.data).<span class="kw">await </span>});
-                }
+                },
                 EventType::QuorumProposal { proposal, .. } =&gt; {
                     <span class="kw">let </span>coordinator = Arc::clone(<span class="kw-2">&amp;</span>coordinator);
                     spawn(<span class="kw">async move </span>{ coordinator.handle_quorum_proposal(proposal.data).<span class="kw">await </span>});
-                }
-                <span class="kw">_ </span>=&gt; {}
+                },
+                <span class="kw">_ </span>=&gt; {},
             }
         }
     }
@@ -798,14 +798,14 @@ Handling Builder API responses
                     <span class="comment">// If we couldn't find the state because it hasn't yet been created, try again
                     </span>sleep(<span class="self">self</span>.api_timeout / <span class="number">10</span>).<span class="kw">await</span>;
                     <span class="kw">continue</span>;
-                }
+                },
                 BuilderStateLookup::Decided =&gt; {
                     <span class="comment">// If we couldn't find the state because the view has already been decided, we can just return an error
                     </span><span class="macro">tracing::warn!</span>(<span class="string">"Requested a bundle for view we already GCd as decided"</span>,);
                     <span class="kw">return </span><span class="prelude-val">Err</span>(BuildError::Error(
                         <span class="string">"Request for a bundle for a view that has already been decided."</span>.to_owned(),
                     ));
-                }
+                },
             };
 
             <span class="macro">tracing::info!</span>(

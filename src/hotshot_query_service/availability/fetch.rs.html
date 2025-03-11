@@ -124,7 +124,8 @@
 <a href="#123" id="123">123</a>
 <a href="#124" id="124">124</a>
 <a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -136,9 +137,10 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span>futures::future::{BoxFuture, FutureExt};
+</span><span class="kw">use </span>std::{future::IntoFuture, time::Duration};
+
+<span class="kw">use </span>futures::future::{BoxFuture, FutureExt};
 <span class="kw">use </span>snafu::{Error, ErrorCompat, IntoError, NoneError, OptionExt};
-<span class="kw">use </span>std::{future::IntoFuture, time::Duration};
 <span class="kw">use </span>tokio::time::timeout;
 
 <span class="doccomment">/// An in-progress request to fetch some data.

@@ -673,7 +673,10 @@
 <a href="#672" id="672">672</a>
 <a href="#673" id="673">673</a>
 <a href="#674" id="674">674</a>
-<a href="#675" id="675">675</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashMap, io::Write, ops::Deref, sync::Arc, time::Duration};
+
+<span class="kw">use </span>alloy::{
     contract::RawCallBuilder,
     network::{Ethereum, EthereumWallet},
     providers::ProviderBuilder,
@@ -699,7 +702,6 @@
 <span class="kw">use </span>hotshot_contract_adapter::light_client::{
     LightClientConstructorArgs, ParsedLightClientState, ParsedStakeTableState,
 };
-<span class="kw">use </span>std::{collections::HashMap, io::Write, ops::Deref, sync::Arc, time::Duration};
 <span class="kw">use </span>url::Url;
 
 <span class="doccomment">/// Set of predeployed contracts.
@@ -1223,6 +1225,8 @@
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">pub mod </span>test_helpers {
 
+    <span class="kw">use </span>std::sync::Arc;
+
     <span class="kw">use </span>anyhow::Context;
     <span class="kw">use </span>contract_bindings_ethers::{
         erc1967_proxy::ERC1967Proxy,
@@ -1232,11 +1236,9 @@
     };
     <span class="kw">use </span>ethers::prelude::<span class="kw-2">*</span>;
     <span class="kw">use </span>hotshot_contract_adapter::light_client::LightClientConstructorArgs;
-    <span class="kw">use </span>std::sync::Arc;
-
-    <span class="kw">use </span><span class="kw">crate</span>::deployer::link_light_client_contract;
 
     <span class="kw">use super</span>::{Contract, Contracts};
+    <span class="kw">use </span><span class="kw">crate</span>::deployer::link_light_client_contract;
 
     <span class="doccomment">/// Deployment `LightClientMock.sol` as proxy for testing
     </span><span class="kw">pub async fn </span>deploy_light_client_contract_as_proxy_for_test&lt;M: Middleware + <span class="lifetime">'static</span>&gt;(

@@ -843,31 +843,31 @@
                                 <span class="kw">let </span>num_entries = o.get_mut();
                                 <span class="kw-2">*</span>num_entries += <span class="number">1</span>;
                                 <span class="kw-2">*</span>num_entries
-                            }
+                            },
                             std::collections::hash_map::Entry::Vacant(v) =&gt; {
                                 v.insert(<span class="number">1</span>);
                                 <span class="number">1
-                            </span>}
+                            </span>},
                         }
-                    }
+                    },
                     GetRecordOk::FinishedWithNoAdditionalRecord {
                         cache_candidates: <span class="kw">_</span>,
                     } =&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="string">"GetRecord Finished with No Additional Record"</span>);
                         last = <span class="bool-val">true</span>;
                         <span class="number">0
-                    </span>}
+                    </span>},
                 },
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">warn!</span>(<span class="string">"Error in Kademlia query: {:?}"</span>, err);
                     <span class="number">0
-                </span>}
+                </span>},
             },
             <span class="prelude-val">None </span>=&gt; {
                 <span class="comment">// We already finished the query (or it's been cancelled). Do nothing and exit the
                 // function.
                 </span><span class="kw">return</span>;
-            }
+            },
         };
 
         <span class="comment">// if the query has completed and we need to retry
@@ -967,7 +967,7 @@
                     <span class="kw">if </span>query.notify.send(()).is_err() {
                         <span class="macro">warn!</span>(<span class="string">"Put DHT: client channel closed before put record request could be sent"</span>);
                     }
-                }
+                },
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     query.progress = DHTProgress::NotStarted;
                     query.backoff.start_next(<span class="bool-val">false</span>);
@@ -978,7 +978,7 @@
                     );
                     <span class="comment">// push back onto the queue
                     </span><span class="self">self</span>.retry_put(query);
-                }
+                },
             }
         } <span class="kw">else </span>{
             <span class="macro">warn!</span>(<span class="string">"Put DHT: completed DHT query that is no longer tracked."</span>);
@@ -1008,7 +1008,7 @@
                 <span class="kw">if </span>last {
                     <span class="self">self</span>.handle_put_query(record_results, id);
                 }
-            }
+            },
             KademliaEvent::OutboundQueryProgressed {
                 result: QueryResult::GetClosestPeers(r),
                 id: query_id,
@@ -1023,13 +1023,13 @@
                         };
                     };
                     <span class="macro">debug!</span>(<span class="string">"Successfully got closest peers for key {:?}"</span>, key);
-                }
+                },
                 <span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(chan) = <span class="self">self</span>.in_progress_get_closest_peers.remove(<span class="kw-2">&amp;</span>query_id) {
                         <span class="kw">let _</span>: <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt; = chan.send(());
                     };
                     <span class="macro">warn!</span>(<span class="string">"Failed to get closest peers: {:?}"</span>, e);
-                }
+                },
             },
             KademliaEvent::OutboundQueryProgressed {
                 result: QueryResult::GetRecord(record_results),
@@ -1038,7 +1038,7 @@
                 ..
             } =&gt; {
                 <span class="self">self</span>.handle_get_query(store, record_results, id, last);
-            }
+            },
             KademliaEvent::OutboundQueryProgressed {
                 result:
                     QueryResult::Bootstrap(<span class="prelude-val">Ok</span>(BootstrapOk {
@@ -1054,7 +1054,7 @@
                     <span class="macro">debug!</span>(<span class="string">"Bootstrap in progress, {} nodes remaining"</span>, num_remaining);
                 }
                 <span class="kw">return </span><span class="prelude-val">Some</span>(NetworkEvent::IsBootstrapped);
-            }
+            },
             KademliaEvent::OutboundQueryProgressed {
                 result: QueryResult::Bootstrap(<span class="prelude-val">Err</span>(e)),
                 ..
@@ -1064,16 +1064,16 @@
                     <span class="macro">error!</span>(<span class="string">"Failed to bootstrap: {:?}"</span>, e);
                 }
                 <span class="self">self</span>.finish_bootstrap();
-            }
+            },
             KademliaEvent::RoutablePeer { peer, address: <span class="kw">_ </span>} =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Found routable peer {:?}"</span>, peer);
-            }
+            },
             KademliaEvent::PendingRoutablePeer { peer, address: <span class="kw">_ </span>} =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Found pending routable peer {:?}"</span>, peer);
-            }
+            },
             KademliaEvent::UnroutablePeer { peer } =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Found unroutable peer {:?}"</span>, peer);
-            }
+            },
             KademliaEvent::RoutingUpdated {
                 peer: <span class="kw">_</span>,
                 is_new_peer: <span class="kw">_</span>,
@@ -1082,13 +1082,13 @@
                 old_peer: <span class="kw">_</span>,
             } =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Routing table updated"</span>);
-            }
+            },
             e @ KademliaEvent::OutboundQueryProgressed { .. } =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"Not handling dht event {:?}"</span>, e);
-            }
+            },
             e =&gt; {
                 <span class="macro">debug!</span>(<span class="string">"New unhandled swarm event: {e:?}"</span>);
-            }
+            },
         }
         <span class="prelude-val">None
     </span>}

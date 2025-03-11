@@ -790,8 +790,13 @@
 <a href="#789" id="789">789</a>
 <a href="#790" id="790">790</a>
 <a href="#791" id="791">791</a>
-<a href="#792" id="792">792</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>location_details;
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>location_details;
 <span class="kw">pub mod </span>node_identity;
+
+<span class="kw">use </span>std::{collections::HashSet, iter::zip, sync::Arc};
 
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>bitvec::vec::BitVec;
@@ -801,7 +806,7 @@
 <span class="kw">use </span>hotshot_query_service::{
     availability::{QueryableHeader, QueryablePayload},
     explorer::{BlockDetail, ExplorerHeader, Timestamp},
-    Leaf, Resolvable,
+    Leaf2, Resolvable,
 };
 <span class="kw">use </span>hotshot_stake_table::vec_based::StakeTable;
 <span class="kw">use </span>hotshot_types::{
@@ -815,7 +820,6 @@
 };
 <span class="kw">pub use </span>location_details::LocationDetails;
 <span class="kw">pub use </span>node_identity::NodeIdentity;
-<span class="kw">use </span>std::{collections::HashSet, iter::zip, sync::Arc};
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>tokio::{spawn, task::JoinHandle};
 
@@ -844,7 +848,7 @@
             <span class="kw">let </span>stake_table_iter_result = stake_table.try_iter(SnapshotVersion::Head);
             <span class="kw">match </span>stake_table_iter_result {
                 <span class="prelude-val">Ok</span>(into_iter) =&gt; into_iter
-                    .map(|(key, <span class="kw">_</span>, <span class="kw">_</span>)| NodeIdentity::from_public_key(key))
+                    .map(|(key, ..)| NodeIdentity::from_public_key(key))
                     .collect(),
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="macro">vec!</span>[],
             }
@@ -898,10 +902,10 @@
         };
 
         <span class="kw">let </span>missing_node_identity_entries =
-            stake_table_iter.filter(|(key, <span class="kw">_</span>, <span class="kw">_</span>)| !current_identity_set.contains(key));
+            stake_table_iter.filter(|(key, ..)| !current_identity_set.contains(key));
 
         <span class="self">self</span>.node_identity.extend(
-            missing_node_identity_entries.map(|(key, <span class="kw">_</span>, <span class="kw">_</span>)| NodeIdentity::from_public_key(key)),
+            missing_node_identity_entries.map(|(key, ..)| NodeIdentity::from_public_key(key)),
         );
     }
 
@@ -943,7 +947,7 @@
 
 <span class="doccomment">/// [create_block_detail_from_leaf] is a helper function that will build a
 /// [BlockDetail] from the reference to [Leaf].
-</span><span class="kw">pub fn </span>create_block_detail_from_leaf(leaf: <span class="kw-2">&amp;</span>Leaf&lt;SeqTypes&gt;) -&gt; BlockDetail&lt;SeqTypes&gt; {
+</span><span class="kw">pub fn </span>create_block_detail_from_leaf(leaf: <span class="kw-2">&amp;</span>Leaf2&lt;SeqTypes&gt;) -&gt; BlockDetail&lt;SeqTypes&gt; {
     <span class="kw">let </span>block_header = leaf.block_header();
     <span class="kw">let </span>block_payload = <span class="kw-2">&amp;</span>leaf.block_payload().unwrap_or(Payload::empty().<span class="number">0</span>);
 
@@ -992,10 +996,10 @@
         <span class="kw">match </span><span class="self">self </span>{
             ProcessLeafError::BlockSendError(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"error sending block detail to sender: {}"</span>, err)
-            }
+            },
             ProcessLeafError::VotersSendError(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"error sending voters to sender: {}"</span>, err)
-            }
+            },
         }
     }
 }
@@ -1015,7 +1019,7 @@
 /// computed into a [BlockDetail] and sent to the [Sink] so that it can be
 /// processed for real-time considerations.
 </span><span class="kw">async fn </span>process_incoming_leaf&lt;BDSink, BVSink&gt;(
-    leaf: Leaf&lt;SeqTypes&gt;,
+    leaf: Leaf2&lt;SeqTypes&gt;,
     data_state: Arc&lt;RwLock&lt;DataState&gt;&gt;,
     <span class="kw-2">mut </span>block_sender: BDSink,
     <span class="kw-2">mut </span>voters_sender: BVSink,
@@ -1075,7 +1079,7 @@
             // In this case, we just want to determine who voted for this
             // Leaf.
 
-            </span><span class="kw">let </span>(key, <span class="kw">_</span>, <span class="kw">_</span>): (BLSPubKey, <span class="kw">_</span>, <span class="kw">_</span>) = entry;
+            </span><span class="kw">let </span>(key, ..): (BLSPubKey, <span class="kw">_</span>, <span class="kw">_</span>) = entry;
             key
         });
 
@@ -1131,7 +1135,7 @@
         voters_sender: K2,
     ) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>S: Stream&lt;Item = Leaf&lt;SeqTypes&gt;&gt; + Send + Sync + Unpin + <span class="lifetime">'static</span>,
+        </span>S: Stream&lt;Item = Leaf2&lt;SeqTypes&gt;&gt; + Send + Sync + Unpin + <span class="lifetime">'static</span>,
         K1: Sink&lt;BlockDetail&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
         K2: Sink&lt;BitVec&lt;u16&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
     {
@@ -1155,7 +1159,7 @@
         block_sender: BDSink,
         voters_senders: BVSink,
     ) <span class="kw">where
-        </span>S: Stream&lt;Item = Leaf&lt;SeqTypes&gt;&gt; + Unpin,
+        </span>S: Stream&lt;Item = Leaf2&lt;SeqTypes&gt;&gt; + Unpin,
         Header: BlockHeader&lt;SeqTypes&gt; + QueryableHeader&lt;SeqTypes&gt; + ExplorerHeader&lt;SeqTypes&gt;,
         Payload: BlockPayload&lt;SeqTypes&gt;,
         BDSink: Sink&lt;BlockDetail&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Unpin,
@@ -1188,10 +1192,10 @@
                 </span><span class="kw">match </span>err {
                     ProcessLeafError::BlockSendError(<span class="kw">_</span>) =&gt; {
                         <span class="macro">panic!</span>(<span class="string">"ProcessLeafStreamTask: process_incoming_leaf failed, underlying sink is closed, blocks will stagnate: {}"</span>, err)
-                    }
+                    },
                     ProcessLeafError::VotersSendError(<span class="kw">_</span>) =&gt; {
                         <span class="macro">panic!</span>(<span class="string">"ProcessLeafStreamTask: process_incoming_leaf failed, underlying sink is closed, voters will stagnate: {}"</span>, err)
-                    }
+                    },
                 }
             }
         }
@@ -1221,7 +1225,7 @@
         <span class="kw">match </span><span class="self">self </span>{
             ProcessNodeIdentityError::SendError(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"error sending node identity to sender: {}"</span>, err)
-            }
+            },
         }
     }
 }
@@ -1355,20 +1359,22 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::{sync::Arc, time::Duration};
+
+    <span class="kw">use </span>async_lock::RwLock;
+    <span class="kw">use </span>espresso_types::{
+        v0_99::ChainConfig, BlockMerkleTree, FeeMerkleTree, Leaf2, NodeState, ValidatedState,
+    };
+    <span class="kw">use </span>futures::{channel::mpsc, SinkExt, StreamExt};
+    <span class="kw">use </span>hotshot_example_types::node_types::TestVersions;
+    <span class="kw">use </span>hotshot_types::{signature_key::BLSPubKey, traits::signature_key::SignatureKey};
+    <span class="kw">use </span>tokio::time::timeout;
+    <span class="kw">use </span>url::Url;
+
     <span class="kw">use super</span>::{DataState, ProcessLeafStreamTask};
     <span class="kw">use </span><span class="kw">crate</span>::service::data_state::{
         LocationDetails, NodeIdentity, ProcessNodeIdentityStreamTask,
     };
-    <span class="kw">use </span>async_lock::RwLock;
-    <span class="kw">use </span>espresso_types::{
-        v0_99::ChainConfig, BlockMerkleTree, FeeMerkleTree, Leaf, NodeState, ValidatedState,
-    };
-    <span class="kw">use </span>futures::{channel::mpsc, SinkExt, StreamExt};
-    <span class="kw">use </span>hotshot_query_service::testing::mocks::MockVersions;
-    <span class="kw">use </span>hotshot_types::{signature_key::BLSPubKey, traits::signature_key::SignatureKey};
-    <span class="kw">use </span>std::{sync::Arc, time::Duration};
-    <span class="kw">use </span>tokio::time::timeout;
-    <span class="kw">use </span>url::Url;
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_process_leaf_error_debug() {
@@ -1420,7 +1426,7 @@
         };
         <span class="kw">let </span>instance_state = NodeState::mock();
 
-        <span class="kw">let </span>sample_leaf = Leaf::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>validated_state, <span class="kw-2">&amp;</span>instance_state).<span class="kw">await</span>;
+        <span class="kw">let </span>sample_leaf = Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>validated_state, <span class="kw-2">&amp;</span>instance_state).<span class="kw">await</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>leaf_sender = leaf_sender;
         <span class="comment">// We should be able to send a leaf without issue

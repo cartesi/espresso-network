@@ -385,7 +385,13 @@
 <a href="#384" id="384">384</a>
 <a href="#385" id="385">385</a>
 <a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -457,16 +463,21 @@
 //! spawned to fetch missing resources and send them through the [`Notifier`], but these should be
 //! relatively few and rare.
 
-</span><span class="kw">use </span>async_lock::Mutex;
+</span><span class="kw">use </span>std::{
+    future::IntoFuture,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
+
+<span class="kw">use </span>async_lock::Mutex;
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>futures::future::{BoxFuture, FutureExt};
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::{
-    future::IntoFuture,
-    sync::atomic::{AtomicBool, Ordering},
+<span class="kw">use </span>tokio::sync::{
+    mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender},
+    oneshot,
 };
-<span class="kw">use </span>tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-<span class="kw">use </span>tokio::sync::oneshot;
 <span class="kw">use </span>tracing::warn;
 
 <span class="doccomment">/// A predicate on a type `&lt;T&gt;`.
@@ -673,11 +684,12 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::time::Duration;
+
     <span class="kw">use </span>tokio::time::timeout;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::testing::setup_test;
-    <span class="kw">use </span>std::time::Duration;
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_notify_drop() {

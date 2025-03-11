@@ -1046,7 +1046,7 @@
                         local_addr,
                         send_back_addr,
                     }
-                }
+                },
 
                 <span class="comment">// We need to re-map the other events because we changed the type of the upgrade
                 </span>TransportEvent::AddressExpired {
@@ -1065,7 +1065,7 @@
                 },
                 TransportEvent::ListenerError { listener_id, error } =&gt; {
                     TransportEvent::ListenerError { listener_id, error }
-                }
+                },
                 TransportEvent::NewAddress {
                     listener_id,
                     listen_addr,

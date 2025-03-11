@@ -567,7 +567,19 @@
 <a href="#566" id="566">566</a>
 <a href="#567" id="567">567</a>
 <a href="#568" id="568">568</a>
-<a href="#569" id="569">569</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
+<a href="#577" id="577">577</a>
+<a href="#578" id="578">578</a>
+<a href="#579" id="579">579</a>
+<a href="#580" id="580">580</a>
+<a href="#581" id="581">581</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -581,8 +593,16 @@
 
 </span><span class="attr">#![cfg(any(test, feature = <span class="string">"testing"</span>))]
 
-</span><span class="kw">use super</span>::{
+</span><span class="kw">use </span>std::{ops::RangeBounds, sync::Arc};
+
+<span class="kw">use </span>async_lock::Mutex;
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>futures::future::Future;
+<span class="kw">use </span>hotshot_types::{data::VidShare, traits::node_implementation::NodeType};
+
+<span class="kw">use super</span>::{
     pruning::{PruneStorage, PrunedHeightStorage, PrunerCfg, PrunerConfig},
+    sql::MigrateTypes,
     Aggregate, AggregatesStorage, AvailabilityStorage, NodeStorage, UpdateAggregatesStorage,
     UpdateAvailabilityStorage,
 };
@@ -598,14 +618,8 @@
     metrics::PrometheusMetrics,
     node::{SyncStatus, TimeWindowQueryData, WindowStart},
     status::HasMetrics,
-    Header, Payload, QueryError, QueryResult, VidShare,
+    Header, Payload, QueryError, QueryResult,
 };
-<span class="kw">use </span>async_lock::Mutex;
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>futures::future::Future;
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>std::ops::RangeBounds;
-<span class="kw">use </span>std::sync::Arc;
 
 <span class="doccomment">/// A specific action that can be targeted to inject an error.
 </span><span class="attr">#[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -655,8 +669,8 @@
         <span class="kw">match </span><span class="self">self </span>{
             <span class="self">Self</span>::Once(fail_action) <span class="kw">if </span>fail_action.matches(action) =&gt; {
                 <span class="kw-2">*</span><span class="self">self </span>= <span class="self">Self</span>::Never;
-            }
-            <span class="self">Self</span>::Always(fail_action) <span class="kw">if </span>fail_action.matches(action) =&gt; {}
+            },
+            <span class="self">Self</span>::Always(fail_action) <span class="kw">if </span>fail_action.matches(action) =&gt; {},
             <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>(()),
         }
 
@@ -819,6 +833,16 @@
 
     <span class="kw">fn </span>get_pruning_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;PrunerCfg&gt; {
         <span class="self">self</span>.inner.get_pruning_config()
+    }
+}
+
+<span class="attr">#[async_trait]
+</span><span class="kw">impl</span>&lt;S, Types: NodeType&gt; MigrateTypes&lt;Types&gt; <span class="kw">for </span>FailStorage&lt;S&gt;
+<span class="kw">where
+    </span>S: MigrateTypes&lt;Types&gt; + Sync,
+{
+    <span class="kw">async fn </span>migrate_types(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="prelude-val">Ok</span>(())
     }
 }
 

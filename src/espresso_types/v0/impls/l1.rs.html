@@ -1543,7 +1543,16 @@
 <a href="#1542" id="1542">1542</a>
 <a href="#1543" id="1543">1543</a>
 <a href="#1544" id="1544">1544</a>
-<a href="#1545" id="1545">1545</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
+<a href="#1545" id="1545">1545</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    cmp::{min, Ordering},
+    num::NonZeroUsize,
+    pin::Pin,
+    result::Result <span class="kw">as </span>StdResult,
+    sync::Arc,
+    time::Instant,
+};
+
+<span class="kw">use </span>alloy::{
     eips::BlockId,
     hex,
     primitives::{Address, B256, U256},
@@ -1573,14 +1582,6 @@
 <span class="kw">use </span>hotshot_types::traits::metrics::Metrics;
 <span class="kw">use </span>lru::LruCache;
 <span class="kw">use </span>parking_lot::RwLock;
-<span class="kw">use </span>std::result::Result <span class="kw">as </span>StdResult;
-<span class="kw">use </span>std::{
-    cmp::{min, Ordering},
-    num::NonZeroUsize,
-    pin::Pin,
-    sync::Arc,
-    time::Instant,
-};
 <span class="kw">use </span>tokio::{
     spawn,
     sync::{Mutex, MutexGuard, Notify},
@@ -1857,7 +1858,7 @@
                     <span class="comment">// If it's okay, log the success to the status
                     </span>current_transport.status.write().log_success();
                     <span class="prelude-val">Ok</span>(res)
-                }
+                },
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="comment">// Increment the failure metric
                     </span><span class="kw">if let </span><span class="prelude-val">Some</span>(f) = self_clone
@@ -1909,7 +1910,7 @@
                     }
 
                     <span class="prelude-val">Err</span>(err)
-                }
+                },
             }
         })
     }
@@ -2282,12 +2283,12 @@
                     </span>);
                     <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
                     <span class="kw">continue</span>;
-                }
+                },
                 <span class="prelude-val">Err</span>(err) =&gt; {
                     <span class="macro">tracing::warn!</span>(number, <span class="string">"failed to get finalized L1 block: {err:#}"</span>);
                     <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
                     <span class="kw">continue</span>;
-                }
+                },
             };
             <span class="kw">break </span>L1BlockInfo {
                 number: block.header.number,
@@ -2360,7 +2361,7 @@
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">tracing::warn!</span>(from, to, %err, <span class="string">"Fee L1Event Error"</span>);
                             sleep(retry_delay).<span class="kw">await</span>;
-                        }
+                        },
                     }
                 }
             }
@@ -2480,7 +2481,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span>std::ops::Add;
+    <span class="kw">use </span>std::{ops::Add, time::Duration};
 
     <span class="kw">use </span>ethers::{
         middleware::SignerMiddleware,
@@ -2493,7 +2494,6 @@
     <span class="kw">use </span>hotshot_contract_adapter::stake_table::NodeInfoJf;
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
-    <span class="kw">use </span>std::time::Duration;
     <span class="kw">use </span>time::OffsetDateTime;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;

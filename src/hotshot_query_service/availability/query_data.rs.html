@@ -742,7 +742,8 @@
 <a href="#741" id="741">741</a>
 <a href="#742" id="742">742</a>
 <a href="#743" id="743">743</a>
-<a href="#744" id="744">744</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -754,12 +755,12 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use crate</span>::{types::HeightIndexed, Header, Metadata, Payload, Transaction, VidCommon, VidShare};
+</span><span class="kw">use </span>std::fmt::Debug;
+
 <span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>hotshot_types::{
-    data::Leaf,
-    data::VidCommitment,
-    simple_certificate::QuorumCertificate,
+    data::{Leaf, Leaf2, VidCommitment, VidShare},
+    simple_certificate::QuorumCertificate2,
     traits::{
         <span class="self">self</span>,
         block_contents::{BlockHeader, GENESIS_VID_NUM_STORAGE_NODES},
@@ -771,10 +772,11 @@
 <span class="kw">use </span>jf_vid::VidScheme;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Deserialize, Serialize};
 <span class="kw">use </span>snafu::{ensure, Snafu};
-<span class="kw">use </span>std::fmt::Debug;
 
-<span class="kw">pub type </span>LeafHash&lt;Types&gt; = Commitment&lt;Leaf&lt;Types&gt;&gt;;
-<span class="kw">pub type </span>QcHash&lt;Types&gt; = Commitment&lt;QuorumCertificate&lt;Types&gt;&gt;;
+<span class="kw">use crate</span>::{types::HeightIndexed, Header, Metadata, Payload, Transaction, VidCommon};
+
+<span class="kw">pub type </span>LeafHash&lt;Types&gt; = Commitment&lt;Leaf2&lt;Types&gt;&gt;;
+<span class="kw">pub type </span>QcHash&lt;Types&gt; = Commitment&lt;QuorumCertificate2&lt;Types&gt;&gt;;
 
 <span class="doccomment">/// A block hash is the hash of the block header.
 ///
@@ -937,8 +939,8 @@
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(bound = <span class="string">""</span>)]
 </span><span class="kw">pub struct </span>LeafQueryData&lt;Types: NodeType&gt; {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) leaf: Leaf&lt;Types&gt;,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) qc: QuorumCertificate&lt;Types&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) leaf: Leaf2&lt;Types&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) qc: QuorumCertificate2&lt;Types&gt;,
 }
 
 <span class="attr">#[derive(Clone, Debug, Snafu)]
@@ -957,13 +959,13 @@
     ///
     /// Fails with an [`InconsistentLeafError`] if `qc` does not reference `leaf`.
     </span><span class="kw">pub fn </span>new(
-        <span class="kw-2">mut </span>leaf: Leaf&lt;Types&gt;,
-        qc: QuorumCertificate&lt;Types&gt;,
+        <span class="kw-2">mut </span>leaf: Leaf2&lt;Types&gt;,
+        qc: QuorumCertificate2&lt;Types&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, InconsistentLeafError&lt;Types&gt;&gt; {
         <span class="comment">// TODO: Replace with the new `commit` function in HotShot. Add an `upgrade_lock` parameter
         // and a `HsVer: Versions` bound, then call `leaf.commit(upgrade_lock).await`. This will
         // require updates in callers and relevant types as well.
-        </span><span class="kw">let </span>leaf_commit = &lt;Leaf&lt;Types&gt; <span class="kw">as </span>Committable&gt;::commit(<span class="kw-2">&amp;</span>leaf);
+        </span><span class="kw">let </span>leaf_commit = &lt;Leaf2&lt;Types&gt; <span class="kw">as </span>Committable&gt;::commit(<span class="kw-2">&amp;</span>leaf);
         <span class="macro">ensure!</span>(
             qc.data.leaf_commit == leaf_commit,
             InconsistentLeafSnafu {
@@ -984,16 +986,16 @@
         instance_state: <span class="kw-2">&amp;</span>Types::InstanceState,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            leaf: Leaf::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>,
-            qc: QuorumCertificate::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>,
+            leaf: Leaf2::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>,
+            qc: QuorumCertificate2::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>,
         }
     }
 
-    <span class="kw">pub fn </span>leaf(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Leaf&lt;Types&gt; {
+    <span class="kw">pub fn </span>leaf(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Leaf2&lt;Types&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.leaf
     }
 
-    <span class="kw">pub fn </span>qc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>QuorumCertificate&lt;Types&gt; {
+    <span class="kw">pub fn </span>qc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>QuorumCertificate2&lt;Types&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.qc
     }
 
@@ -1005,7 +1007,7 @@
         <span class="comment">// TODO: Replace with the new `commit` function in HotShot. Add an `upgrade_lock` parameter
         // and a `HsVer: Versions` bound, then call `leaf.commit(upgrade_lock).await`. This will
         // require updates in callers and relevant types as well.
-        </span>&lt;Leaf&lt;Types&gt; <span class="kw">as </span>Committable&gt;::commit(<span class="kw-2">&amp;</span><span class="self">self</span>.leaf)
+        </span>&lt;Leaf2&lt;Types&gt; <span class="kw">as </span>Committable&gt;::commit(<span class="kw-2">&amp;</span><span class="self">self</span>.leaf)
     }
 
     <span class="kw">pub fn </span>block_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BlockHash&lt;Types&gt; {
@@ -1070,7 +1072,7 @@
     </span><span class="kw">where
         </span>Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
     {
-        <span class="kw">let </span>leaf = Leaf::&lt;Types&gt;::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>;
+        <span class="kw">let </span>leaf = Leaf2::&lt;Types&gt;::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>;
         <span class="self">Self</span>::new(leaf.block_header().clone(), leaf.block_payload().unwrap())
     }
 
@@ -1227,7 +1229,7 @@
             .disperse(bytes)
             .unwrap();
 
-        <span class="self">Self</span>::new(leaf.block_header().clone(), <span class="prelude-val">Some</span>(disperse.common))
+        <span class="self">Self</span>::new(leaf.block_header().clone(), VidCommon::V0(disperse.common))
     }
 
     <span class="kw">pub fn </span>block_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BlockHash&lt;Types&gt; {

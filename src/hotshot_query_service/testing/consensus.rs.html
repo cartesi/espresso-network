@@ -355,7 +355,9 @@
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
 <a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -367,16 +369,8 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span><span class="kw">super</span>::mocks::{MockMembership, MockNodeImpl, MockTransaction, MockTypes, MockVersions};
-<span class="kw">use crate</span>::{
-    availability::{AvailabilityDataSource, UpdateAvailabilityData},
-    data_source::{FileSystemDataSource, SqlDataSource, VersionedDataSource},
-    fetching::provider::NoFetching,
-    node::NodeDataSource,
-    status::{StatusDataSource, UpdateStatusData},
-    task::BackgroundTask,
-    SignatureKey,
-};
+</span><span class="kw">use </span>std::{fmt::Display, num::NonZeroUsize, str::FromStr, sync::Arc, time::Duration};
+
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::{
@@ -395,21 +389,29 @@
 <span class="kw">use </span>hotshot_testing::block_builder::{SimpleBuilderImplementation, TestBuilderImplementation};
 <span class="kw">use </span>hotshot_types::{
     consensus::ConsensusMetricsValue,
+    epoch_membership::EpochMembershipCoordinator,
     light_client::StateKeyPair,
     signature_key::BLSPubKey,
     traits::{election::Membership, network::Topic, signature_key::SignatureKey <span class="kw">as _</span>},
     HotShotConfig, PeerConfig,
 };
-<span class="kw">use </span>std::num::NonZeroUsize;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>std::time::Duration;
-<span class="kw">use </span>std::{fmt::Display, str::FromStr};
 <span class="kw">use </span>tokio::{
     runtime::Handle,
     task::{block_in_place, yield_now},
 };
 <span class="kw">use </span>tracing::{info_span, Instrument};
 <span class="kw">use </span>url::Url;
+
+<span class="kw">use </span><span class="kw">super</span>::mocks::{MockMembership, MockNodeImpl, MockTransaction, MockTypes, MockVersions};
+<span class="kw">use crate</span>::{
+    availability::{AvailabilityDataSource, UpdateAvailabilityData},
+    data_source::{FileSystemDataSource, SqlDataSource, VersionedDataSource},
+    fetching::provider::NoFetching,
+    node::NodeDataSource,
+    status::{StatusDataSource, UpdateStatusData},
+    task::BackgroundTask,
+    SignatureKey,
+};
 
 <span class="kw">struct </span>MockNode&lt;D: DataSourceLifeCycle&gt; {
     hotshot: SystemContextHandle&lt;MockTypes, MockNodeImpl, MockVersions&gt;,
@@ -538,13 +540,15 @@
                         ));
 
                         <span class="kw">let </span>hs_storage: TestStorage&lt;MockTypes&gt; = TestStorage::default();
+                        <span class="kw">let </span>memberships =
+                            EpochMembershipCoordinator::new(membership, config.epoch_height);
 
                         <span class="kw">let </span>hotshot = SystemContext::init(
                             pub_keys[node_id],
                             priv_key,
                             node_id <span class="kw">as </span>u64,
                             config,
-                            membership,
+                            memberships,
                             network,
                             HotShotInitializer::from_genesis::&lt;MockVersions&gt;(
                                 TestInstanceState::default(),

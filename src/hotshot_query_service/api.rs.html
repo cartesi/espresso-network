@@ -69,8 +69,8 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span>std::fs;
-<span class="kw">use </span>std::path::Path;
+</span><span class="kw">use </span>std::{fs, path::Path};
+
 <span class="kw">use </span>tide_disco::api::{Api, ApiError};
 <span class="kw">use </span>toml::{map::Entry, Value};
 <span class="kw">use </span>vbs::version::StaticVersionType;
@@ -99,7 +99,7 @@
                 Entry::Occupied(<span class="kw-2">mut </span>entry) =&gt; merge_toml(entry.get_mut(), value),
                 Entry::Vacant(entry) =&gt; {
                     entry.insert(value);
-                }
+                },
             }
         }
     }

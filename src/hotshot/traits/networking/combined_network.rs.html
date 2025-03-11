@@ -502,7 +502,8 @@
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
 <a href="#503" id="503">503</a>
-<a href="#504" id="504">504</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -536,6 +537,7 @@
         COMBINED_NETWORK_MIN_PRIMARY_FAILURES, COMBINED_NETWORK_PRIMARY_CHECK_INTERVAL,
     },
     data::ViewNumber,
+    epoch_membership::EpochMembershipCoordinator,
     traits::{
         network::{BroadcastDelay, ConnectedNetwork, Topic},
         node_implementation::NodeType,
@@ -688,12 +690,12 @@
                             <span class="comment">// The primary fail counter reached 0, the primary is now considered up
                             </span>primary_down.store(<span class="bool-val">false</span>, Ordering::Relaxed);
                             <span class="macro">debug!</span>(<span class="string">"primary_fail_counter reached zero, primary_down set to false"</span>);
-                        }
+                        },
                         c =&gt; {
                             <span class="comment">// Decrement the primary fail counter
                             </span>primary_fail_counter.store(c - <span class="number">1</span>, Ordering::Relaxed);
                             <span class="macro">debug!</span>(<span class="string">"primary_fail_counter set to {:?}"</span>, c - <span class="number">1</span>);
-                        }
+                        },
                     }
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
@@ -714,7 +716,7 @@
                     c <span class="kw">if </span>c &lt; COMBINED_NETWORK_PRIMARY_CHECK_INTERVAL =&gt; {
                         <span class="comment">// Just increment the 'no delay counter'
                         </span><span class="self">self</span>.no_delay_counter.store(c + <span class="number">1</span>, Ordering::Relaxed);
-                    }
+                    },
                     <span class="kw">_ </span>=&gt; {
                         <span class="comment">// The 'no delay counter' reached the threshold
                         </span><span class="macro">debug!</span>(
@@ -729,7 +731,7 @@
                         <span class="comment">// The primary fail counter is set just below the threshold to delay the next message
                         </span><span class="self">self</span>.primary_fail_counter
                             .store(COMBINED_NETWORK_MIN_PRIMARY_FAILURES, Ordering::Relaxed);
-                    }
+                    },
                 }
             }
             <span class="comment">// Send the message
@@ -975,7 +977,7 @@
         <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>,
         view: u64,
         epoch: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-        membership: Arc&lt;RwLock&lt;T::Membership&gt;&gt;,
+        membership: EpochMembershipCoordinator&lt;T&gt;,
     ) <span class="kw">where
         </span>T: NodeType&lt;SignatureKey = TYPES::SignatureKey&gt; + <span class="lifetime">'a</span>,
     {

@@ -640,7 +640,11 @@
 <a href="#639" id="639">639</a>
 <a href="#640" id="640">640</a>
 <a href="#641" id="641">641</a>
-<a href="#642" id="642">642</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -662,15 +666,17 @@
 //! fully synced with the entire history of the chain. However, the node will _eventually_ sync and
 //! return the expected counts.
 
-</span><span class="kw">use crate</span>::{api::load_api, QueryError};
+</span><span class="kw">use </span>std::{fmt::Display, ops::Bound, path::PathBuf};
+
 <span class="kw">use </span>derive_more::From;
 <span class="kw">use </span>futures::FutureExt;
 <span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>snafu::{ResultExt, Snafu};
-<span class="kw">use </span>std::{fmt::Display, ops::Bound, path::PathBuf};
 <span class="kw">use </span>tide_disco::{api::ApiError, method::ReadState, Api, RequestError, StatusCode};
 <span class="kw">use </span>vbs::version::StaticVersionType;
+
+<span class="kw">use crate</span>::{api::load_api, QueryError};
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>data_source;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>query_data;
@@ -843,6 +849,26 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>std::time::Duration;
+
+    <span class="kw">use </span>async_lock::RwLock;
+    <span class="kw">use </span>committable::Committable;
+    <span class="kw">use </span>futures::{FutureExt, StreamExt};
+    <span class="kw">use </span>hotshot_types::{
+        data::{VidDisperseShare, VidShare},
+        event::{EventType, LeafInfo},
+        traits::{
+            block_contents::{BlockHeader, BlockPayload},
+            EncodeBytes,
+        },
+    };
+    <span class="kw">use </span>portpicker::pick_unused_port;
+    <span class="kw">use </span>surf_disco::Client;
+    <span class="kw">use </span>tempfile::TempDir;
+    <span class="kw">use </span>tide_disco::{App, Error <span class="kw">as _</span>};
+    <span class="kw">use </span>tokio::time::sleep;
+    <span class="kw">use </span>toml::toml;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         data_source::ExtensibleDataSource,
@@ -852,26 +878,8 @@
             mocks::{mock_transaction, MockBase, MockTypes},
             setup_test,
         },
-        ApiState, Error, Header, VidShare,
+        ApiState, Error, Header,
     };
-    <span class="kw">use </span>async_lock::RwLock;
-    <span class="kw">use </span>committable::Committable;
-    <span class="kw">use </span>futures::{FutureExt, StreamExt};
-    <span class="kw">use </span>hotshot_types::{
-        data::VidDisperseShare,
-        event::{EventType, LeafInfo},
-        traits::{
-            block_contents::{BlockHeader, BlockPayload},
-            EncodeBytes,
-        },
-    };
-    <span class="kw">use </span>portpicker::pick_unused_port;
-    <span class="kw">use </span>std::time::Duration;
-    <span class="kw">use </span>surf_disco::Client;
-    <span class="kw">use </span>tempfile::TempDir;
-    <span class="kw">use </span>tide_disco::{App, Error <span class="kw">as _</span>};
-    <span class="kw">use </span>tokio::time::sleep;
-    <span class="kw">use </span>toml::toml;
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_api() {

@@ -548,8 +548,7 @@
 <a href="#547" id="547">547</a>
 <a href="#548" id="548">548</a>
 <a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a>
-<a href="#551" id="551">551</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#550" id="550">550</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -564,11 +563,6 @@
     time::{Duration, Instant},
 };
 
-<span class="kw">use crate</span>::{
-    events::HotShotEvent,
-    helpers::{broadcast_event, parent_leaf_and_state, wait_for_next_epoch_qc},
-    quorum_proposal::{QuorumProposalTaskState, UpgradeLock, Versions},
-};
 <span class="kw">use </span>anyhow::{ensure, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>async_broadcast::{Receiver, Sender};
 <span class="kw">use </span>async_lock::RwLock;
@@ -577,11 +571,11 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::{CommitmentAndMetadata, OuterConsensus},
     data::{Leaf2, QuorumProposal2, QuorumProposalWrapper, VidDisperse, ViewChangeEvidence2},
+    epoch_membership::EpochMembership,
     message::Proposal,
     simple_certificate::{QuorumCertificate2, UpgradeCertificate},
     traits::{
         block_contents::BlockHeader,
-        election::Membership,
         node_implementation::{NodeImplementation, NodeType},
         signature_key::SignatureKey,
     },
@@ -592,6 +586,12 @@
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <span class="kw">use </span>tracing::instrument;
 <span class="kw">use </span>vbs::version::StaticVersionType;
+
+<span class="kw">use crate</span>::{
+    events::HotShotEvent,
+    helpers::{broadcast_event, parent_leaf_and_state, wait_for_next_epoch_qc},
+    quorum_proposal::{QuorumProposalTaskState, UpgradeLock, Versions},
+};
 
 <span class="doccomment">/// Proposal dependency types. These types represent events that precipitate a proposal.
 </span><span class="attr">#[derive(PartialEq, Debug)]
@@ -633,7 +633,7 @@
     </span><span class="kw">pub </span>instance_state: Arc&lt;TYPES::InstanceState&gt;,
 
     <span class="doccomment">/// Membership for Quorum Certs/votes
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership: EpochMembership&lt;TYPES&gt;,
 
     <span class="doccomment">/// Our public key
     </span><span class="kw">pub </span>public_key: TYPES::SignatureKey,
@@ -679,11 +679,10 @@
     ) -&gt; <span class="prelude-ty">Option</span>&lt;QuorumCertificate2&lt;TYPES&gt;&gt; {
         <span class="kw">while let </span><span class="prelude-val">Ok</span>(event) = rx.recv_direct().<span class="kw">await </span>{
             <span class="kw">if let </span>HotShotEvent::HighQcRecv(qc, _sender) = event.as_ref() {
-                <span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_stake_table = membership_reader.stake_table(qc.data.epoch);
-                <span class="kw">let </span>membership_success_threshold =
-                    membership_reader.success_threshold(qc.data.epoch);
-                drop(membership_reader);
+                <span class="kw">let </span>prev_epoch = qc.data.epoch;
+                <span class="kw">let </span>epoch_membership = <span class="self">self</span>.membership.get_new_epoch(prev_epoch).<span class="kw">await</span>.ok()<span class="question-mark">?</span>;
+                <span class="kw">let </span>membership_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
+                <span class="kw">let </span>membership_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
 
                 <span class="kw">if </span>qc
                     .is_valid_cert(
@@ -759,7 +758,7 @@
         <span class="kw">let </span>(parent_leaf, state) = parent_leaf_and_state(
             <span class="kw-2">&amp;</span><span class="self">self</span>.sender,
             <span class="kw-2">&amp;</span><span class="self">self</span>.receiver,
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+            <span class="self">self</span>.membership.coordinator.clone(),
             <span class="self">self</span>.public_key.clone(),
             <span class="self">self</span>.private_key.clone(),
             OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.inner_consensus)),
@@ -860,16 +859,15 @@
             <span class="self">self</span>.epoch_height,
         );
 
+        <span class="kw">let </span>epoch_membership = <span class="self">self
+            </span>.membership
+            .coordinator
+            .membership_for_epoch(epoch)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="comment">// Make sure we are the leader for the view and epoch.
         // We might have ended up here because we were in the epoch transition.
-        </span><span class="kw">if </span><span class="self">self
-            </span>.membership
-            .read()
-            .<span class="kw">await
-            </span>.leader(<span class="self">self</span>.view_number, epoch)<span class="question-mark">?
-            </span>!= <span class="self">self</span>.public_key
-        {
-            <span class="macro">tracing::debug!</span>(
+        </span><span class="kw">if </span>epoch_membership.leader(<span class="self">self</span>.view_number).<span class="kw">await</span><span class="question-mark">? </span>!= <span class="self">self</span>.public_key {
+            <span class="macro">tracing::warn!</span>(
                 <span class="string">"We are not the leader in the epoch for which we are about to propose. Do not send the quorum proposal."
             </span>);
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
@@ -984,22 +982,22 @@
                         block_view: <span class="kw-2">*</span>view,
                         auction_result: auction_result.clone(),
                     });
-                }
+                },
                 HotShotEvent::Qc2Formed(cert) =&gt; <span class="kw">match </span>cert {
                     either::Right(timeout) =&gt; {
                         timeout_certificate = <span class="prelude-val">Some</span>(timeout.clone());
-                    }
+                    },
                     either::Left(qc) =&gt; {
                         parent_qc = <span class="prelude-val">Some</span>(qc.clone());
-                    }
+                    },
                 },
                 HotShotEvent::ViewSyncFinalizeCertificateRecv(cert) =&gt; {
                     view_sync_finalize_cert = <span class="prelude-val">Some</span>(cert.clone());
-                }
+                },
                 HotShotEvent::VidDisperseSend(share, <span class="kw">_</span>) =&gt; {
                     vid_share = <span class="prelude-val">Some</span>(share.clone());
-                }
-                <span class="kw">_ </span>=&gt; {}
+                },
+                <span class="kw">_ </span>=&gt; {},
             }
         }
 

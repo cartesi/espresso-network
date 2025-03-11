@@ -413,7 +413,22 @@
 <a href="#412" id="412">412</a>
 <a href="#413" id="413">413</a>
 <a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -429,7 +444,6 @@
 };
 
 <span class="kw">use </span>async_broadcast::{Receiver, Sender};
-<span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot_task::{
     dependency::{Dependency, EventDependency},
@@ -437,10 +451,10 @@
 };
 <span class="kw">use </span>hotshot_types::{
     consensus::OuterConsensus,
+    epoch_membership::EpochMembershipCoordinator,
     simple_vote::HasEpoch,
     traits::{
         block_contents::BlockHeader,
-        election::Membership,
         network::{ConnectedNetwork, DataRequest, RequestKind},
         node_implementation::{NodeImplementation, NodeType},
         signature_key::SignatureKey,
@@ -461,7 +475,7 @@
 <span class="kw">use crate</span>::{events::HotShotEvent, helpers::broadcast_event};
 
 <span class="doccomment">/// Amount of time to try for a request before timing out.
-</span><span class="kw">pub const </span>REQUEST_TIMEOUT: Duration = Duration::from_millis(<span class="number">2000</span>);
+</span><span class="kw">pub const </span>REQUEST_TIMEOUT: Duration = Duration::from_millis(<span class="number">500</span>);
 
 <span class="doccomment">/// Long running task which will request information after a proposal is received.
 /// The task will wait a it's `delay` and then send a request iteratively to peers
@@ -483,7 +497,7 @@
     </span><span class="kw">pub </span>delay: Duration,
 
     <span class="doccomment">/// Membership (Used here only for DA)
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// This nodes public key
     </span><span class="kw">pub </span>public_key: TYPES::SignatureKey,
@@ -529,22 +543,27 @@
             HotShotEvent::QuorumProposalValidated(proposal, <span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span>prop_view = proposal.data.view_number();
                 <span class="kw">let </span>prop_epoch = proposal.data.epoch();
-                <span class="kw">let </span>next_epoch = prop_epoch.map(|epoch| epoch + <span class="number">1</span>);
 
                 <span class="comment">// Request VID share only if:
                 // 1. we are part of the current epoch or
                 // 2. we are part of the next epoch and this is a proposal for the last block.
-                </span><span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-                <span class="kw">if </span>!membership_reader.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key, prop_epoch)
-                    &amp;&amp; (!membership_reader.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key, next_epoch)
-                        || !is_last_block_in_epoch(
+                </span><span class="kw">let </span>membership_reader = <span class="self">self
+                    </span>.membership_coordinator
+                    .membership_for_epoch(prop_epoch)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+                <span class="kw">if </span>!membership_reader.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key).<span class="kw">await
+                    </span>&amp;&amp; (!membership_reader
+                        .next_epoch()
+                        .<span class="kw">await</span><span class="question-mark">?
+                        </span>.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key)
+                        .<span class="kw">await
+                        </span>|| !is_last_block_in_epoch(
                             proposal.data.block_header().block_number(),
                             <span class="self">self</span>.epoch_height,
                         ))
                 {
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
-                drop(membership_reader);
 
                 <span class="kw">let </span>consensus_reader = <span class="self">self</span>.consensus.read().<span class="kw">await</span>;
                 <span class="kw">let </span>maybe_vid_share = consensus_reader
@@ -558,14 +577,14 @@
                         .<span class="kw">await</span>;
                 }
                 <span class="prelude-val">Ok</span>(())
-            }
+            },
             HotShotEvent::ViewChange(view, <span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span>view = <span class="kw-2">*</span>view;
                 <span class="kw">if </span>view &gt; <span class="self">self</span>.view {
                     <span class="self">self</span>.view = view;
                 }
                 <span class="prelude-val">Ok</span>(())
-            }
+            },
             <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(()),
         }
     }
@@ -628,16 +647,27 @@
         <span class="kw">let </span>public_key = <span class="self">self</span>.public_key.clone();
 
         <span class="comment">// Get the committee members for the view and the leader, if applicable
-        </span><span class="kw">let </span>membership_reader = <span class="self">self</span>.membership.read().<span class="kw">await</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>da_committee_for_view = membership_reader.da_committee_members(view, epoch);
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(leader) = membership_reader.leader(view, epoch) {
+        </span><span class="kw">let </span>membership_reader = <span class="kw">match </span><span class="self">self
+            </span>.membership_coordinator
+            .membership_for_epoch(epoch)
+            .<span class="kw">await
+        </span>{
+            <span class="prelude-val">Ok</span>(m) =&gt; m,
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="macro">tracing::warn!</span>(e.message);
+                <span class="kw">return</span>;
+            },
+        };
+        <span class="kw">let </span><span class="kw-2">mut </span>da_committee_for_view = membership_reader.da_committee_members(view).<span class="kw">await</span>;
+        <span class="kw">if let </span><span class="prelude-val">Ok</span>(leader) = membership_reader.leader(view).<span class="kw">await </span>{
             da_committee_for_view.insert(leader);
         }
 
         <span class="comment">// Get committee members for view
         </span><span class="kw">let </span><span class="kw-2">mut </span>recipients: Vec&lt;TYPES::SignatureKey&gt; = membership_reader
-            .da_committee_members(view, epoch)
-            .into_iter()
+            .da_committee_members(view)
+            .<span class="kw">await
+            </span>.into_iter()
             .collect();
         drop(membership_reader);
 

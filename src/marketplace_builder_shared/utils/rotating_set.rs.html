@@ -133,7 +133,8 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashSet,
     hash::Hash,
     mem,
@@ -211,10 +212,11 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>std::thread::sleep;
+
     <span class="kw">use </span>tracing_test::traced_test;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span>std::thread::sleep;
 
     <span class="attr">#[test]
     #[traced_test]

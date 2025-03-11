@@ -380,13 +380,6 @@
 <a href="#379" id="379">379</a>
 <a href="#380" id="380">380</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
-<span class="kw">use super</span>::{
-    api::{<span class="self">self</span>, data_source::DataSourceOptions},
-    context::SequencerContext,
-    init_node, network,
-    options::{Modules, Options},
-    persistence, Genesis, L1Params, NetworkParams,
-};
 <span class="kw">use </span>clap::Parser;
 <span class="attr">#[allow(unused_imports)]
 </span><span class="kw">use </span>espresso_types::{
@@ -397,6 +390,14 @@
 <span class="kw">use </span>hotshot::MarketplaceConfig;
 <span class="kw">use </span>hotshot_types::traits::{metrics::NoMetrics, node_implementation::Versions};
 <span class="kw">use </span>vbs::version::StaticVersionType;
+
+<span class="kw">use super</span>::{
+    api::{<span class="self">self</span>, data_source::DataSourceOptions},
+    context::SequencerContext,
+    init_node, network,
+    options::{Modules, Options},
+    persistence, Genesis, L1Params, NetworkParams,
+};
 
 <span class="kw">pub async fn </span>main() -&gt; anyhow::Result&lt;()&gt; {
     <span class="kw">let </span>opt = Options::parse();
@@ -428,7 +429,7 @@
                 SequencerVersions::&lt;FeeVersion, MarketplaceVersion&gt;::new(),
             )
             .<span class="kw">await
-        </span>}
+        </span>},
         <span class="attr">#[cfg(feature = <span class="string">"fee"</span>)]
         </span>(FeeVersion::VERSION, <span class="kw">_</span>) =&gt; {
             run(
@@ -438,7 +439,7 @@
                 SequencerVersions::&lt;FeeVersion, V0_0&gt;::new(),
             )
             .<span class="kw">await
-        </span>}
+        </span>},
         <span class="attr">#[cfg(feature = <span class="string">"marketplace"</span>)]
         </span>(MarketplaceVersion::VERSION, <span class="kw">_</span>) =&gt; {
             run(
@@ -448,7 +449,7 @@
                 SequencerVersions::&lt;MarketplaceVersion, V0_0&gt;::new(),
             )
             .<span class="kw">await
-        </span>}
+        </span>},
         <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(
             <span class="string">"Invalid base ({base}) and upgrade ({upgrade}) versions specified in the toml file."
         </span>),
@@ -617,7 +618,7 @@
                     .boxed()
                 })
                 .<span class="kw">await</span><span class="question-mark">?
-        </span>}
+        </span>},
         <span class="prelude-val">None </span>=&gt; {
             init_node(
                 genesis,
@@ -633,7 +634,7 @@
                 proposal_fetcher_config,
             )
             .<span class="kw">await</span><span class="question-mark">?
-        </span>}
+        </span>},
     };
 
     <span class="prelude-val">Ok</span>(ctx)
@@ -643,23 +644,22 @@
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>std::time::Duration;
 
-    <span class="kw">use </span>tokio::spawn;
-
-    <span class="kw">use crate</span>::{
-        api::options::Http,
-        genesis::{L1Finalized, StakeTableConfig},
-        persistence::fs,
-        SequencerApiVersion,
-    };
     <span class="kw">use </span>espresso_types::{MockSequencerVersions, PubKey};
     <span class="kw">use </span>hotshot_types::{light_client::StateKeyPair, traits::signature_key::SignatureKey};
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
     <span class="kw">use </span>surf_disco::{error::ClientError, Client, Url};
     <span class="kw">use </span>tempfile::TempDir;
+    <span class="kw">use </span>tokio::spawn;
     <span class="kw">use </span>vbs::version::Version;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use crate</span>::{
+        api::options::Http,
+        genesis::{L1Finalized, StakeTableConfig},
+        persistence::fs,
+        SequencerApiVersion,
+    };
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_startup_before_orchestrator() {

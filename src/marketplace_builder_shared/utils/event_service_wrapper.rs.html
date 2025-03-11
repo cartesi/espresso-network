@@ -310,23 +310,15 @@
 <a href="#309" id="309">309</a>
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a>
-<a href="#314" id="314">314</a>
-<a href="#315" id="315">315</a>
-<a href="#316" id="316">316</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{future::Future, pin::Pin};
-
-<span class="kw">use </span>std::time::Duration;
+<a href="#312" id="312">312</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{future::Future, pin::Pin, time::Duration};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>either::Either::{<span class="self">self</span>, Left, Right};
-<span class="kw">use </span>futures::stream::unfold;
-<span class="kw">use </span>futures::{Stream, StreamExt};
+<span class="kw">use </span>futures::{stream::unfold, Stream, StreamExt};
 <span class="kw">use </span>hotshot::types::Event;
 <span class="kw">use </span>hotshot_events_service::events::Error <span class="kw">as </span>EventStreamError;
 <span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>surf_disco::client::HealthStatus;
-<span class="kw">use </span>surf_disco::Client;
+<span class="kw">use </span>surf_disco::{client::HealthStatus, Client};
 <span class="kw">use </span>tokio::time::{sleep, timeout};
 <span class="kw">use </span>tracing::{error, warn};
 <span class="kw">use </span>url::Url;
@@ -374,7 +366,7 @@
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">break</span>,
                     <span class="prelude-val">Err</span>(err) =&gt; {
                         <span class="macro">tracing::debug!</span>(<span class="question-mark">?</span>err, <span class="string">"Healthcheck failed, retrying"</span>);
-                    }
+                    },
                 }
                 sleep(<span class="self">Self</span>::RETRY_PERIOD).<span class="kw">await</span>;
             }
@@ -406,18 +398,18 @@
                         <span class="kw">match </span>tokio::time::timeout(<span class="self">Self</span>::MAX_WAIT_PERIOD, connection.next()).<span class="kw">await </span>{
                             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(event))) =&gt; {
                                 <span class="kw">return </span><span class="prelude-val">Some</span>((event, this));
-                            }
+                            },
                             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err))) =&gt; {
                                 <span class="macro">warn!</span>(<span class="question-mark">?</span>err, <span class="string">"Error in event stream"</span>);
                                 <span class="kw">continue</span>;
-                            }
+                            },
                             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
                                 <span class="macro">warn!</span>(<span class="string">"Event stream ended, attempting reconnection"</span>);
                                 <span class="kw">let </span>fut = <span class="self">Self</span>::connect_inner(this.api_url.clone());
                                 <span class="kw">let _ </span>=
                                     std::mem::replace(<span class="kw-2">&amp;mut </span>this.connection, Right(Box::pin(fut)));
                                 <span class="kw">continue</span>;
-                            }
+                            },
                             <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
                                 <span class="comment">// Timeout occurred, reconnect
                                 </span><span class="macro">warn!</span>(<span class="string">"Timeout waiting for next event; reconnecting"</span>);
@@ -425,21 +417,21 @@
                                 <span class="kw">let _ </span>=
                                     std::mem::replace(<span class="kw-2">&amp;mut </span>this.connection, Right(Box::pin(fut)));
                                 <span class="kw">continue</span>;
-                            }
+                            },
                         }
-                    }
+                    },
                     Right(reconnection) =&gt; <span class="kw">match </span>reconnection.<span class="kw">await </span>{
                         <span class="prelude-val">Ok</span>(connection) =&gt; {
                             <span class="kw">let _ </span>= std::mem::replace(<span class="kw-2">&amp;mut </span>this.connection, Left(connection));
                             <span class="kw">continue</span>;
-                        }
+                        },
                         <span class="prelude-val">Err</span>(err) =&gt; {
                             <span class="macro">error!</span>(<span class="question-mark">?</span>err, <span class="string">"Error while reconnecting, will retry in a while"</span>);
                             sleep(<span class="self">Self</span>::RETRY_PERIOD).<span class="kw">await</span>;
                             <span class="kw">let </span>fut = <span class="self">Self</span>::connect_inner(this.api_url.clone());
                             <span class="kw">let _ </span>= std::mem::replace(<span class="kw-2">&amp;mut </span>this.connection, Right(Box::pin(fut)));
                             <span class="kw">continue</span>;
-                        }
+                        },
                     },
                 }
             }

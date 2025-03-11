@@ -273,7 +273,12 @@
 <a href="#272" id="272">272</a>
 <a href="#273" id="273">273</a>
 <a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a></pre></div><pre class="rust"><code><span class="doccomment">/// Utilities for loading an initial permissioned stake table from a toml file.
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{fs, path::Path, sync::Arc, time::Duration};
+
+<span class="doccomment">/// Utilities for loading an initial permissioned stake table from a toml file.
 ///
 /// The initial stake table is passed to the permissioned stake table contract
 /// on deployment.
@@ -291,8 +296,6 @@
 <span class="kw">use </span>hotshot_contract_adapter::stake_table::{bls_jf_to_sol, NodeInfoJf};
 <span class="kw">use </span>hotshot_types::network::PeerConfigKeys;
 <span class="kw">use </span>url::Url;
-
-<span class="kw">use </span>std::{fs, path::Path, sync::Arc, time::Duration};
 
 <span class="doccomment">/// A stake table config stored in a file
 </span><span class="attr">#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
@@ -419,11 +422,14 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span><span class="kw">crate</span>::stake_table::{PermissionedStakeTableConfig, PermissionedStakeTableUpdate};
-    <span class="kw">use </span><span class="kw">crate</span>::test_utils::setup_test;
     <span class="kw">use </span>hotshot::types::{BLSPubKey, SignatureKey};
     <span class="kw">use </span>hotshot_types::{light_client::StateKeyPair, network::PeerConfigKeys};
     <span class="kw">use </span>toml::toml;
+
+    <span class="kw">use crate</span>::{
+        stake_table::{PermissionedStakeTableConfig, PermissionedStakeTableUpdate},
+        test_utils::setup_test,
+    };
 
     <span class="kw">fn </span>assert_peer_config_eq(p1: <span class="kw-2">&amp;</span>PeerConfigKeys&lt;BLSPubKey&gt;, p2: <span class="kw-2">&amp;</span>PeerConfigKeys&lt;BLSPubKey&gt;) {
         <span class="macro">assert_eq!</span>(p1.stake_table_key, p2.stake_table_key);

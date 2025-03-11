@@ -308,10 +308,10 @@
                         <span class="macro">tracing::warn!</span>(<span class="string">"Error posting signature to the relay server: {:?}"</span>, error);
                     }
                 }
-            }
+            },
             <span class="prelude-val">Err</span>(err) =&gt; {
                 <span class="macro">tracing::error!</span>(<span class="string">"Error generating light client state: {:?}"</span>, err)
-            }
+            },
         }
     }
 

@@ -54,7 +54,12 @@
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#56" id="56">56</a>
+<a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -73,7 +78,7 @@
 /// If the namespace table is invalid, it returns a default single entry namespace table.
 /// For details, please refer to `block/full_payload/ns_table.rs` in the `sequencer` crate.
 </span><span class="attr">#[allow(clippy::single_range_in_vec_init)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>parse_ns_table(payload_byte_len: usize, bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; Vec&lt;Range&lt;usize&gt;&gt; {
+</span><span class="kw">pub fn </span>parse_ns_table(payload_byte_len: usize, bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; Vec&lt;Range&lt;usize&gt;&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="macro">vec!</span>[];
     <span class="kw">if </span>bytes.len() &lt; NUM_NSS_BYTE_LEN
         || (bytes.len() - NUM_NSS_BYTE_LEN) % (NS_OFFSET_BYTE_LEN + NS_ID_BYTE_LEN) != <span class="number">0
@@ -85,8 +90,13 @@
     <span class="kw">if </span>num_entries
         != bytes.len().saturating_sub(NUM_NSS_BYTE_LEN)
             / NS_ID_BYTE_LEN.saturating_add(NS_OFFSET_BYTE_LEN)
+        || (num_entries == <span class="number">0 </span>&amp;&amp; payload_byte_len != <span class="number">0</span>)
     {
         <span class="macro">tracing::warn!</span>(<span class="string">"Failed to parse the metadata as namespace table. Use a single namespace table instead."</span>);
+        <span class="kw">return </span><span class="macro">vec!</span>[(<span class="number">0</span>..payload_byte_len)];
+    }
+    <span class="comment">// Early breaks for empty payload and namespace table
+    </span><span class="kw">if </span>num_entries == <span class="number">0 </span>{
         <span class="kw">return </span><span class="macro">vec!</span>[(<span class="number">0</span>..payload_byte_len)];
     }
     <span class="kw">let </span><span class="kw-2">mut </span>l = <span class="number">0</span>;

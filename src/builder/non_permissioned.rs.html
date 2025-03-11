@@ -305,9 +305,7 @@
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a>
-<a href="#308" id="308">308</a>
-<a href="#309" id="309">309</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::VecDeque, num::NonZeroUsize, time::Duration};
+<a href="#307" id="307">307</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::VecDeque, num::NonZeroUsize, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_broadcast::broadcast;
@@ -331,10 +329,8 @@
         node_implementation::Versions, EncodeBytes,
     },
 };
-<span class="kw">use </span>marketplace_builder_shared::block::ParentBlockReferences;
-<span class="kw">use </span>marketplace_builder_shared::utils::EventServiceStream;
+<span class="kw">use </span>marketplace_builder_shared::{block::ParentBlockReferences, utils::EventServiceStream};
 <span class="kw">use </span>sequencer::{catchup::StatePeers, L1Params, SequencerApiVersion};
-<span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tide_disco::Url;
 <span class="kw">use </span>tokio::spawn;
 <span class="kw">use </span>vbs::version::StaticVersionType;

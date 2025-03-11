@@ -376,7 +376,10 @@
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -390,27 +393,30 @@
 
 </span><span class="doccomment">//! Availability storage implementation for a database query engine.
 
-</span><span class="kw">use super</span>::{
-    <span class="kw">super</span>::transaction::{query, Transaction, TransactionMode},
-    QueryBuilder, BLOCK_COLUMNS, LEAF_COLUMNS, PAYLOAD_COLUMNS, PAYLOAD_METADATA_COLUMNS,
-    VID_COMMON_COLUMNS, VID_COMMON_METADATA_COLUMNS,
-};
-<span class="kw">use </span><span class="kw">crate</span>::data_source::storage::sql::sqlx::Row;
-<span class="kw">use crate</span>::{
-    availability::{
-        BlockId, BlockQueryData, LeafId, LeafQueryData, PayloadQueryData, QueryableHeader,
-        QueryablePayload, TransactionHash, TransactionQueryData, VidCommonQueryData,
-    },
-    data_source::storage::{AvailabilityStorage, PayloadMetadata, VidCommonMetadata},
-    types::HeightIndexed,
-    ErrorSnafu, Header, MissingSnafu, Payload, QueryError, QueryResult,
-};
+</span><span class="kw">use </span>std::ops::RangeBounds;
+
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::stream::{StreamExt, TryStreamExt};
 <span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
 <span class="kw">use </span>snafu::OptionExt;
 <span class="kw">use </span>sqlx::FromRow;
-<span class="kw">use </span>std::ops::RangeBounds;
+
+<span class="kw">use super</span>::{
+    <span class="kw">super</span>::transaction::{query, Transaction, TransactionMode},
+    QueryBuilder, BLOCK_COLUMNS, LEAF_COLUMNS, PAYLOAD_COLUMNS, PAYLOAD_METADATA_COLUMNS,
+    VID_COMMON_COLUMNS, VID_COMMON_METADATA_COLUMNS,
+};
+<span class="kw">use crate</span>::{
+    availability::{
+        BlockId, BlockQueryData, LeafId, LeafQueryData, PayloadQueryData, QueryableHeader,
+        QueryablePayload, TransactionHash, TransactionQueryData, VidCommonQueryData,
+    },
+    data_source::storage::{
+        sql::sqlx::Row, AvailabilityStorage, PayloadMetadata, VidCommonMetadata,
+    },
+    types::HeightIndexed,
+    ErrorSnafu, Header, MissingSnafu, Payload, QueryError, QueryResult,
+};
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl</span>&lt;Mode, Types&gt; AvailabilityStorage&lt;Types&gt; <span class="kw">for </span>Transaction&lt;Mode&gt;
@@ -428,7 +434,7 @@
         };
         <span class="kw">let </span>row = query
             .query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-                <span class="string">"SELECT {LEAF_COLUMNS} FROM leaf WHERE {where_clause}"
+                <span class="string">"SELECT {LEAF_COLUMNS} FROM leaf2 WHERE {where_clause}"
             </span>))
             .fetch_one(<span class="self">self</span>.as_mut())
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -512,7 +518,7 @@
         </span><span class="kw">let </span>sql = <span class="macro">format!</span>(
             <span class="string">"SELECT {VID_COMMON_COLUMNS}
               FROM header AS h
-              JOIN vid AS v ON h.height = v.height
+              JOIN vid2 AS v ON h.height = v.height
               WHERE {where_clause}
               ORDER BY h.height
               LIMIT 1"
@@ -533,7 +539,7 @@
         </span><span class="kw">let </span>sql = <span class="macro">format!</span>(
             <span class="string">"SELECT {VID_COMMON_METADATA_COLUMNS}
               FROM header AS h
-              JOIN vid AS v ON h.height = v.height
+              JOIN vid2 AS v ON h.height = v.height
               WHERE {where_clause}
               ORDER BY h.height ASC
               LIMIT 1"
@@ -552,7 +558,7 @@
     {
         <span class="kw">let </span><span class="kw-2">mut </span>query = QueryBuilder::default();
         <span class="kw">let </span>where_clause = query.bounds_to_where_clause(range, <span class="string">"height"</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>sql = <span class="macro">format!</span>(<span class="string">"SELECT {LEAF_COLUMNS} FROM leaf {where_clause} ORDER BY height"</span>);
+        <span class="kw">let </span>sql = <span class="macro">format!</span>(<span class="string">"SELECT {LEAF_COLUMNS} FROM leaf2 {where_clause} ORDER BY height"</span>);
         <span class="prelude-val">Ok</span>(query
             .query(<span class="kw-2">&amp;</span>sql)
             .fetch(<span class="self">self</span>.as_mut())
@@ -674,7 +680,7 @@
         <span class="kw">let </span>sql = <span class="macro">format!</span>(
             <span class="string">"SELECT {VID_COMMON_COLUMNS}
               FROM header AS h
-              JOIN vid AS v ON h.height = v.height
+              JOIN vid2 AS v ON h.height = v.height
               {where_clause}
               ORDER BY h.height"
         </span>);
@@ -699,7 +705,7 @@
         <span class="kw">let </span>sql = <span class="macro">format!</span>(
             <span class="string">"SELECT {VID_COMMON_METADATA_COLUMNS}
               FROM header AS h
-              JOIN vid AS v ON h.height = v.height
+              JOIN vid2 AS v ON h.height = v.height
               {where_clause}
               ORDER BY h.height ASC"
         </span>);
@@ -745,7 +751,7 @@
 
     <span class="kw">async fn </span>first_available_leaf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, from: u64) -&gt; QueryResult&lt;LeafQueryData&lt;Types&gt;&gt; {
         <span class="kw">let </span>row = query(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-            <span class="string">"SELECT {LEAF_COLUMNS} FROM leaf WHERE height &gt;= $1 ORDER BY height LIMIT 1"
+            <span class="string">"SELECT {LEAF_COLUMNS} FROM leaf2 WHERE height &gt;= $1 ORDER BY height LIMIT 1"
         </span>))
         .bind(from <span class="kw">as </span>i64)
         .fetch_one(<span class="self">self</span>.as_mut())

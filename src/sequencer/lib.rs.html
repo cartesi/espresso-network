@@ -1200,7 +1200,11 @@
 <a href="#1199" id="1199">1199</a>
 <a href="#1200" id="1200">1200</a>
 <a href="#1201" id="1201">1201</a>
-<a href="#1202" id="1202">1202</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>api;
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>api;
 <span class="kw">pub mod </span>catchup;
 <span class="kw">pub mod </span>context;
 <span class="kw">pub mod </span>genesis;
@@ -1215,45 +1219,44 @@
 
 <span class="kw">mod </span>message_compat_tests;
 
+<span class="kw">use </span>std::sync::Arc;
+
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>catchup::StatePeers;
 <span class="kw">use </span>context::SequencerContext;
-<span class="kw">use </span>espresso_types::EpochCommittees;
 <span class="kw">use </span>espresso_types::{
-    traits::EventConsumer, BackoffParams, L1ClientOptions, NodeState, PubKey, SeqTypes,
-    SolverAuctionResultsProvider, ValidatedState,
+    traits::EventConsumer, BackoffParams, EpochCommittees, L1ClientOptions, NodeState, PubKey,
+    SeqTypes, SolverAuctionResultsProvider, ValidatedState,
 };
 <span class="kw">use </span>ethers_conv::ToAlloy;
 <span class="kw">use </span>genesis::L1Finalized;
-<span class="kw">use </span>proposal_fetcher::ProposalFetcherConfig;
-<span class="kw">use </span>std::sync::Arc;
-<span class="kw">use </span>tokio::select;
 <span class="comment">// Should move `STAKE_TABLE_CAPACITY` in the sequencer repo when we have variate stake table support
 </span><span class="kw">use </span>hotshot_libp2p_networking::network::behaviours::dht::store::persistent::DhtNoPersistence;
 <span class="kw">use </span>libp2p::Multiaddr;
 <span class="kw">use </span>network::libp2p::split_off_peer_id;
 <span class="kw">use </span>options::Identity;
+<span class="kw">use </span>proposal_fetcher::ProposalFetcherConfig;
 <span class="kw">use </span>state_signature::static_stake_table_commitment;
+<span class="kw">use </span>tokio::select;
 <span class="kw">use </span>tracing::info;
 <span class="kw">use </span>url::Url;
 <span class="kw">pub mod </span>persistence;
 <span class="kw">pub mod </span>state;
+<span class="kw">use </span>std::{fmt::Debug, marker::PhantomData, time::Duration};
+
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>espresso_types::v0::traits::SequencerPersistence;
 <span class="kw">pub use </span>genesis::Genesis;
-<span class="kw">use </span>hotshot::traits::implementations::{
-    derive_libp2p_multiaddr, CombinedNetworks, GossipConfig, Libp2pNetwork, RequestResponseConfig,
-};
 <span class="kw">use </span>hotshot::{
     traits::implementations::{
-        derive_libp2p_peer_id, CdnMetricsValue, CdnTopic, KeyPair, MemoryNetwork, PushCdnNetwork,
-        WrappedSignatureKey,
+        derive_libp2p_multiaddr, derive_libp2p_peer_id, CdnMetricsValue, CdnTopic,
+        CombinedNetworks, GossipConfig, KeyPair, Libp2pNetwork, MemoryNetwork, PushCdnNetwork,
+        RequestResponseConfig, WrappedSignatureKey,
     },
     types::SignatureKey,
     MarketplaceConfig,
 };
-<span class="kw">use </span>hotshot_orchestrator::client::get_complete_config;
-<span class="kw">use </span>hotshot_orchestrator::client::OrchestratorClient;
+<span class="kw">use </span>hotshot_orchestrator::client::{get_complete_config, OrchestratorClient};
 <span class="kw">use </span>hotshot_types::{
     data::ViewNumber,
     light_client::{StateKeyPair, StateSignKey},
@@ -1268,8 +1271,6 @@
 };
 <span class="kw">pub use </span>options::Options;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::time::Duration;
-<span class="kw">use </span>std::{fmt::Debug, marker::PhantomData};
 <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType};
 <span class="kw">pub mod </span>network;
 
@@ -1514,7 +1515,7 @@
         (<span class="prelude-val">Some</span>(config), <span class="kw">_</span>) =&gt; {
             <span class="macro">tracing::info!</span>(<span class="string">"loaded network config from storage, rejoining existing network"</span>);
             (config, <span class="bool-val">false</span>)
-        }
+        },
         <span class="comment">// If we were told to fetch the config from an already-started peer, do so.
         </span>(<span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(peers)) =&gt; {
             <span class="macro">tracing::info!</span>(<span class="question-mark">?</span>peers, <span class="string">"loading network config from peers"</span>);
@@ -1532,7 +1533,7 @@
             );
             persistence.save_config(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
             (config, <span class="bool-val">false</span>)
-        }
+        },
         <span class="comment">// Otherwise, this is a fresh network; load from the orchestrator.
         </span>(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>) =&gt; {
             <span class="macro">tracing::info!</span>(<span class="string">"loading network config from orchestrator"</span>);
@@ -1558,7 +1559,7 @@
             persistence.save_config(<span class="kw-2">&amp;</span>config).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="macro">tracing::error!</span>(<span class="string">"all nodes connected"</span>);
             (config, <span class="bool-val">true</span>)
-        }
+        },
     };
 
     <span class="kw">if let </span><span class="prelude-val">Some</span>(upgrade) = genesis.upgrades.get(<span class="kw-2">&amp;</span>V::Upgrade::VERSION) {
@@ -1653,7 +1654,7 @@
                     ethers::types::U256::from(timestamp.unix_timestamp()).to_alloy(),
                 )
                 .<span class="kw">await
-        </span>}
+        </span>},
     };
 
     <span class="kw">let </span><span class="kw-2">mut </span>genesis_state = ValidatedState {
@@ -1792,20 +1793,22 @@
     <span class="kw">use </span>hotshot_testing::block_builder::{
         BuilderTask, SimpleBuilderImplementation, TestBuilderImplementation,
     };
-    <span class="kw">use </span>hotshot_types::traits::network::Topic;
-    <span class="kw">use </span>hotshot_types::traits::signature_key::StakeTableEntryType;
     <span class="kw">use </span>hotshot_types::{
         event::LeafInfo,
         light_client::{CircuitField, StateKeyPair, StateVerKey},
-        traits::signature_key::BuilderSignatureKey,
-        traits::{block_contents::BlockHeader, metrics::NoMetrics, stake_table::StakeTableScheme},
+        traits::{
+            block_contents::BlockHeader,
+            metrics::NoMetrics,
+            network::Topic,
+            signature_key::{BuilderSignatureKey, StakeTableEntryType},
+            stake_table::StakeTableScheme,
+        },
         HotShotConfig, PeerConfig,
     };
     <span class="kw">use </span>marketplace_builder_core::{
         hooks::NoHooks,
         service::{BuilderConfig, GlobalState},
     };
-
     <span class="kw">use </span>portpicker::pick_unused_port;
     <span class="kw">use </span>tokio::spawn;
     <span class="kw">use </span>vbs::version::Version;
@@ -1944,6 +1947,11 @@
             <span class="kw">let </span>upgrade = upgrades.get(<span class="kw-2">&amp;</span>&lt;V <span class="kw">as </span>Versions&gt;::Upgrade::VERSION).unwrap();
             upgrade.set_hotshot_config_parameters(<span class="kw-2">&amp;mut </span><span class="self">self</span>.config);
             <span class="self">self</span>.upgrades = upgrades;
+            <span class="self">self
+        </span>}
+
+        <span class="kw">pub fn </span>epoch_height(<span class="kw-2">mut </span><span class="self">self</span>, epoch_height: u64) -&gt; <span class="self">Self </span>{
+            <span class="self">self</span>.config.epoch_height = epoch_height;
             <span class="self">self
         </span>}
 

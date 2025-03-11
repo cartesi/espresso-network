@@ -3025,32 +3025,32 @@
                 <span class="self">Self</span>::DepositTooSmall(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::ERC1967InvalidImplementation(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::ERC1967NonPayable(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::FailedInnerCall(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::FunctionDoesNotExist(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::InvalidInitialization(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::InvalidUserAddress(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::NoFunctionCalled(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::NotInitializing(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::OwnableInvalidOwner(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::OwnableUnauthorizedAccount(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::UUPSUnauthorizedCallContext(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::UUPSUnsupportedProxiableUUID(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::RevertString(s) =&gt; ::ethers::core::abi::AbiEncode::encode(s),
             }
         }
@@ -3061,70 +3061,70 @@
                 [<span class="number">0x08</span>, <span class="number">0xc3</span>, <span class="number">0x79</span>, <span class="number">0xa0</span>] =&gt; <span class="bool-val">true</span>,
                 <span class="kw">_ if </span>selector == &lt;AddressEmptyCode <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;DepositTooLarge <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;DepositTooSmall <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;ERC1967InvalidImplementation <span class="kw">as </span>::ethers::contract::EthError&gt;::selector(
                     ) =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;ERC1967NonPayable <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;FailedInnerCall <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;FunctionDoesNotExist <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;InvalidInitialization <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;InvalidUserAddress <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;NoFunctionCalled <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector == &lt;NotInitializing <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt; {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;OwnableInvalidOwner <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;OwnableUnauthorizedAccount <span class="kw">as </span>::ethers::contract::EthError&gt;::selector() =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;UUPSUnauthorizedCallContext <span class="kw">as </span>::ethers::contract::EthError&gt;::selector(
                     ) =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ if </span>selector
                     == &lt;UUPSUnsupportedProxiableUUID <span class="kw">as </span>::ethers::contract::EthError&gt;::selector(
                     ) =&gt;
                 {
                     <span class="bool-val">true
-                </span>}
+                </span>},
                 <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
             }
         }
@@ -3137,7 +3137,7 @@
                 <span class="self">Self</span>::DepositTooSmall(element) =&gt; ::core::fmt::Display::fmt(element, f),
                 <span class="self">Self</span>::ERC1967InvalidImplementation(element) =&gt; {
                     ::core::fmt::Display::fmt(element, f)
-                }
+                },
                 <span class="self">Self</span>::ERC1967NonPayable(element) =&gt; ::core::fmt::Display::fmt(element, f),
                 <span class="self">Self</span>::FailedInnerCall(element) =&gt; ::core::fmt::Display::fmt(element, f),
                 <span class="self">Self</span>::FunctionDoesNotExist(element) =&gt; ::core::fmt::Display::fmt(element, f),
@@ -3150,7 +3150,7 @@
                 <span class="self">Self</span>::UUPSUnauthorizedCallContext(element) =&gt; ::core::fmt::Display::fmt(element, f),
                 <span class="self">Self</span>::UUPSUnsupportedProxiableUUID(element) =&gt; {
                     ::core::fmt::Display::fmt(element, f)
-                }
+                },
                 <span class="self">Self</span>::RevertString(s) =&gt; ::core::fmt::Display::fmt(s, f),
             }
         }
@@ -3708,7 +3708,7 @@
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::UpgradeInterfaceVersion(element) =&gt; {
                     ::ethers::core::abi::AbiEncode::encode(element)
-                }
+                },
                 <span class="self">Self</span>::Balances(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::Deposit(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),
                 <span class="self">Self</span>::GetVersion(element) =&gt; ::ethers::core::abi::AbiEncode::encode(element),

@@ -222,12 +222,8 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::explorer::traits::{ExplorerHeader, ExplorerTransaction};
-<span class="kw">use </span><span class="kw">crate</span>::merklized_state::MerklizedState;
-<span class="kw">use crate</span>::{
-    availability::{QueryableHeader, QueryablePayload},
-    types::HeightIndexed,
-};
+</span><span class="kw">use </span>std::ops::Range;
+
 <span class="kw">use </span>hotshot::traits::{
     election::static_committee::StaticCommittee, implementations::MemoryNetwork, NodeImplementation,
 };
@@ -237,21 +233,25 @@
     state_types::{TestInstanceState, TestValidatedState},
     storage_types::TestStorage,
 };
-<span class="kw">use </span>hotshot_types::traits::node_implementation::Versions;
 <span class="kw">use </span>hotshot_types::{
     data::{QuorumProposal, ViewNumber},
     signature_key::BLSPubKey,
-    traits::node_implementation::NodeType,
+    traits::node_implementation::{NodeType, Versions},
 };
-
 <span class="kw">use </span>jf_merkle_tree::{
     prelude::{MerkleProof, Sha3Digest, Sha3Node},
     universal_merkle_tree::UniversalMerkleTree,
     ForgetableMerkleTreeScheme, ForgetableUniversalMerkleTreeScheme,
 };
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>std::ops::Range;
 <span class="kw">use </span>vbs::version::StaticVersion;
+
+<span class="kw">use crate</span>::{
+    availability::{QueryableHeader, QueryablePayload},
+    explorer::traits::{ExplorerHeader, ExplorerTransaction},
+    merklized_state::MerklizedState,
+    types::HeightIndexed,
+};
 
 <span class="kw">pub type </span>MockHeader = TestBlockHeader;
 <span class="kw">pub type </span>MockPayload = TestBlockPayload;

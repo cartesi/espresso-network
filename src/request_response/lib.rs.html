@@ -1386,24 +1386,24 @@
                         <span class="prelude-val">Err</span>(e) =&gt; {
                             <span class="macro">warn!</span>(<span class="string">"Received invalid message: {e}"</span>);
                             <span class="kw">continue</span>;
-                        }
+                        },
                     };
 
                     <span class="comment">// Handle the message based on its type
                     </span><span class="kw">match </span>message {
                         Message::Request(request_message) =&gt; {
                             <span class="self">self</span>.handle_request(request_message, <span class="kw-2">&amp;mut </span>outgoing_responses);
-                        }
+                        },
                         Message::Response(response_message) =&gt; {
                             <span class="self">self</span>.handle_response(response_message, <span class="kw-2">&amp;mut </span>incoming_responses);
-                        }
+                        },
                     }
-                }
+                },
                 <span class="comment">// An error here means the receiver will _NEVER_ receive any more messages
                 </span><span class="prelude-val">Err</span>(e) =&gt; {
                     <span class="macro">error!</span>(<span class="string">"Request/response receive task exited: {e}"</span>);
                     <span class="kw">return</span>;
-                }
+                },
             }
         }
     }

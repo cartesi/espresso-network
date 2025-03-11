@@ -135,12 +135,13 @@
 
 </span><span class="attr">#![cfg(feature = <span class="string">"metrics-data-source"</span>)]
 
-</span><span class="kw">use crate</span>::{
+</span><span class="kw">use </span>async_trait::async_trait;
+
+<span class="kw">use crate</span>::{
     metrics::PrometheusMetrics,
     status::{HasMetrics, StatusDataSource},
     QueryError, QueryResult,
 };
-<span class="kw">use </span>async_trait::async_trait;
 
 <span class="doccomment">/// A minimal data source for the status API provided in this crate, with no persistent storage.
 ///
@@ -205,9 +206,10 @@
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">mod </span>impl_testable_data_source {
+    <span class="kw">use </span>hotshot::types::Event;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span><span class="kw">crate</span>::testing::{consensus::DataSourceLifeCycle, mocks::MockTypes};
-    <span class="kw">use </span>hotshot::types::Event;
 
     <span class="attr">#[async_trait]
     </span><span class="kw">impl </span>DataSourceLifeCycle <span class="kw">for </span>MetricsDataSource {
@@ -235,9 +237,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::status_tests;
-    <span class="kw">use </span><span class="kw">super</span>::MetricsDataSource;
-
+    <span class="kw">use super</span>::{<span class="kw">super</span>::status_tests, MetricsDataSource};
     <span class="comment">// For some reason this is the only way to import the macro defined in another module of this
     // crate.
     </span><span class="kw">use crate</span>::<span class="kw-2">*</span>;

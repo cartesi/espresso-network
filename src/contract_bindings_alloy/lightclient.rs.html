@@ -9511,7 +9511,142 @@
 <a href="#9510" id="9510">9510</a>
 <a href="#9511" id="9511">9511</a>
 <a href="#9512" id="9512">9512</a>
-<a href="#9513" id="9513">9513</a></pre></div><pre class="rust"><code><span class="doccomment">///Module containing a contract's types and functions.
+<a href="#9513" id="9513">9513</a>
+<a href="#9514" id="9514">9514</a>
+<a href="#9515" id="9515">9515</a>
+<a href="#9516" id="9516">9516</a>
+<a href="#9517" id="9517">9517</a>
+<a href="#9518" id="9518">9518</a>
+<a href="#9519" id="9519">9519</a>
+<a href="#9520" id="9520">9520</a>
+<a href="#9521" id="9521">9521</a>
+<a href="#9522" id="9522">9522</a>
+<a href="#9523" id="9523">9523</a>
+<a href="#9524" id="9524">9524</a>
+<a href="#9525" id="9525">9525</a>
+<a href="#9526" id="9526">9526</a>
+<a href="#9527" id="9527">9527</a>
+<a href="#9528" id="9528">9528</a>
+<a href="#9529" id="9529">9529</a>
+<a href="#9530" id="9530">9530</a>
+<a href="#9531" id="9531">9531</a>
+<a href="#9532" id="9532">9532</a>
+<a href="#9533" id="9533">9533</a>
+<a href="#9534" id="9534">9534</a>
+<a href="#9535" id="9535">9535</a>
+<a href="#9536" id="9536">9536</a>
+<a href="#9537" id="9537">9537</a>
+<a href="#9538" id="9538">9538</a>
+<a href="#9539" id="9539">9539</a>
+<a href="#9540" id="9540">9540</a>
+<a href="#9541" id="9541">9541</a>
+<a href="#9542" id="9542">9542</a>
+<a href="#9543" id="9543">9543</a>
+<a href="#9544" id="9544">9544</a>
+<a href="#9545" id="9545">9545</a>
+<a href="#9546" id="9546">9546</a>
+<a href="#9547" id="9547">9547</a>
+<a href="#9548" id="9548">9548</a>
+<a href="#9549" id="9549">9549</a>
+<a href="#9550" id="9550">9550</a>
+<a href="#9551" id="9551">9551</a>
+<a href="#9552" id="9552">9552</a>
+<a href="#9553" id="9553">9553</a>
+<a href="#9554" id="9554">9554</a>
+<a href="#9555" id="9555">9555</a>
+<a href="#9556" id="9556">9556</a>
+<a href="#9557" id="9557">9557</a>
+<a href="#9558" id="9558">9558</a>
+<a href="#9559" id="9559">9559</a>
+<a href="#9560" id="9560">9560</a>
+<a href="#9561" id="9561">9561</a>
+<a href="#9562" id="9562">9562</a>
+<a href="#9563" id="9563">9563</a>
+<a href="#9564" id="9564">9564</a>
+<a href="#9565" id="9565">9565</a>
+<a href="#9566" id="9566">9566</a>
+<a href="#9567" id="9567">9567</a>
+<a href="#9568" id="9568">9568</a>
+<a href="#9569" id="9569">9569</a>
+<a href="#9570" id="9570">9570</a>
+<a href="#9571" id="9571">9571</a>
+<a href="#9572" id="9572">9572</a>
+<a href="#9573" id="9573">9573</a>
+<a href="#9574" id="9574">9574</a>
+<a href="#9575" id="9575">9575</a>
+<a href="#9576" id="9576">9576</a>
+<a href="#9577" id="9577">9577</a>
+<a href="#9578" id="9578">9578</a>
+<a href="#9579" id="9579">9579</a>
+<a href="#9580" id="9580">9580</a>
+<a href="#9581" id="9581">9581</a>
+<a href="#9582" id="9582">9582</a>
+<a href="#9583" id="9583">9583</a>
+<a href="#9584" id="9584">9584</a>
+<a href="#9585" id="9585">9585</a>
+<a href="#9586" id="9586">9586</a>
+<a href="#9587" id="9587">9587</a>
+<a href="#9588" id="9588">9588</a>
+<a href="#9589" id="9589">9589</a>
+<a href="#9590" id="9590">9590</a>
+<a href="#9591" id="9591">9591</a>
+<a href="#9592" id="9592">9592</a>
+<a href="#9593" id="9593">9593</a>
+<a href="#9594" id="9594">9594</a>
+<a href="#9595" id="9595">9595</a>
+<a href="#9596" id="9596">9596</a>
+<a href="#9597" id="9597">9597</a>
+<a href="#9598" id="9598">9598</a>
+<a href="#9599" id="9599">9599</a>
+<a href="#9600" id="9600">9600</a>
+<a href="#9601" id="9601">9601</a>
+<a href="#9602" id="9602">9602</a>
+<a href="#9603" id="9603">9603</a>
+<a href="#9604" id="9604">9604</a>
+<a href="#9605" id="9605">9605</a>
+<a href="#9606" id="9606">9606</a>
+<a href="#9607" id="9607">9607</a>
+<a href="#9608" id="9608">9608</a>
+<a href="#9609" id="9609">9609</a>
+<a href="#9610" id="9610">9610</a>
+<a href="#9611" id="9611">9611</a>
+<a href="#9612" id="9612">9612</a>
+<a href="#9613" id="9613">9613</a>
+<a href="#9614" id="9614">9614</a>
+<a href="#9615" id="9615">9615</a>
+<a href="#9616" id="9616">9616</a>
+<a href="#9617" id="9617">9617</a>
+<a href="#9618" id="9618">9618</a>
+<a href="#9619" id="9619">9619</a>
+<a href="#9620" id="9620">9620</a>
+<a href="#9621" id="9621">9621</a>
+<a href="#9622" id="9622">9622</a>
+<a href="#9623" id="9623">9623</a>
+<a href="#9624" id="9624">9624</a>
+<a href="#9625" id="9625">9625</a>
+<a href="#9626" id="9626">9626</a>
+<a href="#9627" id="9627">9627</a>
+<a href="#9628" id="9628">9628</a>
+<a href="#9629" id="9629">9629</a>
+<a href="#9630" id="9630">9630</a>
+<a href="#9631" id="9631">9631</a>
+<a href="#9632" id="9632">9632</a>
+<a href="#9633" id="9633">9633</a>
+<a href="#9634" id="9634">9634</a>
+<a href="#9635" id="9635">9635</a>
+<a href="#9636" id="9636">9636</a>
+<a href="#9637" id="9637">9637</a>
+<a href="#9638" id="9638">9638</a>
+<a href="#9639" id="9639">9639</a>
+<a href="#9640" id="9640">9640</a>
+<a href="#9641" id="9641">9641</a>
+<a href="#9642" id="9642">9642</a>
+<a href="#9643" id="9643">9643</a>
+<a href="#9644" id="9644">9644</a>
+<a href="#9645" id="9645">9645</a>
+<a href="#9646" id="9646">9646</a>
+<a href="#9647" id="9647">9647</a>
+<a href="#9648" id="9648">9648</a></pre></div><pre class="rust"><code><span class="doccomment">///Module containing a contract's types and functions.
 /**
 
 ```solidity
@@ -9529,8 +9664,9 @@ library BN254 {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>BN254 {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>BaseField(alloy::sol_types::private::primitives::aliases::U256);
@@ -9769,8 +9905,10 @@ library BN254 {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>G1Point {
-        <span class="kw">pub </span>x: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>y: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>x: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>y: &lt;BaseField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -9793,7 +9931,7 @@ library BN254 {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -10073,37 +10211,61 @@ library IPlonkVerifier {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>IPlonkVerifier {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="doccomment">/**```solidity
     struct PlonkProof { BN254.G1Point wire0; BN254.G1Point wire1; BN254.G1Point wire2; BN254.G1Point wire3; BN254.G1Point wire4; BN254.G1Point prodPerm; BN254.G1Point split0; BN254.G1Point split1; BN254.G1Point split2; BN254.G1Point split3; BN254.G1Point split4; BN254.G1Point zeta; BN254.G1Point zetaOmega; BN254.ScalarField wireEval0; BN254.ScalarField wireEval1; BN254.ScalarField wireEval2; BN254.ScalarField wireEval3; BN254.ScalarField wireEval4; BN254.ScalarField sigmaEval0; BN254.ScalarField sigmaEval1; BN254.ScalarField sigmaEval2; BN254.ScalarField sigmaEval3; BN254.ScalarField prodPermZetaOmegaEval; }
     ```*/
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>PlonkProof {
-        <span class="kw">pub </span>wire0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wire4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>prodPerm: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>split4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>zeta: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>zetaOmega: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>wireEval4: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>sigmaEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>prodPermZetaOmegaEval: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wire4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>prodPerm: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split0: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split1: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split2: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split3: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>split4: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>zeta: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>zetaOmega: &lt;BN254::G1Point <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>wireEval4: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval0: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval1: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval2: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>sigmaEval3: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>prodPermZetaOmegaEval: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -10171,7 +10333,7 @@ library IPlonkVerifier {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -11856,8 +12018,9 @@ interface LightClient {
     clippy::empty_structs_with_brackets
 )]
 </span><span class="kw">pub mod </span>LightClient {
-    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use </span>alloy::sol_types <span class="kw">as </span>alloy_sol_types;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="doccomment">/// The creation / init bytecode of the contract.
     ///
     /// ```text
@@ -11884,9 +12047,12 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>LightClientState {
-        <span class="kw">pub </span>viewNum: u64,
-        <span class="kw">pub </span>blockHeight: u64,
-        <span class="kw">pub </span>blockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>viewNum: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockHeight: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -11914,7 +12080,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12099,10 +12265,14 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>StakeTableState {
-        <span class="kw">pub </span>threshold: alloy::sol_types::private::primitives::aliases::U256,
-        <span class="kw">pub </span>blsKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>schnorrKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>amountComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>threshold: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blsKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>schnorrKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>amountComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -12132,7 +12302,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12332,7 +12502,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>AddressEmptyCode {
-        <span class="kw">pub </span>target: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>target: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -12352,7 +12523,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12398,7 +12569,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>ERC1967InvalidImplementation {
-        <span class="kw">pub </span>implementation: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>implementation: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -12418,7 +12590,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12484,7 +12656,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12544,7 +12716,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12604,7 +12776,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12664,7 +12836,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12724,7 +12896,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12784,7 +12956,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12844,7 +13016,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12904,7 +13076,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -12964,7 +13136,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13024,7 +13196,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13084,7 +13256,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13144,7 +13316,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13186,7 +13358,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>OwnableInvalidOwner {
-        <span class="kw">pub </span>owner: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>owner: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -13206,7 +13379,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13252,7 +13425,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>OwnableUnauthorizedAccount {
-        <span class="kw">pub </span>account: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>account: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -13272,7 +13446,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13336,7 +13510,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13396,7 +13570,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13438,7 +13612,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>UUPSUnsupportedProxiableUUID {
-        <span class="kw">pub </span>slot: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>slot: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -13458,7 +13633,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -13522,7 +13697,7 @@ interface LightClient {
             <span class="kw">match </span>_t {
                 alloy_sol_types::private::AssertTypeEq::&lt;
                     &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                &gt;(<span class="kw">_</span>) =&gt; {}
+                &gt;(<span class="kw">_</span>) =&gt; {},
             }
         }
         <span class="attr">#[automatically_derived]
@@ -14299,7 +14474,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14344,7 +14519,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>UPGRADE_INTERFACE_VERSIONReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::String,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::String,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -14365,7 +14541,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14394,7 +14570,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14454,7 +14630,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>currentBlockNumberReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -14475,7 +14652,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14504,7 +14681,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14583,7 +14760,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14612,7 +14789,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14672,9 +14849,12 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>finalizedStateReturn {
-        <span class="kw">pub </span>viewNum: u64,
-        <span class="kw">pub </span>blockHeight: u64,
-        <span class="kw">pub </span>blockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>viewNum: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockHeight: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -14695,7 +14875,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14732,7 +14912,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14800,10 +14980,14 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>genesisStakeTableStateReturn {
-        <span class="kw">pub </span>threshold: alloy::sol_types::private::primitives::aliases::U256,
-        <span class="kw">pub </span>blsKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>schnorrKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>amountComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>threshold: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blsKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>schnorrKeyComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>amountComm: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -14824,7 +15008,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14863,7 +15047,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14938,9 +15122,12 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>genesisStateReturn {
-        <span class="kw">pub </span>viewNum: u64,
-        <span class="kw">pub </span>blockHeight: u64,
-        <span class="kw">pub </span>blockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>viewNum: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockHeight: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -14961,7 +15148,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -14998,7 +15185,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15062,14 +15249,17 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>getHotShotCommitmentCall {
-        <span class="kw">pub </span>hotShotBlockHeight: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>hotShotBlockHeight: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="doccomment">///Container type for the return parameters of the [`getHotShotCommitment(uint256)`](getHotShotCommitmentCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>getHotShotCommitmentReturn {
-        <span class="kw">pub </span>hotShotBlockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>hotshotBlockHeight: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>hotShotBlockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>hotshotBlockHeight: u64,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -15090,7 +15280,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15125,7 +15315,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15192,7 +15382,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>getStateHistoryCountReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -15213,7 +15404,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15242,7 +15433,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15302,9 +15493,12 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>getVersionReturn {
-        <span class="kw">pub </span>majorVersion: u8,
-        <span class="kw">pub </span>minorVersion: u8,
-        <span class="kw">pub </span>patchVersion: u8,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>majorVersion: u8,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>minorVersion: u8,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>patchVersion: u8,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -15325,7 +15519,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15358,7 +15552,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15422,10 +15616,14 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>initializeCall {
-        <span class="kw">pub </span>_genesis: &lt;LightClientState <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>_genesisStakeTableState: &lt;StakeTableState <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>_stateHistoryRetentionPeriod: u32,
-        <span class="kw">pub </span>owner: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_genesis: &lt;LightClientState <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_genesisStakeTableState: &lt;StakeTableState <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_stateHistoryRetentionPeriod: u32,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>owner: alloy::sol_types::private::Address,
     }
     <span class="doccomment">///Container type for the return parameters of the [`initialize((uint64,uint64,uint256),(uint256,uint256,uint256,uint256),uint32,address)`](initializeCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -15460,7 +15658,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15499,7 +15697,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15575,7 +15773,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>isPermissionedProverEnabledReturn {
-        <span class="kw">pub </span>_0: bool,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: bool,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -15596,7 +15795,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15625,7 +15824,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15681,14 +15880,17 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>lagOverEscapeHatchThresholdCall {
-        <span class="kw">pub </span>blockNumber: alloy::sol_types::private::primitives::aliases::U256,
-        <span class="kw">pub </span>blockThreshold: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockNumber: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>blockThreshold: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="doccomment">///Container type for the return parameters of the [`lagOverEscapeHatchThreshold(uint256,uint256)`](lagOverEscapeHatchThresholdCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>lagOverEscapeHatchThresholdReturn {
-        <span class="kw">pub </span>_0: bool,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: bool,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -15715,7 +15917,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15747,7 +15949,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15813,8 +16015,10 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>newFinalizedStateCall {
-        <span class="kw">pub </span>newState: &lt;LightClientState <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
-        <span class="kw">pub </span>proof: &lt;IPlonkVerifier::PlonkProof <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>newState: &lt;LightClientState <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>proof: &lt;IPlonkVerifier::PlonkProof <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="doccomment">///Container type for the return parameters of the [`newFinalizedState((uint64,uint64,uint256),((uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256),uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))`](newFinalizedStateCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -15842,7 +16046,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15874,7 +16078,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15937,7 +16141,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>ownerReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -15958,7 +16163,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -15987,7 +16192,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16047,7 +16252,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>permissionedProverReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::Address,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -16068,7 +16274,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16097,7 +16303,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16157,7 +16363,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>proxiableUUIDReturn {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::FixedBytes&lt;<span class="number">32</span>&gt;,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -16178,7 +16385,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16207,7 +16414,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16286,7 +16493,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16315,7 +16522,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16371,7 +16578,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>setPermissionedProverCall {
-        <span class="kw">pub </span>prover: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>prover: alloy::sol_types::private::Address,
     }
     <span class="doccomment">///Container type for the return parameters of the [`setPermissionedProver(address)`](setPermissionedProverCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -16396,7 +16604,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16425,7 +16633,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16485,7 +16693,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>setstateHistoryRetentionPeriodCall {
-        <span class="kw">pub </span>historySeconds: u32,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>historySeconds: u32,
     }
     <span class="doccomment">///Container type for the return parameters of the [`setstateHistoryRetentionPeriod(uint32)`](setstateHistoryRetentionPeriodCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -16510,7 +16719,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16541,7 +16750,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16601,16 +16810,21 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>stateHistoryCommitmentsCall {
-        <span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: alloy::sol_types::private::primitives::aliases::U256,
     }
     <span class="doccomment">///Container type for the return parameters of the [`stateHistoryCommitments(uint256)`](stateHistoryCommitmentsCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>stateHistoryCommitmentsReturn {
-        <span class="kw">pub </span>l1BlockHeight: u64,
-        <span class="kw">pub </span>l1BlockTimestamp: u64,
-        <span class="kw">pub </span>hotShotBlockHeight: u64,
-        <span class="kw">pub </span>hotShotBlockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>l1BlockHeight: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>l1BlockTimestamp: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>hotShotBlockHeight: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>hotShotBlockCommRoot: &lt;BN254::ScalarField <span class="kw">as </span>alloy::sol_types::SolType&gt;::RustType,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -16631,7 +16845,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16670,7 +16884,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16749,7 +16963,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>stateHistoryFirstIndexReturn {
-        <span class="kw">pub </span>_0: u64,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: u64,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -16770,7 +16985,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16799,7 +17014,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16859,7 +17074,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>stateHistoryRetentionPeriodReturn {
-        <span class="kw">pub </span>_0: u32,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>_0: u32,
     }
     <span class="attr">#[allow(
         non_camel_case_types,
@@ -16880,7 +17096,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16909,7 +17125,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -16965,7 +17181,8 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>transferOwnershipCall {
-        <span class="kw">pub </span>newOwner: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>newOwner: alloy::sol_types::private::Address,
     }
     <span class="doccomment">///Container type for the return parameters of the [`transferOwnership(address)`](transferOwnershipCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -16990,7 +17207,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -17019,7 +17236,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -17079,8 +17296,10 @@ interface LightClient {
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
     #[derive(Clone)]
     </span><span class="kw">pub struct </span>upgradeToAndCallCall {
-        <span class="kw">pub </span>newImplementation: alloy::sol_types::private::Address,
-        <span class="kw">pub </span>data: alloy::sol_types::private::Bytes,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>newImplementation: alloy::sol_types::private::Address,
+        <span class="attr">#[allow(missing_docs)]
+        </span><span class="kw">pub </span>data: alloy::sol_types::private::Bytes,
     }
     <span class="doccomment">///Container type for the return parameters of the [`upgradeToAndCall(address,bytes)`](upgradeToAndCallCall) function.
     </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -17111,7 +17330,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -17143,7 +17362,7 @@ interface LightClient {
                 <span class="kw">match </span>_t {
                     alloy_sol_types::private::AssertTypeEq::&lt;
                         &lt;UnderlyingSolTuple <span class="kw">as </span>alloy_sol_types::SolType&gt;::RustType,
-                    &gt;(<span class="kw">_</span>) =&gt; {}
+                    &gt;(<span class="kw">_</span>) =&gt; {},
                 }
             }
             <span class="attr">#[automatically_derived]
@@ -17204,30 +17423,54 @@ interface LightClient {
     };
     <span class="doccomment">///Container for all the [`LightClient`](self) function calls.
     </span><span class="kw">pub enum </span>LightClientCalls {
-        UPGRADE_INTERFACE_VERSION(UPGRADE_INTERFACE_VERSIONCall),
-        currentBlockNumber(currentBlockNumberCall),
-        disablePermissionedProverMode(disablePermissionedProverModeCall),
-        finalizedState(finalizedStateCall),
-        genesisStakeTableState(genesisStakeTableStateCall),
-        genesisState(genesisStateCall),
-        getHotShotCommitment(getHotShotCommitmentCall),
-        getStateHistoryCount(getStateHistoryCountCall),
-        getVersion(getVersionCall),
-        initialize(initializeCall),
-        isPermissionedProverEnabled(isPermissionedProverEnabledCall),
-        lagOverEscapeHatchThreshold(lagOverEscapeHatchThresholdCall),
-        newFinalizedState(newFinalizedStateCall),
-        owner(ownerCall),
-        permissionedProver(permissionedProverCall),
-        proxiableUUID(proxiableUUIDCall),
-        renounceOwnership(renounceOwnershipCall),
-        setPermissionedProver(setPermissionedProverCall),
-        setstateHistoryRetentionPeriod(setstateHistoryRetentionPeriodCall),
-        stateHistoryCommitments(stateHistoryCommitmentsCall),
-        stateHistoryFirstIndex(stateHistoryFirstIndexCall),
-        stateHistoryRetentionPeriod(stateHistoryRetentionPeriodCall),
-        transferOwnership(transferOwnershipCall),
-        upgradeToAndCall(upgradeToAndCallCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>UPGRADE_INTERFACE_VERSION(UPGRADE_INTERFACE_VERSIONCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>currentBlockNumber(currentBlockNumberCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>disablePermissionedProverMode(disablePermissionedProverModeCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>finalizedState(finalizedStateCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>genesisStakeTableState(genesisStakeTableStateCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>genesisState(genesisStateCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>getHotShotCommitment(getHotShotCommitmentCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>getStateHistoryCount(getStateHistoryCountCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>getVersion(getVersionCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>initialize(initializeCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>isPermissionedProverEnabled(isPermissionedProverEnabledCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>lagOverEscapeHatchThreshold(lagOverEscapeHatchThresholdCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>newFinalizedState(newFinalizedStateCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>owner(ownerCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>permissionedProver(permissionedProverCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>proxiableUUID(proxiableUUIDCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>renounceOwnership(renounceOwnershipCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>setPermissionedProver(setPermissionedProverCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>setstateHistoryRetentionPeriod(setstateHistoryRetentionPeriodCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>stateHistoryCommitments(stateHistoryCommitmentsCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>stateHistoryFirstIndex(stateHistoryFirstIndexCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>stateHistoryRetentionPeriod(stateHistoryRetentionPeriodCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>transferOwnership(transferOwnershipCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>upgradeToAndCall(upgradeToAndCallCall),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>LightClientCalls {
@@ -17274,66 +17517,66 @@ interface LightClient {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::UPGRADE_INTERFACE_VERSION(<span class="kw">_</span>) =&gt; {
                     &lt;UPGRADE_INTERFACE_VERSIONCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::currentBlockNumber(<span class="kw">_</span>) =&gt; {
                     &lt;currentBlockNumberCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::disablePermissionedProverMode(<span class="kw">_</span>) =&gt; {
                     &lt;disablePermissionedProverModeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::finalizedState(<span class="kw">_</span>) =&gt; {
                     &lt;finalizedStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::genesisStakeTableState(<span class="kw">_</span>) =&gt; {
                     &lt;genesisStakeTableStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::genesisState(<span class="kw">_</span>) =&gt; &lt;genesisStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::getHotShotCommitment(<span class="kw">_</span>) =&gt; {
                     &lt;getHotShotCommitmentCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::getStateHistoryCount(<span class="kw">_</span>) =&gt; {
                     &lt;getStateHistoryCountCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::getVersion(<span class="kw">_</span>) =&gt; &lt;getVersionCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::initialize(<span class="kw">_</span>) =&gt; &lt;initializeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::isPermissionedProverEnabled(<span class="kw">_</span>) =&gt; {
                     &lt;isPermissionedProverEnabledCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::lagOverEscapeHatchThreshold(<span class="kw">_</span>) =&gt; {
                     &lt;lagOverEscapeHatchThresholdCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::newFinalizedState(<span class="kw">_</span>) =&gt; {
                     &lt;newFinalizedStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::owner(<span class="kw">_</span>) =&gt; &lt;ownerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::permissionedProver(<span class="kw">_</span>) =&gt; {
                     &lt;permissionedProverCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::proxiableUUID(<span class="kw">_</span>) =&gt; &lt;proxiableUUIDCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR,
                 <span class="self">Self</span>::renounceOwnership(<span class="kw">_</span>) =&gt; {
                     &lt;renounceOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::setPermissionedProver(<span class="kw">_</span>) =&gt; {
                     &lt;setPermissionedProverCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::setstateHistoryRetentionPeriod(<span class="kw">_</span>) =&gt; {
                     &lt;setstateHistoryRetentionPeriodCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::stateHistoryCommitments(<span class="kw">_</span>) =&gt; {
                     &lt;stateHistoryCommitmentsCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::stateHistoryFirstIndex(<span class="kw">_</span>) =&gt; {
                     &lt;stateHistoryFirstIndexCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::stateHistoryRetentionPeriod(<span class="kw">_</span>) =&gt; {
                     &lt;stateHistoryRetentionPeriodCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::transferOwnership(<span class="kw">_</span>) =&gt; {
                     &lt;transferOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::upgradeToAndCall(<span class="kw">_</span>) =&gt; {
                     &lt;upgradeToAndCallCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::SELECTOR
-                }
+                },
             }
         }
         <span class="attr">#[inline]
@@ -17783,123 +18026,143 @@ interface LightClient {
                     &lt;UPGRADE_INTERFACE_VERSIONCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::currentBlockNumber(inner) =&gt; {
                     &lt;currentBlockNumberCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::disablePermissionedProverMode(inner) =&gt; {
                     &lt;disablePermissionedProverModeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::finalizedState(inner) =&gt; {
                     &lt;finalizedStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::genesisStakeTableState(inner) =&gt; {
                     &lt;genesisStakeTableStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::genesisState(inner) =&gt; {
                     &lt;genesisStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::getHotShotCommitment(inner) =&gt; {
                     &lt;getHotShotCommitmentCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::getStateHistoryCount(inner) =&gt; {
                     &lt;getStateHistoryCountCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::getVersion(inner) =&gt; {
                     &lt;getVersionCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::initialize(inner) =&gt; {
                     &lt;initializeCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::isPermissionedProverEnabled(inner) =&gt; {
                     &lt;isPermissionedProverEnabledCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::lagOverEscapeHatchThreshold(inner) =&gt; {
                     &lt;lagOverEscapeHatchThresholdCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::newFinalizedState(inner) =&gt; {
                     &lt;newFinalizedStateCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::owner(inner) =&gt; {
                     &lt;ownerCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::permissionedProver(inner) =&gt; {
                     &lt;permissionedProverCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::proxiableUUID(inner) =&gt; {
                     &lt;proxiableUUIDCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::renounceOwnership(inner) =&gt; {
                     &lt;renounceOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::setPermissionedProver(inner) =&gt; {
                     &lt;setPermissionedProverCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::setstateHistoryRetentionPeriod(inner) =&gt; {
                     &lt;setstateHistoryRetentionPeriodCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::stateHistoryCommitments(inner) =&gt; {
                     &lt;stateHistoryCommitmentsCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::stateHistoryFirstIndex(inner) =&gt; {
                     &lt;stateHistoryFirstIndexCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::stateHistoryRetentionPeriod(inner) =&gt; {
                     &lt;stateHistoryRetentionPeriodCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(
                         inner, out,
                     )
-                }
+                },
                 <span class="self">Self</span>::transferOwnership(inner) =&gt; {
                     &lt;transferOwnershipCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
                 <span class="self">Self</span>::upgradeToAndCall(inner) =&gt; {
                     &lt;upgradeToAndCallCall <span class="kw">as </span>alloy_sol_types::SolCall&gt;::abi_encode_raw(inner, out)
-                }
+                },
             }
         }
     }
     <span class="doccomment">///Container for all the [`LightClient`](self) custom errors.
     </span><span class="kw">pub enum </span>LightClientErrors {
-        AddressEmptyCode(AddressEmptyCode),
-        ERC1967InvalidImplementation(ERC1967InvalidImplementation),
-        ERC1967NonPayable(ERC1967NonPayable),
-        FailedInnerCall(FailedInnerCall),
-        InsufficientSnapshotHistory(InsufficientSnapshotHistory),
-        InvalidAddress(InvalidAddress),
-        InvalidArgs(InvalidArgs),
-        InvalidHotShotBlockForCommitmentCheck(InvalidHotShotBlockForCommitmentCheck),
-        InvalidInitialization(InvalidInitialization),
-        InvalidMaxStateHistory(InvalidMaxStateHistory),
-        InvalidProof(InvalidProof),
-        NoChangeRequired(NoChangeRequired),
-        NotInitializing(NotInitializing),
-        OutdatedState(OutdatedState),
-        OwnableInvalidOwner(OwnableInvalidOwner),
-        OwnableUnauthorizedAccount(OwnableUnauthorizedAccount),
-        ProverNotPermissioned(ProverNotPermissioned),
-        UUPSUnauthorizedCallContext(UUPSUnauthorizedCallContext),
-        UUPSUnsupportedProxiableUUID(UUPSUnsupportedProxiableUUID),
-        WrongStakeTableUsed(WrongStakeTableUsed),
+        <span class="attr">#[allow(missing_docs)]
+        </span>AddressEmptyCode(AddressEmptyCode),
+        <span class="attr">#[allow(missing_docs)]
+        </span>ERC1967InvalidImplementation(ERC1967InvalidImplementation),
+        <span class="attr">#[allow(missing_docs)]
+        </span>ERC1967NonPayable(ERC1967NonPayable),
+        <span class="attr">#[allow(missing_docs)]
+        </span>FailedInnerCall(FailedInnerCall),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InsufficientSnapshotHistory(InsufficientSnapshotHistory),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidAddress(InvalidAddress),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidArgs(InvalidArgs),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidHotShotBlockForCommitmentCheck(InvalidHotShotBlockForCommitmentCheck),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidInitialization(InvalidInitialization),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidMaxStateHistory(InvalidMaxStateHistory),
+        <span class="attr">#[allow(missing_docs)]
+        </span>InvalidProof(InvalidProof),
+        <span class="attr">#[allow(missing_docs)]
+        </span>NoChangeRequired(NoChangeRequired),
+        <span class="attr">#[allow(missing_docs)]
+        </span>NotInitializing(NotInitializing),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OutdatedState(OutdatedState),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OwnableInvalidOwner(OwnableInvalidOwner),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OwnableUnauthorizedAccount(OwnableUnauthorizedAccount),
+        <span class="attr">#[allow(missing_docs)]
+        </span>ProverNotPermissioned(ProverNotPermissioned),
+        <span class="attr">#[allow(missing_docs)]
+        </span>UUPSUnauthorizedCallContext(UUPSUnauthorizedCallContext),
+        <span class="attr">#[allow(missing_docs)]
+        </span>UUPSUnsupportedProxiableUUID(UUPSUnsupportedProxiableUUID),
+        <span class="attr">#[allow(missing_docs)]
+        </span>WrongStakeTableUsed(WrongStakeTableUsed),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>LightClientErrors {
@@ -17942,56 +18205,56 @@ interface LightClient {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::AddressEmptyCode(<span class="kw">_</span>) =&gt; {
                     &lt;AddressEmptyCode <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::ERC1967InvalidImplementation(<span class="kw">_</span>) =&gt; {
                     &lt;ERC1967InvalidImplementation <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::ERC1967NonPayable(<span class="kw">_</span>) =&gt; {
                     &lt;ERC1967NonPayable <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::FailedInnerCall(<span class="kw">_</span>) =&gt; {
                     &lt;FailedInnerCall <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::InsufficientSnapshotHistory(<span class="kw">_</span>) =&gt; {
                     &lt;InsufficientSnapshotHistory <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::InvalidAddress(<span class="kw">_</span>) =&gt; &lt;InvalidAddress <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR,
                 <span class="self">Self</span>::InvalidArgs(<span class="kw">_</span>) =&gt; &lt;InvalidArgs <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR,
                 <span class="self">Self</span>::InvalidHotShotBlockForCommitmentCheck(<span class="kw">_</span>) =&gt; {
                     &lt;InvalidHotShotBlockForCommitmentCheck <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::InvalidInitialization(<span class="kw">_</span>) =&gt; {
                     &lt;InvalidInitialization <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::InvalidMaxStateHistory(<span class="kw">_</span>) =&gt; {
                     &lt;InvalidMaxStateHistory <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::InvalidProof(<span class="kw">_</span>) =&gt; &lt;InvalidProof <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR,
                 <span class="self">Self</span>::NoChangeRequired(<span class="kw">_</span>) =&gt; {
                     &lt;NoChangeRequired <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::NotInitializing(<span class="kw">_</span>) =&gt; {
                     &lt;NotInitializing <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::OutdatedState(<span class="kw">_</span>) =&gt; &lt;OutdatedState <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR,
                 <span class="self">Self</span>::OwnableInvalidOwner(<span class="kw">_</span>) =&gt; {
                     &lt;OwnableInvalidOwner <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::OwnableUnauthorizedAccount(<span class="kw">_</span>) =&gt; {
                     &lt;OwnableUnauthorizedAccount <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::ProverNotPermissioned(<span class="kw">_</span>) =&gt; {
                     &lt;ProverNotPermissioned <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::UUPSUnauthorizedCallContext(<span class="kw">_</span>) =&gt; {
                     &lt;UUPSUnauthorizedCallContext <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::UUPSUnsupportedProxiableUUID(<span class="kw">_</span>) =&gt; {
                     &lt;UUPSUnsupportedProxiableUUID <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
                 <span class="self">Self</span>::WrongStakeTableUsed(<span class="kw">_</span>) =&gt; {
                     &lt;WrongStakeTableUsed <span class="kw">as </span>alloy_sol_types::SolError&gt;::SELECTOR
-                }
+                },
             }
         }
         <span class="attr">#[inline]
@@ -18487,13 +18750,20 @@ interface LightClient {
     }
     <span class="doccomment">///Container for all the [`LightClient`](self) events.
     </span><span class="kw">pub enum </span>LightClientEvents {
-        Initialized(Initialized),
-        NewState(NewState),
-        OwnershipTransferred(OwnershipTransferred),
-        PermissionedProverNotRequired(PermissionedProverNotRequired),
-        PermissionedProverRequired(PermissionedProverRequired),
-        Upgrade(Upgrade),
-        Upgraded(Upgraded),
+        <span class="attr">#[allow(missing_docs)]
+        </span>Initialized(Initialized),
+        <span class="attr">#[allow(missing_docs)]
+        </span>NewState(NewState),
+        <span class="attr">#[allow(missing_docs)]
+        </span>OwnershipTransferred(OwnershipTransferred),
+        <span class="attr">#[allow(missing_docs)]
+        </span>PermissionedProverNotRequired(PermissionedProverNotRequired),
+        <span class="attr">#[allow(missing_docs)]
+        </span>PermissionedProverRequired(PermissionedProverRequired),
+        <span class="attr">#[allow(missing_docs)]
+        </span>Upgrade(Upgrade),
+        <span class="attr">#[allow(missing_docs)]
+        </span>Upgraded(Upgraded),
     }
     <span class="attr">#[automatically_derived]
     </span><span class="kw">impl </span>LightClientEvents {
@@ -18556,17 +18826,17 @@ interface LightClient {
                         topics, data, validate,
                     )
                     .map(<span class="self">Self</span>::Initialized)
-                }
+                },
                 <span class="prelude-val">Some</span>(&lt;NewState <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH) =&gt; {
                     &lt;NewState <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(topics, data, validate)
                         .map(<span class="self">Self</span>::NewState)
-                }
+                },
                 <span class="prelude-val">Some</span>(&lt;OwnershipTransferred <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH) =&gt; {
                     &lt;OwnershipTransferred <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(
                         topics, data, validate,
                     )
                     .map(<span class="self">Self</span>::OwnershipTransferred)
-                }
+                },
                 <span class="prelude-val">Some</span>(
                     &lt;PermissionedProverNotRequired <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH,
                 ) =&gt; &lt;PermissionedProverNotRequired <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(
@@ -18578,15 +18848,15 @@ interface LightClient {
                         topics, data, validate,
                     )
                     .map(<span class="self">Self</span>::PermissionedProverRequired)
-                }
+                },
                 <span class="prelude-val">Some</span>(&lt;Upgrade <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH) =&gt; {
                     &lt;Upgrade <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(topics, data, validate)
                         .map(<span class="self">Self</span>::Upgrade)
-                }
+                },
                 <span class="prelude-val">Some</span>(&lt;Upgraded <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::SIGNATURE_HASH) =&gt; {
                     &lt;Upgraded <span class="kw">as </span>alloy_sol_types::SolEvent&gt;::decode_raw_log(topics, data, validate)
                         .map(<span class="self">Self</span>::Upgraded)
-                }
+                },
                 <span class="kw">_ </span>=&gt; alloy_sol_types::private::Err(alloy_sol_types::Error::InvalidLog {
                     name: &lt;<span class="self">Self </span><span class="kw">as </span>alloy_sol_types::SolEventInterface&gt;::NAME,
                     log: alloy_sol_types::private::Box::new(
@@ -18605,17 +18875,17 @@ interface LightClient {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::Initialized(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::NewState(inner) =&gt; alloy_sol_types::private::IntoLogData::to_log_data(inner),
                 <span class="self">Self</span>::OwnershipTransferred(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::PermissionedProverNotRequired(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::PermissionedProverRequired(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::to_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::Upgrade(inner) =&gt; alloy_sol_types::private::IntoLogData::to_log_data(inner),
                 <span class="self">Self</span>::Upgraded(inner) =&gt; alloy_sol_types::private::IntoLogData::to_log_data(inner),
             }
@@ -18624,23 +18894,23 @@ interface LightClient {
             <span class="kw">match </span><span class="self">self </span>{
                 <span class="self">Self</span>::Initialized(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::NewState(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::OwnershipTransferred(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::PermissionedProverNotRequired(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::PermissionedProverRequired(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
                 <span class="self">Self</span>::Upgrade(inner) =&gt; alloy_sol_types::private::IntoLogData::into_log_data(inner),
                 <span class="self">Self</span>::Upgraded(inner) =&gt; {
                     alloy_sol_types::private::IntoLogData::into_log_data(inner)
-                }
+                },
             }
         }
     }

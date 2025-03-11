@@ -56,13 +56,11 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a></pre></div><pre class="rust"><code><span class="kw">use </span>sequencer::{
+<a href="#58" id="58">58</a></pre></div><pre class="rust"><code><span class="kw">use </span>clap::Subcommand;
+<span class="kw">use </span>sequencer::{
     api::data_source::{DataSourceOptions, SequencerDataSource},
     persistence,
 };
-
-<span class="kw">use </span>clap::Subcommand;
 
 <span class="doccomment">/// Options for resetting persistent storage.
 ///
@@ -91,11 +89,11 @@
             SequencerStorage::Fs(opt) =&gt; {
                 <span class="macro">tracing::warn!</span>(<span class="string">"resetting sequencer file system storage {opt:?}"</span>);
                 reset_storage(opt).<span class="kw">await
-            </span>}
+            </span>},
             SequencerStorage::Sql(opt) =&gt; {
                 <span class="macro">tracing::warn!</span>(<span class="string">"resetting sequencer SQL storage {opt:?}"</span>);
                 reset_storage(<span class="kw-2">*</span>opt).<span class="kw">await
-            </span>}
+            </span>},
         },
 
         Commands::Solver(opt) =&gt; {
@@ -104,7 +102,7 @@
             opts.connect().<span class="kw">await</span><span class="question-mark">?</span>;
 
             <span class="prelude-val">Ok</span>(())
-        }
+        },
     }
 }
 

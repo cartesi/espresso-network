@@ -287,7 +287,14 @@
 <a href="#286" id="286">286</a>
 <a href="#287" id="287">287</a>
 <a href="#288" id="288">288</a>
-<a href="#289" id="289">289</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -299,18 +306,19 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see &lt;https://www.gnu.org/licenses/&gt;.
 
-</span><span class="kw">use super</span>::{Provider, Request};
+</span><span class="kw">use </span>std::{fmt::Debug, sync::Arc};
+
+<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>derivative::Derivative;
+<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
+
+<span class="kw">use super</span>::{Provider, Request};
 <span class="kw">use crate</span>::{
     availability::LeafQueryData,
     data_source::AvailabilityProvider,
     fetching::request::{LeafRequest, PayloadRequest, VidCommonRequest},
     Payload, VidCommon,
 };
-<span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>derivative::Derivative;
-<span class="kw">use </span>hotshot_types::traits::node_implementation::NodeType;
-<span class="kw">use </span>std::fmt::Debug;
-<span class="kw">use </span>std::sync::Arc;
 
 <span class="doccomment">/// Blanket trait combining [`Debug`] and [`Provider`].
 ///
@@ -410,7 +418,7 @@
 <span class="kw">where
     </span>Types: NodeType,
 {
-    <span class="kw">async fn </span>fetch(<span class="kw-2">&amp;</span><span class="self">self</span>, req: VidCommonRequest) -&gt; VidCommon {
+    <span class="kw">async fn </span>fetch(<span class="kw-2">&amp;</span><span class="self">self</span>, req: VidCommonRequest) -&gt; <span class="prelude-ty">Option</span>&lt;VidCommon&gt; {
         any_fetch(<span class="kw-2">&amp;</span><span class="self">self</span>.vid_common_providers, req).<span class="kw">await
     </span>}
 }
@@ -480,7 +488,7 @@
                     providers.len()
                 );
                 <span class="kw">continue</span>;
-            }
+            },
         }
     }
 
@@ -490,6 +498,11 @@
 <span class="comment">// These tests run the `postgres` Docker image, which doesn't work on Windows.
 </span><span class="attr">#[cfg(all(test, not(target_os = <span class="string">"windows"</span>)))]
 </span><span class="kw">mod </span>test {
+    <span class="kw">use </span>futures::stream::StreamExt;
+    <span class="kw">use </span>portpicker::pick_unused_port;
+    <span class="kw">use </span>tide_disco::App;
+    <span class="kw">use </span>vbs::version::StaticVersionType;
+
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
     <span class="kw">use crate</span>::{
         availability::{define_api, AvailabilityDataSource, UpdateAvailabilityData},
@@ -504,10 +517,6 @@
         types::HeightIndexed,
         ApiState, Error,
     };
-    <span class="kw">use </span>futures::stream::StreamExt;
-    <span class="kw">use </span>portpicker::pick_unused_port;
-    <span class="kw">use </span>tide_disco::App;
-    <span class="kw">use </span>vbs::version::StaticVersionType;
 
     <span class="kw">type </span>Provider = AnyProvider&lt;MockTypes&gt;;
 
@@ -523,7 +532,12 @@
         <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;<span class="kw">_</span>, Error&gt;::with_state(ApiState::from(network.data_source()));
         app.register_module(
             <span class="string">"availability"</span>,
-            define_api(<span class="kw-2">&amp;</span>Default::default(), MockBase::instance()).unwrap(),
+            define_api(
+                <span class="kw-2">&amp;</span>Default::default(),
+                MockBase::instance(),
+                <span class="string">"1.0.0"</span>.parse().unwrap(),
+            )
+            .unwrap(),
         )
         .unwrap();
         <span class="kw">let </span>_server = BackgroundTask::spawn(

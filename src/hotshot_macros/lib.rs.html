@@ -779,7 +779,7 @@
                 syn::Type::Path(p) =&gt; p.to_lower_snake_str(),
                 <span class="kw">_ </span>=&gt; {
                     <span class="macro">panic!</span>(<span class="string">"Unexpected type for GenericArgument::Type: {t:?}"</span>);
-                }
+                },
             },
             syn::GenericArgument::Const(c) =&gt; <span class="kw">match </span>c {
                 syn::Expr::Lit(l) =&gt; <span class="kw">match </span><span class="kw-2">&amp;</span>l.lit {
@@ -787,15 +787,15 @@
                     syn::Lit::Int(v) =&gt; <span class="macro">format!</span>(<span class="string">"{}_"</span>, v.base10_digits()),
                     <span class="kw">_ </span>=&gt; {
                         <span class="macro">panic!</span>(<span class="string">"Unexpected type for GenericArgument::Const::Lit: {l:?}"</span>);
-                    }
+                    },
                 },
                 <span class="kw">_ </span>=&gt; {
                     <span class="macro">panic!</span>(<span class="string">"Unexpected type for GenericArgument::Const: {c:?}"</span>);
-                }
+                },
             },
             <span class="kw">_ </span>=&gt; {
                 <span class="macro">panic!</span>(<span class="string">"Unexpected type for GenericArgument: {self:?}"</span>);
-            }
+            },
         }
     }
 }

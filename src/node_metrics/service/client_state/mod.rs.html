@@ -2018,23 +2018,27 @@
 <a href="#2017" id="2017">2017</a>
 <a href="#2018" id="2018">2018</a>
 <a href="#2019" id="2019">2019</a>
-<a href="#2020" id="2020">2020</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+<a href="#2020" id="2020">2020</a>
+<a href="#2021" id="2021">2021</a>
+<a href="#2022" id="2022">2022</a>
+<a href="#2023" id="2023">2023</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
+
+<span class="kw">use </span>async_lock::{RwLock, RwLockWriteGuard};
+<span class="kw">use </span>bitvec::vec::BitVec;
+<span class="kw">use </span>espresso_types::SeqTypes;
+<span class="kw">use </span>futures::{channel::mpsc::SendError, Sink, SinkExt, Stream, StreamExt};
+<span class="kw">use </span>hotshot_query_service::explorer::{BlockDetail, ExplorerHistograms};
+<span class="kw">use </span>tokio::{spawn, task::JoinHandle};
+
+<span class="kw">use super</span>::{
     client_id::ClientId,
     client_message::{ClientMessage, InternalClientMessage},
     data_state::{DataState, NodeIdentity},
     server_message::ServerMessage,
 };
-<span class="kw">use </span>bitvec::vec::BitVec;
-<span class="kw">use </span>espresso_types::SeqTypes;
-<span class="kw">use </span>futures::{channel::mpsc::SendError, Sink, SinkExt, Stream, StreamExt};
-<span class="kw">use </span>hotshot_query_service::explorer::{BlockDetail, ExplorerHistograms};
-<span class="kw">use </span>std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
-<span class="kw">use </span>tokio::{spawn, task::JoinHandle};
-
-<span class="kw">use </span>async_lock::{RwLock, RwLockWriteGuard};
 
 <span class="doccomment">/// ClientState represents the service state of the connected clients.
 /// It maintains and represents the connected clients, and their subscriptions.
@@ -2132,7 +2136,7 @@
         <span class="kw">match </span><span class="self">self </span>{
             HandleConnectedError::ClientSendError(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"handle connected error: client send error: {}"</span>, err)
-            }
+            },
         }
     }
 }
@@ -2255,7 +2259,7 @@
                     <span class="string">"handle request blocks snapshot error: client send error:: {}"</span>,
                     err
                 )
-            }
+            },
         }
     }
 }
@@ -2326,7 +2330,7 @@
                     <span class="string">"handle request node identity snapshot error: client send error: {}"</span>,
                     err
                 )
-            }
+            },
         }
     }
 }
@@ -2394,7 +2398,7 @@
                     <span class="string">"handle request histogram snapshot error: client send error: {}"</span>,
                     err
                 )
-            }
+            },
         }
     }
 }
@@ -2481,7 +2485,7 @@
                     <span class="string">"handle request voters snapshot error: client send error: {}"</span>,
                     err
                 )
-            }
+            },
         }
     }
 }
@@ -2577,27 +2581,27 @@
         <span class="kw">match </span><span class="self">self </span>{
             ProcessClientMessageError::Connected(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"process client message error: connected: {}"</span>, err)
-            }
+            },
             ProcessClientMessageError::BlocksSnapshot(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"process client message error: blocks snapshot: {}"</span>, err)
-            }
+            },
             ProcessClientMessageError::NodeIdentitySnapshot(err) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"process client message error: node identity snapshot: {}"</span>,
                     err
                 )
-            }
+            },
             ProcessClientMessageError::HistogramSnapshot(err) =&gt; {
                 <span class="macro">write!</span>(
                     f,
                     <span class="string">"process client message error: histogram snapshot: {}"</span>,
                     err
                 )
-            }
+            },
             ProcessClientMessageError::VotersSnapshot(err) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"process client message error: voters snapshot: {}"</span>, err)
-            }
+            },
         }
     }
 }
@@ -2635,27 +2639,27 @@
         InternalClientMessage::Connected(sender) =&gt; {
             handle_client_message_connected(sender, client_thread_state).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Disconnected(client_id) =&gt; {
             handle_client_message_disconnected(client_id, client_thread_state).<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::SubscribeLatestBlock) =&gt; {
             handle_client_message_subscribe_latest_block(client_id, client_thread_state).<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::SubscribeNodeIdentity) =&gt; {
             handle_client_message_subscribe_node_identity(client_id, client_thread_state).<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::SubscribeVoters) =&gt; {
             handle_client_message_subscribe_voters(client_id, client_thread_state).<span class="kw">await</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::RequestBlocksSnapshot) =&gt; {
             handle_client_message_request_blocks_snapshot(
@@ -2665,7 +2669,7 @@
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::RequestNodeIdentitySnapshot) =&gt; {
             handle_client_message_request_node_identity_snapshot(
@@ -2675,7 +2679,7 @@
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::RequestHistogramSnapshot) =&gt; {
             handle_client_message_request_histogram_snapshot(
@@ -2685,7 +2689,7 @@
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
 
         InternalClientMessage::Request(client_id, ClientMessage::RequestVotersSnapshot) =&gt; {
             handle_client_message_request_voters_snapshot(
@@ -2695,7 +2699,7 @@
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(())
-        }
+        },
     }
 }
 
@@ -3200,6 +3204,22 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">pub mod </span>tests {
+    <span class="kw">use </span>std::{sync::Arc, time::Duration};
+
+    <span class="kw">use </span>async_lock::RwLock;
+    <span class="kw">use </span>bitvec::vec::BitVec;
+    <span class="kw">use </span>espresso_types::{Leaf2, NodeState, ValidatedState};
+    <span class="kw">use </span>futures::{
+        channel::mpsc::{<span class="self">self</span>, Sender},
+        SinkExt, StreamExt,
+    };
+    <span class="kw">use </span>hotshot_example_types::node_types::TestVersions;
+    <span class="kw">use </span>hotshot_types::{signature_key::BLSPubKey, traits::signature_key::SignatureKey};
+    <span class="kw">use </span>tokio::{
+        spawn,
+        time::{sleep, timeout},
+    };
+
     <span class="kw">use super</span>::{ClientThreadState, InternalClientMessageProcessingTask};
     <span class="kw">use </span><span class="kw">crate</span>::service::{
         client_id::ClientId,
@@ -3213,20 +3233,6 @@
             ProcessLeafStreamTask,
         },
         server_message::ServerMessage,
-    };
-    <span class="kw">use </span>async_lock::RwLock;
-    <span class="kw">use </span>bitvec::vec::BitVec;
-    <span class="kw">use </span>espresso_types::{Leaf, NodeState, ValidatedState};
-    <span class="kw">use </span>futures::{
-        channel::mpsc::{<span class="self">self</span>, Sender},
-        SinkExt, StreamExt,
-    };
-    <span class="kw">use </span>hotshot_query_service::testing::mocks::MockVersions;
-    <span class="kw">use </span>hotshot_types::{signature_key::BLSPubKey, traits::signature_key::SignatureKey};
-    <span class="kw">use </span>std::{sync::Arc, time::Duration};
-    <span class="kw">use </span>tokio::{
-        spawn,
-        time::{sleep, timeout},
     };
 
     <span class="kw">pub fn </span>create_test_client_thread_state() -&gt; ClientThreadState&lt;Sender&lt;ServerMessage&gt;&gt; {
@@ -3390,7 +3396,7 @@
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     #[cfg(feature = <span class="string">"testing"</span>)]
     </span><span class="kw">async fn </span>test_process_client_handling_stream_request_latest_blocks_snapshot() {
-        <span class="kw">use </span>hotshot_query_service::testing::mocks::MockVersions;
+        <span class="kw">use </span>hotshot_example_types::node_types::TestVersions;
 
         <span class="kw">use </span><span class="kw">super</span>::clone_block_detail;
         <span class="kw">use </span><span class="kw">crate</span>::service::data_state::create_block_detail_from_leaf;
@@ -3398,7 +3404,7 @@
         <span class="kw">let </span>(<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>, <span class="kw-2">mut </span>data_state) = create_test_data_state();
         <span class="kw">let </span>client_thread_state = Arc::new(RwLock::new(create_test_client_thread_state()));
         <span class="kw">let </span>leaf_1 =
-            Leaf::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
+            Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
         <span class="kw">let </span>block_1 = create_block_detail_from_leaf(<span class="kw-2">&amp;</span>leaf_1);
         data_state.add_latest_block(clone_block_detail(<span class="kw-2">&amp;</span>block_1));
 
@@ -3639,7 +3645,7 @@
 
         // send a new leaf
         </span><span class="kw">let </span>leaf =
-            Leaf::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
+            Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::mock()).<span class="kw">await</span>;
         <span class="kw">let </span>expected_block = create_block_detail_from_leaf(<span class="kw-2">&amp;</span>leaf);
         <span class="kw">let </span>arc_expected_block = Arc::new(expected_block);
 

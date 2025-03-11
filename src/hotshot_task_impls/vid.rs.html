@@ -271,7 +271,8 @@
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
 <a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -280,17 +281,16 @@
 </span><span class="kw">use </span>std::{marker::PhantomData, sync::Arc};
 
 <span class="kw">use </span>async_broadcast::{Receiver, Sender};
-<span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot_task::task::TaskState;
 <span class="kw">use </span>hotshot_types::{
     consensus::OuterConsensus,
     data::{PackedBundle, VidDisperse, VidDisperseShare},
+    epoch_membership::EpochMembershipCoordinator,
     message::{Proposal, UpgradeLock},
     simple_vote::HasEpoch,
     traits::{
         block_contents::BlockHeader,
-        election::Membership,
         node_implementation::{NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
         BlockPayload,
@@ -320,7 +320,7 @@
     </span><span class="kw">pub </span>network: Arc&lt;I::Network&gt;,
 
     <span class="doccomment">/// Membership for the quorum
-    </span><span class="kw">pub </span>membership: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
+    </span><span class="kw">pub </span>membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
 
     <span class="doccomment">/// This Nodes Public Key
     </span><span class="kw">pub </span>public_key: TYPES::SignatureKey,
@@ -361,11 +361,13 @@
                 <span class="kw">let </span>builder_commitment = payload.builder_commitment(metadata);
                 <span class="kw">let </span>epoch = <span class="self">self</span>.cur_epoch;
                 <span class="kw">if </span><span class="self">self
-                    </span>.membership
-                    .read()
+                    </span>.membership_coordinator
+                    .membership_for_epoch(epoch)
                     .<span class="kw">await
-                    </span>.leader(<span class="kw-2">*</span>view_number, epoch)
-                    .ok()<span class="question-mark">?
+                    </span>.ok()<span class="question-mark">?
+                    </span>.leader(<span class="kw-2">*</span>view_number)
+                    .<span class="kw">await
+                    </span>.ok()<span class="question-mark">?
                     </span>!= <span class="self">self</span>.public_key
                 {
                     <span class="macro">tracing::debug!</span>(
@@ -375,7 +377,7 @@
                 }
                 <span class="kw">let </span>vid_disperse = VidDisperse::calculate_vid_disperse::&lt;V&gt;(
                     <span class="kw-2">&amp;</span>payload,
-                    <span class="kw-2">&amp;</span>Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership_coordinator,
                     <span class="kw-2">*</span>view_number,
                     epoch,
                     epoch,
@@ -432,7 +434,7 @@
                     <span class="kw-2">&amp;</span>event_stream,
                 )
                 .<span class="kw">await</span>;
-            }
+            },
 
             HotShotEvent::ViewChange(view, epoch) =&gt; {
                 <span class="kw">if </span><span class="kw-2">*</span>epoch &gt; <span class="self">self</span>.cur_epoch {
@@ -450,7 +452,7 @@
                 <span class="self">self</span>.cur_view = view;
 
                 <span class="kw">return </span><span class="prelude-val">None</span>;
-            }
+            },
 
             HotShotEvent::QuorumProposalSend(proposal, <span class="kw">_</span>) =&gt; {
                 <span class="kw">let </span>proposed_block_number = proposal.data.block_header().block_number();
@@ -483,7 +485,7 @@
 
                 <span class="kw">let </span>next_epoch_vid_disperse = VidDisperse::calculate_vid_disperse::&lt;V&gt;(
                     <span class="kw-2">&amp;</span>payload.payload,
-                    <span class="kw-2">&amp;</span>Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.membership),
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership_coordinator,
                     proposal_view_number,
                     target_epoch,
                     sender_epoch,
@@ -515,11 +517,11 @@
                     <span class="kw-2">&amp;</span>event_stream,
                 )
                 .<span class="kw">await</span>;
-            }
+            },
             HotShotEvent::Shutdown =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Some</span>(HotShotTaskCompleted);
-            }
-            <span class="kw">_ </span>=&gt; {}
+            },
+            <span class="kw">_ </span>=&gt; {},
         }
         <span class="prelude-val">None
     </span>}

@@ -612,13 +612,54 @@
 <a href="#611" id="611">611</a>
 <a href="#612" id="612">612</a>
 <a href="#613" id="613">613</a>
-<a href="#614" id="614">614</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#614" id="614">614</a>
+<a href="#615" id="615">615</a>
+<a href="#616" id="616">616</a>
+<a href="#617" id="617">617</a>
+<a href="#618" id="618">618</a>
+<a href="#619" id="619">619</a>
+<a href="#620" id="620">620</a>
+<a href="#621" id="621">621</a>
+<a href="#622" id="622">622</a>
+<a href="#623" id="623">623</a>
+<a href="#624" id="624">624</a>
+<a href="#625" id="625">625</a>
+<a href="#626" id="626">626</a>
+<a href="#627" id="627">627</a>
+<a href="#628" id="628">628</a>
+<a href="#629" id="629">629</a>
+<a href="#630" id="630">630</a>
+<a href="#631" id="631">631</a>
+<a href="#632" id="632">632</a>
+<a href="#633" id="633">633</a>
+<a href="#634" id="634">634</a>
+<a href="#635" id="635">635</a>
+<a href="#636" id="636">636</a>
+<a href="#637" id="637">637</a>
+<a href="#638" id="638">638</a>
+<a href="#639" id="639">639</a>
+<a href="#640" id="640">640</a>
+<a href="#641" id="641">641</a>
+<a href="#642" id="642">642</a>
+<a href="#643" id="643">643</a>
+<a href="#644" id="644">644</a>
+<a href="#645" id="645">645</a>
+<a href="#646" id="646">646</a>
+<a href="#647" id="647">647</a>
+<a href="#648" id="648">648</a>
+<a href="#649" id="649">649</a>
+<a href="#650" id="650">650</a>
+<a href="#651" id="651">651</a>
+<a href="#652" id="652">652</a>
+<a href="#653" id="653">653</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet, HashMap},
+    fmt::Debug,
     num::NonZeroU64,
+    sync::Arc,
 };
 
-<span class="kw">use </span>async_trait::async_trait;
+<span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>contract_bindings_alloy::permissionedstaketable::PermissionedStakeTable::StakersUpdated;
 <span class="kw">use </span>ethers::types::{Address, U256};
 <span class="kw">use </span>ethers_conv::ToAlloy;
@@ -642,8 +683,9 @@
 <span class="kw">use </span>thiserror::Error;
 
 <span class="kw">use super</span>::{
+    traits::StateCatchup,
     v0_3::{DAMembers, StakeTable, StakeTables},
-    Header, L1Client, NodeState, PubKey, SeqTypes,
+    Header, L1Client, Leaf2, NodeState, PubKey, SeqTypes,
 };
 
 <span class="kw">type </span>Epoch = &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch;
@@ -704,7 +746,7 @@
     }
 }
 
-<span class="attr">#[derive(Clone, Debug)]
+<span class="attr">#[derive(Clone, derive_more::derive::Debug)]
 </span><span class="doccomment">/// Type to describe DA and Stake memberships
 </span><span class="kw">pub struct </span>EpochCommittees {
     <span class="doccomment">/// Committee used when we're in pre-epoch state
@@ -725,6 +767,9 @@
     <span class="doccomment">/// Randomized committees, filled when we receive the DrbResult
     </span>randomized_committees: BTreeMap&lt;Epoch, RandomizedCommittee&lt;StakeTableEntry&lt;PubKey&gt;&gt;&gt;,
 
+    <span class="doccomment">/// Peers for catching up the stake table
+    </span><span class="attr">#[debug(skip)]
+    </span>peers: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;&gt;,
     <span class="doccomment">/// Contains the epoch after which initial_drb_result will not be used (set_first_epoch.epoch + 2)
     /// And the DrbResult to use before that epoch
     </span>initial_drb_result: <span class="prelude-ty">Option</span>&lt;(Epoch, DrbResult)&gt;,
@@ -895,6 +940,7 @@
             l1_client: instance_state.l1_client.clone(),
             contract_address: instance_state.chain_config.stake_table_contract,
             randomized_committees: BTreeMap::new(),
+            peers: <span class="prelude-val">Some</span>(instance_state.peers.clone()),
             initial_drb_result: <span class="prelude-val">None</span>,
         }
     }
@@ -912,7 +958,7 @@
 #[error(<span class="string">"Could not lookup leader"</span>)] </span><span class="comment">// TODO error variants? message?
 </span><span class="kw">pub struct </span>LeaderLookupError;
 
-<span class="attr">#[async_trait]
+<span class="comment">// #[async_trait]
 </span><span class="kw">impl </span>Membership&lt;SeqTypes&gt; <span class="kw">for </span>EpochCommittees {
     <span class="kw">type </span>Error = LeaderLookupError;
     <span class="comment">// DO NOT USE. Dummy constructor to comply w/ trait.
@@ -1082,7 +1128,8 @@
         .unwrap()
     }
 
-    <span class="kw">async fn </span>add_epoch_root(
+    <span class="attr">#[allow(refining_impl_trait)]
+    </span><span class="kw">async fn </span>add_epoch_root(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         epoch: Epoch,
         block_header: Header,
@@ -1097,6 +1144,37 @@
                     <span class="kw">let _ </span>= committee.update_stake_table(epoch, stake_table);
                 })
             })
+    }
+
+    <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: Epoch) -&gt; bool {
+        <span class="self">self</span>.state.contains_key(<span class="kw-2">&amp;</span>epoch)
+    }
+
+    <span class="kw">async fn </span>get_epoch_root_and_drb(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        block_height: u64,
+        epoch_height: u64,
+        epoch: Epoch,
+    ) -&gt; anyhow::Result&lt;(Header, DrbResult)&gt; {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>peers) = <span class="self">self</span>.peers <span class="kw">else </span>{
+            <span class="macro">anyhow::bail!</span>(<span class="string">"No Peers Configured for Catchup"</span>);
+        };
+        <span class="comment">// Fetch leaves from peers
+        </span><span class="kw">let </span>leaf: Leaf2 = peers
+            .fetch_leaf(block_height, <span class="self">self</span>, epoch, epoch_height)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="comment">//DRB height is decided in the next epoch's last block
+        </span><span class="kw">let </span>drb_height = block_height + epoch_height + <span class="number">3</span>;
+        <span class="kw">let </span>drb_leaf = peers
+            .fetch_leaf(drb_height, <span class="self">self</span>, epoch, epoch_height)
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>((
+            leaf.block_header().clone(),
+            drb_leaf
+                .next_drb_result
+                .context(<span class="macro">format!</span>(<span class="string">"No DRB result on decided leaf at {drb_height}"</span>))<span class="question-mark">?</span>,
+        ))
     }
 
     <span class="kw">fn </span>add_drb_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: Epoch, drb: DrbResult) {
