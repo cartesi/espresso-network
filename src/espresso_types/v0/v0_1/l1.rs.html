@@ -222,7 +222,15 @@
 <a href="#221" id="221">221</a>
 <a href="#222" id="222">222</a>
 <a href="#223" id="223">223</a>
-<a href="#224" id="224">224</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
+    primitives::FixedBytes,
     providers::RootProvider,
     transports::http::{Client, Http},
 };
@@ -251,6 +259,12 @@
     <span class="kw">pub </span>number: u64,
     <span class="kw">pub </span>timestamp: ethers::types::U256,
     <span class="kw">pub </span>hash: ethers::types::H256,
+}
+
+<span class="attr">#[derive(Clone, Copy, Debug, PartialOrd, Ord, Hash, PartialEq, Eq)]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>L1BlockInfoWithParent {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) info: L1BlockInfo,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) parent_hash: FixedBytes&lt;<span class="number">32</span>&gt;,
 }
 
 <span class="attr">#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, Hash, PartialEq, Eq)]
@@ -392,13 +406,13 @@
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>L1State {
     <span class="kw">pub</span>(<span class="kw">crate</span>) snapshot: L1Snapshot,
-    <span class="kw">pub</span>(<span class="kw">crate</span>) finalized: LruCache&lt;u64, L1BlockInfo&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) finalized: LruCache&lt;u64, L1BlockInfoWithParent&gt;,
 }
 
 <span class="attr">#[derive(Clone, Debug)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">enum </span>L1Event {
     NewHead { head: u64 },
-    NewFinalized { finalized: L1BlockInfo },
+    NewFinalized { finalized: L1BlockInfoWithParent },
 }
 
 <span class="attr">#[derive(Debug, Default)]

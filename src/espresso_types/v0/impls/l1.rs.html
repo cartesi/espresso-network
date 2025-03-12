@@ -1543,7 +1543,52 @@
 <a href="#1542" id="1542">1542</a>
 <a href="#1543" id="1543">1543</a>
 <a href="#1544" id="1544">1544</a>
-<a href="#1545" id="1545">1545</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1545" id="1545">1545</a>
+<a href="#1546" id="1546">1546</a>
+<a href="#1547" id="1547">1547</a>
+<a href="#1548" id="1548">1548</a>
+<a href="#1549" id="1549">1549</a>
+<a href="#1550" id="1550">1550</a>
+<a href="#1551" id="1551">1551</a>
+<a href="#1552" id="1552">1552</a>
+<a href="#1553" id="1553">1553</a>
+<a href="#1554" id="1554">1554</a>
+<a href="#1555" id="1555">1555</a>
+<a href="#1556" id="1556">1556</a>
+<a href="#1557" id="1557">1557</a>
+<a href="#1558" id="1558">1558</a>
+<a href="#1559" id="1559">1559</a>
+<a href="#1560" id="1560">1560</a>
+<a href="#1561" id="1561">1561</a>
+<a href="#1562" id="1562">1562</a>
+<a href="#1563" id="1563">1563</a>
+<a href="#1564" id="1564">1564</a>
+<a href="#1565" id="1565">1565</a>
+<a href="#1566" id="1566">1566</a>
+<a href="#1567" id="1567">1567</a>
+<a href="#1568" id="1568">1568</a>
+<a href="#1569" id="1569">1569</a>
+<a href="#1570" id="1570">1570</a>
+<a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+<a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
+<a href="#1586" id="1586">1586</a>
+<a href="#1587" id="1587">1587</a>
+<a href="#1588" id="1588">1588</a>
+<a href="#1589" id="1589">1589</a>
+<a href="#1590" id="1590">1590</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::{min, Ordering},
     num::NonZeroUsize,
     pin::Pin,
@@ -1560,7 +1605,7 @@
     rpc::{
         client::RpcClient,
         json_rpc::{RequestPacket, ResponsePacket},
-        types::BlockTransactionsKind,
+        types::{Block, BlockTransactionsKind},
     },
     transports::{http::Http, RpcError, TransportErrorKind},
 };
@@ -1594,7 +1639,7 @@
 <span class="kw">use super</span>::{
     v0_1::{SingleTransport, SingleTransportStatus, SwitchingTransport},
     v0_3::StakeTables,
-    L1BlockInfo, L1ClientMetrics, L1State, L1UpdateTask,
+    L1BlockInfo, L1BlockInfoWithParent, L1ClientMetrics, L1State, L1UpdateTask,
 };
 <span class="kw">use crate</span>::{FeeInfo, L1Client, L1ClientOptions, L1Event, L1Snapshot};
 
@@ -1607,6 +1652,25 @@
 <span class="kw">impl </span>Ord <span class="kw">for </span>L1BlockInfo {
     <span class="kw">fn </span>cmp(<span class="kw-2">&amp;</span><span class="self">self</span>, other: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; Ordering {
         <span class="self">self</span>.number.cmp(<span class="kw-2">&amp;</span>other.number)
+    }
+}
+
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>Block&gt; <span class="kw">for </span>L1BlockInfo {
+    <span class="kw">fn </span>from(block: <span class="kw-2">&amp;</span>Block) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            number: block.header.number,
+            timestamp: ethers::types::U256::from(block.header.timestamp),
+            hash: block.header.hash.to_ethers(),
+        }
+    }
+}
+
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>Block&gt; <span class="kw">for </span>L1BlockInfoWithParent {
+    <span class="kw">fn </span>from(block: <span class="kw-2">&amp;</span>Block) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            info: block.into(),
+            parent_hash: block.header.parent_hash,
+        }
     }
 }
 
@@ -2071,17 +2135,15 @@
                                     .<span class="kw">await
                                     </span>.ok();
                             }
-                            <span class="kw">if </span>finalized &gt; state.snapshot.finalized {
-                                <span class="macro">tracing::info!</span>(
-                                    <span class="question-mark">?</span>finalized,
-                                    old_finalized = <span class="question-mark">?</span>state.snapshot.finalized,
-                                    <span class="string">"L1 finalized updated"</span>,
-                                );
-                                <span class="kw">if let </span><span class="prelude-val">Some</span>(finalized) = finalized {
-                                    metrics.finalized.set(finalized.number <span class="kw">as </span>usize);
-                                }
-                                state.snapshot.finalized = finalized;
-                                <span class="kw">if let </span><span class="prelude-val">Some</span>(finalized) = finalized {
+                            <span class="kw">if let </span><span class="prelude-val">Some</span>(finalized) = finalized {
+                                <span class="kw">if </span><span class="prelude-val">Some</span>(finalized.info) &gt; state.snapshot.finalized {
+                                    <span class="macro">tracing::info!</span>(
+                                        <span class="question-mark">?</span>finalized,
+                                        old_finalized = <span class="question-mark">?</span>state.snapshot.finalized,
+                                        <span class="string">"L1 finalized updated"</span>,
+                                    );
+                                    metrics.finalized.set(finalized.info.number <span class="kw">as </span>usize);
+                                    state.snapshot.finalized = <span class="prelude-val">Some</span>(finalized.info);
                                     sender
                                         .broadcast_direct(L1Event::NewFinalized { finalized })
                                         .<span class="kw">await
@@ -2181,12 +2243,11 @@
                 <span class="kw">let </span>L1Event::NewFinalized { finalized } = event <span class="kw">else </span>{
                     <span class="kw">continue</span>;
                 };
-                <span class="kw">if </span>finalized.number &gt;= number {
+                <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.state.lock().<span class="kw">await</span>;
+                state.put_finalized(finalized);
+                <span class="kw">if </span>finalized.info.number &gt;= number {
                     <span class="macro">tracing::info!</span>(number, <span class="question-mark">?</span>finalized, <span class="string">"got finalized L1 block"</span>);
-                    <span class="kw">return </span><span class="self">self
-                        </span>.get_finalized_block(<span class="self">self</span>.state.lock().<span class="kw">await</span>, number)
-                        .<span class="kw">await
-                        </span>.<span class="number">1</span>;
+                    <span class="kw">return </span><span class="self">self</span>.get_finalized_block(state, number).<span class="kw">await</span>.<span class="number">1</span>;
                 }
                 <span class="macro">tracing::debug!</span>(number, <span class="question-mark">?</span>finalized, <span class="string">"waiting for finalized L1 block"</span>);
             }
@@ -2226,9 +2287,9 @@
                 <span class="kw">let </span>L1Event::NewFinalized { finalized } = event <span class="kw">else </span>{
                     <span class="kw">continue</span>;
                 };
-                <span class="kw">if </span>finalized.timestamp &gt;= timestamp.to_ethers() {
+                <span class="kw">if </span>finalized.info.timestamp &gt;= timestamp.to_ethers() {
                     <span class="macro">tracing::info!</span>(%timestamp, <span class="question-mark">?</span>finalized, <span class="string">"got finalized block"</span>);
-                    <span class="kw">break </span><span class="lifetime">'outer </span>(<span class="self">self</span>.state.lock().<span class="kw">await</span>, finalized);
+                    <span class="kw">break </span><span class="lifetime">'outer </span>(<span class="self">self</span>.state.lock().<span class="kw">await</span>, finalized.info);
                 }
                 <span class="macro">tracing::debug!</span>(%timestamp, <span class="question-mark">?</span>finalized, <span class="string">"waiting for L1 finalized block"</span>);
             }
@@ -2255,52 +2316,85 @@
         <span class="kw-2">mut </span>state: MutexGuard&lt;<span class="lifetime">'a</span>, L1State&gt;,
         number: u64,
     ) -&gt; (MutexGuard&lt;<span class="lifetime">'a</span>, L1State&gt;, L1BlockInfo) {
-        <span class="comment">// Try to get the block from the finalized block cache.
-        </span><span class="macro">assert!</span>(
-            state.snapshot.finalized.is_some()
-                &amp;&amp; number &lt;= state.snapshot.finalized.unwrap().number,
+        <span class="kw">let </span>latest_finalized = state
+            .snapshot
+            .finalized
+            .expect(<span class="string">"get_finalized_block called before any blocks are finalized"</span>);
+        <span class="macro">assert!</span>(
+            number &lt;= latest_finalized.number,
             <span class="string">"requesting a finalized block {number} that isn't finalized; snapshot: {:?}"</span>,
             state.snapshot,
         );
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(block) = state.finalized.get(<span class="kw-2">&amp;</span>number) {
-            <span class="kw">let </span>block = <span class="kw-2">*</span>block;
-            <span class="kw">return </span>(state, block);
-        }
-        drop(state);
 
-        <span class="comment">// If not in cache, fetch the block from the L1 provider.
-        </span><span class="kw">let </span>block = <span class="kw">loop </span>{
-            <span class="kw">let </span>block = <span class="kw">match </span><span class="self">self
-                </span>.provider
-                .get_block(BlockId::number(number), BlockTransactionsKind::Hashes)
-                .<span class="kw">await
-            </span>{
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(block)) =&gt; block,
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
-                    <span class="macro">tracing::warn!</span>(
-                        number,
-                        <span class="string">"provider error: finalized L1 block should always be available"
-                    </span>);
-                    <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
-                    <span class="kw">continue</span>;
-                },
-                <span class="prelude-val">Err</span>(err) =&gt; {
-                    <span class="macro">tracing::warn!</span>(number, <span class="string">"failed to get finalized L1 block: {err:#}"</span>);
-                    <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
-                    <span class="kw">continue</span>;
-                },
-            };
-            <span class="kw">break </span>L1BlockInfo {
-                number: block.header.number,
-                hash: block.header.hash.to_ethers(),
-                timestamp: ethers::types::U256::from(block.header.timestamp),
-            };
+        <span class="comment">// To get this block and be sure we are getting the correct finalized block, we first need
+        // to find an equal or later block so we can find the expected hash of this block. If we
+        // were to just look up the block by number, there could be problems if we failed over to a
+        // different (lagging) L1 provider, which has yet to finalize this block and reports a
+        // different block with the same number.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>successor_number = number;
+        <span class="kw">let </span><span class="kw-2">mut </span>successor = <span class="kw">loop </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(block) = state.finalized.get(<span class="kw-2">&amp;</span>successor_number) {
+                <span class="kw">break </span><span class="kw-2">*</span>block;
+            }
+            successor_number += <span class="number">1</span>;
+            <span class="kw">if </span>successor_number &gt; latest_finalized.number {
+                <span class="comment">// We don't have any cached finalized block after the requested one; fetch the
+                // current finalized block from the network.
+                // Don't hold state lock while fetching from network.
+                </span>drop(state);
+                <span class="kw">let </span>block = <span class="kw">loop </span>{
+                    <span class="kw">match </span>get_finalized_block(<span class="kw-2">&amp;</span><span class="self">self</span>.provider).<span class="kw">await </span>{
+                        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(block)) =&gt; {
+                            <span class="kw">break </span>block;
+                        },
+                        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
+                            <span class="macro">tracing::warn!</span>(<span class="string">"no finalized block even though finalized snapshot is Some; this can be caused by an L1 client failover"</span>);
+                            <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
+                        },
+                        <span class="prelude-val">Err</span>(err) =&gt; {
+                            <span class="macro">tracing::warn!</span>(<span class="string">"Error getting finalized block: {err:#}"</span>);
+                            <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
+                        },
+                    }
+                };
+                state = <span class="self">self</span>.state.lock().<span class="kw">await</span>;
+                state.put_finalized(block);
+                <span class="kw">break </span>block;
+            }
         };
 
-        <span class="comment">// After fetching, add the block to the cache.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.state.lock().<span class="kw">await</span>;
-        state.put_finalized(block);
-        (state, block)
+        <span class="comment">// Work backwards from the known finalized successor, fetching blocks by parent hash so we
+        // know we are getting the correct block.
+        </span><span class="kw">while </span>successor.info.number &gt; number {
+            drop(state);
+            successor = <span class="kw">loop </span>{
+                <span class="kw">let </span>block = <span class="kw">match </span><span class="self">self
+                    </span>.provider
+                    .get_block(successor.parent_hash.into(), BlockTransactionsKind::Hashes)
+                    .<span class="kw">await
+                </span>{
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(block)) =&gt; block,
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {
+                        <span class="macro">tracing::warn!</span>(
+                            number,
+                            <span class="string">"provider error: finalized L1 block should always be available"
+                        </span>);
+                        <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
+                        <span class="kw">continue</span>;
+                    },
+                    <span class="prelude-val">Err</span>(err) =&gt; {
+                        <span class="macro">tracing::warn!</span>(number, <span class="string">"failed to get finalized L1 block: {err:#}"</span>);
+                        <span class="self">self</span>.retry_delay().<span class="kw">await</span>;
+                        <span class="kw">continue</span>;
+                    },
+                };
+                <span class="kw">break </span>(<span class="kw-2">&amp;</span>block).into();
+            };
+            state = <span class="self">self</span>.state.lock().<span class="kw">await</span>;
+            state.put_finalized(successor);
+        }
+
+        (state, successor.info)
     }
 
     <span class="doccomment">/// Get fee info for each `Deposit` occurring between `prev`
@@ -2437,19 +2531,19 @@
         }
     }
 
-    <span class="kw">fn </span>put_finalized(<span class="kw-2">&amp;mut </span><span class="self">self</span>, info: L1BlockInfo) {
+    <span class="kw">fn </span>put_finalized(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block: L1BlockInfoWithParent) {
         <span class="macro">assert!</span>(
             <span class="self">self</span>.snapshot.finalized.is_some()
-                &amp;&amp; info.number &lt;= <span class="self">self</span>.snapshot.finalized.unwrap().number,
-            <span class="string">"inserting a finalized block {info:?} that isn't finalized; snapshot: {:?}"</span>,
+                &amp;&amp; block.info.number &lt;= <span class="self">self</span>.snapshot.finalized.unwrap().number,
+            <span class="string">"inserting a finalized block {block:?} that isn't finalized; snapshot: {:?}"</span>,
             <span class="self">self</span>.snapshot,
         );
 
-        <span class="kw">if let </span><span class="prelude-val">Some</span>((old_number, old_info)) = <span class="self">self</span>.finalized.push(info.number, info) {
-            <span class="kw">if </span>old_number == info.number {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>((old_number, old_block)) = <span class="self">self</span>.finalized.push(block.info.number, block) {
+            <span class="kw">if </span>old_number == block.info.number {
                 <span class="macro">tracing::error!</span>(
-                    <span class="question-mark">?</span>old_info,
-                    <span class="question-mark">?</span>info,
+                    <span class="question-mark">?</span>old_block,
+                    <span class="question-mark">?</span>block,
                     <span class="string">"got different info for the same finalized height; something has gone very wrong with the L1"</span>,
                 );
             }
@@ -2459,7 +2553,7 @@
 
 <span class="kw">async fn </span>get_finalized_block(
     rpc: <span class="kw-2">&amp;</span>RootProvider&lt;SwitchingTransport&gt;,
-) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;L1BlockInfo&gt;&gt; {
+) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;L1BlockInfoWithParent&gt;&gt; {
     <span class="kw">let </span><span class="prelude-val">Some</span>(block) = rpc
         .get_block(BlockId::finalized(), BlockTransactionsKind::Hashes)
         .<span class="kw">await</span><span class="question-mark">?
@@ -2472,11 +2566,7 @@
         <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
     };
 
-    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(L1BlockInfo {
-        number: block.header.number,
-        timestamp: ethers::types::U256::from(block.header.timestamp),
-        hash: block.header.hash.to_ethers(),
-    }))
+    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((<span class="kw-2">&amp;</span>block).into()))
 }
 
 <span class="attr">#[cfg(test)]
