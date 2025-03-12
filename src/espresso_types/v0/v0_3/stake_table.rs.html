@@ -37,15 +37,15 @@
 </span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, From)]
 </span><span class="kw">pub struct </span>CombinedStakeTable(Vec&lt;PeerConfigKeys&lt;PubKey&gt;&gt;);
 
-<span class="attr">#[derive(Clone, Debug, From, Into)]
+<span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize)]
 </span><span class="doccomment">/// NewType to disambiguate DA Membership
 </span><span class="kw">pub struct </span>DAMembers(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;PubKey&gt;&gt;);
 
-<span class="attr">#[derive(Clone, Debug, From, Into)]
+<span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize)]
 </span><span class="doccomment">/// NewType to disambiguate StakeTable
 </span><span class="kw">pub struct </span>StakeTable(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;PubKey&gt;&gt;);
 
-<span class="attr">#[derive(Clone, Debug)]
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
 </span><span class="kw">pub struct </span>StakeTables {
     <span class="kw">pub </span>stake_table: StakeTable,
     <span class="kw">pub </span>da_members: DAMembers,
