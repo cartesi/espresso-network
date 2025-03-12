@@ -240,7 +240,9 @@
 <a href="#239" id="239">239</a>
 <a href="#240" id="240">240</a>
 <a href="#241" id="241">241</a>
-<a href="#242" id="242">242</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -361,9 +363,11 @@
 #[serde(bound(deserialize = <span class="string">""</span>))]
 </span><span class="doccomment">/// structure of peers' config, including public key, stake value, and state key.
 </span><span class="kw">pub struct </span>PeerConfig&lt;KEY: SignatureKey&gt; {
-    <span class="doccomment">/// The peer's public key and stake value
+    <span class="comment">////The peer's public key and stake value. The key is the BLS Public Key used to
+    </span><span class="doccomment">/// verify Stake Holder in the application layer.
     </span><span class="kw">pub </span>stake_table_entry: KEY::StakeTableEntry,
-    <span class="doccomment">/// the peer's state public key
+    <span class="comment">//// The peer's state public key. This is the Schnorr Public Key used to
+    </span><span class="doccomment">/// verify HotShot state in the state-prover.
     </span><span class="kw">pub </span>state_ver_key: StateVerKey,
 }
 
