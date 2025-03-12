@@ -92,8 +92,8 @@ where
                             return None;
                         }
                     },
-                    VidCommon::V1(common) => {
-                        let bytes = payload.data().encode();
+                    VidCommon::V1(_common) => {
+                     /*    let bytes = payload.data().encode();
                         // Initialize AVIDM parameters
                         let avidm_param = match init_avidm_param(common.total_weights) {
                             Ok(param) => param,
@@ -121,7 +121,8 @@ where
                             tracing::error!("commitment type mismatch for AVIDM check");
                             return None;
                         }
-                    },
+                        */
+                    }
                 }
 
                 Some(payload.data)
