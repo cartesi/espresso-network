@@ -811,7 +811,7 @@ pub mod test_helpers {
                                     state,
                                     persistence,
                                     catchup,
-                                    &NoMetrics,
+                                    &NoMetrics, 
                                     STAKE_TABLE_CAPACITY_FOR_TEST,
                                     NullEventConsumer,
                                     bind_version,
@@ -1629,7 +1629,7 @@ mod test {
         config::PublicHotShotConfig,
         traits::NullEventConsumer,
         v0_1::{UpgradeMode, ViewBasedUpgrade},
-        BackoffParams, EpochVersion, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
+        BackoffParams, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
         MockSequencerVersions, SequencerVersions, TimeBasedUpgrade, Timestamp, Upgrade,
         UpgradeType, ValidatedState,
     };
@@ -1639,6 +1639,7 @@ mod test {
         stream::{StreamExt, TryStreamExt},
     };
     use hotshot::types::EventType;
+    use hotshot_example_types::node_types::EpochsTestVersions;
     use hotshot_query_service::{
         availability::{BlockQueryData, LeafQueryData, VidCommonQueryData},
         types::HeightIndexed,
@@ -1985,7 +1986,6 @@ mod test {
         }
     }
 
-    #[ignore]
     #[tokio::test(flavor = "multi_thread")]
     async fn test_catchup_epochs() {
         setup_test();
@@ -2004,7 +2004,7 @@ mod test {
             .api_config(Options::with_port(port))
             .network_config(network_config)
             .catchups(std::array::from_fn(|_| {
-                StatePeers::<StaticVersion<0, 1>>::from_urls(
+                StatePeers::<<EpochsTestVersions as Versions>::Base>::from_urls(
                     vec![format!("http://localhost:{port}").parse().unwrap()],
                     Default::default(),
                     &NoMetrics,
@@ -2013,7 +2013,7 @@ mod test {
             .build();
         let mut network = TestNetwork::new(
             config,
-            SequencerVersions::<EpochVersion, EpochVersion>::new(),
+            EpochsTestVersions{},
         )
         .await;
 

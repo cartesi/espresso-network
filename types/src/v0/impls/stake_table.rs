@@ -546,6 +546,8 @@ impl Membership<SeqTypes> for EpochCommittees {
         self.state.insert(epoch, self.non_epoch_committee.clone());
         self.state
             .insert(epoch + 1, self.non_epoch_committee.clone());
+        self.add_drb_result(epoch, initial_drb_result);
+        self.add_drb_result(epoch + 1, initial_drb_result);
         self.initial_drb_result = Some((epoch + 2, initial_drb_result));
     }
 }
