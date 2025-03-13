@@ -82,15 +82,6 @@ where
         self.inner.da_committee_members(view_number, epoch)
     }
 
-    fn committee_leaders(
-        &self,
-        view_number: TYPES::View,
-        epoch: Option<TYPES::Epoch>,
-    ) -> std::collections::BTreeSet<TYPES::SignatureKey> {
-        self.assert_has_epoch(epoch);
-        self.inner.committee_leaders(view_number, epoch)
-    }
-
     fn stake(
         &self,
         pub_key: &TYPES::SignatureKey,

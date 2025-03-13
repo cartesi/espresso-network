@@ -163,18 +163,6 @@ impl<TYPES: NodeType> Membership<TYPES> for Committee<TYPES> {
             .collect()
     }
 
-    /// Get all eligible leaders of the committee for the current view
-    fn committee_leaders(
-        &self,
-        _view_number: <TYPES as NodeType>::View,
-        _epoch: Option<<TYPES as NodeType>::Epoch>,
-    ) -> BTreeSet<<TYPES as NodeType>::SignatureKey> {
-        self.eligible_leaders
-            .iter()
-            .map(|x| TYPES::SignatureKey::public_key(&x.stake_table_entry))
-            .collect()
-    }
-
     /// Get the stake table entry for a public key
     fn stake(
         &self,

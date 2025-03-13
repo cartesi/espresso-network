@@ -588,9 +588,20 @@ pub mod testing {
         BuilderTask, SimpleBuilderImplementation, TestBuilderImplementation,
     };
     use hotshot_types::{
-        data::EpochNumber, drb::INITIAL_DRB_RESULT, event::LeafInfo, light_client::{CircuitField, StateKeyPair, StateVerKey}, traits::{
-            block_contents::BlockHeader, election::Membership, metrics::NoMetrics, network::Topic, node_implementation::ConsensusTime, signature_key::{BuilderSignatureKey, StakeTableEntryType}, stake_table::StakeTableScheme
-        }, HotShotConfig, PeerConfig
+        data::EpochNumber,
+        drb::INITIAL_DRB_RESULT,
+        event::LeafInfo,
+        light_client::{CircuitField, StateKeyPair, StateVerKey},
+        traits::{
+            block_contents::BlockHeader,
+            election::Membership,
+            metrics::NoMetrics,
+            network::Topic,
+            node_implementation::ConsensusTime,
+            signature_key::{BuilderSignatureKey, StakeTableEntryType},
+            stake_table::StakeTableScheme,
+        },
+        HotShotConfig, PeerConfig,
     };
     use marketplace_builder_core::{
         hooks::NoHooks,

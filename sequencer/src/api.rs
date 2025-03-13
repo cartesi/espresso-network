@@ -811,7 +811,7 @@ pub mod test_helpers {
                                     state,
                                     persistence,
                                     catchup,
-                                    &NoMetrics, 
+                                    &NoMetrics,
                                     STAKE_TABLE_CAPACITY_FOR_TEST,
                                     NullEventConsumer,
                                     bind_version,
@@ -2004,18 +2004,14 @@ mod test {
             .api_config(Options::with_port(port))
             .network_config(network_config)
             .catchups(std::array::from_fn(|_| {
-                StatePeers::<<EpochsTestVersions as Versions>::Base>::from_urls(
+                StatePeers::<StaticVersion<0, 1>>::from_urls(
                     vec![format!("http://localhost:{port}").parse().unwrap()],
                     Default::default(),
                     &NoMetrics,
                 )
             }))
             .build();
-        let mut network = TestNetwork::new(
-            config,
-            EpochsTestVersions{},
-        )
-        .await;
+        let mut network = TestNetwork::new(config, EpochsTestVersions {}).await;
 
         // Wait for replica 0 to decide in the third epoch.
         let mut events = network.peers[0].event_stream().await;
@@ -2024,6 +2020,11 @@ mod test {
             let EventType::Decide { leaf_chain, .. } = event.event else {
                 continue;
             };
+            tracing::error!(
+                "got decide view number {}",
+                leaf_chain[0].leaf.view_number()
+            );
+
             if leaf_chain[0].leaf.height() > EPOCH_HEIGHT * 3 {
                 break;
             }
@@ -2046,7 +2047,7 @@ mod test {
             .collect::<Vec<_>>()
             .await;
 
-        tracing::info!("restarting node");
+        tracing::error!("restarting node");
         let node = network
             .cfg
             .init_node(

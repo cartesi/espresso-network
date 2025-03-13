@@ -281,18 +281,6 @@ impl<TYPES: NodeType> EpochMembership<TYPES> {
             .da_committee_members(view_number, self.epoch)
     }
 
-    /// Get all leaders in the committee for a specific view for a specific epoch
-    pub async fn committee_leaders(
-        &self,
-        view_number: TYPES::View,
-    ) -> BTreeSet<TYPES::SignatureKey> {
-        self.coordinator
-            .membership
-            .read()
-            .await
-            .committee_leaders(view_number, self.epoch)
-    }
-
     /// Get the stake table entry for a public key, returns `None` if the
     /// key is not in the table for a specific epoch
     pub async fn stake(

@@ -43,14 +43,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
         view_number: TYPES::View,
         epoch: Option<TYPES::Epoch>,
     ) -> BTreeSet<TYPES::SignatureKey>;
-
-    /// Get all leaders in the committee for a specific view for a specific epoch
-    fn committee_leaders(
-        &self,
-        view_number: TYPES::View,
-        epoch: Option<TYPES::Epoch>,
-    ) -> BTreeSet<TYPES::SignatureKey>;
-
+    
     /// Get the stake table entry for a public key, returns `None` if the
     /// key is not in the table for a specific epoch
     fn stake(

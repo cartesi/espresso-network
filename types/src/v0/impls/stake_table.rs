@@ -361,20 +361,6 @@ impl Membership<SeqTypes> for EpochCommittees {
         }
     }
 
-    /// Get all eligible leaders of the committee for the current view
-    fn committee_leaders(
-        &self,
-        _view_number: <SeqTypes as NodeType>::View,
-        epoch: Option<Epoch>,
-    ) -> BTreeSet<PubKey> {
-        self.state(&epoch)
-            .unwrap()
-            .eligible_leaders
-            .iter()
-            .map(|x| PubKey::public_key(&x.stake_table_entry))
-            .collect()
-    }
-
     /// Get the stake table entry for a public key
     fn stake(&self, pub_key: &PubKey, epoch: Option<Epoch>) -> Option<PeerConfig<PubKey>> {
         // Only return the stake if it is above zero
@@ -482,12 +468,14 @@ impl Membership<SeqTypes> for EpochCommittees {
         block_header: Header,
     ) -> Option<Box<dyn FnOnce(&mut Self) + Send>> {
         let address = self.contract_address?;
+        tracing::error!("adding epoch root for epoch {}", epoch);
         self.l1_client
             .get_stake_table(address.to_alloy(), block_header.height())
             .await
             .ok()
             .map(|stake_table| -> Box<dyn FnOnce(&mut Self) + Send> {
                 Box::new(move |committee: &mut Self| {
+                    tracing::error!("updating stake table for epoch {}", epoch);
                     let _ = committee.update_stake_table(epoch, stake_table);
                 })
             })
