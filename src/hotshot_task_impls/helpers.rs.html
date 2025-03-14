@@ -1318,7 +1318,6 @@
             }
         }
 
-        res.leaf_views.push(info.clone());
         <span class="comment">// If the block payload is available for this leaf, include it in
         // the leaf chain that we send to the client.
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(payload) = consensus_reader
@@ -1336,6 +1335,7 @@
         }
 
         current_leaf_info = consensus_reader.parent_leaf_info(<span class="kw-2">&amp;</span>info.leaf, public_key);
+        res.leaf_views.push(info.clone());
     }
 
     <span class="kw">if </span>!txns.is_empty() {

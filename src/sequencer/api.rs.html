@@ -4117,7 +4117,7 @@
         <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
         <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
 
-        <span class="kw">let </span>ns_table = parse_ns_table(payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>payload.encode());
+        <span class="kw">let </span>ns_table = parse_ns_table(payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>payload.ns_table().encode());
         <span class="kw">let </span>(payload_commitment, shares) =
             AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>payload_bytes_arc, ns_table).unwrap();
 

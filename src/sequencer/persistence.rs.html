@@ -1053,7 +1053,16 @@
 <a href="#1052" id="1052">1052</a>
 <a href="#1053" id="1053">1053</a>
 <a href="#1054" id="1054">1054</a>
-<a href="#1055" id="1055">1055</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer node persistence.
+<a href="#1055" id="1055">1055</a>
+<a href="#1056" id="1056">1056</a>
+<a href="#1057" id="1057">1057</a>
+<a href="#1058" id="1058">1058</a>
+<a href="#1059" id="1059">1059</a>
+<a href="#1060" id="1060">1060</a>
+<a href="#1061" id="1061">1061</a>
+<a href="#1062" id="1062">1062</a>
+<a href="#1063" id="1063">1063</a>
+<a href="#1064" id="1064">1064</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer node persistence.
 //!
 //! This module implements the persistence required for a sequencer node to rejoin the network and
 //! resume participating in consensus, in the event that its process crashes or is killed and loses
@@ -1287,7 +1296,10 @@
         <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
         <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
 
-        <span class="kw">let </span>ns_table = parse_ns_table(leaf_payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>leaf_payload.encode());
+        <span class="kw">let </span>ns_table = parse_ns_table(
+            leaf_payload.byte_len().as_usize(),
+            <span class="kw-2">&amp;</span>leaf_payload.ns_table().encode(),
+        );
         <span class="kw">let </span>(payload_commitment, shares) =
             AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>leaf_payload_bytes_arc, ns_table)
                 .unwrap();
@@ -1783,7 +1795,10 @@
         <span class="kw">let </span>leaf_payload_bytes_arc = leaf_payload.encode();
         <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
         <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
-        <span class="kw">let </span>ns_table = parse_ns_table(leaf_payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>leaf_payload.encode());
+        <span class="kw">let </span>ns_table = parse_ns_table(
+            leaf_payload.byte_len().as_usize(),
+            <span class="kw-2">&amp;</span>leaf_payload.ns_table().encode(),
+        );
         <span class="kw">let </span>(payload_commitment, shares) =
             AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>leaf_payload_bytes_arc, ns_table)
                 .unwrap();
@@ -1987,7 +2002,10 @@
         <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
         <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
 
-        <span class="kw">let </span>ns_table = parse_ns_table(leaf_payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>leaf_payload.encode());
+        <span class="kw">let </span>ns_table = parse_ns_table(
+            leaf_payload.byte_len().as_usize(),
+            <span class="kw-2">&amp;</span>leaf_payload.ns_table().encode(),
+        );
         <span class="kw">let </span>(payload_commitment, shares) =
             AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>leaf_payload_bytes_arc, ns_table)
                 .unwrap();

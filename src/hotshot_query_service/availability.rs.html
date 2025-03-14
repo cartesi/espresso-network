@@ -2204,7 +2204,7 @@
         setup_test();
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource&gt;::init().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource, MockVersions&gt;::init().<span class="kw">await</span>;
         network.start().<span class="kw">await</span>;
 
         <span class="comment">// Start the web server.
@@ -2409,7 +2409,7 @@
         <span class="kw">let </span>small_object_range_limit = <span class="number">3</span>;
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource&gt;::init().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource, MockVersions&gt;::init().<span class="kw">await</span>;
         network.start().<span class="kw">await</span>;
 
         <span class="comment">// Start the web server.
@@ -2501,7 +2501,7 @@
         setup_test();
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockSqlDataSource&gt;::init().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockSqlDataSource, MockVersions&gt;::init().<span class="kw">await</span>;
         network.start().<span class="kw">await</span>;
 
         <span class="comment">// Start the web server.
@@ -2543,7 +2543,7 @@
         setup_test();
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockSqlDataSource&gt;::init_with_leaf_ds().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockSqlDataSource, MockVersions&gt;::init_with_leaf_ds().<span class="kw">await</span>;
         network.start().<span class="kw">await</span>;
 
         <span class="comment">// Start the web server.

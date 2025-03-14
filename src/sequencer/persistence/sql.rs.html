@@ -2686,7 +2686,13 @@
 <a href="#2685" id="2685">2685</a>
 <a href="#2686" id="2686">2686</a>
 <a href="#2687" id="2687">2687</a>
-<a href="#2688" id="2688">2688</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
+<a href="#2688" id="2688">2688</a>
+<a href="#2689" id="2689">2689</a>
+<a href="#2690" id="2690">2690</a>
+<a href="#2691" id="2691">2691</a>
+<a href="#2692" id="2692">2692</a>
+<a href="#2693" id="2693">2693</a>
+<a href="#2694" id="2694">2694</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -4891,7 +4897,10 @@
         <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
         <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
 
-        <span class="kw">let </span>ns_table = parse_ns_table(leaf_payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>leaf_payload.encode());
+        <span class="kw">let </span>ns_table = parse_ns_table(
+            leaf_payload.byte_len().as_usize(),
+            <span class="kw-2">&amp;</span>leaf_payload.ns_table().encode(),
+        );
         <span class="kw">let </span>(payload_commitment, shares) =
             AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>leaf_payload_bytes_arc, ns_table)
                 .unwrap();
@@ -5031,7 +5040,10 @@
         <span class="kw">let </span>avidm_param = init_avidm_param(<span class="number">2</span>).unwrap();
         <span class="kw">let </span>weights = <span class="macro">vec!</span>[<span class="number">1u32</span>; <span class="number">2</span>];
 
-        <span class="kw">let </span>ns_table = parse_ns_table(leaf_payload.byte_len().as_usize(), <span class="kw-2">&amp;</span>leaf_payload.encode());
+        <span class="kw">let </span>ns_table = parse_ns_table(
+            leaf_payload.byte_len().as_usize(),
+            <span class="kw-2">&amp;</span>leaf_payload.ns_table().encode(),
+        );
         <span class="kw">let </span>(payload_commitment, shares) =
             AvidMScheme::ns_disperse(<span class="kw-2">&amp;</span>avidm_param, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>leaf_payload_bytes_arc, ns_table)
                 .unwrap();

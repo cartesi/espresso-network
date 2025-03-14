@@ -875,7 +875,7 @@
         task::BackgroundTask,
         testing::{
             consensus::{MockDataSource, MockNetwork, MockSqlDataSource},
-            mocks::{mock_transaction, MockBase, MockTypes},
+            mocks::{mock_transaction, MockBase, MockTypes, MockVersions},
             setup_test,
         },
         ApiState, Error, Header,
@@ -888,7 +888,7 @@
         <span class="kw">let </span>window_limit = <span class="number">78</span>;
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource&gt;::init().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>events = network.handle().event_stream();
         network.start().<span class="kw">await</span>;
 
@@ -1067,7 +1067,7 @@
         setup_test();
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockSqlDataSource&gt;::init().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockSqlDataSource, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>events = network.handle().event_stream();
         network.start().<span class="kw">await</span>;
 

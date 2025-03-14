@@ -357,7 +357,18 @@
 <a href="#356" id="356">356</a>
 <a href="#357" id="357">357</a>
 <a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -389,10 +400,17 @@
 <span class="kw">use </span>hotshot_testing::block_builder::{SimpleBuilderImplementation, TestBuilderImplementation};
 <span class="kw">use </span>hotshot_types::{
     consensus::ConsensusMetricsValue,
+    data::ViewNumber,
+    drb::INITIAL_DRB_RESULT,
     epoch_membership::EpochMembershipCoordinator,
     light_client::StateKeyPair,
     signature_key::BLSPubKey,
-    traits::{election::Membership, network::Topic, signature_key::SignatureKey <span class="kw">as _</span>},
+    traits::{
+        election::Membership,
+        network::Topic,
+        node_implementation::{ConsensusTime, Versions},
+        signature_key::SignatureKey <span class="kw">as _</span>,
+    },
     HotShotConfig, PeerConfig,
 };
 <span class="kw">use </span>tokio::{
@@ -402,7 +420,7 @@
 <span class="kw">use </span>tracing::{info_span, Instrument};
 <span class="kw">use </span>url::Url;
 
-<span class="kw">use </span><span class="kw">super</span>::mocks::{MockMembership, MockNodeImpl, MockTransaction, MockTypes, MockVersions};
+<span class="kw">use </span><span class="kw">super</span>::mocks::{MockMembership, MockNodeImpl, MockTransaction, MockTypes};
 <span class="kw">use crate</span>::{
     availability::{AvailabilityDataSource, UpdateAvailabilityData},
     data_source::{FileSystemDataSource, SqlDataSource, VersionedDataSource},
@@ -413,15 +431,15 @@
     SignatureKey,
 };
 
-<span class="kw">struct </span>MockNode&lt;D: DataSourceLifeCycle&gt; {
-    hotshot: SystemContextHandle&lt;MockTypes, MockNodeImpl, MockVersions&gt;,
+<span class="kw">struct </span>MockNode&lt;D: DataSourceLifeCycle, V: Versions&gt; {
+    hotshot: SystemContextHandle&lt;MockTypes, MockNodeImpl, V&gt;,
     data_source: D,
     storage: D::Storage,
 }
 
-<span class="kw">pub struct </span>MockNetwork&lt;D: DataSourceLifeCycle&gt; {
+<span class="kw">pub struct </span>MockNetwork&lt;D: DataSourceLifeCycle, V: Versions&gt; {
     tasks: Vec&lt;BackgroundTask&gt;,
-    nodes: Vec&lt;MockNode&lt;D&gt;&gt;,
+    nodes: Vec&lt;MockNode&lt;D, V&gt;&gt;,
     pub_keys: Vec&lt;BLSPubKey&gt;,
 }
 
@@ -432,7 +450,7 @@
 
 <span class="kw">pub const </span>NUM_NODES: usize = <span class="number">2</span>;
 
-<span class="kw">impl</span>&lt;D: DataSourceLifeCycle + UpdateStatusData&gt; MockNetwork&lt;D&gt; {
+<span class="kw">impl</span>&lt;D: DataSourceLifeCycle + UpdateStatusData, V: Versions&gt; MockNetwork&lt;D, V&gt; {
     <span class="kw">pub async fn </span>init() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::init_with_config(|<span class="kw">_</span>| {}, <span class="bool-val">false</span>).<span class="kw">await
     </span>}
@@ -507,7 +525,7 @@
             stop_proposing_time: <span class="number">0</span>,
             start_voting_time: <span class="number">0</span>,
             stop_voting_time: <span class="number">0</span>,
-            epoch_height: <span class="number">0</span>,
+            epoch_height: <span class="number">10</span>,
             epoch_start_block: <span class="number">0</span>,
         };
         update_config(<span class="kw-2">&amp;mut </span>config);
@@ -540,6 +558,10 @@
                         ));
 
                         <span class="kw">let </span>hs_storage: TestStorage&lt;MockTypes&gt; = TestStorage::default();
+                        membership
+                            .write()
+                            .<span class="kw">await
+                            </span>.set_first_epoch(ViewNumber::new(<span class="number">0</span>), INITIAL_DRB_RESULT);
                         <span class="kw">let </span>memberships =
                             EpochMembershipCoordinator::new(membership, config.epoch_height);
 
@@ -550,7 +572,7 @@
                             config,
                             memberships,
                             network,
-                            HotShotInitializer::from_genesis::&lt;MockVersions&gt;(
+                            HotShotInitializer::from_genesis::&lt;V&gt;(
                                 TestInstanceState::default(),
                                 <span class="number">0</span>,
                                 <span class="number">0</span>,
@@ -596,8 +618,8 @@
     }
 }
 
-<span class="kw">impl</span>&lt;D: DataSourceLifeCycle&gt; MockNetwork&lt;D&gt; {
-    <span class="kw">pub fn </span>handle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SystemContextHandle&lt;MockTypes, MockNodeImpl, MockVersions&gt; {
+<span class="kw">impl</span>&lt;D: DataSourceLifeCycle, V: Versions&gt; MockNetwork&lt;D, V&gt; {
+    <span class="kw">pub fn </span>handle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>SystemContextHandle&lt;MockTypes, MockNodeImpl, V&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.nodes[<span class="number">0</span>].hotshot
     }
 
@@ -640,7 +662,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;D: DataSourceLifeCycle&gt; MockNetwork&lt;D&gt; {
+<span class="kw">impl</span>&lt;D: DataSourceLifeCycle, V: Versions&gt; MockNetwork&lt;D, V&gt; {
     <span class="kw">pub async fn </span>start(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="comment">// Spawn the update tasks.
         </span><span class="kw">for </span>(i, node) <span class="kw">in </span><span class="self">self</span>.nodes.iter_mut().enumerate() {
@@ -669,7 +691,7 @@
     }
 }
 
-<span class="kw">impl</span>&lt;D: DataSourceLifeCycle&gt; Drop <span class="kw">for </span>MockNetwork&lt;D&gt; {
+<span class="kw">impl</span>&lt;D: DataSourceLifeCycle, V: Versions&gt; Drop <span class="kw">for </span>MockNetwork&lt;D, V&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(handle) = Handle::try_current() {
             block_in_place(<span class="kw">move </span>|| handle.block_on(<span class="self">self</span>.shut_down_impl()));
@@ -694,7 +716,7 @@
     }
 
     <span class="doccomment">/// Setup runs after setting up the network but before starting a test.
-    </span><span class="kw">async fn </span>setup(_network: <span class="kw-2">&amp;mut </span>MockNetwork&lt;<span class="self">Self</span>&gt;) {}
+    </span><span class="kw">async fn </span>setup&lt;V: Versions&gt;(_network: <span class="kw-2">&amp;mut </span>MockNetwork&lt;<span class="self">Self</span>, V&gt;) {}
 }
 
 <span class="kw">pub trait </span>TestableDataSource:

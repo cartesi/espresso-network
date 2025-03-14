@@ -394,7 +394,7 @@
         task::BackgroundTask,
         testing::{
             consensus::{MockDataSource, MockNetwork},
-            mocks::MockBase,
+            mocks::{MockBase, MockVersions},
             setup_test, sleep,
         },
         ApiState, Error,
@@ -405,7 +405,7 @@
         setup_test();
 
         <span class="comment">// Create the consensus network.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource&gt;::init().<span class="kw">await</span>;
+        </span><span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;MockDataSource, MockVersions&gt;::init().<span class="kw">await</span>;
 
         <span class="comment">// Start the web server.
         </span><span class="kw">let </span>port = pick_unused_port().unwrap();

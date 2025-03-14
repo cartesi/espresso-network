@@ -1624,7 +1624,7 @@
         node::NodeDataSource,
         testing::{
             consensus::{MockNetwork, TestableDataSource},
-            mocks::{mock_transaction, MockTypes},
+            mocks::{mock_transaction, MockTypes, MockVersions},
             setup_test,
         },
         types::HeightIndexed,
@@ -1775,7 +1775,7 @@
     {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
 
         network.start().<span class="kw">await</span>;
@@ -1850,7 +1850,7 @@
     {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
         network.start().<span class="kw">await</span>;
 
@@ -1948,7 +1948,7 @@
     {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
         network.start().<span class="kw">await</span>;
 
@@ -2278,7 +2278,7 @@
         node::{BlockId, NodeDataSource, SyncStatus, TimeWindowQueryData, WindowStart},
         testing::{
             consensus::{MockNetwork, TestableDataSource},
-            mocks::{mock_transaction, MockPayload, MockTypes},
+            mocks::{mock_transaction, MockPayload, MockTypes, MockVersions},
             setup_test, sleep,
         },
         types::HeightIndexed,
@@ -2537,7 +2537,7 @@
     {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
 
         network.start().<span class="kw">await</span>;
@@ -2622,7 +2622,7 @@
     {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
 
         network.start().<span class="kw">await</span>;
@@ -2701,7 +2701,7 @@
     </span><span class="kw">pub async fn </span>test_timestamp_window&lt;D: TestableDataSource&gt;() {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
 
         network.start().<span class="kw">await</span>;
@@ -2891,7 +2891,7 @@
         status::StatusDataSource,
         testing::{
             consensus::{DataSourceLifeCycle, MockNetwork},
-            mocks::mock_transaction,
+            mocks::{mock_transaction, MockVersions},
             setup_test, sleep,
         },
     };
@@ -2900,7 +2900,7 @@
     </span><span class="kw">pub async fn </span>test_metrics&lt;D: DataSourceLifeCycle + StatusDataSource&gt;() {
         setup_test();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D&gt;::init().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = MockNetwork::&lt;D, MockVersions&gt;::init().<span class="kw">await</span>;
         <span class="kw">let </span>ds = network.data_source();
 
         {
