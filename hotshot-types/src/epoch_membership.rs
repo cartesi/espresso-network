@@ -137,6 +137,7 @@ where
             .get_epoch_root_and_drb(root_block_in_epoch(*root_epoch, self.epoch_height))
             .await
         else {
+            tracing::error!("get epoch root failed for epoch {:?}", root_epoch);
             anytrace::bail!("get epoch root failed for epoch {:?}", root_epoch);
         };
         tracing::error!("added epoch root {:?}", root_epoch);

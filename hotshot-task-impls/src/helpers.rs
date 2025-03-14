@@ -195,6 +195,7 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         let next_epoch_number =
             TYPES::Epoch::new(epoch_from_block_number(decided_block_number, epoch_height) + 2);
 
+        tracing::error!("about to call add_epoch_root");
         if let Err(e) = storage
             .write()
             .await
