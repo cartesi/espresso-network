@@ -492,13 +492,18 @@ impl<TYPES: NodeType, V: Versions> ViewSyncTaskState<TYPES, V> {
                 );
 
                 self.num_timeouts_tracked += 1;
+                tracing::error!(
+                    "Timeout event in view sync task for view {:?}, epoch {:?}",
+                    view_number,
+                    self.cur_epoch
+                );
                 let leader = self
                     .membership_coordinator
                     .membership_for_epoch(self.cur_epoch)
                     .await?
                     .leader(view_number)
                     .await?;
-                tracing::warn!(
+                tracing::error!(
                     %leader,
                     leader_mnemonic = hotshot_types::utils::mnemonic(&leader),
                     view_number = *view_number,
@@ -522,6 +527,7 @@ impl<TYPES: NodeType, V: Versions> ViewSyncTaskState<TYPES, V> {
                 } else {
                     // If this is the first timeout we've seen advance to the next view
                     self.cur_view = view_number + 1;
+                    tracing::error!("Broadcasting view change for view {:?}", self.cur_view);
                     broadcast_event(
                         Arc::new(HotShotEvent::ViewChange(self.cur_view, self.cur_epoch)),
                         &event_stream,

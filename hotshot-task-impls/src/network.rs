@@ -66,7 +66,7 @@ impl<TYPES: NodeType, V: Versions> NetworkMessageTaskState<TYPES, V> {
     #[instrument(skip_all, name = "Network message task", level = "trace")]
     /// Handles a (deserialized) message from the network
     pub async fn handle_message(&mut self, message: Message<TYPES>) {
-        tracing::warn!("Received message from network:\n\n{message:?}");
+        tracing::trace!("Received message from network:\n\n{:?}\n", message.kind);
 
         // Match the message kind and send the appropriate event to the internal event stream
         let sender = message.sender;
@@ -1175,7 +1175,6 @@ impl<
         transmit: TransmitType<TYPES>,
         sender: TYPES::SignatureKey,
     ) {
-        tracing::warn!("spawning transmit task for message: {:?}", message_kind);
         let broadcast_delay = match &message_kind {
             MessageKind::Consensus(
                 SequencingMessage::General(GeneralConsensusMessage::Vote(_))

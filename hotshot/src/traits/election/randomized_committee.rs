@@ -29,11 +29,6 @@ use primitive_types::U256;
 
 /// The static committee election
 pub struct Committee<T: NodeType> {
-    /// The nodes eligible for leadership.
-    /// NOTE: This is currently a hack because the DA leader needs to be the quorum
-    /// leader but without voting rights.
-    eligible_leaders: Vec<PeerConfig<T::SignatureKey>>,
-
     /// The nodes on the committee and their stake
     stake_table: Vec<PeerConfig<T::SignatureKey>>,
 
@@ -114,7 +109,6 @@ impl<TYPES: NodeType> Membership<TYPES> for Committee<TYPES> {
         );
 
         Self {
-            eligible_leaders,
             stake_table: members,
             da_stake_table: da_members,
             randomized_committee,

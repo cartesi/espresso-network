@@ -1999,7 +1999,7 @@ mod test {
             .l1_url(l1)
             .epoch_height(EPOCH_HEIGHT)
             .build();
-        const NUM_NODES: usize = 5;
+        const NUM_NODES: usize = 4;
         let config = TestNetworkConfigBuilder::<NUM_NODES, _, _>::with_num_nodes()
             .api_config(Options::with_port(port))
             .network_config(network_config)
@@ -2020,12 +2020,10 @@ mod test {
             let EventType::Decide { leaf_chain, .. } = event.event else {
                 continue;
             };
-            tracing::error!(
-                "got decide view number {}",
-                leaf_chain[0].leaf.view_number()
-            );
+            tracing::error!("got decide height {}", leaf_chain[0].leaf.height());
 
             if leaf_chain[0].leaf.height() > EPOCH_HEIGHT * 3 {
+                tracing::error!("decided past one epoch");
                 break;
             }
         }

@@ -395,6 +395,16 @@ impl Membership<SeqTypes> for EpochCommittees {
         view_number: <SeqTypes as NodeType>::View,
         epoch: Option<Epoch>,
     ) -> Result<PubKey, Self::Error> {
+        // if we aren't at the initial epoch or epoch is None, we use the non-randomized leader
+        if let Some((initial_epoch, _drb_result)) = self.initial_drb_result {
+            if epoch.unwrap_or(Epoch::genesis()) < initial_epoch {
+                let leaders = &self.non_epoch_committee.eligible_leaders;
+
+                let index = *view_number as usize % leaders.len();
+                let res = leaders[index].clone();
+                return Ok(PubKey::public_key(&res.stake_table_entry));
+            }
+        }
         if let Some(epoch) = epoch {
             let Some(randomized_committee) = self.randomized_committees.get(&epoch) else {
                 tracing::error!(
@@ -482,7 +492,11 @@ impl Membership<SeqTypes> for EpochCommittees {
     }
 
     fn has_epoch(&self, epoch: Epoch) -> bool {
-        self.state.contains_key(&epoch)
+        let res = self.state.contains_key(&epoch);
+        if !res {
+            tracing::error!("has_epoch({}) = false", epoch);
+        }
+        res
     }
 
     async fn get_epoch_root_and_drb(
@@ -534,8 +548,6 @@ impl Membership<SeqTypes> for EpochCommittees {
         self.state.insert(epoch, self.non_epoch_committee.clone());
         self.state
             .insert(epoch + 1, self.non_epoch_committee.clone());
-        self.add_drb_result(epoch, initial_drb_result);
-        self.add_drb_result(epoch + 1, initial_drb_result);
         self.initial_drb_result = Some((epoch + 2, initial_drb_result));
     }
 }

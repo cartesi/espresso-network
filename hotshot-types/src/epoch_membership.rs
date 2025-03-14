@@ -84,7 +84,9 @@ where
         let Some(epoch) = maybe_epoch else {
             return Ok(ret_val);
         };
+        tracing::error!("read lock on membership for epoch {:?}", epoch);
         if self.membership.read().await.has_epoch(epoch) {
+            tracing::error!("has_epoch({}) = true", epoch);
             return Ok(ret_val);
         }
         if self.catchup_map.lock().await.contains_key(&epoch) {
@@ -135,6 +137,7 @@ where
         else {
             anytrace::bail!("get epoch root failed for epoch {:?}", root_epoch);
         };
+        tracing::error!("added epoch root {:?}", root_epoch);
         let updater = self
             .membership
             .read()
@@ -142,10 +145,11 @@ where
             .add_epoch_root(epoch, header)
             .await
             .ok_or(anytrace::warn!("add epoch root failed"))?;
+        tracing::error!("calling updater");
         updater(&mut *(self.membership.write().await));
-
+        tracing::error!("calling add_drb_result");
         self.membership.write().await.add_drb_result(epoch, drb);
-
+        tracing::error!("returning");
         Ok(EpochMembership {
             epoch: Some(epoch),
             coordinator: self.clone(),

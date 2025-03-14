@@ -235,7 +235,7 @@ pub(crate) async fn handle_view_change<
         task_state.cur_epoch = epoch_number;
         if let Some(new_epoch) = epoch_number {
             let _ = task_state.consensus.write().await.update_epoch(new_epoch);
-            tracing::info!("Progress: entered epoch {:>6}", *new_epoch);
+            tracing::error!("Progress: entered epoch {:>6}", *new_epoch);
         }
     }
 
@@ -288,8 +288,14 @@ pub(crate) async fn handle_view_change<
     let new_timeout_task = spawn({
         let stream = sender.clone();
         let view_number = new_view_number;
+        tracing::error!(
+            "Spawning timeout task for view {:?}, timeout {:?}",
+            view_number,
+            timeout
+        );
         async move {
             sleep(Duration::from_millis(timeout)).await;
+            tracing::error!("Broadcasting timeout event for view {:?}", view_number);
             broadcast_event(
                 Arc::new(HotShotEvent::Timeout(
                     TYPES::View::new(*view_number),
@@ -375,7 +381,7 @@ pub(crate) async fn handle_timeout<TYPES: NodeType, I: NodeImplementation<TYPES>
             .context(warn!("No stake table for epoch"))?
             .has_stake(&task_state.public_key)
             .await,
-        debug!(
+        error!(
             "We were not chosen for the consensus committee for view {:?}",
             view_number
         )

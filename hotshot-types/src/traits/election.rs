@@ -43,7 +43,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
         view_number: TYPES::View,
         epoch: Option<TYPES::Epoch>,
     ) -> BTreeSet<TYPES::SignatureKey>;
-    
+
     /// Get the stake table entry for a public key, returns `None` if the
     /// key is not in the table for a specific epoch
     fn stake(
@@ -80,7 +80,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
     ) -> Result<TYPES::SignatureKey> {
         use hotshot_utils::anytrace::*;
 
-        self.lookup_leader(view, epoch).wrap().context(info!(
+        self.lookup_leader(view, epoch).wrap().context(error!(
             "Failed to get leader for view {view} in epoch {epoch}"
         ))
     }
