@@ -459,7 +459,11 @@
 <a href="#458" id="458">458</a>
 <a href="#459" id="459">459</a>
 <a href="#460" id="460">460</a>
-<a href="#461" id="461">461</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a>
+<a href="#464" id="464">464</a>
+<a href="#465" id="465">465</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -473,7 +477,7 @@
 <span class="kw">use </span>hotshot_task::task::TaskState;
 <span class="kw">use </span>hotshot_types::{
     consensus::{Consensus, OuterConsensus, PayloadWithMetadata},
-    data::{vid_commitment, DaProposal2, PackedBundle},
+    data::{vid_commitment, vid_disperse::vid_total_weight, DaProposal2, PackedBundle},
     epoch_membership::EpochMembershipCoordinator,
     event::{Event, EventType},
     message::{Proposal, UpgradeLock},
@@ -642,12 +646,16 @@
                         view_number, epoch_number
                     )
                 );
-                <span class="kw">let </span>num_nodes = membership.total_nodes().<span class="kw">await</span>;
-                <span class="kw">let </span>next_epoch_num_nodes = <span class="kw">if </span>epoch_number.is_some() {
-                    membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.total_nodes().<span class="kw">await
-                </span>} <span class="kw">else </span>{
-                    num_nodes
-                };
+                <span class="kw">let </span>total_weight =
+                    vid_total_weight::&lt;TYPES&gt;(membership.stake_table().<span class="kw">await</span>, epoch_number);
+
+                <span class="kw">let </span><span class="kw-2">mut </span>next_epoch_total_weight = total_weight;
+                <span class="kw">if </span>epoch_number.is_some() {
+                    next_epoch_total_weight = vid_total_weight::&lt;TYPES&gt;(
+                        membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.stake_table().<span class="kw">await</span>,
+                        epoch_number.map(|epoch| epoch + <span class="number">1</span>),
+                    );
+                }
 
                 <span class="kw">let </span>version = <span class="self">self</span>.upgrade_lock.version_infallible(view_number).<span class="kw">await</span>;
 
@@ -656,7 +664,7 @@
                 <span class="kw">let </span>metadata = proposal.data.metadata.encode();
                 <span class="kw">let </span>metadata_clone = metadata.clone();
                 <span class="kw">let </span>payload_commitment = spawn_blocking(<span class="kw">move </span>|| {
-                    vid_commitment::&lt;V&gt;(<span class="kw-2">&amp;</span>txns, <span class="kw-2">&amp;</span>metadata, num_nodes, version)
+                    vid_commitment::&lt;V&gt;(<span class="kw-2">&amp;</span>txns, <span class="kw-2">&amp;</span>metadata, total_weight, version)
                 })
                 .<span class="kw">await</span>;
                 <span class="kw">let </span>payload_commitment = payload_commitment.unwrap();
@@ -669,7 +677,7 @@
                         vid_commitment::&lt;V&gt;(
                             <span class="kw-2">&amp;</span>txns_clone,
                             <span class="kw-2">&amp;</span>metadata_clone,
-                            next_epoch_num_nodes,
+                            next_epoch_total_weight,
                             version,
                         )
                     })
