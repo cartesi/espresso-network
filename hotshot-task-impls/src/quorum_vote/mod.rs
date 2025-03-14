@@ -17,7 +17,7 @@ use hotshot_task::{
 };
 use hotshot_types::{
     consensus::{ConsensusMetricsValue, OuterConsensus},
-    data::{Leaf2, QuorumProposalWrapper},
+    data::{vid_disperse::vid_total_weight, Leaf2, QuorumProposalWrapper},
     drb::DrbComputation,
     epoch_membership::EpochMembershipCoordinator,
     event::Event,
@@ -625,14 +625,16 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
                     "VID share was not sent by a DA member or the view leader."
                 );
 
-                let membership_total_nodes = self
-                    .membership
-                    .membership_for_epoch(target_epoch)
-                    .await?
-                    .total_nodes()
-                    .await;
+                let total_weight = vid_total_weight::<TYPES>(
+                    self.membership
+                        .membership_for_epoch(target_epoch)
+                        .await?
+                        .stake_table()
+                        .await,
+                    target_epoch,
+                );
 
-                if let Err(()) = share.data.verify_share(membership_total_nodes) {
+                if let Err(()) = share.data.verify_share(total_weight) {
                     bail!("Failed to verify VID share");
                 }
 
