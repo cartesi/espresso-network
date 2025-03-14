@@ -7,23 +7,15 @@ use espresso_types::{
     Leaf, Leaf2, NetworkConfig, Payload, SeqTypes,
 };
 use hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::ADVZDisperseShare, DaProposal, EpochNumber, QuorumProposal, QuorumProposal2,
         QuorumProposalWrapper,
-    },
-    event::{Event, EventType, HotShotAction, LeafInfo},
-    message::{convert_proposal, Proposal},
-    simple_certificate::{
+    }, event::{Event, EventType, HotShotAction, LeafInfo}, message::{convert_proposal, Proposal}, simple_certificate::{
         NextEpochQuorumCertificate2, QuorumCertificate, QuorumCertificate2, UpgradeCertificate,
-    },
-    traits::{
+    }, traits::{
         block_contents::{BlockHeader, BlockPayload},
         node_implementation::ConsensusTime,
-    },
-    utils::View,
-    vid::VidSchemeType,
-    vote::HasViewNumber,
+    }, vid::VidSchemeType, vote::HasViewNumber
 };
 use jf_vid::VidScheme;
 use std::sync::Arc;
@@ -45,9 +37,6 @@ pub struct Options {
     /// Storage path for persistent data.
     #[clap(long, env = "ESPRESSO_SEQUENCER_STORAGE_PATH")]
     path: PathBuf,
-
-    #[clap(long, env = "ESPRESSO_SEQUENCER_STORE_UNDECIDED_STATE", hide = true)]
-    store_undecided_state: bool,
 
     /// Number of views to retain in consensus storage before data that hasn't been archived is
     /// garbage collected.
@@ -78,7 +67,6 @@ impl Options {
     pub fn new(path: PathBuf) -> Self {
         Self {
             path,
-            store_undecided_state: false,
             consensus_view_retention: 130000,
         }
     }
@@ -98,11 +86,9 @@ impl PersistenceOptions for Options {
 
     async fn create(&mut self) -> anyhow::Result<Self::Persistence> {
         let path = self.path.clone();
-        let store_undecided_state = self.store_undecided_state;
         let view_retention = self.consensus_view_retention;
 
         Ok(Persistence {
-            store_undecided_state,
             inner: Arc::new(RwLock::new(Inner {
                 path,
                 view_retention,
@@ -118,8 +104,6 @@ impl PersistenceOptions for Options {
 /// File system backed persistence.
 #[derive(Clone, Debug)]
 pub struct Persistence {
-    store_undecided_state: bool,
-
     // We enforce mutual exclusion on access to the data source, as the current file system
     // implementation does not support transaction isolation for concurrent reads and writes. We can
     // improve this in the future by switching to a SQLite-based file system implementation.
@@ -157,10 +141,6 @@ impl Inner {
 
     fn da_dir_path(&self) -> PathBuf {
         self.path.join("da")
-    }
-
-    fn undecided_state_path(&self) -> PathBuf {
-        self.path.join("undecided_state")
     }
 
     fn quorum_proposals_dir_path(&self) -> PathBuf {
@@ -582,20 +562,6 @@ impl SequencerPersistence for Persistence {
         self.inner.read().await.load_anchor_leaf()
     }
 
-    async fn load_undecided_state(
-        &self,
-    ) -> anyhow::Result<Option<(CommitmentMap<Leaf2>, BTreeMap<ViewNumber, View<SeqTypes>>)>> {
-        let inner = self.inner.read().await;
-        let path = inner.undecided_state_path();
-        if !path.is_file() {
-            return Ok(None);
-        }
-        let bytes = fs::read(&path).context("read")?;
-        let value: (CommitmentMap<Leaf>, _) =
-            bincode::deserialize(&bytes).context("deserialize")?;
-        Ok(Some((upgrade_commitment_map(value.0), value.1)))
-    }
-
     async fn load_da_proposal(
         &self,
         view: ViewNumber,
@@ -694,33 +660,7 @@ impl SequencerPersistence for Persistence {
             },
         )
     }
-    async fn update_undecided_state(
-        &self,
-        leaves: CommitmentMap<Leaf2>,
-        state: BTreeMap<ViewNumber, View<SeqTypes>>,
-    ) -> anyhow::Result<()> {
-        let leaves = downgrade_commitment_map(leaves);
 
-        if !self.store_undecided_state {
-            return Ok(());
-        }
-
-        let mut inner = self.inner.write().await;
-        let path = &inner.undecided_state_path();
-        inner.replace(
-            path,
-            |_| {
-                // Always overwrite the previous file.
-                Ok(true)
-            },
-            |mut file| {
-                let bytes =
-                    bincode::serialize(&(leaves, state)).context("serializing undecided state")?;
-                file.write_all(&bytes)?;
-                Ok(())
-            },
-        )
-    }
     async fn append_quorum_proposal(
         &self,
         proposal: &Proposal<SeqTypes, QuorumProposalWrapper<SeqTypes>>,

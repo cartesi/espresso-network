@@ -8,16 +8,13 @@ use espresso_types::{
     Leaf, Leaf2, NetworkConfig,
 };
 use hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::ADVZDisperseShare, DaProposal, EpochNumber, QuorumProposal, QuorumProposal2,
         QuorumProposalWrapper,
     },
     event::{Event, EventType, HotShotAction, LeafInfo},
     message::Proposal,
-    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
-    utils::View,
-    vid::VidSchemeType,
+    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate}, vid::VidSchemeType,
 };
 use jf_vid::VidScheme;
 use std::collections::BTreeMap;
@@ -91,12 +88,6 @@ impl SequencerPersistence for NoStorage {
         Ok(None)
     }
 
-    async fn load_undecided_state(
-        &self,
-    ) -> anyhow::Result<Option<(CommitmentMap<Leaf2>, BTreeMap<ViewNumber, View<SeqTypes>>)>> {
-        Ok(None)
-    }
-
     async fn load_da_proposal(
         &self,
         _view: ViewNumber,
@@ -147,13 +138,6 @@ impl SequencerPersistence for NoStorage {
         _view: ViewNumber,
         _epoch: Option<EpochNumber>,
         _action: HotShotAction,
-    ) -> anyhow::Result<()> {
-        Ok(())
-    }
-    async fn update_undecided_state(
-        &self,
-        _leaves: CommitmentMap<Leaf2>,
-        _state: BTreeMap<ViewNumber, View<SeqTypes>>,
     ) -> anyhow::Result<()> {
         Ok(())
     }

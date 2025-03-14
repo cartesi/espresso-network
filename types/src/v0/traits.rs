@@ -4,11 +4,10 @@ use std::{cmp::max, collections::BTreeMap, fmt::Debug, ops::Range, sync::Arc};
 
 use anyhow::{bail, ensure, Context};
 use async_trait::async_trait;
-use committable::{Commitment, Committable};
+use committable::Commitment;
 use futures::{FutureExt, TryFutureExt};
 use hotshot::{types::EventType, HotShotInitializer};
 use hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::ADVZDisperseShare, DaProposal, EpochNumber, QuorumProposal, QuorumProposal2,
         QuorumProposalWrapper, ViewNumber,
@@ -23,19 +22,23 @@ use hotshot_types::{
         storage::Storage,
         ValidatedState as HotShotState,
     },
-    utils::{genesis_epoch_from_version, View},
+    utils::genesis_epoch_from_version,
     vid::VidSchemeType,
 };
 use itertools::Itertools;
 use jf_vid::VidScheme;
 use serde::{de::DeserializeOwned, Serialize};
 
+use super::{
+    impls::NodeState, utils::BackoffParams, v0_3::StakeTables, EpochCommittees, EpochVersion,
+    SequencerVersions,
+};
 use crate::{
     v0::impls::ValidatedState, v0_99::ChainConfig, BlockMerkleTree, Event, FeeAccount,
     FeeAccountProof, FeeMerkleCommitment, FeeMerkleTree, Leaf2, NetworkConfig, SeqTypes,
 };
 
-use super::{impls::NodeState, utils::BackoffParams, Leaf};
+use super::Leaf;
 
 #[async_trait]
 pub trait StateCatchup: Send + Sync {
@@ -443,11 +446,6 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
     /// Load the highest view saved with [`save_voted_view`](Self::save_voted_view).
     async fn load_latest_acted_view(&self) -> anyhow::Result<Option<ViewNumber>>;
 
-    /// Load undecided state saved by consensus before we shut down.
-    async fn load_undecided_state(
-        &self,
-    ) -> anyhow::Result<Option<(CommitmentMap<Leaf2>, BTreeMap<ViewNumber, View<SeqTypes>>)>>;
-
     /// Load the proposals saved by consensus
     async fn load_quorum_proposals(
         &self,
@@ -549,12 +547,6 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
         // TODO:
         let epoch = genesis_epoch_from_version::<V, SeqTypes>();
 
-        let (undecided_leaves, undecided_state) = self
-            .load_undecided_state()
-            .await
-            .context("loading undecided state")?
-            .unwrap_or_default();
-
         let saved_proposals = self
             .load_quorum_proposals()
             .await
@@ -571,10 +563,6 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
             ?epoch,
             ?high_qc,
             ?validated_state,
-            ?undecided_leaves,
-            ?undecided_state,
-            ?saved_proposals,
-            ?upgrade_certificate,
             "loaded consensus state"
         );
 
@@ -592,11 +580,8 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
                 high_qc,
                 next_epoch_high_qc,
                 decided_upgrade_certificate: upgrade_certificate,
-                undecided_leaves: undecided_leaves
-                    .into_values()
-                    .map(|e| (e.view_number(), e))
-                    .collect(),
-                undecided_state,
+                undecided_leaves: Default::default(),
+                undecided_state: Default::default(),
                 saved_vid_shares: Default::default(), // TODO: implement saved_vid_shares
             },
             anchor_view,
@@ -681,11 +666,6 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
         view: ViewNumber,
         epoch: Option<EpochNumber>,
         action: HotShotAction,
-    ) -> anyhow::Result<()>;
-    async fn update_undecided_state(
-        &self,
-        leaves: CommitmentMap<Leaf2>,
-        state: BTreeMap<ViewNumber, View<SeqTypes>>,
     ) -> anyhow::Result<()>;
     async fn append_quorum_proposal(
         &self,
@@ -773,25 +753,6 @@ impl<P: SequencerPersistence> Storage<SeqTypes> for Arc<P> {
 
     async fn update_high_qc(&self, _high_qc: QuorumCertificate<SeqTypes>) -> anyhow::Result<()> {
         Ok(())
-    }
-
-    async fn update_undecided_state(
-        &self,
-        leaves: CommitmentMap<Leaf>,
-        state: BTreeMap<ViewNumber, View<SeqTypes>>,
-    ) -> anyhow::Result<()> {
-        (**self)
-            .update_undecided_state(
-                leaves
-                    .into_values()
-                    .map(|leaf| {
-                        let leaf2: Leaf2 = leaf.into();
-                        (leaf2.commit(), leaf2)
-                    })
-                    .collect(),
-                state,
-            )
-            .await
     }
 
     async fn append_proposal(
