@@ -209,16 +209,17 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         }
 
         let write_callback = {
-            tracing::debug!("Calling add_epoch_root for epoch {:?}", next_epoch_number);
+            tracing::error!("Calling add_epoch_root for epoch {:?}", next_epoch_number);
             let membership_reader = membership.read().await;
             membership_reader
                 .add_epoch_root(next_epoch_number, decided_leaf.block_header().clone())
                 .await
         };
-
+        tracing::error!("about to call write_callback");
         if let Some(write_callback) = write_callback {
             let mut membership_writer = membership.write().await;
             write_callback(&mut *membership_writer);
+            tracing::error!("returning from write_callback");
         }
     }
 }

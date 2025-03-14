@@ -89,6 +89,7 @@ where
             tracing::error!("has_epoch({}) = true", epoch);
             return Ok(ret_val);
         }
+        tracing::error!("read lock released");
         if self.catchup_map.lock().await.contains_key(&epoch) {
             return Err(warn!(
                 "Stake table for Epoch {:?} Unavailable. Catch up already in Progress",
@@ -131,6 +132,7 @@ where
 
         // Get the epoch root headers and update our membership with them, finally sync them
         // Verification of the root is handled in get_epoch_root_and_drb
+        tracing::error!("getting epoch root and drb");
         let Ok((header, drb)) = root_membership
             .get_epoch_root_and_drb(root_block_in_epoch(*root_epoch, self.epoch_height))
             .await
