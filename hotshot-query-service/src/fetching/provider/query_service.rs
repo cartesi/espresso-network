@@ -10,9 +10,11 @@
 // You should have received a copy of the GNU General Public License along with this program. If not,
 // see <https://www.gnu.org/licenses/>.
 
+use crate::Header;
 use async_trait::async_trait;
 use committable::Committable;
 use futures::try_join;
+use hotshot_types::traits::block_contents::BlockHeader;
 use hotshot_types::{
     data::{ns_table, VidCommitment},
     traits::{node_implementation::NodeType, EncodeBytes},
@@ -124,7 +126,7 @@ where
                         let commit = match AvidMScheme::commit(
                             &avidm_param,
                             &bytes,
-                            ns_table::parse_ns_table(bytes.len(), &bytes),
+                            ns_table::parse_ns_table(bytes.len(), &metadata),
                         ) {
                             Ok(commit) => VidCommitment::V1(commit),
                             Err(err) => {
