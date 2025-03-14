@@ -984,69 +984,16 @@
 <a href="#983" id="983">983</a>
 <a href="#984" id="984">984</a>
 <a href="#985" id="985">985</a>
-<a href="#986" id="986">986</a>
-<a href="#987" id="987">987</a>
-<a href="#988" id="988">988</a>
-<a href="#989" id="989">989</a>
-<a href="#990" id="990">990</a>
-<a href="#991" id="991">991</a>
-<a href="#992" id="992">992</a>
-<a href="#993" id="993">993</a>
-<a href="#994" id="994">994</a>
-<a href="#995" id="995">995</a>
-<a href="#996" id="996">996</a>
-<a href="#997" id="997">997</a>
-<a href="#998" id="998">998</a>
-<a href="#999" id="999">999</a>
-<a href="#1000" id="1000">1000</a>
-<a href="#1001" id="1001">1001</a>
-<a href="#1002" id="1002">1002</a>
-<a href="#1003" id="1003">1003</a>
-<a href="#1004" id="1004">1004</a>
-<a href="#1005" id="1005">1005</a>
-<a href="#1006" id="1006">1006</a>
-<a href="#1007" id="1007">1007</a>
-<a href="#1008" id="1008">1008</a>
-<a href="#1009" id="1009">1009</a>
-<a href="#1010" id="1010">1010</a>
-<a href="#1011" id="1011">1011</a>
-<a href="#1012" id="1012">1012</a>
-<a href="#1013" id="1013">1013</a>
-<a href="#1014" id="1014">1014</a>
-<a href="#1015" id="1015">1015</a>
-<a href="#1016" id="1016">1016</a>
-<a href="#1017" id="1017">1017</a>
-<a href="#1018" id="1018">1018</a>
-<a href="#1019" id="1019">1019</a>
-<a href="#1020" id="1020">1020</a>
-<a href="#1021" id="1021">1021</a>
-<a href="#1022" id="1022">1022</a>
-<a href="#1023" id="1023">1023</a>
-<a href="#1024" id="1024">1024</a>
-<a href="#1025" id="1025">1025</a>
-<a href="#1026" id="1026">1026</a>
-<a href="#1027" id="1027">1027</a>
-<a href="#1028" id="1028">1028</a>
-<a href="#1029" id="1029">1029</a>
-<a href="#1030" id="1030">1030</a>
-<a href="#1031" id="1031">1031</a>
-<a href="#1032" id="1032">1032</a>
-<a href="#1033" id="1033">1033</a>
-<a href="#1034" id="1034">1034</a>
-<a href="#1035" id="1035">1035</a>
-<a href="#1036" id="1036">1036</a>
-<a href="#1037" id="1037">1037</a>
-<a href="#1038" id="1038">1038</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
+<a href="#986" id="986">986</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
 //! It also includes some trait implementations that cannot be implemented in an external crate.
 </span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, ops::Range, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>committable::{Commitment, Committable};
+<span class="kw">use </span>committable::Commitment;
 <span class="kw">use </span>futures::{FutureExt, TryFutureExt};
 <span class="kw">use </span>hotshot::{types::EventType, HotShotInitializer, InitializerEpochInfo};
 <span class="kw">use </span>hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
         DaProposal, DaProposal2, EpochNumber, QuorumProposal, QuorumProposal2,
@@ -1063,13 +1010,13 @@
         storage::Storage,
         ValidatedState <span class="kw">as </span>HotShotState,
     },
-    utils::{genesis_epoch_from_version, verify_epoch_root_chain, View},
+    utils::{genesis_epoch_from_version, verify_epoch_root_chain},
 };
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
 
 <span class="kw">use super</span>::{
-    impls::NodeState, utils::BackoffParams, v0_3::StakeTables, EpochCommittees, EpochVersion, Leaf,
+    impls::NodeState, utils::BackoffParams, v0_3::StakeTables, EpochCommittees, EpochVersion,
     SequencerVersions,
 };
 <span class="kw">use crate</span>::{
@@ -1551,11 +1498,6 @@
     <span class="doccomment">/// Load the highest view saved with [`save_voted_view`](Self::save_voted_view).
     </span><span class="kw">async fn </span>load_latest_acted_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;ViewNumber&gt;&gt;;
 
-    <span class="doccomment">/// Load undecided state saved by consensus before we shut down.
-    </span><span class="kw">async fn </span>load_undecided_state(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;(CommitmentMap&lt;Leaf2&gt;, BTreeMap&lt;ViewNumber, View&lt;SeqTypes&gt;&gt;)&gt;&gt;;
-
     <span class="doccomment">/// Load the proposals saved by consensus
     </span><span class="kw">async fn </span>load_quorum_proposals(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -1667,12 +1609,6 @@
             .map(|c| c.config.epoch_start_block)
             .unwrap_or_default();
 
-        <span class="kw">let </span>(undecided_leaves, undecided_state) = <span class="self">self
-            </span>.load_undecided_state()
-            .<span class="kw">await
-            </span>.context(<span class="string">"loading undecided state"</span>)<span class="question-mark">?
-            </span>.unwrap_or_default();
-
         <span class="kw">let </span>saved_proposals = <span class="self">self
             </span>.load_quorum_proposals()
             .<span class="kw">await
@@ -1694,10 +1630,6 @@
             <span class="question-mark">?</span>epoch,
             <span class="question-mark">?</span>high_qc,
             <span class="question-mark">?</span>validated_state,
-            <span class="question-mark">?</span>undecided_leaves,
-            <span class="question-mark">?</span>undecided_state,
-            <span class="question-mark">?</span>saved_proposals,
-            <span class="question-mark">?</span>upgrade_certificate,
             <span class="string">"loaded consensus state"
         </span>);
 
@@ -1716,11 +1648,8 @@
                 high_qc,
                 next_epoch_high_qc,
                 decided_upgrade_certificate: upgrade_certificate,
-                undecided_leaves: undecided_leaves
-                    .into_values()
-                    .map(|e| (e.view_number(), e))
-                    .collect(),
-                undecided_state,
+                undecided_leaves: Default::default(),
+                undecided_state: Default::default(),
                 saved_vid_shares: Default::default(), <span class="comment">// TODO: implement saved_vid_shares
                 </span>start_epoch_info,
             },
@@ -1813,11 +1742,6 @@
         action: HotShotAction,
     ) -&gt; anyhow::Result&lt;()&gt;;
 
-    <span class="kw">async fn </span>update_undecided_state2(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        leaves: CommitmentMap&lt;Leaf2&gt;,
-        state: BTreeMap&lt;ViewNumber, View&lt;SeqTypes&gt;&gt;,
-    ) -&gt; anyhow::Result&lt;()&gt;;
     <span class="kw">async fn </span>append_quorum_proposal2(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         proposal: <span class="kw-2">&amp;</span>Proposal&lt;SeqTypes, QuorumProposalWrapper&lt;SeqTypes&gt;&gt;,
@@ -1832,7 +1756,6 @@
         <span class="self">self</span>.migrate_anchor_leaf().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.migrate_da_proposals().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.migrate_vid_shares().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="self">self</span>.migrate_undecided_state().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.migrate_quorum_proposals().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.migrate_quorum_certificates().<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -1844,7 +1767,6 @@
     <span class="kw">async fn </span>migrate_anchor_leaf(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
     <span class="kw">async fn </span>migrate_da_proposals(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
     <span class="kw">async fn </span>migrate_vid_shares(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
-    <span class="kw">async fn </span>migrate_undecided_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
     <span class="kw">async fn </span>migrate_quorum_proposals(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
     <span class="kw">async fn </span>migrate_quorum_certificates(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt;;
 
@@ -1959,24 +1881,6 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>update_undecided_state(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        leaves: CommitmentMap&lt;Leaf&gt;,
-        state: BTreeMap&lt;ViewNumber, View&lt;SeqTypes&gt;&gt;,
-    ) -&gt; anyhow::Result&lt;()&gt; {
-        (<span class="kw-2">**</span><span class="self">self</span>)
-            .update_undecided_state2(
-                leaves
-                    .into_values()
-                    .map(|leaf| {
-                        <span class="kw">let </span>leaf2: Leaf2 = leaf.into();
-                        (leaf2.commit(), leaf2)
-                    })
-                    .collect(),
-                state,
-            )
-            .<span class="kw">await
-    </span>}
     <span class="kw">async fn </span>append_proposal(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         proposal: <span class="kw-2">&amp;</span>Proposal&lt;SeqTypes, QuorumProposal&lt;SeqTypes&gt;&gt;,
@@ -2006,14 +1910,6 @@
         (<span class="kw-2">**</span><span class="self">self</span>)
             .store_upgrade_certificate(decided_upgrade_certificate)
             .<span class="kw">await
-    </span>}
-
-    <span class="kw">async fn </span>update_undecided_state2(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        leaves: CommitmentMap&lt;Leaf2&gt;,
-        state: BTreeMap&lt;ViewNumber, View&lt;SeqTypes&gt;&gt;,
-    ) -&gt; anyhow::Result&lt;()&gt; {
-        (<span class="kw-2">**</span><span class="self">self</span>).update_undecided_state2(leaves, state).<span class="kw">await
     </span>}
 
     <span class="kw">async fn </span>add_drb_result(

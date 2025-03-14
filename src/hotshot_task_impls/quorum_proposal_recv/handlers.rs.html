@@ -292,20 +292,7 @@
 <a href="#291" id="291">291</a>
 <a href="#292" id="292">292</a>
 <a href="#293" id="293">293</a>
-<a href="#294" id="294">294</a>
-<a href="#295" id="295">295</a>
-<a href="#296" id="296">296</a>
-<a href="#297" id="297">297</a>
-<a href="#298" id="298">298</a>
-<a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
-<a href="#302" id="302">302</a>
-<a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a>
-<a href="#305" id="305">305</a>
-<a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#294" id="294">294</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -367,19 +354,6 @@
 
     <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = consensus_writer.update_leaf(leaf.clone(), state, <span class="prelude-val">None</span>) {
         <span class="macro">tracing::trace!</span>(<span class="string">"{e:?}"</span>);
-    }
-
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = validation_info
-        .storage
-        .write()
-        .<span class="kw">await
-        </span>.update_undecided_state2(
-            consensus_writer.saved_leaves().clone(),
-            consensus_writer.validated_state_map().clone(),
-        )
-        .<span class="kw">await
-    </span>{
-        <span class="macro">tracing::warn!</span>(<span class="string">"Couldn't store undecided state.  Error: {:?}"</span>, e);
     }
 
     <span class="comment">// #3967 REVIEW NOTE: Why are we cloning justify_qc here just to get the view_number out?

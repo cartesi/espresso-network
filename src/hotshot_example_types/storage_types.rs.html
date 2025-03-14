@@ -373,33 +373,7 @@
 <a href="#372" id="372">372</a>
 <a href="#373" id="373">373</a>
 <a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a>
-<a href="#390" id="390">390</a>
-<a href="#391" id="391">391</a>
-<a href="#392" id="392">392</a>
-<a href="#393" id="393">393</a>
-<a href="#394" id="394">394</a>
-<a href="#395" id="395">395</a>
-<a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a>
-<a href="#401" id="401">401</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#375" id="375">375</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -414,11 +388,10 @@
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
-        DaProposal, DaProposal2, Leaf, Leaf2, QuorumProposal, QuorumProposal2,
-        QuorumProposalWrapper, VidCommitment,
+        DaProposal, DaProposal2, QuorumProposal, QuorumProposal2, QuorumProposalWrapper,
+        VidCommitment,
     },
     drb::DrbResult,
     event::HotShotAction,
@@ -428,7 +401,6 @@
         node_implementation::{ConsensusTime, NodeType},
         storage::Storage,
     },
-    utils::View,
     vote::HasViewNumber,
 };
 
@@ -732,30 +704,6 @@
         } <span class="kw">else </span>{
             inner.next_epoch_high_qc2 = <span class="prelude-val">Some</span>(new_next_epoch_high_qc);
         }
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="kw">async fn </span>update_undecided_state(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _leaves: CommitmentMap&lt;Leaf&lt;TYPES&gt;&gt;,
-        _state: BTreeMap&lt;TYPES::View, View&lt;TYPES&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if </span><span class="self">self</span>.should_return_err {
-            <span class="macro">bail!</span>(<span class="string">"Failed to update high qc to storage"</span>);
-        }
-        <span class="self">Self</span>::run_delay_settings_from_config(<span class="kw-2">&amp;</span><span class="self">self</span>.delay_config).<span class="kw">await</span>;
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="kw">async fn </span>update_undecided_state2(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _leaves: CommitmentMap&lt;Leaf2&lt;TYPES&gt;&gt;,
-        _state: BTreeMap&lt;TYPES::View, View&lt;TYPES&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if </span><span class="self">self</span>.should_return_err {
-            <span class="macro">bail!</span>(<span class="string">"Failed to update high qc to storage"</span>);
-        }
-        <span class="self">Self</span>::run_delay_settings_from_config(<span class="kw-2">&amp;</span><span class="self">self</span>.delay_config).<span class="kw">await</span>;
         <span class="prelude-val">Ok</span>(())
     }
 

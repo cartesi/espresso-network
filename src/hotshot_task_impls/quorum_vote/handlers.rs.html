@@ -741,20 +741,7 @@
 <a href="#740" id="740">740</a>
 <a href="#741" id="741">741</a>
 <a href="#742" id="742">742</a>
-<a href="#743" id="743">743</a>
-<a href="#744" id="744">744</a>
-<a href="#745" id="745">745</a>
-<a href="#746" id="746">746</a>
-<a href="#747" id="747">747</a>
-<a href="#748" id="748">748</a>
-<a href="#749" id="749">749</a>
-<a href="#750" id="750">750</a>
-<a href="#751" id="751">751</a>
-<a href="#752" id="752">752</a>
-<a href="#753" id="753">753</a>
-<a href="#754" id="754">754</a>
-<a href="#755" id="755">755</a>
-<a href="#756" id="756">756</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#743" id="743">743</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1315,7 +1302,6 @@
     upgrade_lock: UpgradeLock&lt;TYPES, V&gt;,
     view_number: TYPES::View,
     instance_state: Arc&lt;TYPES::InstanceState&gt;,
-    storage: Arc&lt;RwLock&lt;I::Storage&gt;&gt;,
     proposed_leaf: <span class="kw-2">&amp;</span>Leaf2&lt;TYPES&gt;,
     vid_share: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, VidDisperseShare&lt;TYPES&gt;&gt;,
     parent_view_number: <span class="prelude-ty">Option</span>&lt;TYPES::View&gt;,
@@ -1422,19 +1408,7 @@
         <span class="macro">tracing::trace!</span>(<span class="string">"{e:?}"</span>);
     }
 
-    <span class="comment">// Kick back our updated structures for downstream usage.
-    </span><span class="kw">let </span>new_leaves = consensus_writer.saved_leaves().clone();
-    <span class="kw">let </span>new_state = consensus_writer.validated_state_map().clone();
     drop(consensus_writer);
-
-    <span class="comment">// Send the new state up to the sequencer.
-    </span>storage
-        .write()
-        .<span class="kw">await
-        </span>.update_undecided_state2(new_leaves, new_state)
-        .<span class="kw">await
-        </span>.wrap()
-        .context(<span class="macro">error!</span>(<span class="string">"Failed to update undecided state"</span>))<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }

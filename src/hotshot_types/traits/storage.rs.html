@@ -136,38 +136,7 @@
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
-<a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#138" id="138">138</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -178,19 +147,15 @@
 //! This modules provides the [`Storage`] trait.
 //!
 
-</span><span class="kw">use </span>std::collections::BTreeMap;
-
-<span class="kw">use </span>anyhow::Result;
+</span><span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>async_trait::async_trait;
-<span class="kw">use </span>committable::Commitment;
 
 <span class="kw">use </span><span class="kw">super</span>::node_implementation::NodeType;
 <span class="kw">use crate</span>::{
-    consensus::{CommitmentMap, View},
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
-        DaProposal, DaProposal2, Leaf, Leaf2, QuorumProposal, QuorumProposal2,
-        QuorumProposalWrapper, VidCommitment, VidDisperseShare,
+        DaProposal, DaProposal2, QuorumProposal, QuorumProposal2, QuorumProposalWrapper,
+        VidCommitment, VidDisperseShare,
     },
     drb::DrbResult,
     event::HotShotAction,
@@ -290,34 +255,7 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="prelude-val">Ok</span>(())
     }
-    <span class="doccomment">/// Update the currently undecided state of consensus.  This includes the undecided leaf chain,
-    /// and the undecided state.
-    </span><span class="kw">async fn </span>update_undecided_state(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        leaves: CommitmentMap&lt;Leaf&lt;TYPES&gt;&gt;,
-        state: BTreeMap&lt;TYPES::View, View&lt;TYPES&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
-    <span class="doccomment">/// Update the currently undecided state of consensus.  This includes the undecided leaf chain,
-    /// and the undecided state.
-    </span><span class="kw">async fn </span>update_undecided_state2(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        leaves: CommitmentMap&lt;Leaf2&lt;TYPES&gt;&gt;,
-        state: BTreeMap&lt;TYPES::View, View&lt;TYPES&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="self">self</span>.update_undecided_state(
-            leaves
-                .iter()
-                .map(|(<span class="kw-2">&amp;</span>commitment, leaf)| {
-                    (
-                        Commitment::from_raw(commitment.into()),
-                        leaf.clone().to_leaf_unsafe(),
-                    )
-                })
-                .collect(),
-            state,
-        )
-        .<span class="kw">await
-    </span>}
+
     <span class="doccomment">/// Upgrade the current decided upgrade certificate in storage.
     </span><span class="kw">async fn </span>update_decided_upgrade_certificate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,

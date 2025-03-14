@@ -832,9 +832,7 @@
 <a href="#831" id="831">831</a>
 <a href="#832" id="832">832</a>
 <a href="#833" id="833">833</a>
-<a href="#834" id="834">834</a>
-<a href="#835" id="835">835</a>
-<a href="#836" id="836">836</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#834" id="834">834</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1079,7 +1077,6 @@
             <span class="self">self</span>.upgrade_lock.clone(),
             <span class="self">self</span>.view_number,
             Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.instance_state),
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.storage),
             <span class="kw-2">&amp;</span>leaf,
             <span class="kw-2">&amp;</span>vid_share,
             parent_view_number,
@@ -1590,7 +1587,6 @@
             <span class="self">self</span>.upgrade_lock.clone(),
             proposal.data.view_number(),
             Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.instance_state),
-            Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.storage),
             <span class="kw-2">&amp;</span>proposed_leaf,
             <span class="kw-2">&amp;</span>updated_vid,
             <span class="prelude-val">Some</span>(parent_leaf.view_number()),
