@@ -7,6 +7,7 @@ use std::{
 };
 
 use anyhow::Context;
+use async_lock::RwLock;
 use contract_bindings_alloy::permissionedstaketable::PermissionedStakeTable::StakersUpdated;
 use ethers::types::{Address, U256};
 use ethers_conv::ToAlloy;
@@ -500,22 +501,29 @@ impl Membership<SeqTypes> for EpochCommittees {
     }
 
     async fn get_epoch_root_and_drb(
-        &self,
+        membership: Arc<RwLock<Self>>,
         block_height: u64,
         epoch_height: u64,
         epoch: Epoch,
     ) -> anyhow::Result<(Header, DrbResult)> {
-        let Some(ref peers) = self.peers else {
+        let Some(peers) = membership.read().await.peers.clone() else {
             anyhow::bail!("No Peers Configured for Catchup");
         };
+        let stake_table = membership.read().await.stake_table(Some(epoch)).clone();
+        let success_threshold = membership.read().await.success_threshold(Some(epoch));
         // Fetch leaves from peers
         let leaf: Leaf2 = peers
-            .fetch_leaf(block_height, self, epoch, epoch_height)
+            .fetch_leaf(
+                block_height,
+                stake_table.clone(),
+                success_threshold,
+                epoch_height,
+            )
             .await?;
         //DRB height is decided in the next epoch's last block
         let drb_height = block_height + epoch_height + 3;
         let drb_leaf = peers
-            .fetch_leaf(drb_height, self, epoch, epoch_height)
+            .fetch_leaf(drb_height, stake_table, success_threshold, epoch_height)
             .await?;
 
         Ok((

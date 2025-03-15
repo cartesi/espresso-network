@@ -236,14 +236,17 @@ impl<TYPES: NodeType> EpochMembership<TYPES> {
         block_height: u64,
     ) -> anyhow::Result<(TYPES::BlockHeader, DrbResult)> {
         let Some(epoch) = self.epoch else {
+            tracing::error!("Cannot get root for None epoch");
             anyhow::bail!("Cannot get root for None epoch");
         };
-        self.coordinator
-            .membership
-            .read()
-            .await
-            .get_epoch_root_and_drb(block_height, self.coordinator.epoch_height, epoch)
-            .await
+        tracing::error!("getting epoch root and drb for epoch {:?}", epoch);
+        <TYPES::Membership as Membership<TYPES>>::get_epoch_root_and_drb(
+            self.coordinator.membership.clone(),
+            block_height,
+            self.coordinator.epoch_height,
+            epoch,
+        )
+        .await
     }
 
     /// Get all participants in the committee (including their stake) for a specific epoch
@@ -425,11 +428,11 @@ impl<TYPES: NodeType> EpochMembership<TYPES> {
     /// Add the epoch result to the membership
     pub async fn add_drb_result(&self, drb_result: DrbResult) {
         if let Some(epoch) = self.epoch() {
-            self.coordinator
-                .membership
-                .write()
-                .await
-                .add_drb_result(epoch, drb_result)
+            tracing::error!("aquring membership write lock");
+            let mut membership_writer = self.coordinator.membership.write().await;
+            tracing::error!("write lock acquired");
+            membership_writer.add_drb_result(epoch, drb_result);
+            tracing::error!("releasing membership write lock");
         }
     }
 }

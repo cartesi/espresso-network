@@ -1,6 +1,7 @@
-use std::{collections::HashSet, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use anyhow::Ok;
+use async_lock::RwLock;
 use hotshot_types::{
     drb::DrbResult,
     traits::{election::Membership, node_implementation::NodeType},
@@ -155,7 +156,7 @@ where
     }
 
     async fn get_epoch_root_and_drb(
-        &self,
+        _membership: Arc<RwLock<Self>>,
         _block_height: u64,
         _epoch_height: u64,
         _epoch: TYPES::Epoch,
