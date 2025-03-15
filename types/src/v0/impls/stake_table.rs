@@ -479,25 +479,19 @@ impl Membership<SeqTypes> for EpochCommittees {
         block_header: Header,
     ) -> Option<Box<dyn FnOnce(&mut Self) + Send>> {
         let address = self.contract_address?;
-        tracing::error!("adding epoch root for epoch {}", epoch);
         self.l1_client
             .get_stake_table(address.to_alloy(), block_header.height())
             .await
             .ok()
             .map(|stake_table| -> Box<dyn FnOnce(&mut Self) + Send> {
                 Box::new(move |committee: &mut Self| {
-                    tracing::error!("updating stake table for epoch {}", epoch);
                     let _ = committee.update_stake_table(epoch, stake_table);
                 })
             })
     }
 
     fn has_epoch(&self, epoch: Epoch) -> bool {
-        let res = self.state.contains_key(&epoch);
-        if !res {
-            tracing::error!("has_epoch({}) = false", epoch);
-        }
-        res
+        self.state.contains_key(&epoch)
     }
 
     async fn get_epoch_root_and_drb(

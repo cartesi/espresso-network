@@ -84,12 +84,9 @@ where
         let Some(epoch) = maybe_epoch else {
             return Ok(ret_val);
         };
-        tracing::error!("read lock on membership for epoch {:?}", epoch);
         if self.membership.read().await.has_epoch(epoch) {
-            tracing::error!("has_epoch({}) = true", epoch);
             return Ok(ret_val);
         }
-        tracing::error!("read lock released");
         if self.catchup_map.lock().await.contains_key(&epoch) {
             return Err(warn!(
                 "Stake table for Epoch {:?} Unavailable. Catch up already in Progress",
@@ -132,15 +129,12 @@ where
 
         // Get the epoch root headers and update our membership with them, finally sync them
         // Verification of the root is handled in get_epoch_root_and_drb
-        tracing::error!("getting epoch root and drb");
         let Ok((header, drb)) = root_membership
             .get_epoch_root_and_drb(root_block_in_epoch(*root_epoch, self.epoch_height))
             .await
         else {
-            tracing::error!("get epoch root failed for epoch {:?}", root_epoch);
             anytrace::bail!("get epoch root failed for epoch {:?}", root_epoch);
         };
-        tracing::error!("added epoch root {:?}", root_epoch);
         let updater = self
             .membership
             .read()
@@ -148,11 +142,8 @@ where
             .add_epoch_root(epoch, header)
             .await
             .ok_or(anytrace::warn!("add epoch root failed"))?;
-        tracing::error!("calling updater");
         updater(&mut *(self.membership.write().await));
-        tracing::error!("calling add_drb_result");
         self.membership.write().await.add_drb_result(epoch, drb);
-        tracing::error!("returning");
         Ok(EpochMembership {
             epoch: Some(epoch),
             coordinator: self.clone(),
@@ -236,10 +227,8 @@ impl<TYPES: NodeType> EpochMembership<TYPES> {
         block_height: u64,
     ) -> anyhow::Result<(TYPES::BlockHeader, DrbResult)> {
         let Some(epoch) = self.epoch else {
-            tracing::error!("Cannot get root for None epoch");
             anyhow::bail!("Cannot get root for None epoch");
         };
-        tracing::error!("getting epoch root and drb for epoch {:?}", epoch);
         <TYPES::Membership as Membership<TYPES>>::get_epoch_root_and_drb(
             self.coordinator.membership.clone(),
             block_height,
@@ -428,11 +417,8 @@ impl<TYPES: NodeType> EpochMembership<TYPES> {
     /// Add the epoch result to the membership
     pub async fn add_drb_result(&self, drb_result: DrbResult) {
         if let Some(epoch) = self.epoch() {
-            tracing::error!("aquring membership write lock");
             let mut membership_writer = self.coordinator.membership.write().await;
-            tracing::error!("write lock acquired");
             membership_writer.add_drb_result(epoch, drb_result);
-            tracing::error!("releasing membership write lock");
         }
     }
 }
