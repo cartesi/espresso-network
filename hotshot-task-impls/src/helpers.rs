@@ -195,7 +195,6 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         let next_epoch_number =
             TYPES::Epoch::new(epoch_from_block_number(decided_block_number, epoch_height) + 2);
 
-        tracing::error!("about to call add_epoch_root");
         if let Err(e) = storage
             .write()
             .await
@@ -210,17 +209,15 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         }
 
         let write_callback = {
-            tracing::error!("Calling add_epoch_root for epoch {:?}", next_epoch_number);
+            tracing::debug!("Calling add_epoch_root for epoch {:?}", next_epoch_number);
             let membership_reader = membership.read().await;
             membership_reader
                 .add_epoch_root(next_epoch_number, decided_leaf.block_header().clone())
                 .await
         };
-        tracing::error!("about to call write_callback");
         if let Some(write_callback) = write_callback {
             let mut membership_writer = membership.write().await;
             write_callback(&mut *membership_writer);
-            tracing::error!("returning from write_callback");
         }
     }
 }

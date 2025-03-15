@@ -64,11 +64,8 @@ async fn handle_drb_result<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         }
     }
 
-    tracing::error!("aquring membership read lock");
     membership.stake_table().await;
-    tracing::error!("Calling add_drb_result for epoch {:?}", membership.epoch());
     membership.add_drb_result(drb_result).await;
-    tracing::error!("returning from add_drb_result");
 }
 
 /// Store the DRB result from the computation task to the shared `results` table.
@@ -230,10 +227,6 @@ async fn start_drb_task<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versio
             if join_handle.is_finished() {
                 match join_handle.await {
                     Ok(result) => {
-                        tracing::error!(
-                            "Adding DRB result  in start_drb_task for epoch {:?}",
-                            task_epoch
-                        );
                         task_state
                             .consensus
                             .write()

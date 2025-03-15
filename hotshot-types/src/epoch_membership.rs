@@ -417,8 +417,11 @@ impl<TYPES: NodeType> EpochMembership<TYPES> {
     /// Add the epoch result to the membership
     pub async fn add_drb_result(&self, drb_result: DrbResult) {
         if let Some(epoch) = self.epoch() {
-            let mut membership_writer = self.coordinator.membership.write().await;
-            membership_writer.add_drb_result(epoch, drb_result);
+            self.coordinator
+                .membership
+                .write()
+                .await
+                .add_drb_result(epoch, drb_result);
         }
     }
 }

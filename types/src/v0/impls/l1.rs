@@ -887,7 +887,6 @@ impl L1Client {
         // before update loop starts.
         let stake_table_contract =
             PermissionedStakeTableInstance::new(contract, self.provider.clone());
-        tracing::error!("getting stake table for block {:?}", block);
         let events: Vec<StakersUpdated> = stake_table_contract
             .StakersUpdated_filter()
             .from_block(0)
@@ -897,7 +896,6 @@ impl L1Client {
             .into_iter()
             .map(|(event, _)| event)
             .collect();
-        tracing::error!("got stake table for block {:?}", block);
         Ok(StakeTables::from_l1_events(events.clone()))
     }
 

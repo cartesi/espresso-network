@@ -134,13 +134,13 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     handle_view_change(*new_view_number, *epoch_number, &sender, &receiver, self)
                         .await
                 {
-                    tracing::error!("Failed to handle ViewChange event; error = {e}");
+                    tracing::trace!("Failed to handle ViewChange event; error = {e}");
                 }
                 self.view_start_time = Instant::now();
             },
             HotShotEvent::Timeout(view_number, epoch) => {
                 if let Err(e) = handle_timeout(*view_number, *epoch, &sender, self).await {
-                    tracing::error!("Failed to handle Timeout event; error = {e}");
+                    tracing::debug!("Failed to handle Timeout event; error = {e}");
                 }
             },
             HotShotEvent::ExtendedQc2Formed(eqc) => {
