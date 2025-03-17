@@ -988,15 +988,7 @@
 <a href="#987" id="987">987</a>
 <a href="#988" id="988">988</a>
 <a href="#989" id="989">989</a>
-<a href="#990" id="990">990</a>
-<a href="#991" id="991">991</a>
-<a href="#992" id="992">992</a>
-<a href="#993" id="993">993</a>
-<a href="#994" id="994">994</a>
-<a href="#995" id="995">995</a>
-<a href="#996" id="996">996</a>
-<a href="#997" id="997">997</a>
-<a href="#998" id="998">998</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#990" id="990">990</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1909,7 +1901,7 @@
         </span><span class="kw">return </span><span class="prelude-val">None</span>;
     };
     <span class="kw">let </span>receiver = receiver.clone();
-    <span class="kw">let </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(event)) = tokio::time::timeout(time_left, <span class="kw">async move </span>{
+    <span class="kw">let </span>event = tokio::time::timeout(time_left, <span class="kw">async move </span>{
         <span class="kw">let </span>this_epoch_high_qc = high_qc.clone();
         EventDependency::new(
             receiver,
@@ -1926,15 +1918,7 @@
         .<span class="kw">await
     </span>})
     .<span class="kw">await
-    else </span>{
-        <span class="comment">// Check again, there is a chance we missed it
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(next_epoch_qc) = consensus.read().<span class="kw">await</span>.next_epoch_high_qc() {
-            <span class="kw">if </span>next_epoch_qc.data.leaf_commit == high_qc.data.leaf_commit {
-                <span class="kw">return </span><span class="prelude-val">Some</span>(next_epoch_qc.clone());
-            }
-        };
-        <span class="kw">return </span><span class="prelude-val">None</span>;
-    };
+    </span>.ok()<span class="question-mark">??</span>;
     <span class="kw">let </span>HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) = event.as_ref() <span class="kw">else </span>{
         <span class="comment">// this shouldn't happen
         </span><span class="kw">return </span><span class="prelude-val">None</span>;
