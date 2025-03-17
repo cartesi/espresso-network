@@ -54,9 +54,11 @@ pub trait StateCatchup: Send + Sync {
             self, |provider, retry| {
         let stake_table_clone = stake_table.clone();
         async move {
-                    let chain = provider.try_fetch_leaves(retry, height).await?;
+                    let mut chain = provider.try_fetch_leaves(retry, height).await?;
+                    chain.sort_by_key(|l| l.height());
+                    let leaf_chain = chain.into_iter().rev().collect();
                     verify_epoch_root_chain(
-                        chain,
+                        leaf_chain,
                         stake_table_clone.clone(),
                         success_threshold,
                         epoch_height,

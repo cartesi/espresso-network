@@ -162,8 +162,7 @@ pub async fn verify_epoch_root_chain<T: NodeType, V: Versions>(
         )
         .await?;
 
-    // Verify the
-    let root_height_interval = epoch_height - 3;
+    // Verify the root is in the chain of decided leaves
     let mut last_leaf = parent;
     for leaf in leaf_chain.iter().skip(2) {
         ensure!(last_leaf.justify_qc().view_number() == leaf.view_number());
@@ -175,7 +174,7 @@ pub async fn verify_epoch_root_chain<T: NodeType, V: Versions>(
                 upgrade_lock,
             )
             .await?;
-        if leaf.height() % root_height_interval == 0 {
+        if leaf.height() % epoch_height == epoch_height - 2 {
             return Ok(leaf.clone());
         }
         last_leaf = leaf;

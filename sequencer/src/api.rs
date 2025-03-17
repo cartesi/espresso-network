@@ -1999,7 +1999,7 @@ mod test {
             .l1_url(l1)
             .epoch_height(EPOCH_HEIGHT)
             .build();
-        const NUM_NODES: usize = 4;
+        const NUM_NODES: usize = 2;
         let config = TestNetworkConfigBuilder::<NUM_NODES, _, _>::with_num_nodes()
             .api_config(Options::with_port(port))
             .network_config(network_config)
