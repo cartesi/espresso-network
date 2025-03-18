@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["deregister_validator","register_validator","to_alloy_ed_on_bn_point","to_alloy_g1_point","to_alloy_g2_point"]};

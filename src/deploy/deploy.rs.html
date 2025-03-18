@@ -188,7 +188,17 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{fs::File, io::stdout, path::PathBuf, time::Duration};
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{fs::File, io::stdout, path::PathBuf, time::Duration};
 
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::parse_duration;
@@ -328,6 +338,15 @@
     </span><span class="attr">#[clap(long, env = <span class="string">"ESPRESSO_SEQUENCER_INITIAL_PERMISSIONED_STAKE_TABLE_PATH"</span>)]
     </span>initial_stake_table_path: <span class="prelude-ty">Option</span>&lt;PathBuf&gt;,
 
+    <span class="doccomment">/// Exit escrow period for the stake table contract.
+    ///
+    /// This is the period for which stake table contract will retain funds after withdrawals have
+    /// been requested. It should be set to a value that is at least 3 hotshot epochs plus ample
+    /// time to allow for submission of slashing evidence. Initially it will probably be around one
+    /// week.
+    </span><span class="attr">#[clap(long, env = <span class="string">"ESPRESSO_SEQUENCER_STAKE_TABLE_EXIT_ESCROW_PERIOD"</span>, value_parser = parse_duration)]
+    </span>exit_escrow_period: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
+
     <span class="attr">#[clap(flatten)]
     </span>logging: logging::Config,
 }
@@ -362,6 +381,7 @@
         opt.permissioned_prover,
         contracts,
         initial_stake_table,
+        opt.exit_escrow_period,
     )
     .<span class="kw">await</span><span class="question-mark">?</span>;
 

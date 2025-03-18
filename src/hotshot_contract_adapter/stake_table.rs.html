@@ -392,7 +392,7 @@
     PermissionedStakeTable::NodeInfo <span class="kw">as </span>NodeInfoAlloy, BN254::G2Point <span class="kw">as </span>G2PointAlloy,
 };
 <span class="kw">use </span>contract_bindings_ethers::permissioned_stake_table::{<span class="self">self</span>, EdOnBN254Point, NodeInfo};
-<span class="kw">use </span>diff_test_bn254::ParsedG2Point;
+<span class="kw">pub use </span>diff_test_bn254::ParsedG2Point;
 <span class="kw">use </span>ethers::{
     abi::AbiDecode,
     prelude::{AbiError, EthAbiCodec, EthAbiType},
