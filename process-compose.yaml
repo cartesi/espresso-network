@@ -27,9 +27,10 @@ processes:
     command:
       unset ESPRESSO_SEQUENCER_PERMISSIONED_STAKE_TABLE_ADDRESS
       ESPRESSO_SEQUENCER_FEE_CONTRACT_PROXY_ADDRESS
-      && deploy --only fee-contract
+      ESPRESSO_SEQUENCER_ESP_TOKEN_PROXY_ADDRESS
+      ESPRESSO_SEQUENCER_STAKE_TABLE_PROXY_ADDRESS
+      && deploy --only fee-contract,permissioned-stake-table,esp-token,stake-table
       && unset ESPRESSO_SEQUENCER_ETH_MULTISIG_ADDRESS
-      && deploy --only permissioned-stake-table
     namespace: setup
     depends_on:
       demo-l1-network:
