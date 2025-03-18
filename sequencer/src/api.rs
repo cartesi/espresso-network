@@ -1178,6 +1178,7 @@ mod api_tests {
         message::Proposal,
         simple_certificate::QuorumCertificate2,
         traits::{node_implementation::ConsensusTime, signature_key::SignatureKey, EncodeBytes},
+        utils::EpochTransitionIndicator,
         vid::avidm::{init_avidm_param, AvidMScheme},
     };
     use portpicker::pick_unused_port;
@@ -1429,6 +1430,7 @@ mod api_tests {
                 metadata: payload.ns_table().clone(),
                 view_number: leaf.view_number(),
                 epoch: Some(EpochNumber::new(0)),
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             };
             let da_proposal = Proposal {
                 data: da_proposal_inner,

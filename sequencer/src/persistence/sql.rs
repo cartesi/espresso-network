@@ -2095,6 +2095,7 @@ mod test {
             block_contents::BlockHeader, node_implementation::Versions,
             signature_key::SignatureKey, EncodeBytes,
         },
+        utils::EpochTransitionIndicator,
         vid::{
             advz::advz_scheme,
             avidm::{init_avidm_param, AvidMScheme},
@@ -2253,6 +2254,7 @@ mod test {
                 metadata: leaf_payload.ns_table().clone(),
                 view_number: ViewNumber::new(0),
                 epoch: None,
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             },
             signature: block_payload_signature,
             _pd: Default::default(),
@@ -2400,6 +2402,7 @@ mod test {
                 metadata: leaf_payload.ns_table().clone(),
                 view_number: data_view,
                 epoch: Some(EpochNumber::new(0)),
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             },
             signature: block_payload_signature,
             _pd: Default::default(),
