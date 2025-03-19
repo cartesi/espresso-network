@@ -2692,7 +2692,69 @@
 <a href="#2691" id="2691">2691</a>
 <a href="#2692" id="2692">2692</a>
 <a href="#2693" id="2693">2693</a>
-<a href="#2694" id="2694">2694</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
+<a href="#2694" id="2694">2694</a>
+<a href="#2695" id="2695">2695</a>
+<a href="#2696" id="2696">2696</a>
+<a href="#2697" id="2697">2697</a>
+<a href="#2698" id="2698">2698</a>
+<a href="#2699" id="2699">2699</a>
+<a href="#2700" id="2700">2700</a>
+<a href="#2701" id="2701">2701</a>
+<a href="#2702" id="2702">2702</a>
+<a href="#2703" id="2703">2703</a>
+<a href="#2704" id="2704">2704</a>
+<a href="#2705" id="2705">2705</a>
+<a href="#2706" id="2706">2706</a>
+<a href="#2707" id="2707">2707</a>
+<a href="#2708" id="2708">2708</a>
+<a href="#2709" id="2709">2709</a>
+<a href="#2710" id="2710">2710</a>
+<a href="#2711" id="2711">2711</a>
+<a href="#2712" id="2712">2712</a>
+<a href="#2713" id="2713">2713</a>
+<a href="#2714" id="2714">2714</a>
+<a href="#2715" id="2715">2715</a>
+<a href="#2716" id="2716">2716</a>
+<a href="#2717" id="2717">2717</a>
+<a href="#2718" id="2718">2718</a>
+<a href="#2719" id="2719">2719</a>
+<a href="#2720" id="2720">2720</a>
+<a href="#2721" id="2721">2721</a>
+<a href="#2722" id="2722">2722</a>
+<a href="#2723" id="2723">2723</a>
+<a href="#2724" id="2724">2724</a>
+<a href="#2725" id="2725">2725</a>
+<a href="#2726" id="2726">2726</a>
+<a href="#2727" id="2727">2727</a>
+<a href="#2728" id="2728">2728</a>
+<a href="#2729" id="2729">2729</a>
+<a href="#2730" id="2730">2730</a>
+<a href="#2731" id="2731">2731</a>
+<a href="#2732" id="2732">2732</a>
+<a href="#2733" id="2733">2733</a>
+<a href="#2734" id="2734">2734</a>
+<a href="#2735" id="2735">2735</a>
+<a href="#2736" id="2736">2736</a>
+<a href="#2737" id="2737">2737</a>
+<a href="#2738" id="2738">2738</a>
+<a href="#2739" id="2739">2739</a>
+<a href="#2740" id="2740">2740</a>
+<a href="#2741" id="2741">2741</a>
+<a href="#2742" id="2742">2742</a>
+<a href="#2743" id="2743">2743</a>
+<a href="#2744" id="2744">2744</a>
+<a href="#2745" id="2745">2745</a>
+<a href="#2746" id="2746">2746</a>
+<a href="#2747" id="2747">2747</a>
+<a href="#2748" id="2748">2748</a>
+<a href="#2749" id="2749">2749</a>
+<a href="#2750" id="2750">2750</a>
+<a href="#2751" id="2751">2751</a>
+<a href="#2752" id="2752">2752</a>
+<a href="#2753" id="2753">2753</a>
+<a href="#2754" id="2754">2754</a>
+<a href="#2755" id="2755">2755</a>
+<a href="#2756" id="2756">2756</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -2702,8 +2764,9 @@
 <span class="kw">use </span>derive_more::derive::{From, Into};
 <span class="kw">use </span>espresso_types::{
     parse_duration, parse_size,
+    traits::MembershipPersistence,
     v0::traits::{EventConsumer, PersistenceOptions, SequencerPersistence, StateCatchup},
-    v0_3::StakeTables,
+    v0_3::{IndexedStake, StakeTables},
     BackoffParams, BlockMerkleTree, FeeMerkleTree, Leaf, Leaf2, NetworkConfig, Payload,
 };
 <span class="kw">use </span>futures::stream::StreamExt;
@@ -3705,39 +3768,6 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>load_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;StakeTables&gt;&gt; {
-        <span class="kw">let </span>result = <span class="self">self
-            </span>.db
-            .read()
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.fetch_optional(
-                query(<span class="string">"SELECT stake FROM epoch_drb_and_root WHERE epoch = $1"</span>)
-                    .bind(epoch.u64() <span class="kw">as </span>i64),
-            )
-            .<span class="kw">await</span><span class="question-mark">?</span>;
-
-        result
-            .map(|row| {
-                <span class="kw">let </span>bytes: Vec&lt;u8&gt; = row.get(<span class="string">"stake"</span>);
-                anyhow::Result::&lt;<span class="kw">_</span>&gt;::Ok(bincode::deserialize(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>)
-            })
-            .transpose()
-    }
-
-    <span class="kw">async fn </span>store_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber, stake: StakeTables) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span>stake_table_bytes = bincode::serialize(<span class="kw-2">&amp;</span>stake).context(<span class="string">"serializing stake table"</span>)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span><span class="kw-2">mut </span>tx = <span class="self">self</span>.db.write().<span class="kw">await</span><span class="question-mark">?</span>;
-        tx.upsert(
-            <span class="string">"epoch_drb_and_root"</span>,
-            [<span class="string">"epoch"</span>, <span class="string">"stake"</span>],
-            [<span class="string">"epoch"</span>],
-            [(epoch.u64() <span class="kw">as </span>i64, stake_table_bytes)],
-        )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-        tx.commit().<span class="kw">await
-    </span>}
-
     <span class="kw">async fn </span>load_latest_acted_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;ViewNumber&gt;&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.db
@@ -4571,6 +4601,69 @@
 }
 
 <span class="attr">#[async_trait]
+</span><span class="kw">impl </span>MembershipPersistence <span class="kw">for </span>Persistence {
+    <span class="kw">async fn </span>load_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;StakeTables&gt;&gt; {
+        <span class="kw">let </span>result = <span class="self">self
+            </span>.db
+            .read()
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.fetch_optional(
+                query(<span class="string">"SELECT stake FROM epoch_drb_and_root WHERE epoch = $1"</span>)
+                    .bind(epoch.u64() <span class="kw">as </span>i64),
+            )
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        result
+            .map(|row| {
+                <span class="kw">let </span>bytes: Vec&lt;u8&gt; = row.get(<span class="string">"stake"</span>);
+                bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserializing stake table"</span>)
+            })
+            .transpose()
+    }
+
+    <span class="kw">async fn </span>load_latest_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: u64) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;IndexedStake&gt;&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>tx = <span class="self">self</span>.db.write().<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>rows = <span class="kw">match </span>query_as::&lt;(i64, Vec&lt;u8&gt;)&gt;(
+            <span class="string">"SELECT epoch, stake FROM epoch_drb_and_root LIMIT $1"</span>,
+        )
+        .bind(limit <span class="kw">as </span>i64)
+        .fetch_all(tx.as_mut())
+        .<span class="kw">await
+        </span>{
+            <span class="prelude-val">Ok</span>(bytes) =&gt; bytes,
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="macro">tracing::error!</span>(<span class="string">"error loading stake tables: {err:#}"</span>);
+                <span class="macro">bail!</span>(<span class="string">"{err:#}"</span>);
+            },
+        };
+
+        rows.into_iter()
+            .map(|(id, bytes)| -&gt; anyhow::Result&lt;<span class="kw">_</span>&gt; {
+                <span class="kw">let </span>st: StakeTables =
+                    bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserializing stake table"</span>)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((EpochNumber::new(id <span class="kw">as </span>u64), st)))
+            })
+            .collect()
+    }
+
+    <span class="kw">async fn </span>store_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber, stake: StakeTables) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>tx = <span class="self">self</span>.db.write().<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>stake_table_bytes = bincode::serialize(<span class="kw-2">&amp;</span>stake).context(<span class="string">"serializing stake table"</span>)<span class="question-mark">?</span>;
+
+        tx.upsert(
+            <span class="string">"epoch_drb_and_root"</span>,
+            [<span class="string">"epoch"</span>, <span class="string">"stake"</span>],
+            [<span class="string">"epoch"</span>],
+            [(epoch.u64() <span class="kw">as </span>i64, stake_table_bytes)],
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        tx.commit().<span class="kw">await
+    </span>}
+}
+
+<span class="attr">#[async_trait]
 </span><span class="kw">impl </span>Provider&lt;SeqTypes, VidCommonRequest&gt; <span class="kw">for </span>Persistence {
     <span class="attr">#[tracing::instrument(skip(<span class="self">self</span>))]
     </span><span class="kw">async fn </span>fetch(<span class="kw-2">&amp;</span><span class="self">self</span>, req: VidCommonRequest) -&gt; <span class="prelude-ty">Option</span>&lt;VidCommon&gt; {
@@ -5384,6 +5477,37 @@
             quorum_certificates_count, rows <span class="kw">as </span>i64,
             <span class="string">"quorum certificates count does not match rows"</span>,
         );
+    }
+
+    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
+        setup_test();
+
+        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
+
+        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
+
+        <span class="kw">let </span>st = StakeTables::mock();
+        storage
+            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+        <span class="macro">assert_eq!</span>(st, table);
+
+        <span class="kw">let </span>st2 = StakeTables::mock();
+        storage
+            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
+
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div></section></main></body></html>

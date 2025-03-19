@@ -1898,7 +1898,63 @@
 <a href="#1897" id="1897">1897</a>
 <a href="#1898" id="1898">1898</a>
 <a href="#1899" id="1899">1899</a>
-<a href="#1900" id="1900">1900</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1900" id="1900">1900</a>
+<a href="#1901" id="1901">1901</a>
+<a href="#1902" id="1902">1902</a>
+<a href="#1903" id="1903">1903</a>
+<a href="#1904" id="1904">1904</a>
+<a href="#1905" id="1905">1905</a>
+<a href="#1906" id="1906">1906</a>
+<a href="#1907" id="1907">1907</a>
+<a href="#1908" id="1908">1908</a>
+<a href="#1909" id="1909">1909</a>
+<a href="#1910" id="1910">1910</a>
+<a href="#1911" id="1911">1911</a>
+<a href="#1912" id="1912">1912</a>
+<a href="#1913" id="1913">1913</a>
+<a href="#1914" id="1914">1914</a>
+<a href="#1915" id="1915">1915</a>
+<a href="#1916" id="1916">1916</a>
+<a href="#1917" id="1917">1917</a>
+<a href="#1918" id="1918">1918</a>
+<a href="#1919" id="1919">1919</a>
+<a href="#1920" id="1920">1920</a>
+<a href="#1921" id="1921">1921</a>
+<a href="#1922" id="1922">1922</a>
+<a href="#1923" id="1923">1923</a>
+<a href="#1924" id="1924">1924</a>
+<a href="#1925" id="1925">1925</a>
+<a href="#1926" id="1926">1926</a>
+<a href="#1927" id="1927">1927</a>
+<a href="#1928" id="1928">1928</a>
+<a href="#1929" id="1929">1929</a>
+<a href="#1930" id="1930">1930</a>
+<a href="#1931" id="1931">1931</a>
+<a href="#1932" id="1932">1932</a>
+<a href="#1933" id="1933">1933</a>
+<a href="#1934" id="1934">1934</a>
+<a href="#1935" id="1935">1935</a>
+<a href="#1936" id="1936">1936</a>
+<a href="#1937" id="1937">1937</a>
+<a href="#1938" id="1938">1938</a>
+<a href="#1939" id="1939">1939</a>
+<a href="#1940" id="1940">1940</a>
+<a href="#1941" id="1941">1941</a>
+<a href="#1942" id="1942">1942</a>
+<a href="#1943" id="1943">1943</a>
+<a href="#1944" id="1944">1944</a>
+<a href="#1945" id="1945">1945</a>
+<a href="#1946" id="1946">1946</a>
+<a href="#1947" id="1947">1947</a>
+<a href="#1948" id="1948">1948</a>
+<a href="#1949" id="1949">1949</a>
+<a href="#1950" id="1950">1950</a>
+<a href="#1951" id="1951">1951</a>
+<a href="#1952" id="1952">1952</a>
+<a href="#1953" id="1953">1953</a>
+<a href="#1954" id="1954">1954</a>
+<a href="#1955" id="1955">1955</a>
+<a href="#1956" id="1956">1956</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashSet},
     fs::{<span class="self">self</span>, File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -1912,8 +1968,9 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::{
+    traits::MembershipPersistence,
     v0::traits::{EventConsumer, PersistenceOptions, SequencerPersistence},
-    v0_3::StakeTables,
+    v0_3::{IndexedStake, StakeTables},
     Leaf, Leaf2, NetworkConfig, Payload, SeqTypes,
 };
 <span class="kw">use </span>hotshot::InitializerEpochInfo;
@@ -1935,6 +1992,7 @@
     },
     vote::HasViewNumber,
 };
+<span class="kw">use </span>itertools::Itertools;
 
 <span class="kw">use </span><span class="kw">crate</span>::ViewNumber;
 
@@ -2732,43 +2790,6 @@
         ))
     }
 
-    <span class="kw">async fn </span>load_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;StakeTables&gt;&gt; {
-        <span class="kw">let </span>inner = <span class="self">self</span>.inner.read().<span class="kw">await</span>;
-        <span class="kw">let </span>path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
-        <span class="kw">if </span>!path.is_file() {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-        }
-
-        <span class="kw">let </span>file_path = path.join(epoch.to_string()).with_extension(<span class="string">"txt"</span>);
-        <span class="kw">let </span>bytes = fs::read(<span class="kw-2">&amp;</span>file_path).context(<span class="string">"read"</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(
-            bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserialize combined stake table"</span>)<span class="question-mark">?</span>,
-        ))
-    }
-
-    <span class="kw">async fn </span>store_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber, stake: StakeTables) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
-        <span class="kw">let </span>dir_path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
-
-        fs::create_dir_all(dir_path.clone()).context(<span class="string">"failed to create proposals dir"</span>)<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>file_path = dir_path.join(epoch.to_string()).with_extension(<span class="string">"txt"</span>);
-
-        inner.replace(
-            <span class="kw-2">&amp;</span>file_path,
-            |<span class="kw">_</span>| {
-                <span class="comment">// Always overwrite the previous file.
-                </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-            },
-            |<span class="kw-2">mut </span>file| {
-                <span class="kw">let </span>bytes =
-                    bincode::serialize(<span class="kw-2">&amp;</span>stake).context(<span class="string">"serializing combined stake table"</span>)<span class="question-mark">?</span>;
-                file.write_all(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(())
-            },
-        )
-    }
-
     <span class="kw">async fn </span>store_upgrade_certificate(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         decided_upgrade_certificate: <span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;SeqTypes&gt;&gt;,
@@ -3208,6 +3229,66 @@
         result.sort_by(|a, b| a.epoch.cmp(<span class="kw-2">&amp;</span>b.epoch));
 
         <span class="prelude-val">Ok</span>(result)
+    }
+}
+
+<span class="attr">#[async_trait]
+</span><span class="kw">impl </span>MembershipPersistence <span class="kw">for </span>Persistence {
+    <span class="kw">async fn </span>load_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;StakeTables&gt;&gt; {
+        <span class="kw">let </span>inner = <span class="self">self</span>.inner.read().<span class="kw">await</span>;
+        <span class="kw">let </span>path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
+        <span class="kw">let </span>file_path = path.join(epoch.to_string()).with_extension(<span class="string">"txt"</span>);
+        <span class="kw">let </span>bytes = fs::read(<span class="kw-2">&amp;</span>file_path).context(<span class="string">"read"</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(
+            bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserialize combined stake table"</span>)<span class="question-mark">?</span>,
+        ))
+    }
+
+    <span class="kw">async fn </span>load_latest_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, limit: u64) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;IndexedStake&gt;&gt;&gt; {
+        <span class="kw">let </span>limit = limit <span class="kw">as </span>usize;
+        <span class="kw">let </span>inner = <span class="self">self</span>.inner.read().<span class="kw">await</span>;
+        <span class="kw">let </span>path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
+        <span class="kw">let </span>sorted: Vec&lt;<span class="kw">_</span>&gt; = epoch_files(path)<span class="question-mark">?
+            </span>.sorted_unstable_by_key(|t| t.<span class="number">0</span>)
+            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+
+        <span class="kw">let </span>len = sorted.len();
+        <span class="kw">let </span><span class="kw-2">mut </span>slice = <span class="kw-2">&amp;</span>sorted[..];
+        <span class="kw">if </span>len &gt; limit {
+            slice = <span class="kw-2">&amp;</span>sorted[len - limit..len - <span class="number">1</span>]
+        };
+        slice
+            .iter()
+            .map(|(epoch, path)| -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;IndexedStake&gt;&gt; {
+                <span class="kw">let </span>bytes = fs::read(path).context(<span class="string">"read"</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span>st =
+                    bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserialize combined stake table"</span>)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((<span class="kw-2">*</span>epoch, st)))
+            })
+            .collect()
+    }
+
+    <span class="kw">async fn </span>store_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber, stake: StakeTables) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
+        <span class="kw">let </span>dir_path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
+
+        fs::create_dir_all(dir_path.clone()).context(<span class="string">"failed to create proposals dir"</span>)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>file_path = dir_path.join(epoch.to_string()).with_extension(<span class="string">"txt"</span>);
+
+        inner.replace(
+            <span class="kw-2">&amp;</span>file_path,
+            |<span class="kw">_</span>| {
+                <span class="comment">// Always overwrite the previous file.
+                </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+            },
+            |<span class="kw-2">mut </span>file| {
+                <span class="kw">let </span>bytes =
+                    bincode::serialize(<span class="kw-2">&amp;</span>stake).context(<span class="string">"serializing combined stake table"</span>)<span class="question-mark">?</span>;
+                file.write_all(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(())
+            },
+        )
     }
 }
 
@@ -3796,6 +3877,37 @@
                 .into_iter()
                 .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()
         );
+    }
+
+    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
+        setup_test();
+
+        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
+
+        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
+
+        <span class="kw">let </span>st = StakeTables::mock();
+        storage
+            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+        <span class="macro">assert_eq!</span>(st, table);
+
+        <span class="kw">let </span>st2 = StakeTables::mock();
+        storage
+            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
+        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
+
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div></section></main></body></html>

@@ -24,10 +24,13 @@
 <a href="#23" id="23">23</a>
 <a href="#24" id="24">24</a>
 <a href="#25" id="25">25</a>
-<a href="#26" id="26">26</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::PubKey;
+<a href="#26" id="26">26</a>
+<a href="#27" id="27">27</a>
+<a href="#28" id="28">28</a>
+<a href="#29" id="29">29</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::PubKey;
 <span class="kw">use </span>derive_more::derive::{From, Into};
 <span class="kw">use </span>hotshot_contract_adapter::stake_table::NodeInfoJf;
-<span class="kw">use </span>hotshot_types::{network::PeerConfigKeys, PeerConfig};
+<span class="kw">use </span>hotshot_types::{data::EpochNumber, network::PeerConfigKeys, PeerConfig};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, From)]
@@ -37,17 +40,20 @@
 </span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, From)]
 </span><span class="kw">pub struct </span>CombinedStakeTable(Vec&lt;PeerConfigKeys&lt;PubKey&gt;&gt;);
 
-<span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize)]
+<span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="doccomment">/// NewType to disambiguate DA Membership
 </span><span class="kw">pub struct </span>DAMembers(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;PubKey&gt;&gt;);
 
-<span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize)]
+<span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="doccomment">/// NewType to disambiguate StakeTable
 </span><span class="kw">pub struct </span>StakeTable(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;PubKey&gt;&gt;);
 
-<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<span class="attr">#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="kw">pub struct </span>StakeTables {
     <span class="kw">pub </span>stake_table: StakeTable,
     <span class="kw">pub </span>da_members: DAMembers,
 }
+
+<span class="doccomment">/// Type for holding result sets matching epochs to stake tables.
+</span><span class="kw">pub type </span>IndexedStake = (EpochNumber, StakeTables);
 </code></pre></div></section></main></body></html>

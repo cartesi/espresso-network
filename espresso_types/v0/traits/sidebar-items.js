@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["NullEventConsumer"],"trait":["EventConsumer","FromNsPayloadBytes","FromStringOrInteger","NsPayloadBytesRange","PersistenceOptions","SequencerPersistence","StateCatchup"]};
+window.SIDEBAR_ITEMS = {"struct":["NullEventConsumer"],"trait":["EventConsumer","FromNsPayloadBytes","FromStringOrInteger","MembershipPersistence","NsPayloadBytesRange","PersistenceOptions","SequencerPersistence","StateCatchup"]};
