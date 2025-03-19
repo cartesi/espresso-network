@@ -1896,7 +1896,9 @@
 <a href="#1895" id="1895">1895</a>
 <a href="#1896" id="1896">1896</a>
 <a href="#1897" id="1897">1897</a>
-<a href="#1898" id="1898">1898</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1898" id="1898">1898</a>
+<a href="#1899" id="1899">1899</a>
+<a href="#1900" id="1900">1900</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashSet},
     fs::{<span class="self">self</span>, File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -3202,6 +3204,8 @@
                 });
             }
         }
+
+        result.sort_by(|a, b| a.epoch.cmp(<span class="kw-2">&amp;</span>b.epoch));
 
         <span class="prelude-val">Ok</span>(result)
     }
