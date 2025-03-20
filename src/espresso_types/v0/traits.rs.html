@@ -1166,9 +1166,13 @@
 <a href="#1165" id="1165">1165</a>
 <a href="#1166" id="1166">1166</a>
 <a href="#1167" id="1167">1167</a>
-<a href="#1168" id="1168">1168</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
+<a href="#1168" id="1168">1168</a>
+<a href="#1169" id="1169">1169</a>
+<a href="#1170" id="1170">1170</a>
+<a href="#1171" id="1171">1171</a>
+<a href="#1172" id="1172">1172</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
 //! It also includes some trait implementations that cannot be implemented in an external crate.
-</span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, ops::Range, sync::Arc};
+</span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, num::NonZeroU64, ops::Range, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -1196,6 +1200,7 @@
         ValidatedState <span class="kw">as </span>HotShotState,
     },
     utils::{genesis_epoch_from_version, verify_epoch_root_chain},
+    PeerConfig,
 };
 <span class="kw">use </span>indexmap::IndexMap;
 <span class="kw">use </span>itertools::Itertools;
@@ -1206,7 +1211,7 @@
     utils::BackoffParams,
     v0_1::{RewardAccount, RewardAccountProof, RewardMerkleCommitment, RewardMerkleTree},
     v0_3::{IndexedStake, Validator},
-    EpochCommittees, EpochVersion, SequencerVersions,
+    EpochVersion, PubKey, SequencerVersions,
 };
 <span class="kw">use crate</span>::{
     v0::impls::ValidatedState, v0_99::ChainConfig, BlockMerkleTree, Event, FeeAccount,
@@ -1220,18 +1225,21 @@
     <span class="kw">async fn </span>fetch_leaf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
-        membership: <span class="kw-2">&amp;</span>EpochCommittees,
-        epoch: EpochNumber,
+        stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
         <span class="self">self</span>.backoff().retry(
             <span class="self">self</span>, |provider, retry| {
-                <span class="kw">async move </span>{
-                    <span class="kw">let </span>chain = provider.try_fetch_leaves(retry, height).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>stake_table_clone = stake_table.clone();
+        <span class="kw">async move </span>{
+                    <span class="kw">let </span><span class="kw-2">mut </span>chain = provider.try_fetch_leaves(retry, height).<span class="kw">await</span><span class="question-mark">?</span>;
+                    chain.sort_by_key(|l| l.view_number());
+                    <span class="kw">let </span>leaf_chain = chain.into_iter().rev().collect();
                     verify_epoch_root_chain(
-                        chain,
-                        membership,
-                        epoch,
+                        leaf_chain,
+                        stake_table_clone.clone(),
+                        success_threshold,
                         epoch_height,
                         <span class="kw-2">&amp;</span>UpgradeLock::&lt;SeqTypes, SequencerVersions&lt;EpochVersion, EpochVersion&gt;&gt;::new()).<span class="kw">await
                 </span>}.boxed()
@@ -1404,12 +1412,12 @@
     <span class="kw">async fn </span>fetch_leaf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
-        membership: <span class="kw-2">&amp;</span>EpochCommittees,
-        epoch: EpochNumber,
+        stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
         (<span class="kw-2">**</span><span class="self">self</span>)
-            .fetch_leaf(height, membership, epoch, epoch_height)
+            .fetch_leaf(height, stake_table, success_threshold, epoch_height)
             .<span class="kw">await
     </span>}
     <span class="kw">async fn </span>try_fetch_accounts(
@@ -1538,12 +1546,12 @@
     <span class="kw">async fn </span>fetch_leaf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
-        membership: <span class="kw-2">&amp;</span>EpochCommittees,
-        epoch: EpochNumber,
+        stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
         (<span class="kw-2">**</span><span class="self">self</span>)
-            .fetch_leaf(height, membership, epoch, epoch_height)
+            .fetch_leaf(height, stake_table, success_threshold, epoch_height)
             .<span class="kw">await
     </span>}
     <span class="kw">async fn </span>try_fetch_accounts(

@@ -1449,7 +1449,7 @@
     <span class="attr">#[instrument(skip_all, name = <span class="string">"Network message task"</span>, level = <span class="string">"trace"</span>)]
     </span><span class="doccomment">/// Handles a (deserialized) message from the network
     </span><span class="kw">pub async fn </span>handle_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: Message&lt;TYPES&gt;) {
-        <span class="macro">tracing::trace!</span>(<span class="string">"Received message from network:\n\n{message:?}"</span>);
+        <span class="macro">tracing::info!</span>(<span class="string">"Received message from network:\n\n{:?}\n"</span>, message.kind);
 
         <span class="comment">// Match the message kind and send the appropriate event to the internal event stream
         </span><span class="kw">let </span>sender = message.sender;

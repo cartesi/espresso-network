@@ -415,7 +415,7 @@
                 .<span class="kw">await
                 </span>{
                     <span class="prelude-val">Ok</span>(()) =&gt; {},
-                    <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">error!</span>(<span class="question-mark">?</span>e, <span class="string">"Failed to validate the proposal"</span>),
+                    <span class="prelude-val">Err</span>(e) =&gt; <span class="macro">tracing::error!</span>(<span class="question-mark">?</span>e, <span class="string">"Failed to validate the proposal"</span>),
                 }
             },
             HotShotEvent::ViewChange(view, epoch) =&gt; {

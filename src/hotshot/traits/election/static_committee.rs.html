@@ -267,20 +267,7 @@
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
-<a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a>
-<a href="#273" id="273">273</a>
-<a href="#274" id="274">274</a>
-<a href="#275" id="275">275</a>
-<a href="#276" id="276">276</a>
-<a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a>
-<a href="#279" id="279">279</a>
-<a href="#280" id="280">280</a>
-<a href="#281" id="281">281</a>
-<a href="#282" id="282">282</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#269" id="269">269</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -441,19 +428,6 @@
         <span class="self">self</span>.da_stake_table
             .iter()
             .map(|da| TYPES::SignatureKey::public_key(<span class="kw-2">&amp;</span>da.stake_table_entry))
-            .collect()
-    }
-
-    <span class="doccomment">/// Get all eligible leaders of the committee for the current view
-    </span><span class="kw">fn </span>committee_leaders(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        _view_number: &lt;TYPES <span class="kw">as </span>NodeType&gt;::View,
-        epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;,
-    ) -&gt; BTreeSet&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey&gt; {
-        <span class="self">self</span>.check_first_epoch(epoch);
-        <span class="self">self</span>.eligible_leaders
-            .iter()
-            .map(|leader| TYPES::SignatureKey::public_key(<span class="kw-2">&amp;</span>leader.stake_table_entry))
             .collect()
     }
 

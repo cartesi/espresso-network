@@ -764,7 +764,11 @@
 <a href="#763" id="763">763</a>
 <a href="#764" id="764">764</a>
 <a href="#765" id="765">765</a>
-<a href="#766" id="766">766</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashSet, VecDeque};
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashSet, VecDeque};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -987,6 +991,10 @@
             .<span class="kw">await
             </span>.context(<span class="macro">format!</span>(<span class="string">"leaf chain {height} not available"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>chain = <span class="macro">vec!</span>[];
+
+        <span class="kw">if </span>query_leaf_chain.len() &lt; <span class="number">3 </span>{
+            <span class="macro">bail!</span>(<span class="string">"chain not long enough {}"</span>, query_leaf_chain.len());
+        }
 
         <span class="kw">for </span>query_result <span class="kw">in </span>query_leaf_chain {
             <span class="kw">let </span><span class="prelude-val">Ok</span>(leaf_query) = query_result <span class="kw">else </span>{

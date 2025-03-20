@@ -3449,7 +3449,7 @@
             .read()
             .<span class="kw">await
             </span>.undecided_leaves();
-        leaves.sort_by_key(|l| l.height());
+        leaves.sort_by_key(|l| l.view_number());
         <span class="kw">let </span>(position, <span class="kw-2">mut </span>last_leaf) = leaves
             .iter()
             .find_position(|l| l.height() == height)
@@ -3471,7 +3471,7 @@
         <span class="comment">// Make sure we got one more leaf to confirm the decide
         </span><span class="kw">for </span>leaf <span class="kw">in </span>leaves
             .iter()
-            .skip_while(|l| l.height() &lt;= last_leaf.height())
+            .skip_while(|l| l.view_number() &lt;= last_leaf.view_number())
         {
             <span class="kw">if </span>leaf.justify_qc().view_number() == last_leaf.view_number() {
                 chain.push(leaf.clone());
@@ -4630,7 +4630,7 @@
         config::PublicHotShotConfig,
         traits::NullEventConsumer,
         v0_1::{UpgradeMode, ViewBasedUpgrade},
-        BackoffParams, EpochVersion, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
+        BackoffParams, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
         MockSequencerVersions, SequencerVersions, TimeBasedUpgrade, Timestamp, Upgrade,
         UpgradeType, ValidatedState,
     };
@@ -4640,6 +4640,7 @@
         stream::{StreamExt, TryStreamExt},
     };
     <span class="kw">use </span>hotshot::types::EventType;
+    <span class="kw">use </span>hotshot_example_types::node_types::EpochsTestVersions;
     <span class="kw">use </span>hotshot_query_service::{
         availability::{BlockQueryData, LeafQueryData, VidCommonQueryData},
         types::HeightIndexed,
@@ -5012,11 +5013,7 @@
                 )
             }))
             .build();
-        <span class="kw">let </span><span class="kw-2">mut </span>network = TestNetwork::new(
-            config,
-            SequencerVersions::&lt;EpochVersion, EpochVersion&gt;::new(),
-        )
-        .<span class="kw">await</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>network = TestNetwork::new(config, EpochsTestVersions {}).<span class="kw">await</span>;
 
         <span class="comment">// Wait for replica 0 to decide in the third epoch.
         </span><span class="kw">let </span><span class="kw-2">mut </span>events = network.peers[<span class="number">0</span>].event_stream().<span class="kw">await</span>;
@@ -5025,7 +5022,10 @@
             <span class="kw">let </span>EventType::Decide { leaf_chain, .. } = event.event <span class="kw">else </span>{
                 <span class="kw">continue</span>;
             };
+            <span class="macro">tracing::error!</span>(<span class="string">"got decide height {}"</span>, leaf_chain[<span class="number">0</span>].leaf.height());
+
             <span class="kw">if </span>leaf_chain[<span class="number">0</span>].leaf.height() &gt; EPOCH_HEIGHT * <span class="number">3 </span>{
+                <span class="macro">tracing::error!</span>(<span class="string">"decided past one epoch"</span>);
                 <span class="kw">break</span>;
             }
         }
@@ -5047,7 +5047,7 @@
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
             .<span class="kw">await</span>;
 
-        <span class="macro">tracing::info!</span>(<span class="string">"restarting node"</span>);
+        <span class="macro">tracing::error!</span>(<span class="string">"restarting node"</span>);
         <span class="kw">let </span>node = network
             .cfg
             .init_node(
