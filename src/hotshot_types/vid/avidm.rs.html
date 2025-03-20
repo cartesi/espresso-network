@@ -36,7 +36,7 @@
 <span class="kw">pub type </span>AvidMCommon = AvidMParam;
 
 <span class="kw">pub fn </span>init_avidm_param(total_weight: usize) -&gt; <span class="prelude-ty">Result</span>&lt;AvidMParam&gt; {
-    <span class="kw">let </span>recovery_threshold = <span class="number">1 </span>&lt;&lt; total_weight.ilog2();
+    <span class="kw">let </span>recovery_threshold = (total_weight + <span class="number">2</span>) / <span class="number">3</span>;
     AvidMParam::new(recovery_threshold, total_weight)
         .map_err(|err| <span class="macro">error!</span>(<span class="string">"Failed to initialize VID: {}"</span>, err.to_string()))
 }
