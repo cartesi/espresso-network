@@ -784,7 +784,23 @@
 <a href="#783" id="783">783</a>
 <a href="#784" id="784">784</a>
 <a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{arch::global_asm, collections::HashSet, num::NonZeroUsize, sync::Arc, time::Duration};
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{arch::global_asm, collections::HashSet, num::NonZeroUsize, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_broadcast::{
@@ -793,15 +809,17 @@
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>espresso_types::{
     eth_signature_key::EthKeyPair,
+    v0_1::NoStorage,
     v0_99::{ChainConfig, RollupRegistration},
-    FeeAmount, L1Client, MarketplaceVersion, MockSequencerVersions, NamespaceId, NodeState,
-    Payload, SeqTypes, SequencerVersions, ValidatedState, V0_1,
+    EpochCommittees, FeeAmount, L1Client, MarketplaceVersion, MockSequencerVersions, NamespaceId,
+    NodeState, Payload, SeqTypes, SequencerVersions, ValidatedState, V0_1,
 };
 <span class="kw">use </span>ethers::{
     core::k256::ecdsa::SigningKey,
     signers::{coins_bip39::English, MnemonicBuilder, Signer <span class="kw">as _</span>, Wallet},
     types::{Address, U256},
 };
+<span class="kw">use </span>ethers_conv::ToAlloy;
 <span class="kw">use </span>futures::FutureExt;
 <span class="kw">use </span>hotshot::traits::BlockPayload;
 <span class="kw">use </span>hotshot_builder_api::v0_99::builder::{
@@ -813,6 +831,7 @@
 };
 <span class="kw">use </span>hotshot_types::{
     data::{fake_commitment, Leaf, ViewNumber},
+    epoch_membership::EpochMembershipCoordinator,
     traits::{
         block_contents::{Transaction <span class="kw">as _</span>, GENESIS_VID_NUM_STORAGE_NODES},
         metrics::NoMetrics,
@@ -857,16 +876,29 @@
         .connect(l1_params.urls)
         .expect(<span class="string">"failed to create L1 client"</span>);
 
+    <span class="kw">let </span>peers = Arc::new(StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
+        state_peers,
+        Default::default(),
+        <span class="kw-2">&amp;</span>NoMetrics,
+    ));
+
     NodeState::new(
         u64::MAX, <span class="comment">// dummy node ID, only used for debugging
         </span>chain_config,
-        l1_client,
-        Arc::new(StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
-            state_peers,
-            Default::default(),
-            <span class="kw-2">&amp;</span>NoMetrics,
-        )),
+        l1_client.clone(),
+        peers.clone(),
         V::Base::version(),
+        EpochMembershipCoordinator::new(
+            Arc::new(RwLock::new(EpochCommittees::new_stake(
+                <span class="macro">vec!</span>[],
+                <span class="macro">vec!</span>[],
+                l1_client,
+                chain_config.stake_table_contract.map(|a| a.to_alloy()),
+                peers,
+                NoStorage,
+            ))),
+            <span class="number">10</span>,
+        ),
     )
 }
 

@@ -582,7 +582,13 @@
 <a href="#581" id="581">581</a>
 <a href="#582" id="582">582</a>
 <a href="#583" id="583">583</a>
-<a href="#584" id="584">584</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer-specific API options and initialization.
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a>
+<a href="#589" id="589">589</a>
+<a href="#590" id="590">590</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer-specific API options and initialization.
 
 </span><span class="kw">use </span>std::sync::Arc;
 
@@ -590,6 +596,7 @@
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>espresso_types::{
     v0::traits::{EventConsumer, NullEventConsumer, PersistenceOptions, SequencerPersistence},
+    v0_1::RewardMerkleTree,
     BlockMerkleTree, PubKey,
 };
 <span class="kw">use </span>futures::{
@@ -971,6 +978,11 @@
         </span>app.register_module(
             <span class="string">"fee-state"</span>,
             endpoints::get_balance::&lt;<span class="kw">_</span>, SequencerApiVersion&gt;()<span class="question-mark">?</span>,
+        )<span class="question-mark">?</span>;
+
+        app.register_module(
+            <span class="string">"reward-state"</span>,
+            endpoints::merklized_state::&lt;N, P, <span class="kw">_</span>, RewardMerkleTree, <span class="kw">_</span>, <span class="number">256</span>&gt;()<span class="question-mark">?</span>,
         )<span class="question-mark">?</span>;
 
         <span class="kw">let </span>get_node_state = {

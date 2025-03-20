@@ -1954,7 +1954,21 @@
 <a href="#1953" id="1953">1953</a>
 <a href="#1954" id="1954">1954</a>
 <a href="#1955" id="1955">1955</a>
-<a href="#1956" id="1956">1956</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1956" id="1956">1956</a>
+<a href="#1957" id="1957">1957</a>
+<a href="#1958" id="1958">1958</a>
+<a href="#1959" id="1959">1959</a>
+<a href="#1960" id="1960">1960</a>
+<a href="#1961" id="1961">1961</a>
+<a href="#1962" id="1962">1962</a>
+<a href="#1963" id="1963">1963</a>
+<a href="#1964" id="1964">1964</a>
+<a href="#1965" id="1965">1965</a>
+<a href="#1966" id="1966">1966</a>
+<a href="#1967" id="1967">1967</a>
+<a href="#1968" id="1968">1968</a>
+<a href="#1969" id="1969">1969</a>
+<a href="#1970" id="1970">1970</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashSet},
     fs::{<span class="self">self</span>, File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -1970,10 +1984,10 @@
 <span class="kw">use </span>espresso_types::{
     traits::MembershipPersistence,
     v0::traits::{EventConsumer, PersistenceOptions, SequencerPersistence},
-    v0_3::{IndexedStake, StakeTables},
+    v0_3::{IndexedStake, Validator},
     Leaf, Leaf2, NetworkConfig, Payload, SeqTypes,
 };
-<span class="kw">use </span>hotshot::InitializerEpochInfo;
+<span class="kw">use </span>hotshot::{types::BLSPubKey, InitializerEpochInfo};
 <span class="kw">use </span>hotshot_types::{
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
@@ -1992,6 +2006,7 @@
     },
     vote::HasViewNumber,
 };
+<span class="kw">use </span>indexmap::IndexMap;
 <span class="kw">use </span>itertools::Itertools;
 
 <span class="kw">use </span><span class="kw">crate</span>::ViewNumber;
@@ -2147,7 +2162,9 @@
         <span class="self">self</span>.path.join(<span class="string">"upgrade_certificate"</span>)
     }
 
-    <span class="kw">fn </span>stake_table_dir_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
+    <span class="attr">#[allow(dead_code)]
+    </span><span class="comment">// TODO(abdul): fix stake table persistence for new stake table types
+    </span><span class="kw">fn </span>stake_table_dir_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
         <span class="self">self</span>.path.join(<span class="string">"stake_table"</span>)
     }
 
@@ -3234,7 +3251,10 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>MembershipPersistence <span class="kw">for </span>Persistence {
-    <span class="kw">async fn </span>load_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;StakeTables&gt;&gt; {
+    <span class="kw">async fn </span>load_stake(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: EpochNumber,
+    ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;IndexMap&lt;alloy::primitives::Address, Validator&lt;BLSPubKey&gt;&gt;&gt;&gt; {
         <span class="kw">let </span>inner = <span class="self">self</span>.inner.read().<span class="kw">await</span>;
         <span class="kw">let </span>path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
         <span class="kw">let </span>file_path = path.join(epoch.to_string()).with_extension(<span class="string">"txt"</span>);
@@ -3268,7 +3288,11 @@
             .collect()
     }
 
-    <span class="kw">async fn </span>store_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber, stake: StakeTables) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">async fn </span>store_stake(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: EpochNumber,
+        stake: IndexMap&lt;alloy::primitives::Address, Validator&lt;BLSPubKey&gt;&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>inner = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
         <span class="kw">let </span>dir_path = <span class="kw-2">&amp;</span>inner.stake_table_dir_path();
 
@@ -3888,7 +3912,9 @@
 
         <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>st = StakeTables::mock();
+        <span class="kw">let </span>validator = Validator::mock();
+        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
+        st.insert(validator.account, validator);
         storage
             .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -3896,7 +3922,9 @@
         <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
         <span class="macro">assert_eq!</span>(st, table);
 
-        <span class="kw">let </span>st2 = StakeTables::mock();
+        <span class="kw">let </span>val2 = Validator::mock();
+        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
+        st2.insert(val2.account, val2);
         storage
             .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
             .<span class="kw">await</span><span class="question-mark">?</span>;

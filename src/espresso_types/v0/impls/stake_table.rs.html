@@ -731,20 +731,331 @@
 <a href="#730" id="730">730</a>
 <a href="#731" id="731">731</a>
 <a href="#732" id="732">732</a>
-<a href="#733" id="733">733</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a>
+<a href="#811" id="811">811</a>
+<a href="#812" id="812">812</a>
+<a href="#813" id="813">813</a>
+<a href="#814" id="814">814</a>
+<a href="#815" id="815">815</a>
+<a href="#816" id="816">816</a>
+<a href="#817" id="817">817</a>
+<a href="#818" id="818">818</a>
+<a href="#819" id="819">819</a>
+<a href="#820" id="820">820</a>
+<a href="#821" id="821">821</a>
+<a href="#822" id="822">822</a>
+<a href="#823" id="823">823</a>
+<a href="#824" id="824">824</a>
+<a href="#825" id="825">825</a>
+<a href="#826" id="826">826</a>
+<a href="#827" id="827">827</a>
+<a href="#828" id="828">828</a>
+<a href="#829" id="829">829</a>
+<a href="#830" id="830">830</a>
+<a href="#831" id="831">831</a>
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a>
+<a href="#847" id="847">847</a>
+<a href="#848" id="848">848</a>
+<a href="#849" id="849">849</a>
+<a href="#850" id="850">850</a>
+<a href="#851" id="851">851</a>
+<a href="#852" id="852">852</a>
+<a href="#853" id="853">853</a>
+<a href="#854" id="854">854</a>
+<a href="#855" id="855">855</a>
+<a href="#856" id="856">856</a>
+<a href="#857" id="857">857</a>
+<a href="#858" id="858">858</a>
+<a href="#859" id="859">859</a>
+<a href="#860" id="860">860</a>
+<a href="#861" id="861">861</a>
+<a href="#862" id="862">862</a>
+<a href="#863" id="863">863</a>
+<a href="#864" id="864">864</a>
+<a href="#865" id="865">865</a>
+<a href="#866" id="866">866</a>
+<a href="#867" id="867">867</a>
+<a href="#868" id="868">868</a>
+<a href="#869" id="869">869</a>
+<a href="#870" id="870">870</a>
+<a href="#871" id="871">871</a>
+<a href="#872" id="872">872</a>
+<a href="#873" id="873">873</a>
+<a href="#874" id="874">874</a>
+<a href="#875" id="875">875</a>
+<a href="#876" id="876">876</a>
+<a href="#877" id="877">877</a>
+<a href="#878" id="878">878</a>
+<a href="#879" id="879">879</a>
+<a href="#880" id="880">880</a>
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a>
+<a href="#887" id="887">887</a>
+<a href="#888" id="888">888</a>
+<a href="#889" id="889">889</a>
+<a href="#890" id="890">890</a>
+<a href="#891" id="891">891</a>
+<a href="#892" id="892">892</a>
+<a href="#893" id="893">893</a>
+<a href="#894" id="894">894</a>
+<a href="#895" id="895">895</a>
+<a href="#896" id="896">896</a>
+<a href="#897" id="897">897</a>
+<a href="#898" id="898">898</a>
+<a href="#899" id="899">899</a>
+<a href="#900" id="900">900</a>
+<a href="#901" id="901">901</a>
+<a href="#902" id="902">902</a>
+<a href="#903" id="903">903</a>
+<a href="#904" id="904">904</a>
+<a href="#905" id="905">905</a>
+<a href="#906" id="906">906</a>
+<a href="#907" id="907">907</a>
+<a href="#908" id="908">908</a>
+<a href="#909" id="909">909</a>
+<a href="#910" id="910">910</a>
+<a href="#911" id="911">911</a>
+<a href="#912" id="912">912</a>
+<a href="#913" id="913">913</a>
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a>
+<a href="#916" id="916">916</a>
+<a href="#917" id="917">917</a>
+<a href="#918" id="918">918</a>
+<a href="#919" id="919">919</a>
+<a href="#920" id="920">920</a>
+<a href="#921" id="921">921</a>
+<a href="#922" id="922">922</a>
+<a href="#923" id="923">923</a>
+<a href="#924" id="924">924</a>
+<a href="#925" id="925">925</a>
+<a href="#926" id="926">926</a>
+<a href="#927" id="927">927</a>
+<a href="#928" id="928">928</a>
+<a href="#929" id="929">929</a>
+<a href="#930" id="930">930</a>
+<a href="#931" id="931">931</a>
+<a href="#932" id="932">932</a>
+<a href="#933" id="933">933</a>
+<a href="#934" id="934">934</a>
+<a href="#935" id="935">935</a>
+<a href="#936" id="936">936</a>
+<a href="#937" id="937">937</a>
+<a href="#938" id="938">938</a>
+<a href="#939" id="939">939</a>
+<a href="#940" id="940">940</a>
+<a href="#941" id="941">941</a>
+<a href="#942" id="942">942</a>
+<a href="#943" id="943">943</a>
+<a href="#944" id="944">944</a>
+<a href="#945" id="945">945</a>
+<a href="#946" id="946">946</a>
+<a href="#947" id="947">947</a>
+<a href="#948" id="948">948</a>
+<a href="#949" id="949">949</a>
+<a href="#950" id="950">950</a>
+<a href="#951" id="951">951</a>
+<a href="#952" id="952">952</a>
+<a href="#953" id="953">953</a>
+<a href="#954" id="954">954</a>
+<a href="#955" id="955">955</a>
+<a href="#956" id="956">956</a>
+<a href="#957" id="957">957</a>
+<a href="#958" id="958">958</a>
+<a href="#959" id="959">959</a>
+<a href="#960" id="960">960</a>
+<a href="#961" id="961">961</a>
+<a href="#962" id="962">962</a>
+<a href="#963" id="963">963</a>
+<a href="#964" id="964">964</a>
+<a href="#965" id="965">965</a>
+<a href="#966" id="966">966</a>
+<a href="#967" id="967">967</a>
+<a href="#968" id="968">968</a>
+<a href="#969" id="969">969</a>
+<a href="#970" id="970">970</a>
+<a href="#971" id="971">971</a>
+<a href="#972" id="972">972</a>
+<a href="#973" id="973">973</a>
+<a href="#974" id="974">974</a>
+<a href="#975" id="975">975</a>
+<a href="#976" id="976">976</a>
+<a href="#977" id="977">977</a>
+<a href="#978" id="978">978</a>
+<a href="#979" id="979">979</a>
+<a href="#980" id="980">980</a>
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a>
+<a href="#985" id="985">985</a>
+<a href="#986" id="986">986</a>
+<a href="#987" id="987">987</a>
+<a href="#988" id="988">988</a>
+<a href="#989" id="989">989</a>
+<a href="#990" id="990">990</a>
+<a href="#991" id="991">991</a>
+<a href="#992" id="992">992</a>
+<a href="#993" id="993">993</a>
+<a href="#994" id="994">994</a>
+<a href="#995" id="995">995</a>
+<a href="#996" id="996">996</a>
+<a href="#997" id="997">997</a>
+<a href="#998" id="998">998</a>
+<a href="#999" id="999">999</a>
+<a href="#1000" id="1000">1000</a>
+<a href="#1001" id="1001">1001</a>
+<a href="#1002" id="1002">1002</a>
+<a href="#1003" id="1003">1003</a>
+<a href="#1004" id="1004">1004</a>
+<a href="#1005" id="1005">1005</a>
+<a href="#1006" id="1006">1006</a>
+<a href="#1007" id="1007">1007</a>
+<a href="#1008" id="1008">1008</a>
+<a href="#1009" id="1009">1009</a>
+<a href="#1010" id="1010">1010</a>
+<a href="#1011" id="1011">1011</a>
+<a href="#1012" id="1012">1012</a>
+<a href="#1013" id="1013">1013</a>
+<a href="#1014" id="1014">1014</a>
+<a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
-    collections::{BTreeMap, BTreeSet, HashMap},
-    fmt::Debug,
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     num::NonZeroU64,
     sync::Arc,
 };
 
-<span class="kw">use </span>anyhow::Context;
-<span class="kw">use </span>contract_bindings_alloy::permissionedstaketable::PermissionedStakeTable::StakersUpdated;
-<span class="kw">use </span>ethers::types::{Address, U256};
-<span class="kw">use </span>ethers_conv::ToAlloy;
+<span class="kw">use </span>alloy::{
+    primitives::{Address, U256},
+    rpc::types::Log,
+};
+<span class="kw">use </span>anyhow::{bail, Context};
+<span class="kw">use </span>contract_bindings_alloy::staketable::StakeTable::{
+    ConsensusKeysUpdated, Delegated, Undelegated, ValidatorExit, ValidatorRegistered,
+};
+<span class="kw">use </span>ethers_conv::ToEthers;
 <span class="kw">use </span>hotshot::types::{BLSPubKey, SignatureKey <span class="kw">as _</span>};
-<span class="kw">use </span>hotshot_contract_adapter::stake_table::{bls_alloy_to_jf, NodeInfoJf};
+<span class="kw">use </span>hotshot_contract_adapter::stake_table::{bls_alloy_to_jf2, edward_bn254point_to_state_ver};
 <span class="kw">use </span>hotshot_types::{
     data::EpochNumber,
     drb::{
@@ -759,89 +1070,260 @@
     },
     PeerConfig,
 };
-<span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>indexmap::IndexMap;
 <span class="kw">use </span>thiserror::Error;
 
 <span class="kw">use super</span>::{
     traits::{MembershipPersistence, StateCatchup},
-    v0_3::{DAMembers, StakeTable, StakeTables},
-    Header, L1Client, Leaf2, NodeState, PubKey, SeqTypes,
+    v0_3::{DAMembers, Validator},
+    Header, L1Client, Leaf2, PubKey, SeqTypes,
 };
 
 <span class="kw">type </span>Epoch = &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch;
 
-<span class="kw">impl </span>StakeTables {
-    <span class="kw">pub fn </span>new(stake_table: StakeTable, da_members: DAMembers) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            stake_table,
-            da_members,
+<span class="doccomment">/// Create the consensus and DA stake tables from L1 events
+///
+/// This is a pure function, to make it easily testable.
+///
+/// We expect have at most a few hundred EVM events in the
+/// PermissionedStakeTable contract over the liftetime of the contract so it
+/// should not significantly affect performance to fetch all events and
+/// perform the computation in this functions once per epoch.
+</span><span class="kw">pub fn </span>from_l1_events&lt;I: Iterator&lt;Item = StakeTableEvent&gt;&gt;(
+    events: I,
+) -&gt; anyhow::Result&lt;IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>validators = IndexMap::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>bls_keys = HashSet::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>schnorr_keys = HashSet::new();
+    <span class="kw">for </span>event <span class="kw">in </span>events {
+        <span class="macro">tracing::debug!</span>(<span class="string">"Processing stake table event: {:?}"</span>, event);
+        <span class="kw">match </span>event {
+            StakeTableEvent::Register(ValidatorRegistered {
+                account,
+                blsVk,
+                schnorrVk,
+                commission,
+            }) =&gt; {
+                <span class="comment">// TODO(abdul): BLS and Schnorr signature keys verification
+                </span><span class="kw">let </span>stake_table_key = bls_alloy_to_jf2(blsVk.clone());
+                <span class="kw">let </span>state_ver_key = edward_bn254point_to_state_ver(schnorrVk.clone());
+                <span class="comment">// TODO(MA): The stake table contract currently enforces that each bls key is only used once. We will
+                // move this check to the confirmation layer and remove it from the contract. Once we have the signature
+                // check in this functions we can skip if a BLS key, or Schnorr key was previously used.
+                </span><span class="kw">if </span>bls_keys.contains(<span class="kw-2">&amp;</span>stake_table_key) {
+                    <span class="macro">bail!</span>(<span class="string">"bls key {} already used"</span>, stake_table_key.to_string());
+                };
+
+                <span class="comment">// The contract does *not* enforce that each schnorr key is only used once.
+                </span><span class="kw">if </span>schnorr_keys.contains(<span class="kw-2">&amp;</span>state_ver_key) {
+                    <span class="macro">tracing::warn!</span>(<span class="string">"schnorr key {} already used"</span>, state_ver_key.to_string());
+                };
+
+                bls_keys.insert(stake_table_key);
+                schnorr_keys.insert(state_ver_key.clone());
+
+                <span class="kw">match </span>validators.entry(account) {
+                    indexmap::map::Entry::Occupied(_occupied_entry) =&gt; {
+                        <span class="macro">bail!</span>(<span class="string">"validator {:#x} already registered"</span>, <span class="kw-2">*</span>account)
+                    },
+                    indexmap::map::Entry::Vacant(vacant_entry) =&gt; vacant_entry.insert(Validator {
+                        account,
+                        stake_table_key,
+                        state_ver_key,
+                        stake: U256::from(<span class="number">0_u64</span>),
+                        commission,
+                        delegators: HashMap::default(),
+                    }),
+                };
+            },
+            StakeTableEvent::Deregister(exit) =&gt; {
+                validators
+                    .shift_remove(<span class="kw-2">&amp;</span>exit.validator)
+                    .with_context(|| <span class="macro">format!</span>(<span class="string">"validator {:#x} not found"</span>, exit.validator))<span class="question-mark">?</span>;
+            },
+            StakeTableEvent::Delegate(delegated) =&gt; {
+                <span class="kw">let </span>Delegated {
+                    delegator,
+                    validator,
+                    amount,
+                } = delegated;
+                <span class="kw">let </span>validator_entry = validators
+                    .get_mut(<span class="kw-2">&amp;</span>validator)
+                    .with_context(|| <span class="macro">format!</span>(<span class="string">"validator {validator:#x} not found"</span>))<span class="question-mark">?</span>;
+
+                <span class="kw">if </span>amount.is_zero() {
+                    <span class="macro">tracing::warn!</span>(<span class="string">"delegator {delegator:?} has 0 stake"</span>);
+                    <span class="kw">continue</span>;
+                }
+                <span class="comment">// Increase stake
+                </span>validator_entry.stake += amount;
+                <span class="comment">// Add delegator to the set
+                </span>validator_entry.delegators.insert(delegator, amount);
+            },
+            StakeTableEvent::Undelegate(undelegated) =&gt; {
+                <span class="kw">let </span>Undelegated {
+                    delegator,
+                    validator,
+                    amount,
+                } = undelegated;
+                <span class="kw">let </span>validator_entry = validators
+                    .get_mut(<span class="kw-2">&amp;</span>validator)
+                    .with_context(|| <span class="macro">format!</span>(<span class="string">"validator {validator:#x} not found"</span>))<span class="question-mark">?</span>;
+
+                validator_entry.stake = validator_entry
+                    .stake
+                    .checked_sub(amount)
+                    .with_context(|| <span class="string">"stake is less than undelegated amount"</span>)<span class="question-mark">?</span>;
+
+                <span class="kw">let </span>delegator_stake = validator_entry
+                    .delegators
+                    .get_mut(<span class="kw-2">&amp;</span>delegator)
+                    .with_context(|| <span class="macro">format!</span>(<span class="string">"delegator {delegator:#x} not found"</span>))<span class="question-mark">?</span>;
+                <span class="kw-2">*</span>delegator_stake = delegator_stake
+                    .checked_sub(amount)
+                    .with_context(|| <span class="string">"delegator_stake is less than undelegated amount"</span>)<span class="question-mark">?</span>;
+
+                <span class="kw">if </span>delegator_stake.is_zero() {
+                    <span class="comment">// if delegator stake is 0, remove from set
+                    </span>validator_entry.delegators.remove(<span class="kw-2">&amp;</span>delegator);
+                }
+            },
+            StakeTableEvent::KeyUpdate(update) =&gt; {
+                <span class="kw">let </span>ConsensusKeysUpdated {
+                    account,
+                    blsVK,
+                    schnorrVK,
+                } = update;
+                <span class="kw">let </span>validator = validators
+                    .get_mut(<span class="kw-2">&amp;</span>account)
+                    .with_context(|| <span class="string">"validator {account:#x} not found"</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span>bls = bls_alloy_to_jf2(blsVK);
+                <span class="kw">let </span>state_ver_key = edward_bn254point_to_state_ver(schnorrVK);
+
+                validator.stake_table_key = bls;
+                validator.state_ver_key = state_ver_key;
+            },
         }
     }
 
-    <span class="doccomment">/// Create the consensus and DA stake tables from L1 events
-    ///
-    /// This is a pure function, to make it easily testable.
-    ///
-    /// We expect have at most a few hundred EVM events in the
-    /// PermissionedStakeTable contract over the liftetime of the contract so it
-    /// should not significantly affect performance to fetch all events and
-    /// perform the computation in this functions once per epoch.
-    </span><span class="kw">pub fn </span>from_l1_events(updates: Vec&lt;StakersUpdated&gt;) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>changes_per_node = updates
-            .into_iter()
-            .flat_map(|event| {
-                event
-                    .removed
-                    .into_iter()
-                    .map(|key| StakeTableChange::Remove(bls_alloy_to_jf(key)))
-                    .chain(
-                        event
-                            .added
-                            .into_iter()
-                            .map(|node_info| StakeTableChange::Add(node_info.into())),
-                    )
-            })
-            .group_by(|change| change.key());
+    validate_validators(<span class="kw-2">&amp;mut </span>validators)<span class="question-mark">?</span>;
 
-        <span class="comment">// If the last event for a stakers is `Added` the staker is currently
-        // staking, if the last event is removed or (or the staker is not present)
-        // they are not staking.
-        </span><span class="kw">let </span>currently_staking = changes_per_node
-            .into_iter()
-            .map(|(_pub_key, deltas)| deltas.last().expect(<span class="string">"deltas non-empty"</span>).clone())
-            .filter_map(|change| <span class="kw">match </span>change {
-                StakeTableChange::Add(node_info) =&gt; <span class="prelude-val">Some</span>(node_info),
-                StakeTableChange::Remove(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
-            });
+    <span class="prelude-val">Ok</span>(validators)
+}
 
-        <span class="kw">let </span><span class="kw-2">mut </span>consensus_stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt; = <span class="macro">vec!</span>[];
-        <span class="kw">let </span><span class="kw-2">mut </span>da_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt; = <span class="macro">vec!</span>[];
-        <span class="kw">for </span>node <span class="kw">in </span>currently_staking {
-            consensus_stake_table.push(node.clone().into());
-            <span class="kw">if </span>node.da {
-                da_members.push(node.into());
-            }
+<span class="kw">fn </span>validate_validators(
+    validators: <span class="kw-2">&amp;mut </span>IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;,
+) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">for </span>(address, validator) <span class="kw">in </span>validators.clone() {
+        <span class="comment">// Ensure validator has at least one delegator
+        </span><span class="kw">if </span>validator.delegators.is_empty() {
+            <span class="macro">tracing::info!</span>(<span class="string">"Validator {address:?} does not have any delegator"</span>);
+            validators.shift_remove(<span class="kw-2">&amp;</span>address);
         }
-        <span class="self">Self</span>::new(consensus_stake_table.into(), da_members.into())
+
+        <span class="comment">// Ensure total stake is not zero
+        </span><span class="kw">if </span>validator.stake.is_zero() {
+            <span class="macro">tracing::info!</span>(<span class="string">"Validator {address:?} does not have any stake"</span>);
+            validators.shift_remove(<span class="kw-2">&amp;</span>address);
+        }
     }
 
-    <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
-    </span><span class="kw">pub fn </span>mock() -&gt; <span class="self">Self </span>{
-        StakeTables::new(StakeTable::mock(<span class="number">3</span>), DAMembers::mock(<span class="number">3</span>))
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="attr">#[derive(Clone, derive_more::From)]
+</span><span class="kw">pub enum </span>StakeTableEvent {
+    Register(ValidatorRegistered),
+    Deregister(ValidatorExit),
+    Delegate(Delegated),
+    Undelegate(Undelegated),
+    KeyUpdate(ConsensusKeysUpdated),
+}
+
+<span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>StakeTableEvent {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+        <span class="kw">match </span><span class="self">self </span>{
+            StakeTableEvent::Register(event) =&gt; <span class="macro">write!</span>(f, <span class="string">"Register({:?})"</span>, event.account),
+            StakeTableEvent::Deregister(event) =&gt; <span class="macro">write!</span>(f, <span class="string">"Deregister({:?})"</span>, event.validator),
+            StakeTableEvent::Delegate(event) =&gt; <span class="macro">write!</span>(f, <span class="string">"Delegate({:?})"</span>, event.delegator),
+            StakeTableEvent::Undelegate(event) =&gt; <span class="macro">write!</span>(f, <span class="string">"Undelegate({:?})"</span>, event.delegator),
+            StakeTableEvent::KeyUpdate(event) =&gt; <span class="macro">write!</span>(f, <span class="string">"KeyUpdate({:?})"</span>, event.account),
+        }
     }
 }
+
+<span class="kw">impl </span>StakeTableEvent {
+    <span class="kw">pub fn </span>sort_events(
+        registrations: Vec&lt;(ValidatorRegistered, Log)&gt;,
+        deregistrations: Vec&lt;(ValidatorExit, Log)&gt;,
+        delegations: Vec&lt;(Delegated, Log)&gt;,
+        undelegated_events: Vec&lt;(Undelegated, Log)&gt;,
+        keys_update: Vec&lt;(ConsensusKeysUpdated, Log)&gt;,
+    ) -&gt; anyhow::Result&lt;BTreeMap&lt;(u64, u64), StakeTableEvent&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>map = BTreeMap::new();
+        <span class="kw">for </span>(registration, log) <span class="kw">in </span>registrations {
+            map.insert(
+                (
+                    log.block_number.context(<span class="string">"block number"</span>)<span class="question-mark">?</span>,
+                    log.log_index.context(<span class="string">"log index"</span>)<span class="question-mark">?</span>,
+                ),
+                registration.into(),
+            );
+        }
+        <span class="kw">for </span>(dereg, log) <span class="kw">in </span>deregistrations {
+            map.insert(
+                (
+                    log.block_number.context(<span class="string">"block number"</span>)<span class="question-mark">?</span>,
+                    log.log_index.context(<span class="string">"log index"</span>)<span class="question-mark">?</span>,
+                ),
+                dereg.into(),
+            );
+        }
+        <span class="kw">for </span>(delegation, log) <span class="kw">in </span>delegations {
+            map.insert(
+                (
+                    log.block_number.context(<span class="string">"block number"</span>)<span class="question-mark">?</span>,
+                    log.log_index.context(<span class="string">"log index"</span>)<span class="question-mark">?</span>,
+                ),
+                delegation.into(),
+            );
+        }
+        <span class="kw">for </span>(undelegated, log) <span class="kw">in </span>undelegated_events {
+            map.insert(
+                (
+                    log.block_number.context(<span class="string">"block number"</span>)<span class="question-mark">?</span>,
+                    log.log_index.context(<span class="string">"log index"</span>)<span class="question-mark">?</span>,
+                ),
+                undelegated.into(),
+            );
+        }
+
+        <span class="kw">for </span>(update, log) <span class="kw">in </span>keys_update {
+            map.insert(
+                (
+                    log.block_number.context(<span class="string">"block number"</span>)<span class="question-mark">?</span>,
+                    log.log_index.context(<span class="string">"log index"</span>)<span class="question-mark">?</span>,
+                ),
+                update.into(),
+            );
+        }
+        <span class="prelude-val">Ok</span>(map)
+    }
+
+    <span class="comment">// #[cfg(any(test, feature = "testing"))]
+    // pub fn mock() -&gt; Self {
+    //     StakeTables::new(StakeTable::mock(3), DAMembers::mock(3))
+    // }
+</span>}
 
 <span class="attr">#[derive(Clone, derive_more::derive::Debug)]
 </span><span class="doccomment">/// Type to describe DA and Stake memberships
 </span><span class="kw">pub struct </span>EpochCommittees {
     <span class="doccomment">/// Committee used when we're in pre-epoch state
-    </span>non_epoch_committee: Committee,
+    </span>non_epoch_committee: NonEpochCommittee,
 
     <span class="doccomment">/// Holds Stake table and da stake
-    </span>state: HashMap&lt;Epoch, Committee&gt;,
-
-    <span class="doccomment">/// Number of blocks in an epoch
-    </span>_epoch_size: u64,
+    </span>state: HashMap&lt;Epoch, EpochCommittee&gt;,
 
     <span class="doccomment">/// L1 provider
     </span>l1_client: L1Client,
@@ -854,7 +1336,7 @@
 
     <span class="doccomment">/// Peers for catching up the stake table
     </span><span class="attr">#[debug(skip)]
-    </span>peers: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;&gt;,
+    </span>peers: Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;,
     <span class="doccomment">/// Contains the epoch after which initial_drb_result will not be used (set_first_epoch.epoch + 2)
     /// And the DrbResult to use before that epoch
     </span>initial_drb_result: <span class="prelude-ty">Option</span>&lt;(Epoch, DrbResult)&gt;,
@@ -864,24 +1346,9 @@
     </span>persistence: Arc&lt;<span class="kw">dyn </span>MembershipPersistence&gt;,
 }
 
-<span class="attr">#[derive(Debug, Clone, PartialEq)]
-</span><span class="kw">enum </span>StakeTableChange {
-    Add(NodeInfoJf),
-    Remove(BLSPubKey),
-}
-
-<span class="kw">impl </span>StakeTableChange {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BLSPubKey {
-        <span class="kw">match </span><span class="self">self </span>{
-            StakeTableChange::Add(node_info) =&gt; node_info.stake_table_key,
-            StakeTableChange::Remove(key) =&gt; <span class="kw-2">*</span>key,
-        }
-    }
-}
-
 <span class="doccomment">/// Holds Stake table and da stake
 </span><span class="attr">#[derive(Clone, Debug)]
-</span><span class="kw">struct </span>Committee {
+</span><span class="kw">struct </span>NonEpochCommittee {
     <span class="doccomment">/// The nodes eligible for leadership.
     /// NOTE: This is currently a hack because the DA leader needs to be the quorum
     /// leader but without voting rights.
@@ -900,61 +1367,92 @@
     </span>indexed_da_members: HashMap&lt;PubKey, PeerConfig&lt;PubKey&gt;&gt;,
 }
 
+<span class="doccomment">/// Holds Stake table and da stake
+</span><span class="attr">#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+</span><span class="kw">pub struct </span>EpochCommittee {
+    <span class="doccomment">/// The nodes eligible for leadership.
+    /// NOTE: This is currently a hack because the DA leader needs to be the quorum
+    /// leader but without voting rights.
+    </span>eligible_leaders: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+    <span class="doccomment">/// Keys for nodes participating in the network
+    </span>stake_table: IndexMap&lt;PubKey, PeerConfig&lt;PubKey&gt;&gt;,
+    validators: IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;,
+    address_mapping: HashMap&lt;BLSPubKey, Address&gt;,
+}
+
 <span class="kw">impl </span>EpochCommittees {
     <span class="doccomment">/// Updates `Self.stake_table` with stake_table for
     /// `Self.contract_address` at `l1_block_height`. This is intended
     /// to be called before calling `self.stake()` so that
     /// `Self.stake_table` only needs to be updated once in a given
     /// life-cycle but may be read from many times.
-    </span><span class="kw">fn </span>update_stake_table(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: EpochNumber, st: StakeTables) -&gt; Committee {
-        <span class="comment">// This works because `get_stake_table` is fetching *all*
-        // update events and building the table for us. We will need
-        // more subtlety when start fetching only the events since last update.
-
-        </span><span class="kw">let </span>stake_table = st.stake_table.<span class="number">0</span>.clone();
-        <span class="kw">let </span>da_members = st.da_members.<span class="number">0</span>.clone();
-
-        <span class="kw">let </span>indexed_stake_table: HashMap&lt;PubKey, <span class="kw">_</span>&gt; = st
-            .stake_table
-            .<span class="number">0
-            </span>.iter()
-            .map(|peer_config| {
+    </span><span class="kw">fn </span>update_stake_table(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        epoch: EpochNumber,
+        validators: IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;,
+    ) {
+        <span class="kw">let </span><span class="kw-2">mut </span>address_mapping = HashMap::new();
+        <span class="kw">let </span>stake_table = validators
+            .values()
+            .map(|v| {
+                address_mapping.insert(v.stake_table_key, v.account);
                 (
-                    PubKey::public_key(<span class="kw-2">&amp;</span>peer_config.stake_table_entry),
-                    peer_config.clone(),
+                    v.stake_table_key,
+                    PeerConfig {
+                        stake_table_entry: BLSPubKey::stake_table_entry(
+                            <span class="kw-2">&amp;</span>v.stake_table_key,
+                            v.stake.to_ethers().as_u64(),
+                        ),
+                        state_ver_key: v.state_ver_key.clone(),
+                    },
                 )
             })
             .collect();
 
-        <span class="kw">let </span>indexed_da_members: HashMap&lt;PubKey, <span class="kw">_</span>&gt; = st
-            .da_members
-            .<span class="number">0
-            </span>.iter()
-            .map(|peer_config| {
-                (
-                    PubKey::public_key(<span class="kw-2">&amp;</span>peer_config.stake_table_entry),
-                    peer_config.clone(),
-                )
-            })
-            .collect();
+        <span class="self">self</span>.state.insert(
+            epoch,
+            EpochCommittee {
+                eligible_leaders: <span class="self">self</span>.non_epoch_committee.eligible_leaders.clone(),
+                stake_table,
+                validators,
+                address_mapping,
+            },
+        );
+    }
 
-        <span class="kw">let </span>eligible_leaders: Vec&lt;<span class="kw">_</span>&gt; = st
-            .stake_table
-            .<span class="number">0
-            </span>.into_iter()
-            .filter(|peer_config| peer_config.stake_table_entry.stake() &gt; U256::zero())
-            .collect();
+    <span class="kw">pub fn </span>validators(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: <span class="kw-2">&amp;</span>Epoch,
+    ) -&gt; anyhow::Result&lt;IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self
+            </span>.state
+            .get(epoch)
+            .context(<span class="string">"state for found"</span>)<span class="question-mark">?
+            </span>.validators
+            .clone())
+    }
 
-        <span class="kw">let </span>committee = Committee {
-            eligible_leaders,
-            stake_table,
-            da_members,
-            indexed_stake_table,
-            indexed_da_members,
-        };
+    <span class="kw">pub fn </span>address(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span>Epoch, bls_key: BLSPubKey) -&gt; anyhow::Result&lt;Address&gt; {
+        <span class="kw">let </span>mapping = <span class="self">self
+            </span>.state
+            .get(epoch)
+            .context(<span class="string">"state for found"</span>)<span class="question-mark">?
+            </span>.address_mapping
+            .clone();
 
-        <span class="self">self</span>.state.insert(epoch, committee.clone());
-        committee
+        <span class="prelude-val">Ok</span>(<span class="kw-2">*</span>mapping.get(<span class="kw-2">&amp;</span>bls_key).context(<span class="macro">format!</span>(
+            <span class="string">"failed to get ethereum address for bls key {bls_key:?}"
+        </span>))<span class="question-mark">?</span>)
+    }
+
+    <span class="kw">pub fn </span>get_validator_config(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: <span class="kw-2">&amp;</span>Epoch,
+        key: BLSPubKey,
+    ) -&gt; anyhow::Result&lt;Validator&lt;BLSPubKey&gt;&gt; {
+        <span class="kw">let </span>address = <span class="self">self</span>.address(epoch, key)<span class="question-mark">?</span>;
+        <span class="kw">let </span>validators = <span class="self">self</span>.validators(epoch)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(validators.get(<span class="kw-2">&amp;</span>address).unwrap().clone())
     }
 
     <span class="comment">// We need a constructor to match our concrete type.
@@ -963,28 +1461,35 @@
         // https://github.com/EspressoSystems/HotShot/commit/fcb7d54a4443e29d643b3bbc53761856aef4de8b
         </span>committee_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
         da_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
-        instance_state: <span class="kw-2">&amp;</span>NodeState,
-        epoch_size: u64,
+        l1_client: L1Client,
+        contract_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
+        peers: Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;,
         persistence: <span class="kw">impl </span>MembershipPersistence,
     ) -&gt; <span class="self">Self </span>{
         <span class="comment">// For each eligible leader, get the stake table entry
         </span><span class="kw">let </span>eligible_leaders: Vec&lt;<span class="kw">_</span>&gt; = committee_members
             .iter()
-            .filter(|<span class="kw-2">&amp;</span>peer_config| peer_config.stake_table_entry.stake() &gt; U256::zero())
+            .filter(|<span class="kw-2">&amp;</span>peer_config| {
+                peer_config.stake_table_entry.stake() &gt; ethers::types::U256::zero()
+            })
             .cloned()
             .collect();
 
         <span class="comment">// For each member, get the stake table entry
         </span><span class="kw">let </span>stake_table: Vec&lt;<span class="kw">_</span>&gt; = committee_members
             .iter()
-            .filter(|<span class="kw-2">&amp;</span>peer_config| peer_config.stake_table_entry.stake() &gt; U256::zero())
+            .filter(|<span class="kw-2">&amp;</span>peer_config| {
+                peer_config.stake_table_entry.stake() &gt; ethers::types::U256::zero()
+            })
             .cloned()
             .collect();
 
         <span class="comment">// For each member, get the stake table entry
         </span><span class="kw">let </span>da_members: Vec&lt;<span class="kw">_</span>&gt; = da_members
             .iter()
-            .filter(|<span class="kw-2">&amp;</span>peer_config| peer_config.stake_table_entry.stake() &gt; U256::zero())
+            .filter(|<span class="kw-2">&amp;</span>peer_config| {
+                peer_config.stake_table_entry.stake() &gt; ethers::types::U256::zero()
+            })
             .cloned()
             .collect();
 
@@ -1010,7 +1515,7 @@
             })
             .collect();
 
-        <span class="kw">let </span>members = Committee {
+        <span class="kw">let </span>members = NonEpochCommittee {
             eligible_leaders,
             stake_table,
             da_members,
@@ -1019,38 +1524,59 @@
         };
 
         <span class="kw">let </span><span class="kw-2">mut </span>map = HashMap::new();
-        map.insert(Epoch::genesis(), members.clone());
+        <span class="kw">let </span>epoch_committee = EpochCommittee {
+            eligible_leaders: members.eligible_leaders.clone(),
+            stake_table: members
+                .stake_table
+                .iter()
+                .map(|x| (PubKey::public_key(<span class="kw-2">&amp;</span>x.stake_table_entry), x.clone()))
+                .collect(),
+            validators: Default::default(),
+            address_mapping: HashMap::new(),
+        };
+        map.insert(Epoch::genesis(), epoch_committee.clone());
         <span class="comment">// TODO: remove this, workaround for hotshot asking for stake tables from epoch 1
-        </span>map.insert(Epoch::genesis() + <span class="number">1u64</span>, members.clone());
+        </span>map.insert(Epoch::genesis() + <span class="number">1u64</span>, epoch_committee.clone());
 
         <span class="self">Self </span>{
             non_epoch_committee: members,
             state: map,
-            _epoch_size: epoch_size,
-            l1_client: instance_state.l1_client.clone(),
-            contract_address: instance_state.chain_config.stake_table_contract,
+            l1_client,
+            contract_address,
             randomized_committees: BTreeMap::new(),
-            peers: <span class="prelude-val">Some</span>(instance_state.peers.clone()),
+            peers,
             initial_drb_result: <span class="prelude-val">None</span>,
             persistence: Arc::new(persistence),
         }
     }
-
-    <span class="kw">fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Committee&gt; {
+    <span class="kw">fn </span>get_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;PeerConfig&lt;PubKey&gt;&gt;&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(epoch) = epoch {
-            <span class="self">self</span>.state.get(epoch)
+            <span class="self">self</span>.state
+                .get(epoch)
+                .map(|committee| committee.stake_table.clone().into_values().collect())
         } <span class="kw">else </span>{
-            <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.non_epoch_committee)
+            <span class="prelude-val">Some</span>(<span class="self">self</span>.non_epoch_committee.stake_table.clone())
+        }
+    }
+
+    <span class="kw">fn </span>leaders(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;PeerConfig&lt;PubKey&gt;&gt;&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(epoch) = epoch {
+            <span class="self">self</span>.state
+                .get(epoch)
+                .map(|committee| committee.eligible_leaders.clone())
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(<span class="self">self</span>.non_epoch_committee.eligible_leaders.clone())
         }
     }
 
     <span class="doccomment">/// Get the stake table by epoch. Try to load from DB and fall back to fetching from l1.
-    </span><span class="kw">async fn </span>get_stake_table(
+    </span><span class="kw">async fn </span>get_stake_table_by_epoch(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         epoch: Epoch,
         contract_address: Address,
         l1_block: u64,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;StakeTables, GetStakeTablesError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;IndexMap&lt;alloy::primitives::Address, Validator&lt;BLSPubKey&gt;&gt;, GetStakeTablesError&gt;
+    {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(stake_tables) = <span class="self">self
             </span>.persistence
             .load_stake(epoch)
@@ -1060,7 +1586,7 @@
             <span class="prelude-val">Ok</span>(stake_tables)
         } <span class="kw">else </span>{
             <span class="self">self</span>.l1_client
-                .get_stake_table(contract_address.to_alloy(), l1_block)
+                .get_stake_table(contract_address, l1_block)
                 .<span class="kw">await
                 </span>.map_err(GetStakeTablesError::L1ClientFetchError)
         }
@@ -1095,19 +1621,11 @@
 
     <span class="doccomment">/// Get the stake table for the current view
     </span><span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;PubKey&gt;&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(st) = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch) {
-            st.stake_table.clone()
-        } <span class="kw">else </span>{
-            <span class="macro">vec!</span>[]
-        }
+        <span class="self">self</span>.get_stake_table(<span class="kw-2">&amp;</span>epoch).unwrap_or_default()
     }
     <span class="doccomment">/// Get the stake table for the current view
-    </span><span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;PubKey&gt;&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(sc) = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch) {
-            sc.da_members.clone()
-        } <span class="kw">else </span>{
-            <span class="macro">vec!</span>[]
-        }
+    </span><span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;PubKey&gt;&gt; {
+        <span class="self">self</span>.non_epoch_committee.da_members.clone()
     }
 
     <span class="doccomment">/// Get all members of the committee for the current view
@@ -1116,24 +1634,24 @@
         _view_number: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::View,
         epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
     ) -&gt; BTreeSet&lt;PubKey&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(sc) = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch) {
-            sc.indexed_stake_table.clone().into_keys().collect()
-        } <span class="kw">else </span>{
-            BTreeSet::new()
-        }
+        <span class="kw">let </span>stake_table = <span class="self">self</span>.stake_table(epoch);
+        stake_table
+            .iter()
+            .map(|x| PubKey::public_key(<span class="kw-2">&amp;</span>x.stake_table_entry))
+            .collect()
     }
 
     <span class="doccomment">/// Get all members of the committee for the current view
     </span><span class="kw">fn </span>da_committee_members(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         _view_number: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::View,
-        epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
+        _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
     ) -&gt; BTreeSet&lt;PubKey&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(sc) = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch) {
-            sc.indexed_da_members.clone().into_keys().collect()
-        } <span class="kw">else </span>{
-            BTreeSet::new()
-        }
+        <span class="self">self</span>.non_epoch_committee
+            .indexed_da_members
+            .clone()
+            .into_keys()
+            .collect()
     }
 
     <span class="doccomment">/// Get all eligible leaders of the committee for the current view
@@ -1142,9 +1660,8 @@
         _view_number: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::View,
         epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
     ) -&gt; BTreeSet&lt;PubKey&gt; {
-        <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
+        <span class="self">self</span>.leaders(<span class="kw-2">&amp;</span>epoch)
             .unwrap()
-            .eligible_leaders
             .iter()
             .map(|x| PubKey::public_key(<span class="kw-2">&amp;</span>x.stake_table_entry))
             .collect()
@@ -1153,29 +1670,40 @@
     <span class="doccomment">/// Get the stake table entry for a public key
     </span><span class="kw">fn </span>stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;PubKey&gt;&gt; {
         <span class="comment">// Only return the stake if it is above zero
-        </span><span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
-            .and_then(|h| h.indexed_stake_table.get(pub_key).cloned())
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(epoch) = epoch {
+            <span class="self">self</span>.state
+                .get(<span class="kw-2">&amp;</span>epoch)
+                .and_then(|h| h.stake_table.get(pub_key))
+                .cloned()
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.non_epoch_committee
+                .indexed_stake_table
+                .get(pub_key)
+                .cloned()
+        }
     }
 
     <span class="doccomment">/// Get the DA stake table entry for a public key
-    </span><span class="kw">fn </span>da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;PubKey&gt;&gt; {
+    </span><span class="kw">fn </span>da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;PubKey&gt;&gt; {
         <span class="comment">// Only return the stake if it is above zero
-        </span><span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
-            .and_then(|h| h.indexed_da_members.get(pub_key).cloned())
+        </span><span class="self">self</span>.non_epoch_committee
+            .indexed_da_members
+            .get(pub_key)
+            .cloned()
     }
 
     <span class="doccomment">/// Check if a node has stake in the committee
     </span><span class="kw">fn </span>has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; bool {
-        <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
-            .and_then(|h| h.indexed_stake_table.get(pub_key))
-            .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
+        <span class="self">self</span>.stake(pub_key, epoch)
+            .map(|x| x.stake_table_entry.stake() &gt; ethers::types::U256::zero())
+            .unwrap_or_default()
     }
 
     <span class="doccomment">/// Check if a node has stake in the committee
     </span><span class="kw">fn </span>has_da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; bool {
-        <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
-            .and_then(|h| h.indexed_da_members.get(pub_key))
-            .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
+        <span class="self">self</span>.da_stake(pub_key, epoch)
+            .map(|x| x.stake_table_entry.stake() &gt; ethers::types::U256::zero())
+            .unwrap_or_default()
     }
 
     <span class="doccomment">/// Index the vector of public keys with the current view number
@@ -1208,40 +1736,36 @@
 
     <span class="doccomment">/// Get the total number of nodes in the committee
     </span><span class="kw">fn </span>total_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; usize {
-        <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
-            .map(|sc| sc.stake_table.len())
-            .unwrap_or_default()
+        <span class="self">self</span>.stake_table(epoch).len()
     }
 
     <span class="doccomment">/// Get the total number of DA nodes in the committee
     </span><span class="kw">fn </span>da_total_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; usize {
-        <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch)
-            .map(|sc: <span class="kw-2">&amp;</span>Committee| sc.da_members.len())
-            .unwrap_or_default()
+        <span class="self">self</span>.da_stake_table(epoch).len()
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
     </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>quorum_len = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch).unwrap().stake_table.len();
+        <span class="kw">let </span>quorum_len = <span class="self">self</span>.stake_table(epoch).len();
         NonZeroU64::new(((quorum_len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
     </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>da_len = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch).unwrap().da_members.len();
+        <span class="kw">let </span>da_len = <span class="self">self</span>.da_stake_table(epoch).len();
         NonZeroU64::new(((da_len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
     }
 
     <span class="doccomment">/// Get the voting failure threshold for the committee
     </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>quorum_len = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch).unwrap().stake_table.len();
+        <span class="kw">let </span>quorum_len = <span class="self">self</span>.stake_table(epoch).len();
 
         NonZeroU64::new(((quorum_len <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
     }
 
     <span class="doccomment">/// Get the voting upgrade threshold for the committee
     </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>quorum_len = <span class="self">self</span>.state(<span class="kw-2">&amp;</span>epoch).unwrap().indexed_stake_table.len();
+        <span class="kw">let </span>quorum_len = <span class="self">self</span>.total_nodes(epoch);
 
         NonZeroU64::new(max(
             (quorum_len <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>,
@@ -1262,7 +1786,7 @@
         };
 
         <span class="kw">let </span>stake_tables = <span class="self">self
-            </span>.get_stake_table(epoch, address, block_header.height())
+            </span>.get_stake_table_by_epoch(epoch, address, block_header.height())
             .<span class="kw">await
             </span>.inspect_err(|e| {
                 <span class="macro">tracing::error!</span>(<span class="question-mark">?</span>e, <span class="string">"`add_epoch_root`, error retrieving stake table"</span>);
@@ -1278,7 +1802,7 @@
         }
 
         <span class="prelude-val">Some</span>(Box::new(<span class="kw">move </span>|committee: <span class="kw-2">&amp;mut </span><span class="self">Self</span>| {
-            <span class="kw">let _ </span>= committee.update_stake_table(epoch, stake_tables);
+            committee.update_stake_table(epoch, stake_tables);
         }))
     }
 
@@ -1292,9 +1816,7 @@
         epoch_height: u64,
         epoch: Epoch,
     ) -&gt; anyhow::Result&lt;(Header, DrbResult)&gt; {
-        <span class="kw">let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>peers) = <span class="self">self</span>.peers <span class="kw">else </span>{
-            <span class="macro">anyhow::bail!</span>(<span class="string">"No Peers Configured for Catchup"</span>);
-        };
+        <span class="kw">let </span>peers = <span class="self">self</span>.peers.clone();
         <span class="comment">// Fetch leaves from peers
         </span><span class="kw">let </span>leaf: Leaf2 = peers
             .fetch_leaf(block_height, <span class="self">self</span>, epoch, epoch_height)
@@ -1332,15 +1854,15 @@
     }
 
     <span class="kw">fn </span>set_first_epoch(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: Epoch, initial_drb_result: DrbResult) {
-        <span class="self">self</span>.state.insert(epoch, <span class="self">self</span>.non_epoch_committee.clone());
-        <span class="self">self</span>.state
-            .insert(epoch + <span class="number">1</span>, <span class="self">self</span>.non_epoch_committee.clone());
+        <span class="kw">let </span>epoch_committee = <span class="self">self</span>.state.get(<span class="kw-2">&amp;</span>Epoch::genesis()).unwrap().clone();
+        <span class="self">self</span>.state.insert(epoch, epoch_committee.clone());
+        <span class="self">self</span>.state.insert(epoch + <span class="number">1</span>, epoch_committee);
         <span class="self">self</span>.initial_drb_result = <span class="prelude-val">Some</span>((epoch + <span class="number">2</span>, initial_drb_result));
     }
 }
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
-</span><span class="kw">impl </span>StakeTable {
+</span><span class="kw">impl </span><span class="kw">super</span>::v0_3::StakeTable {
     <span class="doccomment">/// Generate a `StakeTable` with `n` members.
     </span><span class="kw">pub fn </span>mock(n: u64) -&gt; <span class="self">Self </span>{
         [..n]
@@ -1363,105 +1885,197 @@
     }
 }
 
-<span class="attr">#[cfg(test)]
-</span><span class="kw">mod </span>tests {
-    <span class="kw">use </span>contract_bindings_alloy::permissionedstaketable::PermissionedStakeTable::NodeInfo;
+<span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
+</span><span class="kw">pub mod </span>testing {
+    <span class="kw">use </span>contract_bindings_alloy::staketable::{EdOnBN254::EdOnBN254Point, BN254::G2Point};
+    <span class="kw">use </span>ethers_conv::ToAlloy <span class="kw">as _</span>;
+    <span class="kw">use </span>hotshot_contract_adapter::stake_table::{bls_jf_to_alloy2, ParsedEdOnBN254Point};
+    <span class="kw">use </span>hotshot_types::light_client::StateKeyPair;
+    <span class="kw">use </span>rand::{Rng <span class="kw">as _</span>, RngCore <span class="kw">as _</span>};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attr">#[test]
-    </span><span class="kw">fn </span>test_stake_table_from_l1_events() {
-        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::thread_rng();
+    <span class="comment">// TODO: current tests are just sanity checks, we need more.
 
-        <span class="comment">// Build a stake table with one DA node and one consensus node.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>da_node = NodeInfoJf::random(<span class="kw-2">&amp;mut </span>rng);
-        da_node.da = <span class="bool-val">true</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>consensus_node = NodeInfoJf::random(<span class="kw-2">&amp;mut </span>rng);
-        consensus_node.da = <span class="bool-val">false</span>;
-        <span class="kw">let </span>added: Vec&lt;NodeInfo&gt; = <span class="macro">vec!</span>[da_node.clone().into(), consensus_node.clone().into()];
-        <span class="kw">let </span><span class="kw-2">mut </span>updates = <span class="macro">vec!</span>[StakersUpdated {
-            removed: <span class="macro">vec!</span>[],
-            added,
-        }];
-
-        <span class="kw">let </span>st = StakeTables::from_l1_events(updates.clone());
-
-        <span class="comment">// The DA stake table contains the DA node only
-        </span><span class="macro">assert_eq!</span>(st.da_members.<span class="number">0</span>.len(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(
-            st.da_members.<span class="number">0</span>[<span class="number">0</span>].stake_table_entry.stake_key,
-            da_node.stake_table_key
-        );
-
-        <span class="comment">// The consensus stake table contains both nodes
-        </span><span class="macro">assert_eq!</span>(st.stake_table.<span class="number">0</span>.len(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(
-            st.stake_table.<span class="number">0</span>[<span class="number">0</span>].stake_table_entry.stake_key,
-            da_node.stake_table_key
-        );
-        <span class="macro">assert_eq!</span>(
-            st.stake_table.<span class="number">0</span>[<span class="number">1</span>].stake_table_entry.stake_key,
-            consensus_node.stake_table_key
-        );
-
-        <span class="comment">// Simulate making the consensus node a DA node. This is accomplished by
-        // sending a transaction removes and re-adds the same node with updated
-        // DA status.
-        </span><span class="kw">let </span><span class="kw-2">mut </span>new_da_node = consensus_node.clone();
-        new_da_node.da = <span class="bool-val">true</span>;
-        updates.push(StakersUpdated {
-            removed: <span class="macro">vec!</span>[consensus_node.stake_table_key_alloy()],
-            added: <span class="macro">vec!</span>[new_da_node.clone().into()],
-        });
-        <span class="kw">let </span>st = StakeTables::from_l1_events(updates.clone());
-
-        <span class="comment">// The DA stake stable now contains both nodes
-        </span><span class="macro">assert_eq!</span>(st.da_members.<span class="number">0</span>.len(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(
-            st.da_members.<span class="number">0</span>[<span class="number">0</span>].stake_table_entry.stake_key,
-            da_node.stake_table_key
-        );
-        <span class="macro">assert_eq!</span>(
-            st.da_members.<span class="number">0</span>[<span class="number">1</span>].stake_table_entry.stake_key,
-            new_da_node.stake_table_key
-        );
-
-        <span class="comment">// The consensus stake stable (still) contains both nodes
-        </span><span class="macro">assert_eq!</span>(st.stake_table.<span class="number">0</span>.len(), <span class="number">2</span>);
-        <span class="macro">assert_eq!</span>(
-            st.stake_table.<span class="number">0</span>[<span class="number">0</span>].stake_table_entry.stake_key,
-            da_node.stake_table_key
-        );
-        <span class="macro">assert_eq!</span>(
-            st.stake_table.<span class="number">0</span>[<span class="number">1</span>].stake_table_entry.stake_key,
-            new_da_node.stake_table_key
-        );
-
-        <span class="comment">// Simulate removing the second node
-        </span>updates.push(StakersUpdated {
-            removed: <span class="macro">vec!</span>[new_da_node.stake_table_key_alloy()],
-            added: <span class="macro">vec!</span>[],
-        });
-        <span class="kw">let </span>st = StakeTables::from_l1_events(updates);
-
-        <span class="comment">// The DA stake table contains only the original DA node
-        </span><span class="macro">assert_eq!</span>(st.da_members.<span class="number">0</span>.len(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(
-            st.da_members.<span class="number">0</span>[<span class="number">0</span>].stake_table_entry.stake_key,
-            da_node.stake_table_key
-        );
-
-        <span class="comment">// The consensus stake table also contains only the original DA node
-        </span><span class="macro">assert_eq!</span>(st.stake_table.<span class="number">0</span>.len(), <span class="number">1</span>);
-        <span class="macro">assert_eq!</span>(
-            st.stake_table.<span class="number">0</span>[<span class="number">0</span>].stake_table_entry.stake_key,
-            da_node.stake_table_key
-        );
+    </span><span class="kw">pub struct </span>TestValidator {
+        <span class="kw">pub </span>account: Address,
+        <span class="kw">pub </span>bls_vk: G2Point,
+        <span class="kw">pub </span>schnorr_vk: EdOnBN254Point,
+        <span class="kw">pub </span>commission: u16,
     }
 
-    <span class="comment">// TODO: test that repeatedly removes and adds more nodes
+    <span class="kw">impl </span>TestValidator {
+        <span class="kw">pub fn </span>random() -&gt; <span class="self">Self </span>{
+            <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>rand::thread_rng();
+            <span class="kw">let </span><span class="kw-2">mut </span>seed = [<span class="number">0u8</span>; <span class="number">32</span>];
+            rng.fill_bytes(<span class="kw-2">&amp;mut </span>seed);
 
-    // TODO: the contract prevents removing nodes that aren't stakers and adding
-    //       stakers multiple times, but should the rust code handle it too?
-</span>}
+            <span class="kw">let </span>(bls_vk, <span class="kw">_</span>) = BLSPubKey::generated_from_seed_indexed(seed, <span class="number">0</span>);
+            <span class="kw">let </span>schnorr_vk: ParsedEdOnBN254Point =
+                StateKeyPair::generate_from_seed_indexed(seed, <span class="number">0</span>)
+                    .ver_key()
+                    .to_affine()
+                    .into();
+
+            <span class="self">Self </span>{
+                account: Address::random(),
+                bls_vk: bls_jf_to_alloy2(bls_vk),
+                schnorr_vk: EdOnBN254Point {
+                    x: schnorr_vk.x.to_alloy(),
+                    y: schnorr_vk.y.to_alloy(),
+                },
+                commission: rng.gen_range(<span class="number">0</span>..<span class="number">10000</span>),
+            }
+        }
+    }
+
+    <span class="kw">impl </span>Validator&lt;BLSPubKey&gt; {
+        <span class="kw">pub fn </span>mock() -&gt; Validator&lt;BLSPubKey&gt; {
+            <span class="kw">let </span>val = TestValidator::random();
+            <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>rand::thread_rng();
+            <span class="kw">let </span><span class="kw-2">mut </span>seed = [<span class="number">1u8</span>; <span class="number">32</span>];
+            rng.fill_bytes(<span class="kw-2">&amp;mut </span>seed);
+            <span class="kw">let </span><span class="kw-2">mut </span>validator_stake = alloy::primitives::U256::from(<span class="number">0</span>);
+            <span class="kw">let </span><span class="kw-2">mut </span>delegators = HashMap::new();
+            <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..=<span class="number">100 </span>{
+                <span class="kw">let </span>stake: u64 = rng.gen_range(<span class="number">0</span>..<span class="number">10000</span>);
+                delegators.insert(Address::random(), alloy::primitives::U256::from(stake));
+                validator_stake += alloy::primitives::U256::from(stake);
+            }
+
+            <span class="kw">let </span>stake_table_key = bls_alloy_to_jf2(val.bls_vk.clone());
+            <span class="kw">let </span>state_ver_key = edward_bn254point_to_state_ver(val.schnorr_vk.clone());
+
+            Validator {
+                account: val.account,
+                stake_table_key,
+                state_ver_key,
+                stake: validator_stake,
+                commission: val.commission,
+                delegators,
+            }
+        }
+    }
+}
+
+<span class="attr">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span>alloy::primitives::Address;
+    <span class="kw">use </span>sequencer_utils::test_utils::setup_test;
+
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::v0::impls::testing::<span class="kw-2">*</span>;
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_from_l1_events() -&gt; anyhow::Result&lt;()&gt; {
+        setup_test();
+        <span class="comment">// Build a stake table with one DA node and one consensus node.
+        </span><span class="kw">let </span>val = TestValidator::random();
+        <span class="kw">let </span>val_new_keys = TestValidator::random();
+        <span class="kw">let </span>delegator = Address::random();
+        <span class="kw">let </span><span class="kw-2">mut </span>events: Vec&lt;StakeTableEvent&gt; = [
+            ValidatorRegistered {
+                account: val.account,
+                blsVk: val.bls_vk.clone(),
+                schnorrVk: val.schnorr_vk.clone(),
+                commission: val.commission,
+            }
+            .into(),
+            Delegated {
+                delegator,
+                validator: val.account,
+                amount: U256::from(<span class="number">10</span>),
+            }
+            .into(),
+            ConsensusKeysUpdated {
+                account: val.account,
+                blsVK: val_new_keys.bls_vk.clone(),
+                schnorrVK: val_new_keys.schnorr_vk.clone(),
+            }
+            .into(),
+            Undelegated {
+                delegator,
+                validator: val.account,
+                amount: U256::from(<span class="number">7</span>),
+            }
+            .into(),
+        ]
+        .to_vec();
+
+        <span class="kw">let </span>st = from_l1_events(events.iter().cloned())<span class="question-mark">?</span>;
+        <span class="kw">let </span>st_val = st.get(<span class="kw-2">&amp;</span>val.account).unwrap();
+        <span class="macro">assert_eq!</span>(st_val.stake, U256::from(<span class="number">3</span>));
+        <span class="macro">assert_eq!</span>(st_val.commission, val.commission);
+        <span class="macro">assert_eq!</span>(st_val.delegators.len(), <span class="number">1</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>st_val.delegators.get(<span class="kw-2">&amp;</span>delegator).unwrap(), U256::from(<span class="number">3</span>));
+
+        events.push(
+            ValidatorExit {
+                validator: val.account,
+            }
+            .into(),
+        );
+
+        <span class="kw">let </span>st = from_l1_events(events.iter().cloned())<span class="question-mark">?</span>;
+        <span class="macro">assert_eq!</span>(st.len(), <span class="number">0</span>);
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="attr">#[test]
+    </span><span class="kw">fn </span>test_from_l1_events_failures() -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>val = TestValidator::random();
+        <span class="kw">let </span>delegator = Address::random();
+
+        <span class="kw">let </span>register: StakeTableEvent = ValidatorRegistered {
+            account: val.account,
+            blsVk: val.bls_vk.clone(),
+            schnorrVk: val.schnorr_vk.clone(),
+            commission: val.commission,
+        }
+        .into();
+        <span class="kw">let </span>delegate: StakeTableEvent = Delegated {
+            delegator,
+            validator: val.account,
+            amount: U256::from(<span class="number">10</span>),
+        }
+        .into();
+        <span class="kw">let </span>key_update: StakeTableEvent = ConsensusKeysUpdated {
+            account: val.account,
+            blsVK: val.bls_vk.clone(),
+            schnorrVK: val.schnorr_vk.clone(),
+        }
+        .into();
+        <span class="kw">let </span>undelegate: StakeTableEvent = Undelegated {
+            delegator,
+            validator: val.account,
+            amount: U256::from(<span class="number">7</span>),
+        }
+        .into();
+
+        <span class="kw">let </span>exit: StakeTableEvent = ValidatorExit {
+            validator: val.account,
+        }
+        .into();
+
+        <span class="kw">let </span>cases = [
+            <span class="macro">vec!</span>[exit],
+            <span class="macro">vec!</span>[undelegate.clone()],
+            <span class="macro">vec!</span>[delegate.clone()],
+            <span class="macro">vec!</span>[key_update],
+            <span class="macro">vec!</span>[register.clone(), register.clone()],
+            <span class="macro">vec!</span>[register, delegate, undelegate.clone(), undelegate],
+        ];
+
+        <span class="kw">for </span>events <span class="kw">in </span>cases.iter() {
+            <span class="kw">let </span>res = from_l1_events(events.iter().cloned());
+            <span class="macro">assert!</span>(
+                res.is_err(),
+                <span class="string">"events {:?}, not a valid sequencer of events"</span>,
+                res
+            );
+        }
+        <span class="prelude-val">Ok</span>(())
+    }
+}
 </code></pre></div></section></main></body></html>

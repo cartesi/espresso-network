@@ -1872,12 +1872,154 @@
 <a href="#1871" id="1871">1871</a>
 <a href="#1872" id="1872">1872</a>
 <a href="#1873" id="1873">1873</a>
-<a href="#1874" id="1874">1874</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
+<a href="#1874" id="1874">1874</a>
+<a href="#1875" id="1875">1875</a>
+<a href="#1876" id="1876">1876</a>
+<a href="#1877" id="1877">1877</a>
+<a href="#1878" id="1878">1878</a>
+<a href="#1879" id="1879">1879</a>
+<a href="#1880" id="1880">1880</a>
+<a href="#1881" id="1881">1881</a>
+<a href="#1882" id="1882">1882</a>
+<a href="#1883" id="1883">1883</a>
+<a href="#1884" id="1884">1884</a>
+<a href="#1885" id="1885">1885</a>
+<a href="#1886" id="1886">1886</a>
+<a href="#1887" id="1887">1887</a>
+<a href="#1888" id="1888">1888</a>
+<a href="#1889" id="1889">1889</a>
+<a href="#1890" id="1890">1890</a>
+<a href="#1891" id="1891">1891</a>
+<a href="#1892" id="1892">1892</a>
+<a href="#1893" id="1893">1893</a>
+<a href="#1894" id="1894">1894</a>
+<a href="#1895" id="1895">1895</a>
+<a href="#1896" id="1896">1896</a>
+<a href="#1897" id="1897">1897</a>
+<a href="#1898" id="1898">1898</a>
+<a href="#1899" id="1899">1899</a>
+<a href="#1900" id="1900">1900</a>
+<a href="#1901" id="1901">1901</a>
+<a href="#1902" id="1902">1902</a>
+<a href="#1903" id="1903">1903</a>
+<a href="#1904" id="1904">1904</a>
+<a href="#1905" id="1905">1905</a>
+<a href="#1906" id="1906">1906</a>
+<a href="#1907" id="1907">1907</a>
+<a href="#1908" id="1908">1908</a>
+<a href="#1909" id="1909">1909</a>
+<a href="#1910" id="1910">1910</a>
+<a href="#1911" id="1911">1911</a>
+<a href="#1912" id="1912">1912</a>
+<a href="#1913" id="1913">1913</a>
+<a href="#1914" id="1914">1914</a>
+<a href="#1915" id="1915">1915</a>
+<a href="#1916" id="1916">1916</a>
+<a href="#1917" id="1917">1917</a>
+<a href="#1918" id="1918">1918</a>
+<a href="#1919" id="1919">1919</a>
+<a href="#1920" id="1920">1920</a>
+<a href="#1921" id="1921">1921</a>
+<a href="#1922" id="1922">1922</a>
+<a href="#1923" id="1923">1923</a>
+<a href="#1924" id="1924">1924</a>
+<a href="#1925" id="1925">1925</a>
+<a href="#1926" id="1926">1926</a>
+<a href="#1927" id="1927">1927</a>
+<a href="#1928" id="1928">1928</a>
+<a href="#1929" id="1929">1929</a>
+<a href="#1930" id="1930">1930</a>
+<a href="#1931" id="1931">1931</a>
+<a href="#1932" id="1932">1932</a>
+<a href="#1933" id="1933">1933</a>
+<a href="#1934" id="1934">1934</a>
+<a href="#1935" id="1935">1935</a>
+<a href="#1936" id="1936">1936</a>
+<a href="#1937" id="1937">1937</a>
+<a href="#1938" id="1938">1938</a>
+<a href="#1939" id="1939">1939</a>
+<a href="#1940" id="1940">1940</a>
+<a href="#1941" id="1941">1941</a>
+<a href="#1942" id="1942">1942</a>
+<a href="#1943" id="1943">1943</a>
+<a href="#1944" id="1944">1944</a>
+<a href="#1945" id="1945">1945</a>
+<a href="#1946" id="1946">1946</a>
+<a href="#1947" id="1947">1947</a>
+<a href="#1948" id="1948">1948</a>
+<a href="#1949" id="1949">1949</a>
+<a href="#1950" id="1950">1950</a>
+<a href="#1951" id="1951">1951</a>
+<a href="#1952" id="1952">1952</a>
+<a href="#1953" id="1953">1953</a>
+<a href="#1954" id="1954">1954</a>
+<a href="#1955" id="1955">1955</a>
+<a href="#1956" id="1956">1956</a>
+<a href="#1957" id="1957">1957</a>
+<a href="#1958" id="1958">1958</a>
+<a href="#1959" id="1959">1959</a>
+<a href="#1960" id="1960">1960</a>
+<a href="#1961" id="1961">1961</a>
+<a href="#1962" id="1962">1962</a>
+<a href="#1963" id="1963">1963</a>
+<a href="#1964" id="1964">1964</a>
+<a href="#1965" id="1965">1965</a>
+<a href="#1966" id="1966">1966</a>
+<a href="#1967" id="1967">1967</a>
+<a href="#1968" id="1968">1968</a>
+<a href="#1969" id="1969">1969</a>
+<a href="#1970" id="1970">1970</a>
+<a href="#1971" id="1971">1971</a>
+<a href="#1972" id="1972">1972</a>
+<a href="#1973" id="1973">1973</a>
+<a href="#1974" id="1974">1974</a>
+<a href="#1975" id="1975">1975</a>
+<a href="#1976" id="1976">1976</a>
+<a href="#1977" id="1977">1977</a>
+<a href="#1978" id="1978">1978</a>
+<a href="#1979" id="1979">1979</a>
+<a href="#1980" id="1980">1980</a>
+<a href="#1981" id="1981">1981</a>
+<a href="#1982" id="1982">1982</a>
+<a href="#1983" id="1983">1983</a>
+<a href="#1984" id="1984">1984</a>
+<a href="#1985" id="1985">1985</a>
+<a href="#1986" id="1986">1986</a>
+<a href="#1987" id="1987">1987</a>
+<a href="#1988" id="1988">1988</a>
+<a href="#1989" id="1989">1989</a>
+<a href="#1990" id="1990">1990</a>
+<a href="#1991" id="1991">1991</a>
+<a href="#1992" id="1992">1992</a>
+<a href="#1993" id="1993">1993</a>
+<a href="#1994" id="1994">1994</a>
+<a href="#1995" id="1995">1995</a>
+<a href="#1996" id="1996">1996</a>
+<a href="#1997" id="1997">1997</a>
+<a href="#1998" id="1998">1998</a>
+<a href="#1999" id="1999">1999</a>
+<a href="#2000" id="2000">2000</a>
+<a href="#2001" id="2001">2001</a>
+<a href="#2002" id="2002">2002</a>
+<a href="#2003" id="2003">2003</a>
+<a href="#2004" id="2004">2004</a>
+<a href="#2005" id="2005">2005</a>
+<a href="#2006" id="2006">2006</a>
+<a href="#2007" id="2007">2007</a>
+<a href="#2008" id="2008">2008</a>
+<a href="#2009" id="2009">2009</a>
+<a href="#2010" id="2010">2010</a>
+<a href="#2011" id="2011">2011</a>
+<a href="#2012" id="2012">2012</a>
+<a href="#2013" id="2013">2013</a>
+<a href="#2014" id="2014">2014</a>
+<a href="#2015" id="2015">2015</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
 
-<span class="kw">use </span>anyhow::bail;
+<span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>ethers::types::Address;
-<span class="kw">use </span>ethers_conv::ToAlloy;
+<span class="kw">use </span>ethers_conv::{ToAlloy, ToEthers};
+<span class="kw">use </span>hotshot::types::BLSPubKey;
 <span class="kw">use </span>hotshot_query_service::merklized_state::MerklizedState;
 <span class="kw">use </span>hotshot_types::{
     data::{BlockError, ViewNumber},
@@ -1897,11 +2039,19 @@
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>time::OffsetDateTime;
-<span class="kw">use </span>vbs::version::Version;
+<span class="kw">use </span>vbs::version::{StaticVersionType, Version};
 
 <span class="kw">use super</span>::{
-    auction::ExecutionError, fee_info::FeeError, instance_state::NodeState, BlockMerkleCommitment,
-    BlockSize, FeeMerkleCommitment, L1Client,
+    auction::ExecutionError,
+    fee_info::FeeError,
+    instance_state::NodeState,
+    reward::{apply_rewards, catchup_missing_accounts},
+    v0_1::{
+        RewardAccount, RewardAmount, RewardMerkleCommitment, RewardMerkleTree,
+        REWARD_MERKLE_TREE_HEIGHT,
+    },
+    v0_3::Validator,
+    BlockMerkleCommitment, BlockSize, EpochVersion, FeeMerkleCommitment, L1Client,
 };
 <span class="kw">use crate</span>::{
     traits::StateCatchup,
@@ -1957,15 +2107,20 @@
         parent_height: u64,
         proposal_height: u64,
     },
-    <span class="attr">#[error(<span class="string">"Invalid Block Root Error: expected={expected_root}, proposal={proposal_root}"</span>)]
+    <span class="attr">#[error(<span class="string">"Invalid Block Root Error: expected={expected_root:?}, proposal={proposal_root:?}"</span>)]
     </span>InvalidBlockRoot {
         expected_root: BlockMerkleCommitment,
         proposal_root: BlockMerkleCommitment,
     },
-    <span class="attr">#[error(<span class="string">"Invalid Fee Root Error: expected={expected_root}, proposal={proposal_root}"</span>)]
+    <span class="attr">#[error(<span class="string">"Invalid Fee Root Error: expected={expected_root:?}, proposal={proposal_root:?}"</span>)]
     </span>InvalidFeeRoot {
         expected_root: FeeMerkleCommitment,
         proposal_root: FeeMerkleCommitment,
+    },
+    <span class="attr">#[error(<span class="string">"Invalid Reward Root Error: expected={expected_root:?}, proposal={proposal_root:?}"</span>)]
+    </span>InvalidRewardRoot {
+        expected_root: RewardMerkleCommitment,
+        proposal_root: RewardMerkleCommitment,
     },
     <span class="attr">#[error(<span class="string">"Invalid namespace table: {0}"</span>)]
     </span>InvalidNsTable(NsTableValidationError),
@@ -1995,6 +2150,8 @@
     </span>BuilderValidationError(BuilderValidationError),
     <span class="attr">#[error(<span class="string">"Invalid proposal: l1 finalized does not match the proposal"</span>)]
     </span>InvalidL1Finalized,
+    <span class="attr">#[error(<span class="string">"reward root not found"</span>)]
+    </span>RewardRootNotFound {},
 }
 
 <span class="kw">impl </span>StateDelta <span class="kw">for </span>Delta {}
@@ -2006,6 +2163,7 @@
     </span><span class="kw">pub </span>block_merkle_tree: BlockMerkleTree,
     <span class="doccomment">/// Frontier of [`FeeMerkleTree`]
     </span><span class="kw">pub </span>fee_merkle_tree: FeeMerkleTree,
+    <span class="kw">pub </span>reward_merkle_tree: RewardMerkleTree,
     <span class="doccomment">/// Configuration [`Header`] proposals will be validated against.
     </span><span class="kw">pub </span>chain_config: ResolvableChainConfig,
 }
@@ -2027,11 +2185,18 @@
         )
         .unwrap();
 
+        <span class="kw">let </span>reward_merkle_tree = RewardMerkleTree::from_kv_set(
+            REWARD_MERKLE_TREE_HEIGHT,
+            Vec::&lt;(RewardAccount, RewardAmount)&gt;::new(),
+        )
+        .unwrap();
+
         <span class="kw">let </span>chain_config = ResolvableChainConfig::from(ChainConfig::default());
 
         <span class="self">Self </span>{
             block_merkle_tree,
             fee_merkle_tree,
+            reward_merkle_tree,
             chain_config,
         }
     }
@@ -2064,6 +2229,22 @@
             .unique()
             .filter(|account| {
                 <span class="self">self</span>.fee_merkle_tree
+                    .lookup(<span class="kw-2">*</span>account)
+                    .expect_not_in_memory()
+                    .is_ok()
+            })
+            .collect()
+    }
+
+    <span class="kw">pub fn </span>forgotten_reward_accounts(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        accounts: <span class="kw">impl </span>IntoIterator&lt;Item = RewardAccount&gt;,
+    ) -&gt; Vec&lt;RewardAccount&gt; {
+        accounts
+            .into_iter()
+            .unique()
+            .filter(|account| {
+                <span class="self">self</span>.reward_merkle_tree
                     .lookup(<span class="kw-2">*</span>account)
                     .expect_not_in_memory()
                     .is_ok()
@@ -2129,6 +2310,29 @@
         }
         <span class="prelude-val">Ok</span>(())
     }
+
+    <span class="kw">pub fn </span>distribute_rewards(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        delta: <span class="kw-2">&amp;mut </span>Delta,
+        validator: Validator&lt;BLSPubKey&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>reward_state = apply_rewards(<span class="self">self</span>.reward_merkle_tree.clone(), validator.clone())<span class="question-mark">?</span>;
+        <span class="self">self</span>.reward_merkle_tree = reward_state;
+
+        <span class="comment">// Update delta rewards
+        </span>delta
+            .rewards_delta
+            .insert(RewardAccount(validator.account.to_ethers()));
+        delta.rewards_delta.extend(
+            validator
+                .delegators
+                .keys()
+                .map(|d| RewardAccount(d.to_ethers())),
+        );
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
     <span class="doccomment">/// Charge a fee to an account, transferring the funds to the fee recipient account.
     </span><span class="kw">pub fn </span>charge_fee(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fee_info: FeeInfo, recipient: FeeAccount) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeError&gt; {
         <span class="kw">if </span>fee_info.amount == <span class="number">0</span>.into() {
@@ -2314,6 +2518,7 @@
         <span class="self">self</span>.validate_fee()<span class="question-mark">?</span>;
         <span class="self">self</span>.validate_fee_merkle_tree()<span class="question-mark">?</span>;
         <span class="self">self</span>.validate_block_merkle_tree()<span class="question-mark">?</span>;
+        <span class="self">self</span>.validate_reward_merkle_tree()<span class="question-mark">?</span>;
         <span class="self">self</span>.validate_l1_finalized()<span class="question-mark">?</span>;
         <span class="self">self</span>.validate_l1_head()<span class="question-mark">?</span>;
         <span class="self">self</span>.validate_namespace_table()<span class="question-mark">?</span>;
@@ -2460,6 +2665,23 @@
 
         <span class="prelude-val">Ok</span>(())
     }
+
+    <span class="doccomment">/// Validate [`RewardMerkleTree`] by comparing proposed commitment
+    /// against that stored in [`ValidatedState`].
+    </span><span class="kw">fn </span>validate_reward_merkle_tree(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProposalValidationError&gt; {
+        <span class="kw">let </span>reward_merkle_tree_root = <span class="self">self</span>.state.reward_merkle_tree.commitment();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(root) = <span class="self">self</span>.proposal.header.reward_merkle_tree_root() {
+            <span class="kw">if </span>root != reward_merkle_tree_root {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(ProposalValidationError::InvalidRewardRoot {
+                    expected_root: reward_merkle_tree_root,
+                    proposal_root: root,
+                });
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
     <span class="doccomment">/// Validate [`FeeMerkleTree`] by comparing proposed commitment
     /// against that stored in [`ValidatedState`].
     </span><span class="kw">fn </span>validate_fee_merkle_tree(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProposalValidationError&gt; {
@@ -2491,6 +2713,9 @@
             fee_merkle_tree: FeeMerkleTree::from_commitment(<span class="self">self</span>.fee_merkle_tree.commitment()),
             block_merkle_tree: BlockMerkleTree::from_commitment(
                 <span class="self">self</span>.block_merkle_tree.commitment(),
+            ),
+            reward_merkle_tree: RewardMerkleTree::from_commitment(
+                <span class="self">self</span>.reward_merkle_tree.commitment(),
             ),
             chain_config: ResolvableChainConfig::from(<span class="self">self</span>.chain_config.commit()),
         }
@@ -2670,6 +2895,22 @@
             chain_config.fee_recipient,
         )<span class="question-mark">?</span>;
 
+        <span class="comment">// TODO(abdul): Change this to version &gt;= EpochVersion::version()
+        // when we deploy the permissionless contract in native demo
+        // so that marketplace version also supports this,
+        // and the marketplace integration test passes
+        </span><span class="kw">if </span>version == EpochVersion::version() {
+            <span class="kw">let </span>validator =
+                catchup_missing_accounts(instance, <span class="kw-2">&amp;mut </span>validated_state, parent_leaf, parent_view)
+                    .<span class="kw">await</span><span class="question-mark">?</span>;
+
+            <span class="comment">// apply rewards
+
+            </span>validated_state
+                .distribute_rewards(<span class="kw-2">&amp;mut </span>delta, validator)
+                .context(<span class="string">"failed to distribute rewards"</span>)<span class="question-mark">?
+        </span>}
+
         <span class="prelude-val">Ok</span>((validated_state, delta))
     }
 
@@ -2833,9 +3074,18 @@
             BlockMerkleTree::from_commitment(block_header.block_merkle_tree_root())
         };
 
+        <span class="kw">let </span>reward_merkle_tree = <span class="kw">if </span>block_header.block_merkle_tree_root().size() == <span class="number">0 </span>{
+            <span class="comment">// If the commitment tells us that the tree is supposed to be empty, it is convenient to
+            // just create an empty tree, rather than a commitment-only tree.
+            </span>RewardMerkleTree::new(REWARD_MERKLE_TREE_HEIGHT)
+        } <span class="kw">else </span>{
+            RewardMerkleTree::from_commitment(block_header.block_merkle_tree_root())
+        };
+
         <span class="self">Self </span>{
             fee_merkle_tree,
             block_merkle_tree,
+            reward_merkle_tree,
             chain_config: block_header.chain_config(),
         }
     }
@@ -2914,6 +3164,38 @@
 
     <span class="kw">fn </span>tree_height() -&gt; usize {
         FEE_MERKLE_TREE_HEIGHT
+    }
+
+    <span class="kw">fn </span>insert_path(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        key: <span class="self">Self</span>::Key,
+        proof: <span class="kw-2">&amp;</span>MerkleProof&lt;<span class="self">Self</span>::Entry, <span class="self">Self</span>::Key, <span class="self">Self</span>::T, { <span class="self">Self</span>::ARITY }&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">match </span>proof.elem() {
+            <span class="prelude-val">Some</span>(elem) =&gt; <span class="self">self</span>.remember(key, elem, proof)<span class="question-mark">?</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="self">self</span>.non_membership_remember(key, proof)<span class="question-mark">?</span>,
+        }
+        <span class="prelude-val">Ok</span>(())
+    }
+}
+
+<span class="kw">impl </span>MerklizedState&lt;SeqTypes, { <span class="self">Self</span>::ARITY }&gt; <span class="kw">for </span>RewardMerkleTree {
+    <span class="kw">type </span>Key = <span class="self">Self</span>::Index;
+    <span class="kw">type </span>Entry = <span class="self">Self</span>::Element;
+    <span class="kw">type </span>T = Sha3Node;
+    <span class="kw">type </span>Commit = <span class="self">Self</span>::Commitment;
+    <span class="kw">type </span>Digest = Sha3Digest;
+
+    <span class="kw">fn </span>state_type() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
+        <span class="string">"reward_merkle_tree"
+    </span>}
+
+    <span class="kw">fn </span>header_state_commitment_field() -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
+        <span class="string">"reward_merkle_tree_root"
+    </span>}
+
+    <span class="kw">fn </span>tree_height() -&gt; usize {
+        REWARD_MERKLE_TREE_HEIGHT
     }
 
     <span class="kw">fn </span>insert_path(

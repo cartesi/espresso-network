@@ -2754,7 +2754,18 @@
 <a href="#2753" id="2753">2753</a>
 <a href="#2754" id="2754">2754</a>
 <a href="#2755" id="2755">2755</a>
-<a href="#2756" id="2756">2756</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
+<a href="#2756" id="2756">2756</a>
+<a href="#2757" id="2757">2757</a>
+<a href="#2758" id="2758">2758</a>
+<a href="#2759" id="2759">2759</a>
+<a href="#2760" id="2760">2760</a>
+<a href="#2761" id="2761">2761</a>
+<a href="#2762" id="2762">2762</a>
+<a href="#2763" id="2763">2763</a>
+<a href="#2764" id="2764">2764</a>
+<a href="#2765" id="2765">2765</a>
+<a href="#2766" id="2766">2766</a>
+<a href="#2767" id="2767">2767</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -2766,11 +2777,11 @@
     parse_duration, parse_size,
     traits::MembershipPersistence,
     v0::traits::{EventConsumer, PersistenceOptions, SequencerPersistence, StateCatchup},
-    v0_3::{IndexedStake, StakeTables},
+    v0_3::{IndexedStake, Validator},
     BackoffParams, BlockMerkleTree, FeeMerkleTree, Leaf, Leaf2, NetworkConfig, Payload,
 };
 <span class="kw">use </span>futures::stream::StreamExt;
-<span class="kw">use </span>hotshot::InitializerEpochInfo;
+<span class="kw">use </span>hotshot::{types::BLSPubKey, InitializerEpochInfo};
 <span class="kw">use </span>hotshot_query_service::{
     availability::LeafQueryData,
     data_source::{
@@ -2808,6 +2819,7 @@
     },
     vote::HasViewNumber,
 };
+<span class="kw">use </span>indexmap::IndexMap;
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>sqlx::{query, Executor, Row};
 
@@ -4602,7 +4614,10 @@
 
 <span class="attr">#[async_trait]
 </span><span class="kw">impl </span>MembershipPersistence <span class="kw">for </span>Persistence {
-    <span class="kw">async fn </span>load_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;StakeTables&gt;&gt; {
+    <span class="kw">async fn </span>load_stake(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: EpochNumber,
+    ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;IndexMap&lt;alloy::primitives::Address, Validator&lt;BLSPubKey&gt;&gt;&gt;&gt; {
         <span class="kw">let </span>result = <span class="self">self
             </span>.db
             .read()
@@ -4640,14 +4655,17 @@
 
         rows.into_iter()
             .map(|(id, bytes)| -&gt; anyhow::Result&lt;<span class="kw">_</span>&gt; {
-                <span class="kw">let </span>st: StakeTables =
-                    bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserializing stake table"</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span>st = bincode::deserialize(<span class="kw-2">&amp;</span>bytes).context(<span class="string">"deserializing stake table"</span>)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>((EpochNumber::new(id <span class="kw">as </span>u64), st)))
             })
             .collect()
     }
 
-    <span class="kw">async fn </span>store_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: EpochNumber, stake: StakeTables) -&gt; anyhow::Result&lt;()&gt; {
+    <span class="kw">async fn </span>store_stake(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        epoch: EpochNumber,
+        stake: IndexMap&lt;alloy::primitives::Address, Validator&lt;BLSPubKey&gt;&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>tx = <span class="self">self</span>.db.write().<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>stake_table_bytes = bincode::serialize(<span class="kw-2">&amp;</span>stake).context(<span class="string">"serializing stake table"</span>)<span class="question-mark">?</span>;
@@ -5488,7 +5506,9 @@
 
         <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>st = StakeTables::mock();
+        <span class="kw">let </span>validator = Validator::mock();
+        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
+        st.insert(validator.account, validator);
         storage
             .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -5496,7 +5516,9 @@
         <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
         <span class="macro">assert_eq!</span>(st, table);
 
-        <span class="kw">let </span>st2 = StakeTables::mock();
+        <span class="kw">let </span>val2 = Validator::mock();
+        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
+        st2.insert(val2.account, val2);
         storage
             .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
             .<span class="kw">await</span><span class="question-mark">?</span>;

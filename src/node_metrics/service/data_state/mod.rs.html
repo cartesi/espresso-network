@@ -793,7 +793,9 @@
 <a href="#792" id="792">792</a>
 <a href="#793" id="793">793</a>
 <a href="#794" id="794">794</a>
-<a href="#795" id="795">795</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>location_details;
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>location_details;
 <span class="kw">pub mod </span>node_identity;
 
 <span class="kw">use </span>std::{collections::HashSet, iter::zip, sync::Arc};
@@ -1363,7 +1365,8 @@
 
     <span class="kw">use </span>async_lock::RwLock;
     <span class="kw">use </span>espresso_types::{
-        v0_99::ChainConfig, BlockMerkleTree, FeeMerkleTree, Leaf2, NodeState, ValidatedState,
+        v0_1::RewardMerkleTree, v0_99::ChainConfig, BlockMerkleTree, FeeMerkleTree, Leaf2,
+        NodeState, ValidatedState,
     };
     <span class="kw">use </span>futures::{channel::mpsc, SinkExt, StreamExt};
     <span class="kw">use </span>hotshot_example_types::node_types::TestVersions;
@@ -1422,6 +1425,7 @@
         <span class="kw">let </span>validated_state = ValidatedState {
             block_merkle_tree: BlockMerkleTree::new(<span class="number">32</span>),
             fee_merkle_tree: FeeMerkleTree::new(<span class="number">32</span>),
+            reward_merkle_tree: RewardMerkleTree::new(<span class="number">32</span>),
             chain_config: ChainConfig::default().into(),
         };
         <span class="kw">let </span>instance_state = NodeState::mock();

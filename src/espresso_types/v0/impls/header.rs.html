@@ -1683,12 +1683,82 @@
 <a href="#1682" id="1682">1682</a>
 <a href="#1683" id="1683">1683</a>
 <a href="#1684" id="1684">1684</a>
-<a href="#1685" id="1685">1685</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
+<a href="#1685" id="1685">1685</a>
+<a href="#1686" id="1686">1686</a>
+<a href="#1687" id="1687">1687</a>
+<a href="#1688" id="1688">1688</a>
+<a href="#1689" id="1689">1689</a>
+<a href="#1690" id="1690">1690</a>
+<a href="#1691" id="1691">1691</a>
+<a href="#1692" id="1692">1692</a>
+<a href="#1693" id="1693">1693</a>
+<a href="#1694" id="1694">1694</a>
+<a href="#1695" id="1695">1695</a>
+<a href="#1696" id="1696">1696</a>
+<a href="#1697" id="1697">1697</a>
+<a href="#1698" id="1698">1698</a>
+<a href="#1699" id="1699">1699</a>
+<a href="#1700" id="1700">1700</a>
+<a href="#1701" id="1701">1701</a>
+<a href="#1702" id="1702">1702</a>
+<a href="#1703" id="1703">1703</a>
+<a href="#1704" id="1704">1704</a>
+<a href="#1705" id="1705">1705</a>
+<a href="#1706" id="1706">1706</a>
+<a href="#1707" id="1707">1707</a>
+<a href="#1708" id="1708">1708</a>
+<a href="#1709" id="1709">1709</a>
+<a href="#1710" id="1710">1710</a>
+<a href="#1711" id="1711">1711</a>
+<a href="#1712" id="1712">1712</a>
+<a href="#1713" id="1713">1713</a>
+<a href="#1714" id="1714">1714</a>
+<a href="#1715" id="1715">1715</a>
+<a href="#1716" id="1716">1716</a>
+<a href="#1717" id="1717">1717</a>
+<a href="#1718" id="1718">1718</a>
+<a href="#1719" id="1719">1719</a>
+<a href="#1720" id="1720">1720</a>
+<a href="#1721" id="1721">1721</a>
+<a href="#1722" id="1722">1722</a>
+<a href="#1723" id="1723">1723</a>
+<a href="#1724" id="1724">1724</a>
+<a href="#1725" id="1725">1725</a>
+<a href="#1726" id="1726">1726</a>
+<a href="#1727" id="1727">1727</a>
+<a href="#1728" id="1728">1728</a>
+<a href="#1729" id="1729">1729</a>
+<a href="#1730" id="1730">1730</a>
+<a href="#1731" id="1731">1731</a>
+<a href="#1732" id="1732">1732</a>
+<a href="#1733" id="1733">1733</a>
+<a href="#1734" id="1734">1734</a>
+<a href="#1735" id="1735">1735</a>
+<a href="#1736" id="1736">1736</a>
+<a href="#1737" id="1737">1737</a>
+<a href="#1738" id="1738">1738</a>
+<a href="#1739" id="1739">1739</a>
+<a href="#1740" id="1740">1740</a>
+<a href="#1741" id="1741">1741</a>
+<a href="#1742" id="1742">1742</a>
+<a href="#1743" id="1743">1743</a>
+<a href="#1744" id="1744">1744</a>
+<a href="#1745" id="1745">1745</a>
+<a href="#1746" id="1746">1746</a>
+<a href="#1747" id="1747">1747</a>
+<a href="#1748" id="1748">1748</a>
+<a href="#1749" id="1749">1749</a>
+<a href="#1750" id="1750">1750</a>
+<a href="#1751" id="1751">1751</a>
+<a href="#1752" id="1752">1752</a>
+<a href="#1753" id="1753">1753</a>
+<a href="#1754" id="1754">1754</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 
 <span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>ark_serialize::CanonicalSerialize;
 <span class="kw">use </span>committable::{Commitment, Committable, RawCommitmentBuilder};
 <span class="kw">use </span>ethers_conv::ToAlloy;
+<span class="kw">use </span>hotshot::types::BLSPubKey;
 <span class="kw">use </span>hotshot_query_service::{availability::QueryableHeader, explorer::ExplorerHeader};
 <span class="kw">use </span>hotshot_types::{
     data::VidCommitment,
@@ -1710,16 +1780,20 @@
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>vbs::version::{StaticVersionType, Version};
 
-<span class="kw">use super</span>::{instance_state::NodeState, state::ValidatedState};
+<span class="kw">use super</span>::{
+    instance_state::NodeState, state::ValidatedState, v0_1::RewardMerkleCommitment, v0_3::Validator,
+};
 <span class="kw">use crate</span>::{
     v0::{
         header::{EitherOrVersion, VersionedHeader},
+        impls::reward::{apply_rewards, catchup_missing_accounts},
         MarketplaceVersion,
     },
     v0_1, v0_2, v0_3,
     v0_99::{<span class="self">self</span>, ChainConfig, IterableFeeInfo, SolverAuctionResults},
-    BlockMerkleCommitment, BuilderSignature, FeeAccount, FeeAmount, FeeInfo, FeeMerkleCommitment,
-    Header, L1BlockInfo, L1Snapshot, Leaf2, NamespaceId, NsTable, SeqTypes, UpgradeType,
+    BlockMerkleCommitment, BuilderSignature, EpochVersion, FeeAccount, FeeAmount, FeeInfo,
+    FeeMerkleCommitment, Header, L1BlockInfo, L1Snapshot, Leaf2, NamespaceId, NsTable, SeqTypes,
+    UpgradeType,
 };
 
 <span class="kw">impl </span>v0_1::Header {
@@ -1969,6 +2043,7 @@
         ns_table: NsTable,
         fee_merkle_tree_root: FeeMerkleCommitment,
         block_merkle_tree_root: BlockMerkleCommitment,
+        reward_merkle_tree_root: <span class="prelude-ty">Option</span>&lt;RewardMerkleCommitment&gt;,
         fee_info: Vec&lt;FeeInfo&gt;,
         builder_signature: Vec&lt;BuilderSignature&gt;,
         version: Version,
@@ -2028,6 +2103,7 @@
                 fee_merkle_tree_root,
                 fee_info: fee_info[<span class="number">0</span>], <span class="comment">// NOTE this is asserted to exist above
                 </span>builder_signature: builder_signature.first().copied(),
+                reward_merkle_tree_root: reward_merkle_tree_root.unwrap(),
             }),
 
             <span class="number">99 </span>=&gt; <span class="self">Self</span>::V99(v0_99::Header {
@@ -2092,6 +2168,7 @@
         chain_config: ChainConfig,
         version: Version,
         auction_results: <span class="prelude-ty">Option</span>&lt;SolverAuctionResults&gt;,
+        validator: <span class="prelude-ty">Option</span>&lt;Validator&lt;BLSPubKey&gt;&gt;,
     ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="macro">ensure!</span>(
             version.major == <span class="number">0</span>,
@@ -2196,6 +2273,17 @@
 
         <span class="macro">assert!</span>(major == <span class="number">0</span>, <span class="string">"Invalid major version {major}"</span>);
 
+        <span class="comment">// DISTRIBUTE REWARDS
+        // TODO(abdul): Change this to version &gt;= EpochVersion::version()
+        // when we deploy the permissionless contract in native demo
+        // so that marketplace version also supports this,
+        // and the marketplace integration test passes
+        </span><span class="kw">if </span>version == EpochVersion::version() {
+            <span class="kw">let </span>validator = validator.ok_or_else(|| <span class="macro">anyhow::anyhow!</span>(<span class="string">"Missing validator"</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>reward_state = apply_rewards(state.reward_merkle_tree.clone(), validator)<span class="question-mark">?</span>;
+            state.reward_merkle_tree = reward_state;
+        }
+
         <span class="kw">let </span>header = <span class="kw">match </span>minor {
             <span class="number">1 </span>=&gt; <span class="self">Self</span>::V1(v0_1::Header {
                 chain_config: v0_1::ResolvableChainConfig::from(v0_1::ChainConfig::from(
@@ -2242,6 +2330,7 @@
                 ns_table,
                 block_merkle_tree_root,
                 fee_merkle_tree_root,
+                reward_merkle_tree_root: state.reward_merkle_tree.commitment(),
                 fee_info: fee_info[<span class="number">0</span>],
                 builder_signature: builder_signature.first().copied(),
             }),
@@ -2420,6 +2509,17 @@
             <span class="self">Self</span>::V2(fields) =&gt; <span class="macro">vec!</span>[fields.fee_info],
             <span class="self">Self</span>::V3(fields) =&gt; <span class="macro">vec!</span>[fields.fee_info],
             <span class="self">Self</span>::V99(fields) =&gt; fields.fee_info.clone(),
+        }
+    }
+
+    <span class="doccomment">/// Fee paid by the block builder
+    </span><span class="kw">pub fn </span>reward_merkle_tree_root(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;RewardMerkleCommitment&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::V1(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+            <span class="self">Self</span>::V2(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+            <span class="self">Self</span>::V3(fields) =&gt; <span class="prelude-val">Some</span>(fields.reward_merkle_tree_root),
+            <span class="comment">// TODO: add reward commitment to v99
+            </span><span class="self">Self</span>::V99(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
         }
     }
 
@@ -2620,6 +2720,7 @@
             chain_config,
             version,
             auction_results,
+            <span class="prelude-val">None</span>,
         )<span class="question-mark">?</span>)
     }
 
@@ -2736,6 +2837,19 @@
                 </span>.context(<span class="string">"remembering block proof"</span>)<span class="question-mark">?</span>;
         }
 
+        <span class="comment">// TODO(abdul): Change this to version &gt;= EpochVersion::version()
+        // when we deploy the permissionless contract in native demo
+        // so that marketplace version also supports this,
+        // and the marketplace integration test passes
+        </span><span class="kw">let </span>leader_config = <span class="kw">if </span>version == EpochVersion::version() {
+            <span class="prelude-val">Some</span>(
+                catchup_missing_accounts(instance_state, <span class="kw-2">&amp;mut </span>validated_state, parent_leaf, view)
+                    .<span class="kw">await</span><span class="question-mark">?</span>,
+            )
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>};
+
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_info(
             payload_commitment,
             builder_commitment,
@@ -2751,6 +2865,7 @@
             chain_config,
             version,
             <span class="prelude-val">None</span>,
+            leader_config,
         )<span class="question-mark">?</span>)
     }
 
@@ -2763,10 +2878,12 @@
         <span class="kw">let </span>ValidatedState {
             fee_merkle_tree,
             block_merkle_tree,
+            reward_merkle_tree,
             ..
         } = ValidatedState::genesis(instance_state).<span class="number">0</span>;
         <span class="kw">let </span>block_merkle_tree_root = block_merkle_tree.commitment();
         <span class="kw">let </span>fee_merkle_tree_root = fee_merkle_tree.commitment();
+        <span class="kw">let </span>reward_merkle_tree_root = reward_merkle_tree.commitment();
 
         <span class="comment">//  The Header is versioned,
         //  so we create the genesis header for the current version of the sequencer.
@@ -2784,6 +2901,7 @@
             ns_table.clone(),
             fee_merkle_tree_root,
             block_merkle_tree_root,
+            <span class="prelude-val">Some</span>(reward_merkle_tree_root),
             <span class="macro">vec!</span>[FeeInfo::genesis()],
             <span class="macro">vec!</span>[],
             instance_state.current_version,
@@ -2866,7 +2984,12 @@
     <span class="kw">use </span>vbs::{bincode_serializer::BincodeSerializer, version::StaticVersion, BinarySerializer};
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use crate</span>::{eth_signature_key::EthKeyPair, mock::MockStateCatchup, Leaf};
+    <span class="kw">use crate</span>::{
+        eth_signature_key::EthKeyPair,
+        mock::MockStateCatchup,
+        v0_1::{RewardInfo, RewardMerkleTree},
+        Leaf,
+    };
 
     <span class="attr">#[derive(Debug, Default)]
     #[must_use]
@@ -2915,9 +3038,20 @@
                 Vec::from([(fee_info.account(), fee_info.amount())]),
             )
             .unwrap();
+
+            <span class="kw">let </span>reward_info = RewardInfo {
+                account: Default::default(),
+                amount: Default::default(),
+            };
+            <span class="kw">let </span>reward_merkle_tree = RewardMerkleTree::from_kv_set(
+                <span class="number">20</span>,
+                Vec::from([(reward_info.account, reward_info.amount)]),
+            )
+            .unwrap();
             <span class="kw">let </span><span class="kw-2">mut </span>validated_state = ValidatedState {
                 block_merkle_tree: block_merkle_tree.clone(),
                 fee_merkle_tree,
+                reward_merkle_tree,
                 chain_config: genesis.instance_state.chain_config.into(),
             };
 
@@ -2946,6 +3080,7 @@
                 validated_state.clone(),
                 genesis.instance_state.chain_config,
                 Version { major: <span class="number">0</span>, minor: <span class="number">1 </span>},
+                <span class="prelude-val">None</span>,
                 <span class="prelude-val">None</span>,
             )
             .unwrap();
@@ -3291,6 +3426,7 @@
             ns_table.clone(),
             header.fee_merkle_tree_root(),
             header.block_merkle_tree_root(),
+            <span class="prelude-val">None</span>,
             <span class="macro">vec!</span>[FeeInfo {
                 amount: <span class="number">0</span>.into(),
                 account: fee_account,
@@ -3314,6 +3450,7 @@
             ns_table.clone(),
             header.fee_merkle_tree_root(),
             header.block_merkle_tree_root(),
+            <span class="prelude-val">None</span>,
             <span class="macro">vec!</span>[FeeInfo {
                 amount: <span class="number">0</span>.into(),
                 account: fee_account,
@@ -3337,6 +3474,7 @@
             ns_table.clone(),
             header.fee_merkle_tree_root(),
             header.block_merkle_tree_root(),
+            <span class="prelude-val">None</span>,
             <span class="macro">vec!</span>[FeeInfo {
                 amount: <span class="number">0</span>.into(),
                 account: fee_account,

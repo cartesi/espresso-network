@@ -1207,7 +1207,30 @@
 <a href="#1206" id="1206">1206</a>
 <a href="#1207" id="1207">1207</a>
 <a href="#1208" id="1208">1208</a>
-<a href="#1209" id="1209">1209</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>api;
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>api;
 <span class="kw">pub mod </span>catchup;
 <span class="kw">pub mod </span>context;
 <span class="kw">pub mod </span>genesis;
@@ -1225,6 +1248,7 @@
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>anyhow::Context;
+<span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>catchup::StatePeers;
 <span class="kw">use </span>context::SequencerContext;
 <span class="kw">use </span>espresso_types::{
@@ -1263,6 +1287,7 @@
 <span class="kw">use </span>hotshot_orchestrator::client::{get_complete_config, OrchestratorClient};
 <span class="kw">use </span>hotshot_types::{
     data::ViewNumber,
+    epoch_membership::EpochMembershipCoordinator,
     light_client::{StateKeyPair, StateSignKey},
     signature_key::{BLSPrivKey, BLSPubKey},
     traits::{
@@ -1670,42 +1695,52 @@
         genesis_state.prefund_account(address, amount);
     }
 
+    <span class="kw">let </span>peers = catchup::local_and_remote(
+        persistence.clone(),
+        StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
+            network_params.state_peers,
+            network_params.catchup_backoff,
+            metrics,
+        ),
+    )
+    .<span class="kw">await</span>;
+    <span class="comment">// Create the HotShot membership
+    </span><span class="kw">let </span>membership = EpochCommittees::new_stake(
+        network_config.config.known_nodes_with_stake.clone(),
+        network_config.config.known_da_nodes.clone(),
+        l1_client.clone(),
+        genesis
+            .chain_config
+            .stake_table_contract
+            .map(|a| a.to_alloy()),
+        peers.clone(),
+        persistence.clone(),
+    );
+
+    <span class="kw">let </span>membership: Arc&lt;RwLock&lt;EpochCommittees&gt;&gt; = Arc::new(RwLock::new(membership));
+    <span class="kw">let </span>coordinator =
+        EpochMembershipCoordinator::new(membership, network_config.config.epoch_height);
+
     <span class="kw">let </span>instance_state = NodeState {
         chain_config: genesis.chain_config,
         l1_client,
         genesis_header: genesis.header,
         genesis_state,
         l1_genesis: <span class="prelude-val">Some</span>(l1_genesis),
-        peers: catchup::local_and_remote(
-            persistence.clone(),
-            StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
-                network_params.state_peers,
-                network_params.catchup_backoff,
-                metrics,
-            ),
-        )
-        .<span class="kw">await</span>,
         node_id: node_index,
         upgrades: genesis.upgrades,
         current_version: V::Base::VERSION,
         epoch_height: <span class="prelude-val">None</span>,
+        peers,
+        coordinator: coordinator.clone(),
     };
-
-    <span class="comment">// Create the HotShot membership
-    </span><span class="kw">let </span>membership = EpochCommittees::new_stake(
-        network_config.config.known_nodes_with_stake.clone(),
-        network_config.config.known_da_nodes.clone(),
-        <span class="kw-2">&amp;</span>instance_state,
-        network_config.config.epoch_height,
-        persistence.clone(),
-    );
 
     <span class="comment">// Initialize the Libp2p network
     </span><span class="kw">let </span>network = {
         <span class="kw">let </span>p2p_network = Libp2pNetwork::from_config(
             network_config.clone(),
             DhtNoPersistence,
-            Arc::new(async_lock::RwLock::new(membership.clone())),
+            coordinator.membership().clone(),
             gossip_config,
             request_response_config,
             libp2p_bind_address,
@@ -1744,7 +1779,7 @@
     <span class="kw">let </span><span class="kw-2">mut </span>ctx = SequencerContext::init(
         network_config,
         validator_config,
-        membership,
+        coordinator,
         instance_state,
         persistence,
         network,
@@ -1774,6 +1809,7 @@
         time::Duration,
     };
 
+    <span class="kw">use </span>async_lock::RwLock;
     <span class="kw">use </span>catchup::NullStateCatchup;
     <span class="kw">use </span>committable::Committable;
     <span class="kw">use </span>espresso_types::{
@@ -2026,7 +2062,7 @@
                 start_voting_time: <span class="number">0</span>,
                 stop_proposing_time: <span class="number">0</span>,
                 stop_voting_time: <span class="number">0</span>,
-                epoch_height: <span class="number">0</span>,
+                epoch_height: <span class="number">300</span>,
                 epoch_start_block: <span class="number">0</span>,
             };
 
@@ -2178,26 +2214,36 @@
             state.prefund_account(builder_account, U256::max_value().into());
 
             <span class="kw">let </span>persistence = persistence_opt.create().<span class="kw">await</span>.unwrap();
+
+            <span class="kw">let </span>chain_config = state.chain_config.resolve().unwrap_or_default();
+            <span class="kw">let </span>l1_client =
+                L1Client::new(<span class="macro">vec!</span>[<span class="self">self</span>.l1_url.clone()]).expect(<span class="string">"failed to create L1 client"</span>);
+            <span class="kw">let </span>peers = catchup::local_and_remote(persistence.clone(), catchup).<span class="kw">await</span>;
+            <span class="comment">// Create the HotShot membership
+            </span><span class="kw">let </span>membership = EpochCommittees::new_stake(
+                config.known_nodes_with_stake.clone(),
+                config.known_da_nodes.clone(),
+                l1_client.clone(),
+                chain_config.stake_table_contract.map(|a| a.to_alloy()),
+                peers.clone(),
+                persistence.clone(),
+            );
+            <span class="kw">let </span>membership = Arc::new(RwLock::new(membership));
+
+            <span class="kw">let </span>coordinator = EpochMembershipCoordinator::new(membership, <span class="number">100</span>);
+
             <span class="kw">let </span>node_state = NodeState::new(
                 i <span class="kw">as </span>u64,
-                state.chain_config.resolve().unwrap_or_default(),
-                L1Client::new(<span class="macro">vec!</span>[<span class="self">self</span>.l1_url.clone()]).expect(<span class="string">"failed to create L1 client"</span>),
-                catchup::local_and_remote(persistence.clone(), catchup).<span class="kw">await</span>,
+                chain_config,
+                l1_client,
+                peers,
                 V::Base::VERSION,
+                coordinator.clone(),
             )
             .with_current_version(V::Base::version())
             .with_genesis(state)
             .with_epoch_height(config.epoch_height)
             .with_upgrades(upgrades);
-
-            <span class="comment">// Create the HotShot membership
-            </span><span class="kw">let </span>membership = EpochCommittees::new_stake(
-                config.known_nodes_with_stake.clone(),
-                config.known_da_nodes.clone(),
-                <span class="kw-2">&amp;</span>node_state,
-                <span class="number">100</span>,
-                persistence,
-            );
 
             <span class="macro">tracing::info!</span>(
                 i,
@@ -2215,7 +2261,7 @@
                     </span>..Default::default()
                 },
                 validator_config,
-                membership,
+                coordinator,
                 node_state,
                 persistence,
                 network,

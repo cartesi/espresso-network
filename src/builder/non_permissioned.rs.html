@@ -305,15 +305,33 @@
 <a href="#304" id="304">304</a>
 <a href="#305" id="305">305</a>
 <a href="#306" id="306">306</a>
-<a href="#307" id="307">307</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::VecDeque, num::NonZeroUsize, sync::Arc, time::Duration};
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a>
+<a href="#319" id="319">319</a>
+<a href="#320" id="320">320</a>
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::VecDeque, num::NonZeroUsize, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_broadcast::broadcast;
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>espresso_types::{
-    eth_signature_key::EthKeyPair, v0_99::ChainConfig, FeeAmount, NodeState, Payload, SeqTypes,
-    ValidatedState,
+    eth_signature_key::EthKeyPair, v0_1::NoStorage, v0_99::ChainConfig, EpochCommittees, FeeAmount,
+    NodeState, Payload, SeqTypes, ValidatedState,
 };
+<span class="kw">use </span>ethers_conv::ToAlloy;
 <span class="kw">use </span>hotshot::traits::BlockPayload;
 <span class="kw">use </span>hotshot_builder_core::{
     builder_state::{BuilderState, MessageType},
@@ -324,6 +342,7 @@
 };
 <span class="kw">use </span>hotshot_types::{
     data::{fake_commitment, vid_commitment, ViewNumber},
+    epoch_membership::EpochMembershipCoordinator,
     traits::{
         block_contents::GENESIS_VID_NUM_STORAGE_NODES, metrics::NoMetrics,
         node_implementation::Versions, EncodeBytes,
@@ -354,16 +373,31 @@
         .connect(l1_params.urls)
         .expect(<span class="string">"failed to create L1 client"</span>);
 
+    <span class="kw">let </span>peers = Arc::new(StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
+        state_peers,
+        Default::default(),
+        <span class="kw-2">&amp;</span>NoMetrics,
+    ));
+
+    <span class="kw">let </span>coordinator = EpochMembershipCoordinator::new(
+        Arc::new(RwLock::new(EpochCommittees::new_stake(
+            <span class="macro">vec!</span>[],
+            <span class="macro">vec!</span>[],
+            l1_client.clone(),
+            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            peers.clone(),
+            NoStorage,
+        ))),
+        <span class="number">100</span>,
+    );
+
     NodeState::new(
         u64::MAX, <span class="comment">// dummy node ID, only used for debugging
         </span>chain_config,
         l1_client,
-        Arc::new(StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
-            state_peers,
-            Default::default(),
-            <span class="kw-2">&amp;</span>NoMetrics,
-        )),
-        V::Base::VERSION,
+        peers,
+        V::Base::version(),
+        coordinator,
     )
 }
 

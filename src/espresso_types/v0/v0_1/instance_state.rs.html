@@ -68,7 +68,10 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a></pre></div><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a></pre></div><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::fmt::Debug;
 
 <span class="kw">use crate</span>::{v0::utils::Timestamp, v0_99::ChainConfig};
@@ -79,7 +82,7 @@
 </span><span class="kw">pub enum </span>UpgradeType {
     Fee { chain_config: ChainConfig },
     Marketplace { chain_config: ChainConfig },
-    Epoch { chain_config: ChainConfig }
+    Epoch { chain_config: ChainConfig },
 }
 
 <span class="kw">impl </span>UpgradeType {
@@ -88,8 +91,8 @@
     </span><span class="kw">pub fn </span>chain_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ChainConfig&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             UpgradeType::Fee { chain_config } =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>chain_config),
-            UpgradeType::Marketplace { chain_config } =&gt;  <span class="prelude-val">Some</span>(<span class="kw-2">*</span>chain_config),
-            UpgradeType::Epoch { chain_config } =&gt;  <span class="prelude-val">Some</span>(<span class="kw-2">*</span>chain_config),
+            UpgradeType::Marketplace { chain_config } =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>chain_config),
+            UpgradeType::Epoch { chain_config } =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>chain_config),
         }
     }
 }
@@ -138,4 +141,7 @@
     <span class="doccomment">/// The type of the upgrade.
     </span><span class="kw">pub </span>upgrade_type: UpgradeType,
 }
+
+<span class="attr">#[derive(Clone, Copy, Debug)]
+</span><span class="kw">pub struct </span>NoStorage;
 </code></pre></div></section></main></body></html>

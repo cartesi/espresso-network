@@ -574,9 +574,7 @@
 <a href="#573" id="573">573</a>
 <a href="#574" id="574">574</a>
 <a href="#575" id="575">575</a>
-<a href="#576" id="576">576</a>
-<a href="#577" id="577">577</a>
-<a href="#578" id="578">578</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#576" id="576">576</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     fmt::{Debug, Display},
     sync::Arc,
     time::Duration,
@@ -587,7 +585,7 @@
 <span class="kw">use </span>derivative::Derivative;
 <span class="kw">use </span>espresso_types::{
     v0::traits::{EventConsumer <span class="kw">as </span>PersistenceEventConsumer, SequencerPersistence},
-    EpochCommittees, NodeState, PubKey, Transaction, ValidatedState,
+    NodeState, PubKey, Transaction, ValidatedState,
 };
 <span class="kw">use </span>futures::{
     future::{join_all, Future},
@@ -684,7 +682,7 @@
     </span><span class="kw">pub async fn </span>init(
         network_config: NetworkConfig&lt;PubKey&gt;,
         validator_config: ValidatorConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;,
-        membership: EpochCommittees,
+        coordinator: EpochMembershipCoordinator&lt;SeqTypes&gt;,
         instance_state: NodeState,
         persistence: P,
         network: Arc&lt;N&gt;,
@@ -727,8 +725,6 @@
         )));
 
         <span class="kw">let </span>persistence = Arc::new(persistence);
-        <span class="kw">let </span>coordinator =
-            EpochMembershipCoordinator::new(Arc::new(RwLock::new(membership)), config.epoch_height);
         <span class="kw">let </span>membership = coordinator.membership().clone();
 
         <span class="kw">let </span>handle = SystemContext::init(
