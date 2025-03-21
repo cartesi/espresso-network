@@ -352,7 +352,9 @@
 <a href="#351" id="351">351</a>
 <a href="#352" id="352">352</a>
 <a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -417,6 +419,7 @@
 <span class="kw">use </span>hotshot_types::{data::VidShare, traits::node_implementation::NodeType};
 <span class="kw">use </span>jf_merkle_tree::prelude::MerkleProof;
 <span class="kw">use </span>tagged_base64::TaggedBase64;
+<span class="kw">use </span>vec1::Vec1;
 
 <span class="kw">use crate</span>::{
     availability::{
@@ -473,6 +476,7 @@
     Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
 {
     <span class="kw">async fn </span>get_leaf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: LeafId&lt;Types&gt;) -&gt; QueryResult&lt;LeafQueryData&lt;Types&gt;&gt;;
+    <span class="kw">async fn </span>get_leaves(<span class="kw-2">&amp;mut </span><span class="self">self</span>, height: u64) -&gt; QueryResult&lt;Vec1&lt;LeafQueryData&lt;Types&gt;&gt;&gt;;
     <span class="kw">async fn </span>get_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: BlockId&lt;Types&gt;) -&gt; QueryResult&lt;BlockQueryData&lt;Types&gt;&gt;;
     <span class="kw">async fn </span>get_header(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: BlockId&lt;Types&gt;) -&gt; QueryResult&lt;Header&lt;Types&gt;&gt;;
     <span class="kw">async fn </span>get_payload(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: BlockId&lt;Types&gt;) -&gt; QueryResult&lt;PayloadQueryData&lt;Types&gt;&gt;;

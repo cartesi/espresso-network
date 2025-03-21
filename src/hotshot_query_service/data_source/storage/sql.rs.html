@@ -1834,7 +1834,13 @@
 <a href="#1833" id="1833">1833</a>
 <a href="#1834" id="1834">1834</a>
 <a href="#1835" id="1835">1835</a>
-<a href="#1836" id="1836">1836</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#1836" id="1836">1836</a>
+<a href="#1837" id="1837">1837</a>
+<a href="#1838" id="1838">1838</a>
+<a href="#1839" id="1839">1839</a>
+<a href="#1840" id="1840">1840</a>
+<a href="#1841" id="1841">1841</a>
+<a href="#1842" id="1842">1842</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -1858,7 +1864,10 @@
 <span class="kw">use </span>hotshot_types::{
     data::{Leaf, Leaf2, VidShare},
     simple_certificate::{QuorumCertificate, QuorumCertificate2},
-    traits::{metrics::Metrics, node_implementation::NodeType},
+    traits::{
+        metrics::Metrics,
+        node_implementation::{ConsensusTime, NodeType},
+    },
     vid::advz::ADVZShare,
 };
 <span class="kw">use </span>itertools::Itertools;
@@ -2728,6 +2737,7 @@
                 vid_rows.push((leaf2.height() <span class="kw">as </span>i64, vid_common_bytes, new_vid_share_bytes));
                 leaf_rows.push((
                     leaf2.height() <span class="kw">as </span>i64,
+                    leaf2.view_number().u64() <span class="kw">as </span>i64,
                     commit.to_string(),
                     leaf2.block_header().commit().to_string(),
                     leaf2_json,
@@ -2736,15 +2746,17 @@
             }
 
             <span class="comment">// migrate leaf2
-            </span><span class="kw">let </span><span class="kw-2">mut </span>query_builder: sqlx::QueryBuilder&lt;Db&gt; =
-                sqlx::QueryBuilder::new(<span class="string">"INSERT INTO leaf2 (height, hash, block_hash, leaf, qc) "</span>);
+            </span><span class="kw">let </span><span class="kw-2">mut </span>query_builder: sqlx::QueryBuilder&lt;Db&gt; = sqlx::QueryBuilder::new(
+                <span class="string">"INSERT INTO leaf2 (height, view, hash, block_hash, leaf, qc) "</span>,
+            );
 
             query_builder.push_values(leaf_rows.into_iter(), |<span class="kw-2">mut </span>b, row| {
                 b.push_bind(row.<span class="number">0</span>)
                     .push_bind(row.<span class="number">1</span>)
                     .push_bind(row.<span class="number">2</span>)
                     .push_bind(row.<span class="number">3</span>)
-                    .push_bind(row.<span class="number">4</span>);
+                    .push_bind(row.<span class="number">4</span>)
+                    .push_bind(row.<span class="number">5</span>);
             });
 
             <span class="kw">let </span>query = query_builder.build();

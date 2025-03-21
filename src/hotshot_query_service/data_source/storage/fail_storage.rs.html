@@ -579,7 +579,14 @@
 <a href="#578" id="578">578</a>
 <a href="#579" id="579">579</a>
 <a href="#580" id="580">580</a>
-<a href="#581" id="581">581</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#581" id="581">581</a>
+<a href="#582" id="582">582</a>
+<a href="#583" id="583">583</a>
+<a href="#584" id="584">584</a>
+<a href="#585" id="585">585</a>
+<a href="#586" id="586">586</a>
+<a href="#587" id="587">587</a>
+<a href="#588" id="588">588</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -599,6 +606,7 @@
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>futures::future::Future;
 <span class="kw">use </span>hotshot_types::{data::VidShare, traits::node_implementation::NodeType};
+<span class="kw">use </span>vec1::Vec1;
 
 <span class="kw">use super</span>::{
     pruning::{PruneStorage, PrunedHeightStorage, PrunerCfg, PrunerConfig},
@@ -628,6 +636,7 @@
     // can always add more variants for other actions.
     </span>GetHeader,
     GetLeaf,
+    GetLeaves,
     GetBlock,
     GetPayload,
     GetPayloadMetadata,
@@ -915,6 +924,11 @@
     <span class="kw">async fn </span>get_leaf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: LeafId&lt;Types&gt;) -&gt; QueryResult&lt;LeafQueryData&lt;Types&gt;&gt; {
         <span class="self">self</span>.maybe_fail_read(FailableAction::GetLeaf).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.inner.get_leaf(id).<span class="kw">await
+    </span>}
+
+    <span class="kw">async fn </span>get_leaves(<span class="kw-2">&amp;mut </span><span class="self">self</span>, height: u64) -&gt; QueryResult&lt;Vec1&lt;LeafQueryData&lt;Types&gt;&gt;&gt; {
+        <span class="self">self</span>.maybe_fail_read(FailableAction::GetLeaves).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.inner.get_leaves(height).<span class="kw">await
     </span>}
 
     <span class="kw">async fn </span>get_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: BlockId&lt;Types&gt;) -&gt; QueryResult&lt;BlockQueryData&lt;Types&gt;&gt; {

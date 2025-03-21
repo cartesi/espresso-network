@@ -768,7 +768,36 @@
 <a href="#767" id="767">767</a>
 <a href="#768" id="768">768</a>
 <a href="#769" id="769">769</a>
-<a href="#770" id="770">770</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashSet, VecDeque};
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::{HashSet, VecDeque};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -799,6 +828,7 @@
     message::Proposal,
     traits::node_implementation::ConsensusTime,
     utils::epoch_from_block_number,
+    vote::HasViewNumber,
 };
 <span class="kw">use </span>jf_merkle_tree::{
     prelude::MerkleNode, ForgetableMerkleTreeScheme, ForgetableUniversalMerkleTreeScheme,
@@ -985,23 +1015,51 @@
             </span>.read()
             .<span class="kw">await
             </span>.context(<span class="macro">format!</span>(<span class="string">"opening transaction to fetch leaf at {height}"</span>))<span class="question-mark">?</span>;
-        <span class="kw">let </span>h = usize::try_from(height)<span class="question-mark">?</span>;
-        <span class="kw">let </span>query_leaf_chain = tx
-            .get_leaf_range(h..=(h + <span class="number">2</span>))
+        <span class="kw">let </span>leaf = tx
+            .get_leaf((height <span class="kw">as </span>usize).into())
             .<span class="kw">await
-            </span>.context(<span class="macro">format!</span>(<span class="string">"leaf chain {height} not available"</span>))<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>chain = <span class="macro">vec!</span>[];
+            </span>.context(<span class="macro">format!</span>(<span class="string">"leaf {height} not available"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>last_leaf: Leaf2 = leaf.leaf().clone();
+        <span class="kw">let </span><span class="kw-2">mut </span>chain = <span class="macro">vec!</span>[last_leaf.clone()];
+        <span class="kw">let </span><span class="kw-2">mut </span>h = height + <span class="number">1</span>;
 
-        <span class="kw">if </span>query_leaf_chain.len() &lt; <span class="number">3 </span>{
-            <span class="macro">bail!</span>(<span class="string">"chain not long enough {}"</span>, query_leaf_chain.len());
+        <span class="kw">let </span><span class="kw-2">mut </span>found = <span class="bool-val">false</span>;
+        <span class="kw">while </span>!found {
+            <span class="kw">for </span>leaf <span class="kw">in </span>tx.get_leaves(h).<span class="kw">await</span><span class="question-mark">? </span>{
+                <span class="kw">let </span>leaf = leaf.leaf();
+
+                <span class="kw">if </span>leaf.justify_qc().view_number() == last_leaf.view_number() {
+                    chain.push(leaf.clone());
+                } <span class="kw">else </span>{
+                    h += <span class="number">1</span>;
+                    <span class="kw">continue</span>;
+                }
+
+                <span class="comment">// just one away from deciding
+                </span><span class="kw">if </span>leaf.view_number() == last_leaf.view_number() + <span class="number">1 </span>{
+                    last_leaf = leaf.clone();
+                    h += <span class="number">1</span>;
+                    found = <span class="bool-val">true</span>;
+                    <span class="kw">break</span>;
+                }
+                h += <span class="number">1</span>;
+                last_leaf = leaf.clone();
+            }
         }
 
-        <span class="kw">for </span>query_result <span class="kw">in </span>query_leaf_chain {
-            <span class="kw">let </span><span class="prelude-val">Ok</span>(leaf_query) = query_result <span class="kw">else </span>{
-                <span class="macro">bail!</span>(<span class="macro">format!</span>(<span class="string">"leaf chain {height} not available"</span>));
-            };
-            chain.push(leaf_query.leaf().clone());
+        found = <span class="bool-val">false</span>;
+        <span class="kw">while </span>!found {
+            <span class="kw">for </span>leaf <span class="kw">in </span>tx.get_leaves(h).<span class="kw">await</span><span class="question-mark">? </span>{
+                <span class="kw">let </span>leaf = leaf.leaf();
+                <span class="kw">if </span>leaf.justify_qc().view_number() == last_leaf.view_number() {
+                    chain.push(leaf.clone());
+                    found = <span class="bool-val">true</span>;
+                    <span class="kw">break</span>;
+                }
+                h += <span class="number">1</span>;
+            }
         }
+
         <span class="prelude-val">Ok</span>(chain)
     }
 }

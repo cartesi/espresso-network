@@ -837,7 +837,14 @@
 <a href="#836" id="836">836</a>
 <a href="#837" id="837">837</a>
 <a href="#838" id="838">838</a>
-<a href="#839" id="839">839</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -872,6 +879,7 @@
 };
 <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
 <span class="kw">use </span>snafu::OptionExt;
+<span class="kw">use </span>vec1::Vec1;
 
 <span class="kw">use super</span>::{
     ledger_log::{Iter, LedgerLog},
@@ -1294,6 +1302,12 @@
             .nth(n)
             .context(NotFoundSnafu)<span class="question-mark">?
             </span>.context(MissingSnafu)
+    }
+
+    <span class="kw">async fn </span>get_leaves(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _height: u64) -&gt; QueryResult&lt;Vec1&lt;LeafQueryData&lt;Types&gt;&gt;&gt; {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(QueryError::Error {
+            message: <span class="string">"get_leaves is not supported with file system backend"</span>.into(),
+        });
     }
 
     <span class="kw">async fn </span>get_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: BlockId&lt;Types&gt;) -&gt; QueryResult&lt;BlockQueryData&lt;Types&gt;&gt; {

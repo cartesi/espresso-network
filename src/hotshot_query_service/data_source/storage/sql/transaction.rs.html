@@ -842,7 +842,9 @@
 <a href="#841" id="841">841</a>
 <a href="#842" id="842">842</a>
 <a href="#843" id="843">843</a>
-<a href="#844" id="844">844</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#844" id="844">844</a>
+<a href="#845" id="845">845</a>
+<a href="#846" id="846">846</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -879,7 +881,7 @@
     traits::{
         block_contents::BlockHeader,
         metrics::{Counter, Gauge, Histogram, Metrics},
-        node_implementation::NodeType,
+        node_implementation::{ConsensusTime, NodeType},
         EncodeBytes,
     },
 };
@@ -1311,6 +1313,7 @@
 {
     <span class="kw">async fn </span>insert_leaf(<span class="kw-2">&amp;mut </span><span class="self">self</span>, leaf: LeafQueryData&lt;Types&gt;) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">let </span>height = leaf.height();
+        <span class="kw">let </span>view = leaf.leaf().view_number().u64();
 
         <span class="comment">// Ignore the leaf if it is below the pruned height. This can happen if, for instance, the
         // fetcher is racing with the pruner.
@@ -1360,10 +1363,11 @@
         <span class="kw">let </span>qc_json = serde_json::to_value(leaf.qc()).context(<span class="string">"failed to serialize QC"</span>)<span class="question-mark">?</span>;
         <span class="self">self</span>.upsert(
             <span class="string">"leaf2"</span>,
-            [<span class="string">"height"</span>, <span class="string">"hash"</span>, <span class="string">"block_hash"</span>, <span class="string">"leaf"</span>, <span class="string">"qc"</span>],
-            [<span class="string">"height"</span>],
+            [<span class="string">"height"</span>, <span class="string">"view"</span>, <span class="string">"hash"</span>, <span class="string">"block_hash"</span>, <span class="string">"leaf"</span>, <span class="string">"qc"</span>],
+            [<span class="string">"height"</span>, <span class="string">"view"</span>],
             [(
                 height <span class="kw">as </span>i64,
+                view <span class="kw">as </span>i64,
                 leaf.hash().to_string(),
                 leaf.block_hash().to_string(),
                 leaf_json,
