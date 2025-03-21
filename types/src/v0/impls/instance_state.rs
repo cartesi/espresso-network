@@ -1,3 +1,5 @@
+use std::{collections::BTreeMap, sync::Arc};
+
 #[cfg(any(test, feature = "testing"))]
 use async_lock::RwLock;
 use async_trait::async_trait;
@@ -7,7 +9,6 @@ use hotshot_types::{
     HotShotConfig,
 };
 use indexmap::IndexMap;
-use std::{collections::BTreeMap, sync::Arc};
 #[cfg(any(test, feature = "testing"))]
 use vbs::version::StaticVersionType;
 use vbs::version::Version;
