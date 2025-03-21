@@ -1,7 +1,6 @@
 use std::{num::NonZeroUsize, time::Duration};
 
 use anyhow::Context;
-use ethers_conv::ToAlloy;
 use hotshot_types::{
     network::{
         BuilderType, CombinedNetworkConfig, Libp2pConfig, NetworkConfig, RandomBuilderConfig,

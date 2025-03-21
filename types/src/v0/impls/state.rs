@@ -886,7 +886,7 @@ impl ValidatedState {
         // so that marketplace version also supports this,
         // and the marketplace integration test passes
         if version == EpochVersion::version()
-            && !first_two_epochs(parent_leaf.height(), instance).await?
+            && !first_two_epochs(parent_leaf.height(), instance).await
         {
             tracing::error!(">>>> x1");
             let validator =

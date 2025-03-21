@@ -541,7 +541,7 @@ impl EpochCommittees {
     /// Get the stake table by epoch. Try to load from DB and fall back to fetching from l1.
     async fn get_stake_table_by_epoch(
         &self,
-        epoch: Epoch,
+        _epoch: Epoch,
         contract_address: Address,
         l1_block: u64,
     ) -> Result<IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>, GetStakeTablesError>
@@ -741,6 +741,11 @@ impl Membership<SeqTypes> for EpochCommittees {
         epoch: Epoch,
         block_header: Header,
     ) -> Option<Box<dyn FnOnce(&mut Self) + Send>> {
+        tracing::error!(
+            "add_epoch_root for epoch: {:?} and height: {}",
+            epoch,
+            block_header.height()
+        );
         let chain_config = get_chain_config(self.chain_config, &self.peers, &block_header)
             .await
             .ok()?;
