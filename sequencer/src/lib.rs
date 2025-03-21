@@ -291,7 +291,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
     let validator_config = ValidatorConfig {
         public_key: pub_key,
         private_key: network_params.private_staking_key,
-        stake_value: 1,
+        stake_value: ethers::types::U256::from(1),
         state_key_pair,
         is_da,
     };

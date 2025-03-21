@@ -365,7 +365,7 @@ impl EpochCommittees {
                     PeerConfig {
                         stake_table_entry: BLSPubKey::stake_table_entry(
                             &v.stake_table_key,
-                            v.stake.to_ethers().as_u64(),
+                            v.stake.to_ethers(),
                         ),
                         state_ver_key: v.state_ver_key.clone(),
                     },
@@ -546,19 +546,24 @@ impl EpochCommittees {
         l1_block: u64,
     ) -> Result<IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>, GetStakeTablesError>
     {
-        if let Some(stake_tables) = self
-            .persistence
-            .load_stake(epoch)
+        // if let Some(stake_tables) = self
+        //     .persistence
+        //     .load_stake(epoch)
+        //     .await
+        //     .map_err(GetStakeTablesError::PersistenceLoadError)?
+        // {
+        //     Ok(stake_tables)
+        // } else {
+        //     self.l1_client
+        //         .get_stake_table(contract_address, l1_block)
+        //         .await
+        //         .map_err(GetStakeTablesError::L1ClientFetchError)
+        // }
+
+        self.l1_client
+            .get_stake_table(contract_address, l1_block)
             .await
-            .map_err(GetStakeTablesError::PersistenceLoadError)?
-        {
-            Ok(stake_tables)
-        } else {
-            self.l1_client
-                .get_stake_table(contract_address, l1_block)
-                .await
-                .map_err(GetStakeTablesError::L1ClientFetchError)
-        }
+            .map_err(GetStakeTablesError::L1ClientFetchError)
     }
 }
 

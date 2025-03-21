@@ -14,6 +14,7 @@ use hotshot::types::BLSPubKey;
 use hotshot_types::{
     data::{EpochNumber, ViewNumber},
     traits::{election::Membership, node_implementation::ConsensusTime},
+    utils::epoch_from_block_number,
 };
 use jf_merkle_tree::{
     ForgetableMerkleTreeScheme, ForgetableUniversalMerkleTreeScheme, LookupResult,
@@ -397,7 +398,7 @@ pub fn compute_rewards(
 /// by HotShot, which happens starting from the third epoch.
 pub async fn first_two_epochs(height: u64, instance_state: &NodeState) -> anyhow::Result<bool> {
     let epoch_height = instance_state.epoch_height;
-    let epoch = EpochNumber::new(height % epoch_height);
+    let epoch = EpochNumber::new(epoch_from_block_number(height, epoch_height));
     let coordinator = instance_state.coordinator.clone();
     let first_epoch = coordinator.membership().read().await.first_epoch();
 
@@ -415,14 +416,14 @@ pub async fn catchup_missing_accounts(
     if epoch_height == 0 {
         bail!("epoch height is 0. can not catchup reward accounts");
     }
-    let epoch = EpochNumber::new(height % epoch_height);
+    let epoch = EpochNumber::new(epoch_from_block_number(height, epoch_height));
     let coordinator = instance_state.coordinator.clone();
 
     let epoch_membership = coordinator.membership_for_epoch(Some(epoch)).await?;
     let membership = epoch_membership.coordinator.membership().read().await;
 
     let leader: BLSPubKey = membership
-        .leader(ViewNumber::new(height), Some(epoch))
+        .leader(view, Some(epoch))
         .context(format!("leader for epoch {epoch:?} not found"))?;
 
     let validator = membership.get_validator_config(&epoch, leader).unwrap();
