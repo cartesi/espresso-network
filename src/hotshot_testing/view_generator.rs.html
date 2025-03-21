@@ -680,7 +680,9 @@
 <a href="#679" id="679">679</a>
 <a href="#680" id="680">680</a>
 <a href="#681" id="681">681</a>
-<a href="#682" id="682">682</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -722,7 +724,7 @@
         node_implementation::{ConsensusTime, NodeType, Versions},
         BlockPayload,
     },
-    utils::genesis_epoch_from_version,
+    utils::{genesis_epoch_from_version, EpochTransitionIndicator},
 };
 <span class="kw">use </span>rand::{thread_rng, Rng};
 <span class="kw">use </span>sha2::{Digest, Sha256};
@@ -882,6 +884,7 @@
             metadata,
             view_number: genesis_view,
             epoch: genesis_epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>da_proposal = Proposal {
@@ -1160,6 +1163,7 @@
             metadata,
             view_number: next_view,
             epoch: old_epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>da_proposal = Proposal {

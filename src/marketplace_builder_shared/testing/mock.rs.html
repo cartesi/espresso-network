@@ -194,7 +194,8 @@
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
 <a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a></pre></div><pre class="rust"><code><span class="doccomment">//! A collection of generator functions for mock data used in tests
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a></pre></div><pre class="rust"><code><span class="doccomment">//! A collection of generator functions for mock data used in tests
 </span><span class="kw">use </span>std::{marker::PhantomData, sync::Arc, time::Duration};
 
 <span class="kw">use </span>async_broadcast::broadcast;
@@ -218,7 +219,7 @@
         node_implementation::{ConsensusTime, NodeType, Versions},
         BlockPayload, EncodeBytes,
     },
-    utils::BuilderCommitment,
+    utils::{BuilderCommitment, EpochTransitionIndicator},
     vid::advz::advz_scheme,
 };
 <span class="kw">use </span>jf_vid::VidScheme;
@@ -344,6 +345,7 @@
             metadata,
             view_number,
             epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         },
         QuorumProposalWrapper {
             proposal: QuorumProposal2 {

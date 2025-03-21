@@ -188,7 +188,9 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines types used when simulating consensus in tests
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines types used when simulating consensus in tests
 
 </span><span class="kw">use </span>std::marker::PhantomData;
 
@@ -216,6 +218,7 @@
         node_implementation::{ConsensusTime, Versions},
         EncodeBytes,
     },
+    utils::EpochTransitionIndicator,
 };
 <span class="kw">use </span>sha2::{Digest, Sha256};
 <span class="kw">use </span>vbs::version::StaticVersionType;
@@ -282,6 +285,7 @@
             metadata,
             view_number: <span class="self">self</span>.round,
             epoch: <span class="self">self</span>.epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>block_header = TestBlockHeader {

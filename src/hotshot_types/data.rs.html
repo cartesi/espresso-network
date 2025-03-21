@@ -1909,7 +1909,14 @@
 <a href="#1908" id="1908">1908</a>
 <a href="#1909" id="1909">1909</a>
 <a href="#1910" id="1910">1910</a>
-<a href="#1911" id="1911">1911</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1911" id="1911">1911</a>
+<a href="#1912" id="1912">1912</a>
+<a href="#1913" id="1913">1913</a>
+<a href="#1914" id="1914">1914</a>
+<a href="#1915" id="1915">1915</a>
+<a href="#1916" id="1916">1916</a>
+<a href="#1917" id="1917">1917</a>
+<a href="#1918" id="1918">1918</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1960,7 +1967,10 @@
         states::TestableState,
         BlockPayload,
     },
-    utils::{bincode_opts, genesis_epoch_from_version, option_epoch_from_block_number},
+    utils::{
+        bincode_opts, genesis_epoch_from_version, option_epoch_from_block_number,
+        EpochTransitionIndicator,
+    },
     vid::{
         advz::{advz_scheme, ADVZCommitment, ADVZShare},
         avidm::{init_avidm_param, AvidMCommitment, AvidMScheme, AvidMShare},
@@ -2082,6 +2092,9 @@
     </span><span class="kw">pub </span>view_number: TYPES::View,
     <span class="doccomment">/// Epoch this proposal applies to
     </span><span class="kw">pub </span>epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
+    <span class="doccomment">/// Indicates whether we are in epoch transition
+    /// In epoch transition the next epoch payload commit should be calculated additionally
+    </span><span class="kw">pub </span>epoch_transition_indicator: EpochTransitionIndicator,
 }
 
 <span class="kw">impl</span>&lt;TYPES: NodeType&gt; From&lt;DaProposal&lt;TYPES&gt;&gt; <span class="kw">for </span>DaProposal2&lt;TYPES&gt; {
@@ -2091,6 +2104,7 @@
             metadata: da_proposal.metadata,
             view_number: da_proposal.view_number,
             epoch: <span class="prelude-val">None</span>,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         }
     }
 }

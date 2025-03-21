@@ -1128,7 +1128,18 @@
 <a href="#1127" id="1127">1127</a>
 <a href="#1128" id="1128">1128</a>
 <a href="#1129" id="1129">1129</a>
-<a href="#1130" id="1130">1130</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1166,8 +1177,9 @@
         BlockPayload, ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_last_block_in_epoch, option_epoch_from_block_number,
-        BuilderCommitment, LeafCommitment, StateAndDelta, Terminator,
+        epoch_from_block_number, is_ge_epoch_root, is_last_block_in_epoch,
+        option_epoch_from_block_number, BuilderCommitment, LeafCommitment, StateAndDelta,
+        Terminator,
     },
     vote::{Certificate, HasViewNumber},
 };
@@ -2238,6 +2250,16 @@
         <span class="kw">let </span>old_epoch = epoch_from_block_number(parent_leaf.height(), <span class="self">self</span>.epoch_height);
 
         new_epoch - <span class="number">1 </span>== old_epoch &amp;&amp; <span class="self">self</span>.is_leaf_extended(parent_leaf.commit())
+    }
+
+    <span class="doccomment">/// Returns true if our high QC is for the block equal or greater than the root epoch block
+    </span><span class="kw">pub fn </span>is_high_qc_ge_root_block(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(leaf) = <span class="self">self</span>.saved_leaves.get(<span class="kw-2">&amp;</span><span class="self">self</span>.high_qc().data.leaf_commit) <span class="kw">else </span>{
+            <span class="macro">tracing::trace!</span>(<span class="string">"We don't have a leaf corresponding to the high QC"</span>);
+            <span class="kw">return </span><span class="bool-val">false</span>;
+        };
+        <span class="kw">let </span>block_height = leaf.height();
+        is_ge_epoch_root(block_height, <span class="self">self</span>.epoch_height)
     }
 }
 

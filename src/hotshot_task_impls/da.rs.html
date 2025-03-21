@@ -463,7 +463,17 @@
 <a href="#462" id="462">462</a>
 <a href="#463" id="463">463</a>
 <a href="#464" id="464">464</a>
-<a href="#465" id="465">465</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#465" id="465">465</a>
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -668,7 +678,10 @@
                 })
                 .<span class="kw">await</span>;
                 <span class="kw">let </span>payload_commitment = payload_commitment.unwrap();
-                <span class="kw">let </span>next_epoch_payload_commitment = <span class="kw">if </span><span class="self">self
+                <span class="kw">let </span>next_epoch_payload_commitment = <span class="kw">if </span><span class="macro">matches!</span>(
+                    proposal.data.epoch_transition_indicator,
+                    EpochTransitionIndicator::InTransition
+                ) &amp;&amp; <span class="self">self
                     </span>.upgrade_lock
                     .epochs_enabled(proposal.data.view_number())
                     .<span class="kw">await
@@ -865,12 +878,19 @@
                     </span>);
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
+                <span class="kw">let </span>epoch_transition_indicator =
+                    <span class="kw">if </span><span class="self">self</span>.consensus.read().<span class="kw">await</span>.is_high_qc_ge_root_block() {
+                        EpochTransitionIndicator::InTransition
+                    } <span class="kw">else </span>{
+                        EpochTransitionIndicator::NotInTransition
+                    };
                 <span class="kw">let </span>data: DaProposal2&lt;TYPES&gt; = DaProposal2 {
                     encoded_transactions: Arc::clone(encoded_transactions),
                     metadata: metadata.clone(),
                     <span class="comment">// Upon entering a new view we want to send a DA Proposal for the next view -&gt; Is it always the case that this is cur_view + 1?
                     </span>view_number,
                     epoch,
+                    epoch_transition_indicator,
                 };
 
                 <span class="kw">let </span>message = Proposal {

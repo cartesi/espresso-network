@@ -4749,7 +4749,10 @@
 <a href="#4748" id="4748">4748</a>
 <a href="#4749" id="4749">4749</a>
 <a href="#4750" id="4750">4750</a>
-<a href="#4751" id="4751">4751</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#4751" id="4751">4751</a>
+<a href="#4752" id="4752">4752</a>
+<a href="#4753" id="4753">4753</a>
+<a href="#4754" id="4754">4754</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::HashMap,
     fmt::Display,
     num::NonZeroUsize,
@@ -6311,7 +6314,7 @@ Running Non-Permissioned Builder Service
             node_implementation::{ConsensusTime, Versions},
             signature_key::BuilderSignatureKey,
         },
-        utils::BuilderCommitment,
+        utils::{BuilderCommitment, EpochTransitionIndicator},
     };
     <span class="kw">use </span>marketplace_builder_shared::{
         block::{BlockId, BuilderStateId, ParentBlockReferences},
@@ -8672,6 +8675,7 @@ Running Non-Permissioned Builder Service
             }, <span class="comment">// arbitrary
             </span>view_number,
             epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>encoded_txns_hash = Sha256::digest(<span class="kw-2">&amp;</span>da_proposal.encoded_transactions);
@@ -8730,6 +8734,7 @@ Running Non-Permissioned Builder Service
             }, <span class="comment">// arbitrary
             </span>view_number,
             epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>encoded_txns_hash = Sha256::digest(<span class="kw-2">&amp;</span>da_proposal.encoded_transactions);
@@ -8779,6 +8784,7 @@ Running Non-Permissioned Builder Service
             }, <span class="comment">// arbitrary
             </span>view_number,
             epoch,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>encoded_txns_hash = Sha256::digest(<span class="kw-2">&amp;</span>da_proposal.encoded_transactions);

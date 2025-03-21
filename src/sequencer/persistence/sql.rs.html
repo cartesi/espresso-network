@@ -2765,7 +2765,10 @@
 <a href="#2764" id="2764">2764</a>
 <a href="#2765" id="2765">2765</a>
 <a href="#2766" id="2766">2766</a>
-<a href="#2767" id="2767">2767</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
+<a href="#2767" id="2767">2767</a>
+<a href="#2768" id="2768">2768</a>
+<a href="#2769" id="2769">2769</a>
+<a href="#2770" id="2770">2770</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -4900,6 +4903,7 @@
             block_contents::BlockHeader, node_implementation::Versions,
             signature_key::SignatureKey, EncodeBytes,
         },
+        utils::EpochTransitionIndicator,
         vid::{
             advz::advz_scheme,
             avidm::{init_avidm_param, AvidMScheme},
@@ -5058,6 +5062,7 @@
                 metadata: leaf_payload.ns_table().clone(),
                 view_number: ViewNumber::new(<span class="number">0</span>),
                 epoch: <span class="prelude-val">None</span>,
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             },
             signature: block_payload_signature,
             _pd: Default::default(),
@@ -5205,6 +5210,7 @@
                 metadata: leaf_payload.ns_table().clone(),
                 view_number: data_view,
                 epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">0</span>)),
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             },
             signature: block_payload_signature,
             _pd: Default::default(),

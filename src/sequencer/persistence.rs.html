@@ -1091,7 +1091,11 @@
 <a href="#1090" id="1090">1090</a>
 <a href="#1091" id="1091">1091</a>
 <a href="#1092" id="1092">1092</a>
-<a href="#1093" id="1093">1093</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer node persistence.
+<a href="#1093" id="1093">1093</a>
+<a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
+<a href="#1096" id="1096">1096</a>
+<a href="#1097" id="1097">1097</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer node persistence.
 //!
 //! This module implements the persistence required for a sequencer node to rejoin the network and
 //! resume participating in consensus, in the event that its process crashes or is killed and loses
@@ -1168,6 +1172,7 @@
             node_implementation::{ConsensusTime, Versions},
             EncodeBytes,
         },
+        utils::EpochTransitionIndicator,
         vid::avidm::{init_avidm_param, AvidMScheme},
         vote::HasViewNumber,
     };
@@ -1441,6 +1446,7 @@
             metadata: leaf_payload.ns_table().clone(),
             view_number: ViewNumber::new(<span class="number">0</span>),
             epoch: <span class="prelude-val">None</span>,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         };
 
         <span class="kw">let </span>da_proposal = Proposal {
@@ -1905,6 +1911,7 @@
                 metadata: leaf_payload.ns_table().clone(),
                 view_number: ViewNumber::new(<span class="number">0</span>),
                 epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">0</span>)),
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             },
             signature: block_payload_signature,
             _pd: Default::default(),
@@ -2116,6 +2123,7 @@
                 metadata: leaf_payload.ns_table().clone(),
                 view_number: ViewNumber::new(<span class="number">0</span>),
                 epoch: <span class="prelude-val">None</span>,
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             },
             signature: block_payload_signature,
             _pd: Default::default(),

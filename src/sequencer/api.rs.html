@@ -2879,7 +2879,9 @@
 <a href="#2878" id="2878">2878</a>
 <a href="#2879" id="2879">2879</a>
 <a href="#2880" id="2880">2880</a>
-<a href="#2881" id="2881">2881</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
+<a href="#2881" id="2881">2881</a>
+<a href="#2882" id="2882">2882</a>
+<a href="#2883" id="2883">2883</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_lock::RwLock;
@@ -4179,6 +4181,7 @@
         message::Proposal,
         simple_certificate::QuorumCertificate2,
         traits::{node_implementation::ConsensusTime, signature_key::SignatureKey, EncodeBytes},
+        utils::EpochTransitionIndicator,
         vid::avidm::{init_avidm_param, AvidMScheme},
     };
     <span class="kw">use </span>portpicker::pick_unused_port;
@@ -4430,6 +4433,7 @@
                 metadata: payload.ns_table().clone(),
                 view_number: leaf.view_number(),
                 epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">0</span>)),
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             };
             <span class="kw">let </span>da_proposal = Proposal {
                 data: da_proposal_inner,
