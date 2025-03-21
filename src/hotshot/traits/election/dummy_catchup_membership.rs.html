@@ -220,7 +220,7 @@
         <span class="kw">let </span>pass = <span class="self">self</span>.epochs.contains(<span class="kw-2">&amp;</span>epoch);
         <span class="comment">//&amp;&amp; self.drbs.contains(&amp;epoch);
         </span><span class="kw">if </span>!pass {
-            <span class="macro">tracing::error!</span>(<span class="string">"FAILEAD EPOCH CHECK {epoch}"</span>);
+            <span class="macro">tracing::error!</span>(<span class="string">"FAILED EPOCH CHECK {epoch}"</span>);
         }
         <span class="macro">assert!</span>(pass);
     }
