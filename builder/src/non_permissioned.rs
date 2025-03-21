@@ -7,7 +7,6 @@ use espresso_types::{
     eth_signature_key::EthKeyPair, v0_1::NoStorage, v0_99::ChainConfig, EpochCommittees, FeeAmount,
     NodeState, Payload, SeqTypes, ValidatedState,
 };
-use ethers_conv::ToAlloy;
 use hotshot::traits::BlockPayload;
 use hotshot_builder_core::{
     builder_state::{BuilderState, MessageType},
