@@ -1752,7 +1752,9 @@
 <a href="#1751" id="1751">1751</a>
 <a href="#1752" id="1752">1752</a>
 <a href="#1753" id="1753">1753</a>
-<a href="#1754" id="1754">1754</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
+<a href="#1754" id="1754">1754</a>
+<a href="#1755" id="1755">1755</a>
+<a href="#1756" id="1756">1756</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 
 <span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>ark_serialize::CanonicalSerialize;
@@ -1786,7 +1788,7 @@
 <span class="kw">use crate</span>::{
     v0::{
         header::{EitherOrVersion, VersionedHeader},
-        impls::reward::{apply_rewards, catchup_missing_accounts},
+        impls::reward::{apply_rewards, catchup_missing_accounts, first_two_epochs},
         MarketplaceVersion,
     },
     v0_1, v0_2, v0_3,
@@ -2278,8 +2280,7 @@
         // when we deploy the permissionless contract in native demo
         // so that marketplace version also supports this,
         // and the marketplace integration test passes
-        </span><span class="kw">if </span>version == EpochVersion::version() {
-            <span class="kw">let </span>validator = validator.ok_or_else(|| <span class="macro">anyhow::anyhow!</span>(<span class="string">"Missing validator"</span>))<span class="question-mark">?</span>;
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(validator) = validator {
             <span class="kw">let </span>reward_state = apply_rewards(state.reward_merkle_tree.clone(), validator)<span class="question-mark">?</span>;
             state.reward_merkle_tree = reward_state;
         }
@@ -2841,14 +2842,17 @@
         // when we deploy the permissionless contract in native demo
         // so that marketplace version also supports this,
         // and the marketplace integration test passes
-        </span><span class="kw">let </span>leader_config = <span class="kw">if </span>version == EpochVersion::version() {
-            <span class="prelude-val">Some</span>(
+        </span><span class="kw">let </span><span class="kw-2">mut </span>leader_config = <span class="prelude-val">None</span>;
+        <span class="comment">// Rewards are distributed only if the current epoch is not the first or second epoch
+        // this is because we don't have stake table from the contract for the first two epochs
+        </span><span class="kw">if </span>version == EpochVersion::version()
+            &amp;&amp; !first_two_epochs(parent_leaf.height(), instance_state).<span class="kw">await</span><span class="question-mark">?
+        </span>{
+            leader_config = <span class="prelude-val">Some</span>(
                 catchup_missing_accounts(instance_state, <span class="kw-2">&amp;mut </span>validated_state, parent_leaf, view)
                     .<span class="kw">await</span><span class="question-mark">?</span>,
-            )
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>};
+            );
+        };
 
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_info(
             payload_commitment,

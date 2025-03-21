@@ -495,7 +495,23 @@
 <a href="#494" id="494">494</a>
 <a href="#495" id="495">495</a>
 <a href="#496" id="496">496</a>
-<a href="#497" id="497">497</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, str::FromStr};
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, str::FromStr};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>ark_serialize::{
@@ -887,6 +903,21 @@
 
     <span class="prelude-val">Ok</span>(rewards)
 }
+<span class="doccomment">/// Checks whether the given height belongs to the first or second epoch.
+///
+/// Rewards are not distributed for these epochs because the stake table
+/// is built from the contract only when `add_epoch_root()` is called
+/// by HotShot, which happens starting from the third epoch.
+</span><span class="kw">pub async fn </span>first_two_epochs(height: u64, instance_state: <span class="kw-2">&amp;</span>NodeState) -&gt; anyhow::Result&lt;bool&gt; {
+    <span class="kw">let </span>epoch_height = instance_state
+        .epoch_height
+        .context(<span class="string">"epoch height not found"</span>)<span class="question-mark">?</span>;
+    <span class="kw">let </span>epoch = EpochNumber::new(height % epoch_height);
+    <span class="kw">let </span>coordinator = instance_state.coordinator.clone();
+    <span class="kw">let </span>first_epoch = coordinator.membership().read().<span class="kw">await</span>.first_epoch();
+
+    <span class="prelude-val">Ok</span>(epoch == first_epoch || epoch == first_epoch + <span class="number">1</span>)
+}
 
 <span class="kw">pub async fn </span>catchup_missing_accounts(
     instance_state: <span class="kw-2">&amp;</span>NodeState,
@@ -895,6 +926,7 @@
     view: ViewNumber,
 ) -&gt; anyhow::Result&lt;Validator&lt;BLSPubKey&gt;&gt; {
     <span class="kw">let </span>height = parent_leaf.height();
+
     <span class="kw">let </span>epoch_height = instance_state.epoch_height.unwrap();
     <span class="kw">let </span>epoch = EpochNumber::new(height % epoch_height);
     <span class="kw">let </span>coordinator = instance_state.coordinator.clone();

@@ -1020,7 +1020,15 @@
 <a href="#1019" id="1019">1019</a>
 <a href="#1020" id="1020">1020</a>
 <a href="#1021" id="1021">1021</a>
-<a href="#1022" id="1022">1022</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     num::NonZeroU64,
@@ -1324,6 +1332,7 @@
     <span class="doccomment">/// Methods for stake table persistence.
     </span><span class="attr">#[debug(skip)]
     </span>persistence: Arc&lt;<span class="kw">dyn </span>MembershipPersistence&gt;,
+    first_epoch: Epoch,
 }
 
 <span class="doccomment">/// Holds Stake table and da stake
@@ -1361,6 +1370,10 @@
 }
 
 <span class="kw">impl </span>EpochCommittees {
+    <span class="kw">pub fn </span>first_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Epoch {
+        <span class="self">self</span>.first_epoch
+    }
+
     <span class="doccomment">/// Updates `Self.stake_table` with stake_table for
     /// `Self.contract_address` at `l1_block_height`. This is intended
     /// to be called before calling `self.stake()` so that
@@ -1526,6 +1539,7 @@
             randomized_committees: BTreeMap::new(),
             peers,
             persistence: Arc::new(persistence),
+            first_epoch: Epoch::genesis(),
         }
     }
     <span class="kw">fn </span>get_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;PeerConfig&lt;PubKey&gt;&gt;&gt; {
@@ -1817,6 +1831,8 @@
     }
 
     <span class="kw">fn </span>set_first_epoch(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: Epoch, initial_drb_result: DrbResult) {
+        <span class="self">self</span>.first_epoch = epoch;
+
         <span class="kw">let </span>epoch_committee = <span class="self">self</span>.state.get(<span class="kw-2">&amp;</span>Epoch::genesis()).unwrap().clone();
         <span class="self">self</span>.state.insert(epoch, epoch_committee.clone());
         <span class="self">self</span>.state.insert(epoch + <span class="number">1</span>, epoch_committee);
