@@ -396,9 +396,7 @@ pub fn compute_rewards(
 /// is built from the contract only when `add_epoch_root()` is called
 /// by HotShot, which happens starting from the third epoch.
 pub async fn first_two_epochs(height: u64, instance_state: &NodeState) -> anyhow::Result<bool> {
-    let epoch_height = instance_state
-        .epoch_height
-        .context("epoch height not found")?;
+    let epoch_height = instance_state.epoch_height;
     let epoch = EpochNumber::new(height % epoch_height);
     let coordinator = instance_state.coordinator.clone();
     let first_epoch = coordinator.membership().read().await.first_epoch();
