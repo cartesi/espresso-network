@@ -38,7 +38,7 @@ demo-native-mp *args: (build "test" "--features fee,marketplace")
 demo-native-pos *args: (build "test" "--features fee,pos")
     ESPRESSO_SEQUENCER_GENESIS_FILE=data/genesis/demo-pos.toml scripts/demo-native -f process-compose.yaml {{args}}
 
-demo-native-pos-base *args: build
+demo-native-pos-base *args: (build "test" "--features pos")
     ESPRESSO_SEQUENCER_GENESIS_FILE=data/genesis/demo-pos-base.toml scripts/demo-native -f process-compose.yaml {{args}}
 
 demo-native-benchmark:
