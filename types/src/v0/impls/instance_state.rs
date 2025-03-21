@@ -1,5 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
-
+#[cfg(any(test, feature = "testing"))]
 use async_lock::RwLock;
 use async_trait::async_trait;
 use hotshot::types::BLSPubKey;
@@ -8,6 +7,7 @@ use hotshot_types::{
     HotShotConfig,
 };
 use indexmap::IndexMap;
+use std::{collections::BTreeMap, sync::Arc};
 #[cfg(any(test, feature = "testing"))]
 use vbs::version::StaticVersionType;
 use vbs::version::Version;
@@ -110,8 +110,8 @@ impl NodeState {
 
     #[cfg(any(test, feature = "testing"))]
     pub fn mock() -> Self {
+        use async_lock::RwLock;
         use vbs::version::StaticVersion;
-
         let chain_config = ChainConfig::default();
         let l1 = L1Client::new(vec!["http://localhost:3331".parse().unwrap()])
             .expect("Failed to create L1 client");
