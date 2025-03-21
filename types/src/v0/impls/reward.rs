@@ -398,7 +398,10 @@ pub async fn catchup_missing_accounts(
     view: ViewNumber,
 ) -> anyhow::Result<Validator<BLSPubKey>> {
     let height = parent_leaf.height();
-    let epoch_height = instance_state.epoch_height.unwrap();
+    let epoch_height = instance_state.epoch_height;
+    if epoch_height == 0 {
+        bail!("epoch height is 0. can not catchup reward accounts");
+    }
     let epoch = EpochNumber::new(height % epoch_height);
     let coordinator = instance_state.coordinator.clone();
 

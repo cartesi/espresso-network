@@ -363,6 +363,10 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         upgrade.set_hotshot_config_parameters(&mut network_config.config);
     }
 
+    let epoch_height = genesis.epoch_height.unwrap_or_default();
+    tracing::info!("setting epoch height={epoch_height:?}");
+    network_config.config.epoch_height = epoch_height;
+
     // If the `Libp2p` bootstrap nodes were supplied via the command line, override those
     // present in the config file.
     if let Some(bootstrap_nodes) = network_params.libp2p_bootstrap_nodes {
@@ -477,10 +481,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         network_config.config.known_nodes_with_stake.clone(),
         network_config.config.known_da_nodes.clone(),
         l1_client.clone(),
-        genesis
-            .chain_config
-            .stake_table_contract
-            .map(|a| a.to_alloy()),
+        genesis.chain_config,
         peers.clone(),
         persistence.clone(),
     );
@@ -498,7 +499,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         node_id: node_index,
         upgrades: genesis.upgrades,
         current_version: V::Base::VERSION,
-        epoch_height: None,
+        epoch_height: network_config.config.epoch_height,
         peers,
         coordinator: coordinator.clone(),
     };
@@ -992,7 +993,7 @@ pub mod testing {
                 config.known_nodes_with_stake.clone(),
                 config.known_da_nodes.clone(),
                 l1_client.clone(),
-                chain_config.stake_table_contract.map(|a| a.to_alloy()),
+                chain_config,
                 peers.clone(),
                 persistence.clone(),
             );
