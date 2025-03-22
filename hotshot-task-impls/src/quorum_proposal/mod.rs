@@ -529,6 +529,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                         );
                     }
 
+                    self.formed_quorum_certificates
+                        .insert(qc.view_number(), qc.clone());
+
                     self.check_eqc_and_store(qc.view_number(), Either::Left(qc.clone()))
                         .await?;
 
@@ -661,6 +664,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     next_epoch_qc.view_number > current_next_epoch_qc.unwrap().view_number,
                     debug!("Received a next epoch QC for a view that was not > than our current next epoch high QC")
                 );
+
+                self.formed_extended_quorum_certificates
+                    .insert(next_epoch_qc.view_number(), next_epoch_qc.clone());
 
                 self.check_eqc_and_store(
                     next_epoch_qc.view_number(),
