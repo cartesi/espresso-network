@@ -134,7 +134,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
                             .consensus
                             .read()
                             .await
-                            .is_leaf_forming_eqc(proposal.data.justify_qc().data.leaf_commit)
+                            .is_qc_forming_eqc(proposal.data.justify_qc())
                     {
                         tracing::debug!("Do not vote here. Voting for this case is handled in QuorumVoteTaskState");
                         return;
@@ -537,7 +537,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
                     .consensus
                     .read()
                     .await
-                    .is_leaf_forming_eqc(proposal.data.justify_qc().data.leaf_commit);
+                    .is_qc_forming_eqc(proposal.data.justify_qc());
 
                 if version >= V::Epochs::VERSION && is_justify_qc_forming_eqc {
                     self.handle_eqc_voting(proposal, parent_leaf, event_sender, event_receiver)
@@ -769,11 +769,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
             self.epoch_height,
         ));
 
-        let is_vote_leaf_extended = self
-            .consensus
-            .read()
-            .await
-            .is_leaf_extended(proposed_leaf.commit());
+        let is_vote_leaf_extended = self.consensus.read().await.is_leaf_extended(&proposed_leaf);
         if !is_vote_leaf_extended {
             // We're voting for the proposal that will probably form the eQC. We don't want to change
             // the view here because we will probably change it when we form the eQC.

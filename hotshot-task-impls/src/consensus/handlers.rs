@@ -168,7 +168,7 @@ pub async fn send_high_qc<TYPES: NodeType, V: Versions, I: NodeImplementation<TY
 
     let consensus_reader = task_state.consensus.read().await;
     let high_qc = consensus_reader.high_qc().clone();
-    let is_eqc = consensus_reader.is_leaf_extended(high_qc.data.leaf_commit);
+    let is_eqc = task_state.consensus.read().await.is_qc_extended(&high_qc);
     drop(consensus_reader);
 
     if is_eqc {

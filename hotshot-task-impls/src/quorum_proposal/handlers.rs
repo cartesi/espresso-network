@@ -16,14 +16,15 @@ use std::{
 use anyhow::{ensure, Context, Result};
 use async_broadcast::{Receiver, Sender};
 use async_lock::RwLock;
-use committable::{Commitment, Committable};
+use committable::Committable;
+use either::Either;
 use hotshot_task::dependency_task::HandleDepOutput;
 use hotshot_types::{
     consensus::{CommitmentAndMetadata, OuterConsensus},
     data::{Leaf2, QuorumProposal2, QuorumProposalWrapper, VidDisperse, ViewChangeEvidence2},
     epoch_membership::EpochMembership,
     message::Proposal,
-    simple_certificate::{QuorumCertificate2, UpgradeCertificate},
+    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
     traits::{
         block_contents::BlockHeader,
         node_implementation::{NodeImplementation, NodeType},
@@ -310,11 +311,10 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             );
             return Ok(());
         }
-        let is_high_qc_for_last_block = self
-            .consensus
-            .read()
-            .await
-            .is_leaf_for_last_block(parent_qc.data.leaf_commit);
+        let is_high_qc_for_last_block = parent_qc
+            .data
+            .block_number
+            .is_some_and(|b| is_last_block_in_epoch(b, self.epoch_height));
         let next_epoch_qc = if self.upgrade_lock.epochs_enabled(self.view_number).await
             && is_high_qc_for_last_block
         {
@@ -499,26 +499,30 @@ pub(super) async fn handle_eqc_formed<
     I: NodeImplementation<TYPES>,
     V: Versions,
 >(
-    cert_view: TYPES::View,
-    leaf_commit: Commitment<Leaf2<TYPES>>,
+    qc: Either<&QuorumCertificate2<TYPES>, &NextEpochQuorumCertificate2<TYPES>>,
     task_state: &QuorumProposalTaskState<TYPES, I, V>,
     event_sender: &Sender<Arc<HotShotEvent<TYPES>>>,
 ) {
+    let (cert_view, leaf_commit) = match qc {
+        Either::Left(qc) => (qc.view_number(), qc.data.leaf_commit),
+        Either::Right(next_epoch_qc) => {
+            (next_epoch_qc.view_number(), next_epoch_qc.data.leaf_commit)
+        },
+    };
     if !task_state.upgrade_lock.epochs_enabled(cert_view).await {
         tracing::debug!("QC2 formed but epochs not enabled. Do nothing");
         return;
     }
-    if !task_state
-        .consensus
-        .read()
-        .await
-        .is_leaf_extended(leaf_commit)
-    {
+
+    let consensus_reader = task_state.consensus.read().await;
+    let Some(leaf) = consensus_reader.saved_leaves().get(&leaf_commit) else {
+        tracing::warn!("We formed QC but we don't have corresponding leaf. Do nothing");
+        return;
+    };
+    if !consensus_reader.is_leaf_extended(leaf) {
         tracing::debug!("We formed QC but not eQC. Do nothing");
         return;
     }
-
-    let consensus_reader = task_state.consensus.read().await;
     let current_epoch_qc = consensus_reader.high_qc();
     let Some(next_epoch_qc) = consensus_reader.next_epoch_high_qc() else {
         tracing::debug!("We formed the eQC but we don't have the next epoch eQC at all.");

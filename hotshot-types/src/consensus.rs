@@ -37,8 +37,7 @@ use crate::{
     },
     utils::{
         epoch_from_block_number, is_ge_epoch_root, is_last_block_in_epoch,
-        option_epoch_from_block_number, BuilderCommitment, LeafCommitment, StateAndDelta,
-        Terminator,
+        option_epoch_from_block_number, BuilderCommitment, StateAndDelta, Terminator,
     },
     vote::{Certificate, HasViewNumber},
 };
@@ -1007,12 +1006,14 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     /// Return true if the QC takes part in forming an eQC, i.e.
     /// it is one of the 3-chain certificates but not the eQC itself
     pub fn is_qc_forming_eqc(&self, qc: &QuorumCertificate2<TYPES>) -> bool {
-        let high_qc_leaf_commit = qc.data.leaf_commit;
-        let is_high_qc_extended = self.is_leaf_extended(high_qc_leaf_commit);
-        if is_high_qc_extended {
+        let is_qc_extended = self.is_qc_extended(qc);
+        if is_qc_extended {
             tracing::debug!("We have formed an eQC!");
         }
-        self.is_leaf_for_last_block(high_qc_leaf_commit) && !is_high_qc_extended
+        qc.data
+            .block_number
+            .is_some_and(|b| is_last_block_in_epoch(b, self.epoch_height))
+            && !is_qc_extended
     }
 
     /// Returns true if our high qc is forming an eQC
@@ -1022,25 +1023,49 @@ impl<TYPES: NodeType> Consensus<TYPES> {
 
     /// Return true if the given leaf takes part in forming an eQC, i.e.
     /// it is one of the 3-chain leaves but not the eQC leaf itself
-    pub fn is_leaf_forming_eqc(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        self.is_leaf_for_last_block(leaf_commit) && !self.is_leaf_extended(leaf_commit)
+    pub fn is_leaf_forming_eqc(&self, leaf: &Leaf2<TYPES>) -> bool {
+        is_last_block_in_epoch(leaf.height(), self.epoch_height) && !self.is_leaf_extended(leaf)
+    }
+
+    /// Returns true if the given QC forms an extended Quorum Certificate
+    /// The Extended Quorum Certificate (eQC) is the third Quorum Certificate formed in three
+    /// consecutive views for the last block in the epoch.
+    pub fn is_high_qc_extended(&self) -> bool {
+        let high_qc = self.high_qc();
+        self.is_qc_extended(high_qc)
+    }
+
+    /// Returns true if the given QC forms an extended Quorum Certificate
+    /// The Extended Quorum Certificate (eQC) is the third Quorum Certificate formed in three
+    /// consecutive views for the last block in the epoch.
+    pub fn is_qc_extended(&self, qc: &QuorumCertificate2<TYPES>) -> bool {
+        if !qc
+            .data
+            .block_number
+            .is_some_and(|b| is_last_block_in_epoch(b, self.epoch_height))
+        {
+            tracing::trace!("The given QC is not for the last block in the epoch.");
+            return false;
+        }
+
+        let Some(leaf) = self.saved_leaves.get(&qc.data.leaf_commit) else {
+            tracing::trace!("We don't have a leaf corresponding to the leaf commit");
+            return false;
+        };
+
+        self.is_leaf_extended(leaf)
     }
 
     /// Returns true if the given leaf can form an extended Quorum Certificate
     /// The Extended Quorum Certificate (eQC) is the third Quorum Certificate formed in three
     /// consecutive views for the last block in the epoch.
-    pub fn is_leaf_extended(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        if !self.is_leaf_for_last_block(leaf_commit) {
+    pub fn is_leaf_extended(&self, leaf: &Leaf2<TYPES>) -> bool {
+        let leaf_block_number = leaf.height();
+        let leaf_view = leaf.view_number();
+        if !is_last_block_in_epoch(leaf_block_number, self.epoch_height) {
             tracing::trace!("The given leaf is not for the last block in the epoch.");
             return false;
         }
-
-        let Some(leaf) = self.saved_leaves.get(&leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the leaf commit");
-            return false;
-        };
-        let leaf_view = leaf.view_number();
-        let leaf_block_number = leaf.height();
 
         let mut last_visited_view_number = leaf_view;
         let mut is_leaf_extended = true;
@@ -1081,23 +1106,22 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     }
 
     /// Returns true if a given leaf is for the last block in the epoch
-    pub fn is_leaf_for_last_block(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the leaf commit");
-            return false;
-        };
+    pub fn is_leaf_for_last_block(&self, leaf: Leaf2<TYPES>) -> bool {
         let block_height = leaf.height();
         is_last_block_in_epoch(block_height, self.epoch_height)
     }
 
+    /// Returns true if a given QC is for the last block in the epoch
+    pub fn is_qc_for_last_block(&self, qc: &QuorumCertificate2<TYPES>) -> bool {
+        qc.data
+            .block_number
+            .is_some_and(|b| is_last_block_in_epoch(b, self.epoch_height))
+    }
+
     /// Returns true if our high QC is for the last block in the epoch
     pub fn is_high_qc_for_last_block(&self) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&self.high_qc().data.leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the high QC");
-            return false;
-        };
-        let block_height = leaf.height();
-        is_last_block_in_epoch(block_height, self.epoch_height)
+        let high_qc = self.high_qc();
+        self.is_qc_for_last_block(high_qc)
     }
 
     /// Returns true if the `parent_leaf` formed an eQC for the previous epoch to the `proposed_leaf`
@@ -1108,17 +1132,16 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         let new_epoch = epoch_from_block_number(proposed_leaf.height(), self.epoch_height);
         let old_epoch = epoch_from_block_number(parent_leaf.height(), self.epoch_height);
 
-        new_epoch - 1 == old_epoch && self.is_leaf_extended(parent_leaf.commit())
+        new_epoch - 1 == old_epoch && self.is_leaf_extended(parent_leaf)
     }
 
     /// Returns true if our high QC is for the block equal or greater than the root epoch block
     pub fn is_high_qc_ge_root_block(&self) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&self.high_qc().data.leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the high QC");
-            return false;
-        };
-        let block_height = leaf.height();
-        is_ge_epoch_root(block_height, self.epoch_height)
+        let high_qc = self.high_qc();
+        high_qc
+            .data
+            .block_number
+            .is_some_and(|b| is_ge_epoch_root(b, self.epoch_height))
     }
 }
 
