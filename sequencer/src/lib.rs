@@ -796,7 +796,7 @@ pub mod testing {
                 .iter()
                 .zip(&state_key_pairs)
                 .map(|(pub_key, state_key_pair)| PeerConfig::<PubKey> {
-                    stake_table_entry: pub_key.stake_table_entry(1),
+                    stake_table_entry: pub_key.stake_table_entry(1.into()),
                     state_ver_key: state_key_pair.ver_key(),
                 })
                 .collect::<Vec<_>>();
@@ -959,7 +959,7 @@ pub mod testing {
             let validator_config = ValidatorConfig {
                 public_key: my_peer_config.stake_table_entry.stake_key,
                 private_key: self.priv_keys[i].clone(),
-                stake_value: my_peer_config.stake_table_entry.stake_amount.as_u64(),
+                stake_value: my_peer_config.stake_table_entry.stake_amount,
                 state_key_pair: self.state_key_pairs[i].clone(),
                 is_da,
             };

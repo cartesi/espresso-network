@@ -399,11 +399,10 @@ pub fn compute_rewards(
 pub async fn first_two_epochs(height: u64, instance_state: &NodeState) -> bool {
     let epoch_height = instance_state.epoch_height;
     let epoch = EpochNumber::new(epoch_from_block_number(height, epoch_height));
-    let coordinator = instance_state.coordinator.clone();
+    // let coordinator = instance_state.coordinator.clone();
     let first_epoch = EpochNumber::new(1);
 
-    epoch == first_epoch || epoch == first_epoch + 1;
-    return true;
+    epoch == first_epoch || epoch == first_epoch + 1
 }
 
 pub async fn catchup_missing_accounts(

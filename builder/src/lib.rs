@@ -174,7 +174,7 @@ pub mod testing {
             .iter()
             .zip(&state_key_pairs)
             .map(|(pub_key, state_key_pair)| PeerConfig::<PubKey> {
-                stake_table_entry: pub_key.stake_table_entry(stake_value),
+                stake_table_entry: pub_key.stake_table_entry(stake_value.into()),
                 state_ver_key: state_key_pair.ver_key(),
             })
             .collect::<Vec<_>>();
@@ -214,8 +214,7 @@ pub mod testing {
                     private_key: self.priv_keys_staking_nodes[i].clone(),
                     stake_value: self.config.known_nodes_with_stake[i]
                         .stake_table_entry
-                        .stake_amount
-                        .as_u64(),
+                        .stake_amount,
                     state_key_pair: self.staking_nodes_state_key_pairs[i].clone(),
                     is_da: true,
                 }
@@ -225,7 +224,7 @@ pub mod testing {
                         .stake_table_entry
                         .stake_key,
                     private_key: self.priv_keys_non_staking_nodes[i].clone(),
-                    stake_value: 0,
+                    stake_value: 0.into(),
                     state_key_pair: self.non_staking_nodes_state_key_pairs[i].clone(),
                     is_da: true,
                 }

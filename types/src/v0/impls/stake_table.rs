@@ -570,8 +570,8 @@ impl EpochCommittees {
 #[derive(Error, Debug)]
 /// Error representing fail cases for retrieving the stake table.
 enum GetStakeTablesError {
-    #[error("Error loading from persistence: {0}")]
-    PersistenceLoadError(anyhow::Error),
+    // #[error("Error loading from persistence: {0}")]
+    // PersistenceLoadError(anyhow::Error),
     #[error("Error fetching from L1: {0}")]
     L1ClientFetchError(anyhow::Error),
 }

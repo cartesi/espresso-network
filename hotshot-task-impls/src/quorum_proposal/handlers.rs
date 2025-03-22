@@ -174,10 +174,9 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 )
                 .await
                 .is_ok()
+                    && qc.view_number() > highest_qc.view_number()
                 {
-                    if qc.view_number() > highest_qc.view_number() {
-                        highest_qc = qc.clone();
-                    }
+                    highest_qc = qc.clone();
                 }
             }
         }
