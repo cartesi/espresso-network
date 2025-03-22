@@ -816,6 +816,7 @@ impl Membership<SeqTypes> for EpochCommittees {
     }
 
     fn add_drb_result(&mut self, epoch: Epoch, drb: DrbResult) {
+        tracing::error!("add_drb_result({}, {:?})", epoch, drb);
         let Some(raw_stake_table) = self.state.get(&epoch) else {
             tracing::error!("add_drb_result({}, {:?}) was called, but we do not yet have the stake table for epoch {}", epoch, drb, epoch);
             return;
