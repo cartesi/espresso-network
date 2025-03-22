@@ -48,24 +48,22 @@ use crate::{
 };
 
 async fn handle_drb_result<TYPES: NodeType, I: NodeImplementation<TYPES>>(
-    membership: &EpochMembership<TYPES>,
+    membership: &Arc<RwLock<TYPES::Membership>>,
+    epoch: TYPES::Epoch,
     storage: &Arc<RwLock<I::Storage>>,
     drb_result: DrbResult,
 ) {
-    tracing::debug!("Calling add_drb_result for epoch {:?}", membership.epoch());
-    // membership.epoch should always be Some
-    if let Some(epoch) = membership.epoch() {
-        if let Err(e) = storage
-            .write()
-            .await
-            .add_drb_result(epoch, drb_result)
-            .await
-        {
-            tracing::error!("Failed to store drb result for epoch {:?}: {}", epoch, e);
-        }
+    tracing::debug!("Calling add_drb_result for epoch {:?}", epoch);
+    if let Err(e) = storage
+        .write()
+        .await
+        .add_drb_result(epoch, drb_result)
+        .await
+    {
+        tracing::error!("Failed to store drb result for epoch {:?}: {}", epoch, e);
     }
 
-    membership.add_drb_result(drb_result).await;
+    membership.write().await.add_drb_result(epoch, drb_result)
 }
 
 /// Store the DRB result from the computation task to the shared `results` table.
@@ -114,10 +112,8 @@ async fn store_and_get_computed_drb_result<
             drop(consensus_writer);
 
             handle_drb_result::<TYPES, I>(
-                &task_state
-                    .membership
-                    .membership_for_epoch(Some(epoch_number))
-                    .await?,
+                task_state.membership.membership(),
+                epoch_number,
                 &task_state.storage,
                 result,
             )
@@ -204,56 +200,43 @@ async fn start_drb_task<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versio
         proposal.block_header().block_number(),
         task_state.epoch_height,
     ));
+    let new_epoch_number = current_epoch_number + 1;
 
-    let Ok(epoch_membership) = task_state
-        .membership
-        .membership_for_epoch(Some(current_epoch_number))
-        .await
-    else {
-        tracing::warn!("No Stake Table for Epoch = {:?}", current_epoch_number);
-        return;
-    };
-
-    // Start the new task if we're in the committee for this epoch
-    if epoch_membership.has_stake(&task_state.public_key).await {
-        let new_epoch_number = current_epoch_number + 1;
-
-        // If a task is currently live AND has finished, join it and save the result.
-        // If the epoch for the calculation was the same as the provided epoch, return.
-        // If a task is currently live and NOT finished, abort it UNLESS the task epoch is the
-        // same as cur_epoch, in which case keep letting it run and return.
-        // Continue the function if a task should be spawned for the given epoch.
-        if let Some((task_epoch, join_handle)) = &mut task_state.drb_computation {
-            if join_handle.is_finished() {
-                match join_handle.await {
-                    Ok(result) => {
-                        task_state
-                            .consensus
-                            .write()
-                            .await
-                            .drb_seeds_and_results
-                            .results
-                            .insert(*task_epoch, result);
-                        handle_drb_result::<TYPES, I>(
-                            &epoch_membership,
-                            &task_state.storage,
-                            result,
-                        )
-                        .await;
-                        task_state.drb_computation = None;
-                    },
-                    Err(e) => {
-                        tracing::error!("error joining DRB computation task: {e:?}");
-                    },
-                }
-            } else if *task_epoch == new_epoch_number {
-                return;
-            } else {
-                join_handle.abort();
-                task_state.drb_computation = None;
+    // If a task is currently live AND has finished, join it and save the result.
+    // If the epoch for the calculation was the same as the provided epoch, return.
+    // If a task is currently live and NOT finished, abort it UNLESS the task epoch is the
+    // same as cur_epoch, in which case keep letting it run and return.
+    // Continue the function if a task should be spawned for the given epoch.
+    if let Some((task_epoch, join_handle)) = &mut task_state.drb_computation {
+        if join_handle.is_finished() {
+            match join_handle.await {
+                Ok(result) => {
+                    task_state
+                        .consensus
+                        .write()
+                        .await
+                        .drb_seeds_and_results
+                        .results
+                        .insert(*task_epoch, result);
+                    handle_drb_result::<TYPES, I>(
+                        task_state.membership.membership(),
+                        *task_epoch,
+                        &task_state.storage,
+                        result,
+                    )
+                    .await;
+                    task_state.drb_computation = None;
+                },
+                Err(e) => {
+                    tracing::error!("error joining DRB computation task: {e:?}");
+                },
             }
+        } else if *task_epoch == new_epoch_number {
+            return;
+        } else {
+            join_handle.abort();
+            task_state.drb_computation = None;
         }
-
         // In case we somehow ended up processing this epoch already, don't start it again
         let mut consensus_writer = task_state.consensus.write().await;
         if consensus_writer
@@ -354,10 +337,8 @@ async fn store_drb_seed_and_result<TYPES: NodeType, I: NodeImplementation<TYPES>
                 .results
                 .insert(current_epoch_number + 1, result);
             handle_drb_result::<TYPES, I>(
-                &task_state
-                    .membership
-                    .membership_for_epoch(Some(current_epoch_number + 1))
-                    .await?,
+                task_state.membership.membership(),
+                current_epoch_number + 1,
                 &task_state.storage,
                 result,
             )
