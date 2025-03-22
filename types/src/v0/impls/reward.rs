@@ -402,7 +402,8 @@ pub async fn first_two_epochs(height: u64, instance_state: &NodeState) -> bool {
     // let coordinator = instance_state.coordinator.clone();
     let first_epoch = EpochNumber::new(1);
 
-    epoch == first_epoch || epoch == first_epoch + 1
+    epoch == first_epoch || epoch == first_epoch + 1;
+    return true;
 }
 
 pub async fn catchup_missing_accounts(
