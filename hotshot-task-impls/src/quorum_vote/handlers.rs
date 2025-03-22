@@ -701,6 +701,7 @@ pub(crate) async fn submit_vote<TYPES: NodeType, I: NodeImplementation<TYPES>, V
         QuorumData2 {
             leaf_commit: leaf.commit(),
             epoch: membership.epoch(),
+            block_number: Some(leaf.height()),
         },
         view_number,
         &public_key,

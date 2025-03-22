@@ -943,6 +943,7 @@ pub async fn validate_qc_and_next_epoch_qc<TYPES: NodeType, V: Versions>(
     consensus: &OuterConsensus<TYPES>,
     membership_coordinator: &EpochMembershipCoordinator<TYPES>,
     upgrade_lock: &UpgradeLock<TYPES, V>,
+    epoch_height: u64,
 ) -> Result<()> {
     let mut epoch_membership = membership_coordinator
         .membership_for_epoch(qc.data.epoch)
@@ -964,6 +965,18 @@ pub async fn validate_qc_and_next_epoch_qc<TYPES: NodeType, V: Versions>(
 
             warn!("Invalid certificate: {}", e)
         })?;
+    }
+
+    if qc
+        .data
+        .block_number
+        .is_some_and(|b| is_last_block_in_epoch(b, epoch_height))
+        && upgrade_lock.epochs_enabled(qc.view_number()).await
+    {
+        ensure!(
+            maybe_next_epoch_qc.is_some(),
+            error!("Received High QC for the last block but not the next epoch QC")
+        );
     }
 
     if let Some(next_epoch_qc) = maybe_next_epoch_qc {

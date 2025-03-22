@@ -19,7 +19,7 @@ use hotshot_types::{
     consensus::OuterConsensus,
     epoch_membership::EpochMembershipCoordinator,
     message::UpgradeLock,
-    simple_certificate::{QuorumCertificate2, UpgradeCertificate},
+    simple_certificate::UpgradeCertificate,
     traits::{
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
@@ -86,9 +86,6 @@ pub struct QuorumProposalTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>
 
     /// Number of blocks in an epoch, zero means there are no epochs
     pub epoch_height: u64,
-
-    /// The highest_qc we've seen at the start of this task
-    pub highest_qc: QuorumCertificate2<TYPES>,
 }
 
 impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
@@ -347,7 +344,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 upgrade_lock: self.upgrade_lock.clone(),
                 id: self.id,
                 view_start_time: Instant::now(),
-                highest_qc: self.highest_qc.clone(),
                 epoch_height: self.epoch_height,
             },
         );
@@ -568,27 +564,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             HotShotEvent::Timeout(view, ..) => {
                 let keep_view = TYPES::View::new(view.saturating_sub(1));
                 self.cancel_tasks(keep_view);
-            },
-            HotShotEvent::HighQcSend(qc, ..) | HotShotEvent::ExtendedQcSend(qc, ..) => {
-                ensure!(qc.view_number() > self.highest_qc.view_number());
-                let cert_epoch_number = qc.data.epoch;
-
-                let epoch_membership = self
-                    .membership_coordinator
-                    .membership_for_epoch(cert_epoch_number)
-                    .await?;
-                let membership_stake_table = epoch_membership.stake_table().await;
-                let membership_success_threshold = epoch_membership.success_threshold().await;
-
-                qc.is_valid_cert(
-                    StakeTableEntries::<TYPES>::from(membership_stake_table).0,
-                    membership_success_threshold,
-                    &self.upgrade_lock,
-                )
-                .await
-                .context(|e| warn!("Quorum certificate {:?} was invalid: {}", qc.data(), e))?;
-
-                self.highest_qc = qc.clone();
             },
             HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) => {
                 // Only update if the qc is from a newer view
