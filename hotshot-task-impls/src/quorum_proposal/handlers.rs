@@ -159,6 +159,29 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
 
         let wait_duration = Duration::from_millis(self.timeout / 2);
 
+        let mut rx = self.receiver.clone();
+
+        // drain any qc off the queue
+        while let Ok(event) = rx.try_recv() {
+            if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
+                if validate_qc_and_next_epoch_qc(
+                    qc,
+                    maybe_next_epoch_qc.as_ref(),
+                    &self.consensus,
+                    &self.membership.coordinator,
+                    &self.upgrade_lock,
+                    self.epoch_height,
+                )
+                .await
+                .is_ok()
+                {
+                    if qc.view_number() > highest_qc.view_number() {
+                        highest_qc = qc.clone();
+                    }
+                }
+            }
+        }
+
         // TODO configure timeout
         while self.view_start_time.elapsed() < wait_duration {
             let time_spent = Instant::now()
@@ -167,10 +190,12 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             let time_left = wait_duration
                 .checked_sub(time_spent)
                 .ok_or(info!("No time left"))?;
-            let maybe_qc =
-                tokio::time::timeout(time_left, self.wait_for_qc_event(self.receiver.clone()))
-                    .await
-                    .map_err(|_| info!("we timeout out, don't wait any longer"))?;
+            let Ok(maybe_qc) =
+                tokio::time::timeout(time_left, self.wait_for_qc_event(rx.clone())).await
+            else {
+                tracing::info!("we timeout out, don't wait any longer");
+                return Ok(highest_qc);
+            };
             let Some(qc) = maybe_qc else {
                 continue;
             };
