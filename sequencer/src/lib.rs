@@ -808,7 +808,7 @@ pub mod testing {
                 num_nodes_with_stake: num_nodes.try_into().unwrap(),
                 known_da_nodes: known_nodes_with_stake.clone(),
                 known_nodes_with_stake: known_nodes_with_stake.clone(),
-                next_view_timeout: Duration::from_secs(5).as_millis() as u64,
+                next_view_timeout: Duration::from_secs(10).as_millis() as u64,
                 num_bootstrap: 1usize,
                 da_staked_committee_size: num_nodes,
                 view_sync_timeout: Duration::from_secs(1),
