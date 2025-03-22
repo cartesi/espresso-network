@@ -701,12 +701,18 @@ pub(crate) async fn submit_vote<TYPES: NodeType, I: NodeImplementation<TYPES>, V
         )
     );
 
+    let height = if membership.epoch().is_some() {
+        Some(leaf.height())
+    } else {
+        None
+    };
+
     // Create and send the vote.
     let vote = QuorumVote2::<TYPES>::create_signed_vote(
         QuorumData2 {
             leaf_commit: leaf.commit(),
             epoch: membership.epoch(),
-            block_number: Some(leaf.height()),
+            block_number: height,
         },
         view_number,
         &public_key,

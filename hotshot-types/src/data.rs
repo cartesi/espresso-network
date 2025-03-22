@@ -1455,10 +1455,15 @@ impl<TYPES: NodeType> QuorumCertificate2<TYPES> {
         let genesis_view = <TYPES::View as ConsensusTime>::genesis();
 
         let genesis_leaf = Leaf2::genesis::<V>(validated_state, instance_state).await;
+        let block_number = if upgrade_lock.epochs_enabled(genesis_view).await {
+            Some(genesis_leaf.height())
+        } else {
+            None
+        };
         let data = QuorumData2 {
             leaf_commit: genesis_leaf.commit(),
             epoch: genesis_epoch_from_version::<V, TYPES>(), // #3967 make sure this is enough of a gate for epochs
-            block_number: Some(genesis_leaf.height()),
+            block_number,
         };
 
         let versioned_data =
