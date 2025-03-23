@@ -511,7 +511,10 @@
 <a href="#510" id="510">510</a>
 <a href="#511" id="511">511</a>
 <a href="#512" id="512">512</a>
-<a href="#513" id="513">513</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, str::FromStr};
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, str::FromStr};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>ark_serialize::{
@@ -926,8 +929,9 @@
     view: ViewNumber,
 ) -&gt; anyhow::Result&lt;Validator&lt;BLSPubKey&gt;&gt; {
     <span class="kw">let </span>height = parent_leaf.height();
-
-    <span class="kw">let </span>epoch_height = instance_state.epoch_height.unwrap();
+    <span class="kw">let </span>epoch_height = instance_state
+        .epoch_height
+        .context(<span class="string">"epoch height not found"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span>epoch = EpochNumber::new(height % epoch_height);
     <span class="kw">let </span>coordinator = instance_state.coordinator.clone();
 
@@ -935,10 +939,12 @@
     <span class="kw">let </span>membership = epoch_membership.coordinator.membership().read().<span class="kw">await</span>;
 
     <span class="kw">let </span>leader: BLSPubKey = membership
-        .leader(ViewNumber::new(height), <span class="prelude-val">Some</span>(epoch))
+        .leader(view, <span class="prelude-val">Some</span>(epoch))
         .context(<span class="macro">format!</span>(<span class="string">"leader for epoch {epoch:?} not found"</span>))<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>validator = membership.get_validator_config(<span class="kw-2">&amp;</span>epoch, leader).unwrap();
+    <span class="kw">let </span>validator = membership
+        .get_validator_config(<span class="kw-2">&amp;</span>epoch, leader)
+        .context(<span class="string">"validator not found"</span>)<span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>reward_accounts = HashSet::new();
     reward_accounts.insert(validator.account.to_ethers().into());
     <span class="kw">let </span>delegators = validator

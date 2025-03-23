@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["GetStakeTablesError","StakeTableEvent"],"fn":["from_l1_events","validate_validators"],"mod":["testing"],"struct":["EpochCommittee","EpochCommittees","LeaderLookupError","NonEpochCommittee"],"type":["Epoch"]};
+window.SIDEBAR_ITEMS = {"enum":["GetStakeTablesError","StakeTableEvent"],"fn":["from_l1_events","select_validators"],"mod":["testing"],"struct":["EpochCommittee","EpochCommittees","LeaderLookupError","NonEpochCommittee"],"type":["Epoch"]};
