@@ -532,9 +532,9 @@ pub(crate) async fn handle_quorum_proposal_validated<
         tracing::debug!("Successfully sent decide event");
 
         if version >= V::Epochs::VERSION {
-            // `leaf_views.last()` is never none if we've reached a new decide, so this is safe to
-            // unwrap.
-            store_drb_seed_and_result(task_state, &leaf_views.last().unwrap().leaf).await?;
+            for leaf_view in leaf_views {
+                store_drb_seed_and_result(task_state, &leaf_view.leaf).await?;
+            }
         }
     }
 
