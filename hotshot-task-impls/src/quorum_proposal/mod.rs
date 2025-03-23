@@ -219,6 +219,18 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             event_receiver.clone(),
         );
 
+        let next_epoch_qc_dependency = EventDependency::new(
+            event_receiver.clone(),
+            Box::new(move |event| {
+                let event = event.as_ref();
+                if let HotShotEvent::NextEpochQc2Formed(Either::Left(qc)) = event {
+                    qc.view_number() + 1 == view_number
+                } else {
+                    false
+                }
+            }),
+        );
+        let mut require_next_epoch_qc = false;
         match event.as_ref() {
             HotShotEvent::SendPayloadCommitmentAndMetadata(..) => {
                 payload_commitment_dependency.mark_as_completed(Arc::clone(&event));
@@ -230,7 +242,12 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 Either::Right(_) => {
                     timeout_dependency.mark_as_completed(event);
                 },
-                Either::Left(_) => {
+                Either::Left(qc) => {
+                    if qc.data.block_number.is_some_and(|block_number| {
+                        is_last_block_in_epoch(block_number, self.epoch_height)
+                    }) {
+                        require_next_epoch_qc = true;
+                    }
                     qc_dependency.mark_as_completed(event);
                 },
             },
@@ -258,6 +275,10 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             ]));
         } else {
             secondary_deps.push(AndDependency::from_deps(vec![qc_dependency]));
+        }
+
+        if require_next_epoch_qc {
+            secondary_deps.push(AndDependency::from_deps(vec![next_epoch_qc_dependency]));
         }
 
         let primary_deps = vec![payload_commitment_dependency, vid_share_dependency];

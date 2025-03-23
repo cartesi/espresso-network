@@ -973,6 +973,15 @@ pub async fn wait_for_next_epoch_qc<TYPES: NodeType>(
         }
     };
 
+    let mut receiver = receiver.clone();
+    // drain the queue looking for the next epoch qc
+    while let Ok(event) = receiver.try_recv() {
+        if let HotShotEvent::NextEpochQc2Formed(Either::Left(qc)) = event.as_ref() {
+            if qc.data.leaf_commit == high_qc.data.leaf_commit {
+                return Some(qc.clone());
+            }
+        }
+    }
     let wait_duration = Duration::from_millis(timeout / 2);
 
     // TODO configure timeout
@@ -984,7 +993,7 @@ pub async fn wait_for_next_epoch_qc<TYPES: NodeType>(
         // No time left
         return None;
     };
-    let receiver = receiver.clone();
+
     let event = tokio::time::timeout(time_left, async move {
         let this_epoch_high_qc = high_qc.clone();
         EventDependency::new(

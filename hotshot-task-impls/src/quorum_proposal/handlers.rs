@@ -23,7 +23,7 @@ use hotshot_types::{
     data::{Leaf2, QuorumProposal2, QuorumProposalWrapper, VidDisperse, ViewChangeEvidence2},
     epoch_membership::EpochMembership,
     message::Proposal,
-    simple_certificate::{QuorumCertificate2, UpgradeCertificate},
+    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
     traits::{
         block_contents::BlockHeader,
         node_implementation::{NodeImplementation, NodeType},
@@ -125,7 +125,10 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
     async fn wait_for_qc_event(
         &self,
         mut rx: Receiver<Arc<HotShotEvent<TYPES>>>,
-    ) -> Option<QuorumCertificate2<TYPES>> {
+    ) -> Option<(
+        QuorumCertificate2<TYPES>,
+        Option<NextEpochQuorumCertificate2<TYPES>>,
+    )> {
         while let Ok(event) = rx.recv_direct().await {
             if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
                 if validate_qc_and_next_epoch_qc(
@@ -139,7 +142,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 .await
                 .is_ok()
                 {
-                    return Some(qc.clone());
+                    return Some((qc.clone(), maybe_next_epoch_qc.clone()));
                 }
             }
         }
@@ -147,7 +150,12 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
     }
     /// Waits for the configured timeout for nodes to send HighQc messages to us.  We'll
     /// then propose with the highest QC from among these proposals.
-    async fn wait_for_highest_qc(&self) -> Result<QuorumCertificate2<TYPES>> {
+    async fn wait_for_highest_qc(
+        &self,
+    ) -> Result<(
+        QuorumCertificate2<TYPES>,
+        Option<NextEpochQuorumCertificate2<TYPES>>,
+    )> {
         tracing::debug!("waiting for QC");
         // If we haven't upgraded to Hotstuff 2 just return the high qc right away
         ensure!(
@@ -156,6 +164,16 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         );
 
         let mut highest_qc = self.consensus.read().await.high_qc().clone();
+        let mut next_epoch_qc = match self.consensus.read().await.next_epoch_high_qc() {
+            Some(qc) => {
+                if qc.view_number() != highest_qc.view_number() {
+                    None
+                } else {
+                    Some(qc.clone())
+                }
+            },
+            None => None,
+        };
 
         let wait_duration = Duration::from_millis(self.timeout / 2);
 
@@ -177,6 +195,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                     && qc.view_number() > highest_qc.view_number()
                 {
                     highest_qc = qc.clone();
+                    next_epoch_qc = maybe_next_epoch_qc.clone();
                 }
             }
         }
@@ -193,20 +212,22 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 tokio::time::timeout(time_left, self.wait_for_qc_event(rx.clone())).await
             else {
                 tracing::info!("we timeout out, don't wait any longer");
-                return Ok(highest_qc);
+                return Ok((highest_qc, next_epoch_qc));
             };
-            let Some(qc) = maybe_qc else {
+            let Some((qc, maybe_next_epoch_qc)) = maybe_qc else {
                 continue;
             };
             if qc.view_number() > highest_qc.view_number() {
                 highest_qc = qc;
+                next_epoch_qc = maybe_next_epoch_qc;
             }
         }
-        Ok(highest_qc.clone())
+        Ok((highest_qc, next_epoch_qc))
     }
     /// Publishes a proposal given the [`CommitmentAndMetadata`], [`VidDisperse`]
     /// and high qc [`hotshot_types::simple_certificate::QuorumCertificate`],
     /// with optional [`ViewChangeEvidence`].
+    #[allow(clippy::too_many_arguments)]
     #[instrument(skip_all, fields(id = self.id, view_number = *self.view_number, latest_proposed_view = *self.latest_proposed_view))]
     async fn publish_proposal(
         &self,
@@ -216,6 +237,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         formed_upgrade_certificate: Option<UpgradeCertificate<TYPES>>,
         decided_upgrade_certificate: Arc<RwLock<Option<UpgradeCertificate<TYPES>>>>,
         parent_qc: QuorumCertificate2<TYPES>,
+        next_epoch_qc: Option<NextEpochQuorumCertificate2<TYPES>>,
     ) -> Result<()> {
         let (parent_leaf, state) = parent_leaf_and_state(
             &self.sender,
@@ -342,14 +364,27 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         let next_epoch_qc = if self.upgrade_lock.epochs_enabled(self.view_number).await
             && is_high_qc_for_last_block
         {
-            wait_for_next_epoch_qc(
-                &parent_qc,
-                &self.consensus,
-                self.timeout,
-                self.view_start_time,
-                &self.receiver,
-            )
-            .await
+            if next_epoch_qc
+                .as_ref()
+                .is_some_and(|qc| qc.data.leaf_commit == parent_qc.data.leaf_commit)
+            {
+                next_epoch_qc
+            } else {
+                let Some(next_epoch_qc) = wait_for_next_epoch_qc(
+                    &parent_qc,
+                    &self.consensus,
+                    self.timeout,
+                    self.view_start_time,
+                    &self.receiver,
+                )
+                .await
+                else {
+                    anyhow::bail!(
+                        "Failed to wait for next epoch QC, but it's the last block in the epoch."
+                    );
+                };
+                Some(next_epoch_qc)
+            }
         } else {
             None
         };
@@ -426,6 +461,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
         let mut view_sync_finalize_cert = None;
         let mut vid_share = None;
         let mut parent_qc = None;
+        let mut next_epoch_qc = None;
         for event in res.iter().flatten().flatten() {
             match event.as_ref() {
                 HotShotEvent::SendPayloadCommitmentAndMetadata(
@@ -453,6 +489,9 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                         parent_qc = Some(qc.clone());
                     },
                 },
+                HotShotEvent::NextEpochQc2Formed(either::Left(qc)) => {
+                    next_epoch_qc = Some(qc.clone());
+                },
                 HotShotEvent::ViewSyncFinalizeCertificateRecv(cert) => {
                     view_sync_finalize_cert = Some(cert.clone());
                 },
@@ -476,7 +515,16 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
             self.consensus.read().await.high_qc().clone()
         } else {
             match self.wait_for_highest_qc().await {
-                Ok(qc) => qc,
+                Ok((qc, maybe_next_epoch_qc)) => {
+                    if let Some(neqc) = maybe_next_epoch_qc {
+                        next_epoch_qc = Some(neqc.clone());
+                        if let Err(e) = self.consensus.write().await.update_next_epoch_high_qc(neqc)
+                        {
+                            tracing::error!("Failed to update next epoch high QC: {:?}", e);
+                        }
+                    }
+                    qc
+                },
                 Err(e) => {
                     tracing::error!("Error while waiting for highest QC: {:?}", e);
                     return;
@@ -510,6 +558,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                 self.formed_upgrade_certificate.clone(),
                 Arc::clone(&self.upgrade_lock.decided_upgrade_certificate),
                 parent_qc,
+                next_epoch_qc,
             )
             .await
         {
