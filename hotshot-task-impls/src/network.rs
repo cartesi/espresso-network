@@ -389,6 +389,7 @@ impl<TYPES: NodeType, V: Versions> NetworkMessageTaskState<TYPES, V> {
                         },
                     },
                 };
+                tracing::error!("Received network event: {}", event);
                 broadcast_event(Arc::new(event), &self.internal_event_stream).await;
             },
 
