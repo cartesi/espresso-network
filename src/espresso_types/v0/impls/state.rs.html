@@ -2015,8 +2015,7 @@
 <a href="#2014" id="2014">2014</a>
 <a href="#2015" id="2015">2015</a>
 <a href="#2016" id="2016">2016</a>
-<a href="#2017" id="2017">2017</a>
-<a href="#2018" id="2018">2018</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
+<a href="#2017" id="2017">2017</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>committable::{Commitment, Committable};
@@ -3080,13 +3079,12 @@
             BlockMerkleTree::from_commitment(block_header.block_merkle_tree_root())
         };
 
-        <span class="kw">let </span>reward_merkle_tree = <span class="kw">if </span>block_header.block_merkle_tree_root().size() == <span class="number">0 </span>{
-            <span class="comment">// If the commitment tells us that the tree is supposed to be empty, it is convenient to
-            // just create an empty tree, rather than a commitment-only tree.
-            </span>RewardMerkleTree::new(REWARD_MERKLE_TREE_HEIGHT)
-        } <span class="kw">else </span>{
-            RewardMerkleTree::from_commitment(block_header.block_merkle_tree_root())
-        };
+        <span class="kw">let </span><span class="kw-2">mut </span>reward_merkle_tree = RewardMerkleTree::new(REWARD_MERKLE_TREE_HEIGHT);
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(root) = block_header.reward_merkle_tree_root() {
+            <span class="kw">if </span>!root.size() == <span class="number">0 </span>{
+                reward_merkle_tree = RewardMerkleTree::from_commitment(root);
+            }
+        }
 
         <span class="self">Self </span>{
             fee_merkle_tree,
