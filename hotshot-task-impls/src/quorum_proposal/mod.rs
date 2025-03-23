@@ -246,7 +246,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     if qc.data.block_number.is_some_and(|block_number| {
                         is_last_block_in_epoch(block_number, self.epoch_height)
                     }) && !self
-                        .formed_quorum_certificates
+                        .formed_extended_quorum_certificates
                         .contains_key(&qc.view_number())
                     {
                         require_next_epoch_qc = true;
