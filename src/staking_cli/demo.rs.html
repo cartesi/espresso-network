@@ -83,10 +83,45 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
     network::EthereumWallet,
-    primitives::{utils::parse_ether, Address},
-    providers::{ProviderBuilder, WalletProvider},
+    primitives::{
+        utils::{format_ether, parse_ether},
+        U256,
+    },
+    providers::{Provider, ProviderBuilder, WalletProvider},
     signers::local::{coins_bip39::English, MnemonicBuilder},
 };
 <span class="kw">use </span>anyhow::Result;
@@ -101,10 +136,18 @@
     Config,
 };
 
-<span class="kw">pub async fn </span>stake_for_demo(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<span class="doccomment">/// Register validators, and delegate to themselves for demo purposes.
+///
+/// The environment variables used only for this function but not for the normal staking CLI are
+/// loaded directly from the environment.
+///
+/// Account indexes 10 to 14 of the dev mnemonic are used for the validator accounts.
+</span><span class="kw">pub async fn </span>stake_for_demo(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="macro">tracing::info!</span>(<span class="string">"staking to stake table contract for demo"</span>);
+
     <span class="kw">let </span>mk_provider = <span class="kw">async </span>|account_index| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt; {
         <span class="kw">let </span>signer = MnemonicBuilder::&lt;English&gt;::default()
-            .phrase(config.mnemonic.as_str())
+            .phrase(config.mnemonic.clone())
             .index(account_index)<span class="question-mark">?
             </span>.build()<span class="question-mark">?</span>;
         <span class="kw">let </span>wallet = EthereumWallet::from(signer);
@@ -113,45 +156,62 @@
             .wallet(wallet)
             .on_http(config.rpc_url.clone()))
     };
-    <span class="kw">let </span>deployer_account_index = dotenvy::var(<span class="string">"ESPRESSO_DEPLOYER_ACCOUNT_INDEX"</span>)<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
-    <span class="kw">let </span>deployer = mk_provider(deployer_account_index).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>token_address: Address =
-        dotenvy::var(<span class="string">"ESPRESSO_SEQUENCER_ESP_TOKEN_PROXY_ADDRESS"</span>)<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
-    <span class="kw">let </span>stake_table_address: Address =
-        dotenvy::var(<span class="string">"ESPRESSO_SEQUENCER_STAKE_TABLE_PROXY_ADDRESS"</span>)<span class="question-mark">?</span>.parse()<span class="question-mark">?</span>;
-    <span class="kw">let </span>token = EspTokenInstance::new(token_address, deployer.clone());
-    <span class="kw">let </span>amount = parse_ether(<span class="string">"1"</span>)<span class="question-mark">?</span>;
-    <span class="kw">for </span>val <span class="kw">in </span><span class="number">0</span>..=<span class="number">4 </span>{
-        <span class="comment">// 0 to 4 % commission
-        </span><span class="kw">let </span>commission = Commission::try_from(<span class="number">100u16 </span>* val)<span class="question-mark">?</span>;
+
+    <span class="kw">let </span>grant_recipient = mk_provider(config.account_index).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="macro">tracing::info!</span>(
+        <span class="string">"grant recipient account for token funding: {}"</span>,
+        grant_recipient.default_signer_address()
+    );
+
+    <span class="kw">let </span>token_address = config.token_address;
+    <span class="macro">tracing::info!</span>(<span class="string">"ESP token address: {}"</span>, token_address);
+    <span class="kw">let </span>stake_table_address = config.stake_table_address;
+    <span class="macro">tracing::info!</span>(<span class="string">"stake table address: {}"</span>, stake_table_address);
+
+    <span class="kw">let </span>token = EspTokenInstance::new(token_address, grant_recipient.clone());
+    <span class="kw">let </span>fund_amount_eth = <span class="string">"1000"</span>;
+    <span class="kw">let </span>fund_amount = parse_ether(fund_amount_eth)<span class="question-mark">?</span>;
+
+    <span class="kw">for </span>val_index <span class="kw">in </span><span class="number">0</span>..=<span class="number">4 </span>{
+        <span class="comment">// 10 to 14 % commission
+        </span><span class="kw">let </span>commission = Commission::try_from(<span class="number">1000u16 </span>+ <span class="number">100u16 </span>* val_index)<span class="question-mark">?</span>;
+
+        <span class="comment">// delegate 100 to 500 ESP
+        </span><span class="kw">let </span>delegate_amount = parse_ether(<span class="string">"100"</span>)<span class="question-mark">? </span>* U256::from(val_index + <span class="number">1</span>);
+        <span class="kw">let </span>delegate_amount_esp = format_ether(delegate_amount);
+
         <span class="comment">// use accounts 10 to 14 of the default mnemonics, hopefully not used for anything else
-        </span><span class="kw">let </span>validator_provider = mk_provider(<span class="number">10u32 </span>+ val <span class="kw">as </span>u32).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>validator_provider = mk_provider(<span class="number">10u32 </span>+ val_index <span class="kw">as </span>u32).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>validator_address = validator_provider.default_signer_address();
+        <span class="kw">let </span>bal = validator_provider.get_balance(validator_address).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">tracing::info!</span>(<span class="string">"validator {val_index} address: {validator_address}, balance: {bal}"</span>);
         <span class="kw">let </span>consensus_private_key = parse_bls_priv_key(<span class="kw-2">&amp;</span>dotenvy::var(<span class="macro">format!</span>(
-            <span class="string">"ESPRESSO_DEMO_SEQUENCER_STAKING_PRIVATE_KEY_{val}"
+            <span class="string">"ESPRESSO_DEMO_SEQUENCER_STAKING_PRIVATE_KEY_{val_index}"
         </span>))<span class="question-mark">?</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>state_private_key = parse_state_priv_key(<span class="kw-2">&amp;</span>dotenvy::var(<span class="macro">format!</span>(
-            <span class="string">"ESPRESSO_DEMO_SEQUENCER_STATE_PRIVATE_KEY_{val}"
+            <span class="string">"ESPRESSO_DEMO_SEQUENCER_STATE_PRIVATE_KEY_{val_index}"
         </span>))<span class="question-mark">?</span>)<span class="question-mark">?</span>;
 
+        <span class="macro">tracing::info!</span>(<span class="string">"transfer {fund_amount_eth} ESP to {validator_address}"</span>,);
         <span class="kw">let </span>receipt = token
-            .transfer(validator_address, amount)
+            .transfer(validator_address, fund_amount)
             .send()
             .<span class="kw">await</span><span class="question-mark">?
             </span>.get_receipt()
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">assert!</span>(receipt.status());
 
+        <span class="macro">tracing::info!</span>(<span class="string">"approve {fund_amount_eth} ESP for {stake_table_address}"</span>,);
         <span class="kw">let </span>validator_token = EspTokenInstance::new(token_address, validator_provider.clone());
         <span class="kw">let </span>receipt = validator_token
-            .approve(stake_table_address, amount)
+            .approve(stake_table_address, fund_amount)
             .send()
             .<span class="kw">await</span><span class="question-mark">?
             </span>.get_receipt()
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">assert!</span>(receipt.status());
 
-        <span class="macro">tracing::info!</span>(<span class="string">"Deploying validator {val} with commission {commission}"</span>);
+        <span class="macro">tracing::info!</span>(<span class="string">"deploy validator {val_index} with commission {commission}"</span>);
         <span class="kw">let </span>stake_table = StakeTableInstance::new(stake_table_address, validator_provider);
         <span class="kw">let </span>receipt = register_validator(
             stake_table.clone(),
@@ -163,9 +223,13 @@
         .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">assert!</span>(receipt.status());
 
-        <span class="kw">let </span>receipt = delegate(stake_table, validator_address, amount).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">tracing::info!</span>(
+            <span class="string">"delegate {delegate_amount_esp} ESP for validator {val_index} from {validator_address}"
+        </span>);
+        <span class="kw">let </span>receipt = delegate(stake_table, validator_address, delegate_amount).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">assert!</span>(receipt.status());
     }
+    <span class="macro">tracing::info!</span>(<span class="string">"completed staking for demo"</span>);
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>

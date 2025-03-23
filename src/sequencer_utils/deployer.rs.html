@@ -1206,6 +1206,7 @@
     <span class="kw-2">mut </span>contracts: Contracts,
     initial_stake_table: <span class="prelude-ty">Option</span>&lt;Vec&lt;NodeInfo&gt;&gt;,
     exit_escrow_period: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
+    initial_token_grant_recipient: <span class="prelude-ty">Option</span>&lt;Address&gt;,
 ) -&gt; anyhow::Result&lt;Contracts&gt; {
     <span class="kw">if </span>should_deploy(ContractGroup::StakeTable, <span class="kw-2">&amp;</span>only) &amp;&amp; exit_escrow_period.is_none() {
         <span class="macro">anyhow::bail!</span>(
@@ -1380,12 +1381,11 @@
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>token = EspToken::new(token_address, l1_alloy.clone());
+        <span class="kw">let </span>initial_token_grant_recipient =
+            initial_token_grant_recipient.unwrap_or(deployer).to_alloy();
+        <span class="macro">tracing::info!</span>(<span class="question-mark">?</span>initial_token_grant_recipient, <span class="string">"ESP token contract"</span>,);
         <span class="kw">let </span>data = token
-            .initialize(
-                deployer.to_alloy(),
-                <span class="comment">// TODO: token recipient
-                </span>deployer.to_alloy(),
-            )
+            .initialize(deployer.to_alloy(), initial_token_grant_recipient)
             .calldata()
             .clone();
         <span class="kw">let </span>token_proxy_address = contracts

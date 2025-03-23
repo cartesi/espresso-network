@@ -319,7 +319,11 @@
 <a href="#318" id="318">318</a>
 <a href="#319" id="319">319</a>
 <a href="#320" id="320">320</a>
-<a href="#321" id="321">321</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
+<a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>alloy::{
     network::EthereumWallet,
@@ -428,9 +432,13 @@
     </span>account_index: u32,
 
     <span class="doccomment">/// L1 Ethereum RPC.
-    </span><span class="attr">#[clap(long, env = <span class="string">"RPC_URL"</span>)]
+    </span><span class="attr">#[clap(long, env = <span class="string">"L1_PROVIDER"</span>)]
     #[default(Url::parse(<span class="string">"http://localhost:8545"</span>).unwrap())]
     </span>rpc_url: Url,
+
+    <span class="doccomment">/// Deployed ESP token contract address.
+    </span><span class="attr">#[clap(long, env = <span class="string">"ESP_TOKEN_ADDRESS"</span>)]
+    </span>token_address: Address,
 
     <span class="doccomment">/// Deployed stake table contract address.
     </span><span class="attr">#[clap(long, env = <span class="string">"STAKE_TABLE_ADDRESS"</span>)]
