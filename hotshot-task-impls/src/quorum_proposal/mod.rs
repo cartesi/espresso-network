@@ -245,10 +245,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 Either::Left(qc) => {
                     if qc.data.block_number.is_some_and(|block_number| {
                         is_last_block_in_epoch(block_number, self.epoch_height)
-                    }) {
-                        if self.formed_quorum_certificates.get(&view_number).is_none() {
-                            require_next_epoch_qc = true;
-                        }
+                    }) && !self
+                        .formed_quorum_certificates
+                        .contains_key(&qc.view_number())
+                    {
+                        require_next_epoch_qc = true;
                     }
                     qc_dependency.mark_as_completed(event);
                 },
