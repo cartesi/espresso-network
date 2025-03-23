@@ -334,11 +334,11 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             );
             return Ok(());
         }
-        let is_high_qc_for_last_block = self
-            .consensus
-            .read()
-            .await
-            .is_leaf_for_last_block(parent_qc.data.leaf_commit);
+        let is_high_qc_for_last_block = if let Some(block_number) = parent_qc.data.block_number {
+            is_last_block_in_epoch(block_number, self.epoch_height)
+        } else {
+            false
+        };
         let next_epoch_qc = if self.upgrade_lock.epochs_enabled(self.view_number).await
             && is_high_qc_for_last_block
         {
