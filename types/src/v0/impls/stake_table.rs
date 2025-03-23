@@ -539,27 +539,12 @@ impl EpochCommittees {
     }
 
     /// Get the stake table by epoch. Try to load from DB and fall back to fetching from l1.
-    async fn get_stake_table_by_epoch(
+    async fn get_stake_table_from_contract(
         &self,
-        epoch: Epoch,
         contract_address: Address,
         l1_block: u64,
     ) -> Result<IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>, GetStakeTablesError>
     {
-        // if let Some(stake_tables) = self
-        //     .persistence
-        //     .load_stake(epoch)
-        //     .await
-        //     .map_err(GetStakeTablesError::PersistenceLoadError)?
-        // {
-        //     Ok(stake_tables)
-        // } else {
-        //     self.l1_client
-        //         .get_stake_table(contract_address, l1_block)
-        //         .await
-        //         .map_err(GetStakeTablesError::L1ClientFetchError)
-        // }
-
         self.l1_client
             .get_stake_table(contract_address, l1_block)
             .await
@@ -570,8 +555,6 @@ impl EpochCommittees {
 #[derive(Error, Debug)]
 /// Error representing fail cases for retrieving the stake table.
 enum GetStakeTablesError {
-    #[error("Error loading from persistence: {0}")]
-    PersistenceLoadError(anyhow::Error),
     #[error("Error fetching from L1: {0}")]
     L1ClientFetchError(anyhow::Error),
 }
@@ -754,7 +737,7 @@ impl Membership<SeqTypes> for EpochCommittees {
         let address = contract_address?;
 
         let stake_tables = self
-            .get_stake_table_by_epoch(epoch, address.to_alloy(), block_header.height())
+            .get_stake_table_from_contract(address.to_alloy(), block_header.height())
             .await
             .inspect_err(|e| {
                 tracing::error!(?e, "`add_epoch_root`, error retrieving stake table");
