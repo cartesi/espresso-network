@@ -177,7 +177,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
     }
 
     /// Creates the requisite dependencies for the Quorum Proposal task. It also handles any event forwarding.
-    fn create_and_complete_dependencies(
+    async fn create_and_complete_dependencies(
         &self,
         view_number: TYPES::View,
         event_receiver: &Receiver<Arc<HotShotEvent<TYPES>>>,
@@ -239,7 +239,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     }
                     // if the qc formed is not for the last block we don't need a next epoch qc,
                     // so we can return true
-                    return !is_last_block_in_epoch(block_number, epoch_height);
+                    !is_last_block_in_epoch(block_number, epoch_height)
                 } else {
                     false
                 }
@@ -286,11 +286,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
         ];
         // 3. A `Qc2Formed`` event (and `QuorumProposalRecv` event)
         if *view_number > 1 {
-            secondary_deps.push(AndDependency::from_deps(vec![
-                qc_dependency,
-                next_epoch_qc_dependency,
-                proposal_dependency,
-            ]));
+            let mut deps = vec![qc_dependency, proposal_dependency];
+            if self.upgrade_lock.epochs_enabled(view_number).await {
+                deps.push(next_epoch_qc_dependency);
+            }
+            secondary_deps.push(AndDependency::from_deps(deps));
         } else {
             secondary_deps.push(AndDependency::from_deps(vec![qc_dependency]));
         }
@@ -366,8 +366,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             "Task already exists"
         );
 
-        let dependency_chain =
-            self.create_and_complete_dependencies(view_number, &event_receiver, event);
+        let dependency_chain = self
+            .create_and_complete_dependencies(view_number, &event_receiver, event)
+            .await;
 
         let dependency_task = DependencyTask::new(
             dependency_chain,
