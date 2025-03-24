@@ -14,10 +14,10 @@ futures = { workspace = true }
 hotshot-types = { workspace = true }
 libp2p-identity = { workspace = true }
 multiaddr = { workspace = true }
+primitive-types = { workspace = true }
 serde = { workspace = true }
 surf-disco = { workspace = true }
 tide-disco = { workspace = true }
-primitive-types = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 tracing = { workspace = true }
