@@ -1267,7 +1267,8 @@
 <a href="#1266" id="1266">1266</a>
 <a href="#1267" id="1267">1267</a>
 <a href="#1268" id="1268">1268</a>
-<a href="#1269" id="1269">1269</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1269" id="1269">1269</a>
+<a href="#1270" id="1270">1270</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashMap},
     path::Path,
 };
@@ -1322,6 +1323,7 @@
     </span><span class="kw">pub </span>base_version: Version,
     <span class="attr">#[serde(with = <span class="string">"version_ser"</span>)]
     </span><span class="kw">pub </span>upgrade_version: Version,
+    <span class="kw">pub </span>epoch_height: <span class="prelude-ty">Option</span>&lt;u64&gt;,
     <span class="kw">pub </span>chain_config: ChainConfig,
     <span class="kw">pub </span>stake_table: StakeTableConfig,
     <span class="attr">#[serde(default)]

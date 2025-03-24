@@ -433,9 +433,7 @@
 <a href="#432" id="432">432</a>
 <a href="#433" id="433">433</a>
 <a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
+<a href="#435" id="435">435</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
 
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">use </span>async_lock::RwLock;
@@ -689,9 +687,7 @@
         <span class="self">self
     </span>}
 
-    <span class="comment">// TODO remove following `Memberships` trait update:
-    // https://github.com/EspressoSystems/HotShot/issues/3966
-    </span><span class="kw">pub fn </span>with_epoch_height(<span class="kw-2">mut </span><span class="self">self</span>, epoch_height: u64) -&gt; <span class="self">Self </span>{
+    <span class="kw">pub fn </span>with_epoch_height(<span class="kw-2">mut </span><span class="self">self</span>, epoch_height: u64) -&gt; <span class="self">Self </span>{
         <span class="self">self</span>.epoch_height = <span class="prelude-val">Some</span>(epoch_height);
         <span class="self">self
     </span>}
