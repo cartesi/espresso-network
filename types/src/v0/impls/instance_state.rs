@@ -24,6 +24,8 @@ use crate::v0::{
     traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo, L1Client, PubKey,
     Timestamp, Upgrade, UpgradeMode,
 };
+#[cfg(any(test, feature = "testing"))]
+use crate::EpochCommittees;
 
 /// Represents the immutable state of a node.
 ///
@@ -166,6 +168,36 @@ impl NodeState {
     }
 
     #[cfg(any(test, feature = "testing"))]
+    pub fn mock_v3() -> Self {
+        use ethers_conv::ToAlloy;
+        use vbs::version::StaticVersion;
+
+        let chain_config = ChainConfig::default();
+        let l1 = L1Client::new(vec!["http://localhost:3331".parse().unwrap()])
+            .expect("Failed to create L1 client");
+
+        let membership = Arc::new(RwLock::new(EpochCommittees::new_stake(
+            vec![],
+            vec![],
+            l1.clone(),
+            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            Arc::new(mock::MockStateCatchup::default()),
+            NoStorage,
+        )));
+
+        let coordinator = EpochMembershipCoordinator::new(membership, 100);
+        Self::new(
+            0,
+            ChainConfig::default(),
+            L1Client::new(vec!["http://localhost:3331".parse().unwrap()])
+                .expect("Failed to create L1 client"),
+            mock::MockStateCatchup::default(),
+            StaticVersion::<0, 3>::version(),
+            coordinator,
+        )
+    }
+
+    #[cfg(any(test, feature = "testing"))]
     pub fn mock_v99() -> Self {
         use vbs::version::StaticVersion;
         let chain_config = ChainConfig::default();
@@ -212,8 +244,8 @@ impl NodeState {
         self
     }
 
-    pub fn with_current_version(mut self, ver: Version) -> Self {
-        self.current_version = ver;
+    pub fn with_current_version(mut self, version: Version) -> Self {
+        self.current_version = version;
         self
     }
 
