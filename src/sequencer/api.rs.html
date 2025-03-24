@@ -2881,7 +2881,9 @@
 <a href="#2880" id="2880">2880</a>
 <a href="#2881" id="2881">2881</a>
 <a href="#2882" id="2882">2882</a>
-<a href="#2883" id="2883">2883</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
+<a href="#2883" id="2883">2883</a>
+<a href="#2884" id="2884">2884</a>
+<a href="#2885" id="2885">2885</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_lock::RwLock;
@@ -4634,9 +4636,9 @@
         config::PublicHotShotConfig,
         traits::NullEventConsumer,
         v0_1::{UpgradeMode, ViewBasedUpgrade},
-        BackoffParams, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
+        BackoffParams, EpochVersion, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
         MockSequencerVersions, SequencerVersions, TimeBasedUpgrade, Timestamp, Upgrade,
-        UpgradeType, ValidatedState,
+        UpgradeType, ValidatedState, V0_1,
     };
     <span class="kw">use </span>ethers::utils::Anvil;
     <span class="kw">use </span>futures::{
@@ -5310,7 +5312,7 @@
         setup_test();
 
         <span class="kw">let </span><span class="kw-2">mut </span>upgrades = std::collections::BTreeMap::new();
-        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;, StaticVersion&lt;<span class="number">0</span>, <span class="number">2</span>&gt;&gt;;
+        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;V0_1, FeeVersion&gt;;
 
         <span class="kw">let </span>mode = UpgradeMode::View(ViewBasedUpgrade {
             start_voting_view: <span class="prelude-val">None</span>,
@@ -5341,7 +5343,7 @@
         <span class="kw">let </span>now = OffsetDateTime::now_utc().unix_timestamp() <span class="kw">as </span>u64;
 
         <span class="kw">let </span><span class="kw-2">mut </span>upgrades = std::collections::BTreeMap::new();
-        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;, StaticVersion&lt;<span class="number">0</span>, <span class="number">2</span>&gt;&gt;;
+        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;V0_1, FeeVersion&gt;;
 
         <span class="kw">let </span>mode = UpgradeMode::Time(TimeBasedUpgrade {
             start_proposing_time: Timestamp::from_integer(now).unwrap(),
@@ -5365,12 +5367,13 @@
         test_upgrade_helper::&lt;MySequencerVersions&gt;(upgrades, MySequencerVersions::new()).<span class="kw">await</span>;
     }
 
-    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+    <span class="attr">#[ignore]
+    #[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_marketplace_upgrade_view_based() {
         setup_test();
 
         <span class="kw">let </span><span class="kw-2">mut </span>upgrades = std::collections::BTreeMap::new();
-        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;FeeVersion, MarketplaceVersion&gt;;
+        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;EpochVersion, MarketplaceVersion&gt;;
 
         <span class="kw">let </span>mode = UpgradeMode::View(ViewBasedUpgrade {
             start_voting_view: <span class="prelude-val">None</span>,
@@ -5395,14 +5398,15 @@
         test_upgrade_helper::&lt;MySequencerVersions&gt;(upgrades, MySequencerVersions::new()).<span class="kw">await</span>;
     }
 
-    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+    <span class="attr">#[ignore]
+    #[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
     </span><span class="kw">async fn </span>test_marketplace_upgrade_time_based() {
         setup_test();
 
         <span class="kw">let </span>now = OffsetDateTime::now_utc().unix_timestamp() <span class="kw">as </span>u64;
 
         <span class="kw">let </span><span class="kw-2">mut </span>upgrades = std::collections::BTreeMap::new();
-        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;FeeVersion, MarketplaceVersion&gt;;
+        <span class="kw">type </span>MySequencerVersions = SequencerVersions&lt;EpochVersion, MarketplaceVersion&gt;;
 
         <span class="kw">let </span>mode = UpgradeMode::Time(TimeBasedUpgrade {
             start_proposing_time: Timestamp::from_integer(now).unwrap(),

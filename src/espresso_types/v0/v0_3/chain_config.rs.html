@@ -174,7 +174,9 @@
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
 <a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{v0_1, BlockSize, ChainId, FeeAccount, FeeAmount};
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{v0_1, v0_99, BlockSize, ChainId, FeeAccount, FeeAmount};
 <span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>ethers::types::{Address, U256};
 <span class="kw">use </span>itertools::Either;
@@ -250,13 +252,13 @@
 }
 
 <span class="kw">impl </span>ResolvableChainConfig {
-    <span class="kw">pub fn </span>_commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Commitment&lt;ChainConfig&gt; {
+    <span class="kw">pub fn </span>commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Commitment&lt;ChainConfig&gt; {
         <span class="kw">match </span><span class="self">self</span>.chain_config {
             Either::Left(config) =&gt; config.commit(),
             Either::Right(commitment) =&gt; commitment,
         }
     }
-    <span class="kw">pub fn </span>_resolve(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ChainConfig&gt; {
+    <span class="kw">pub fn </span>resolve(<span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;ChainConfig&gt; {
         <span class="kw">match </span><span class="self">self</span>.chain_config {
             Either::Left(config) =&gt; <span class="prelude-val">Some</span>(config),
             Either::Right(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
@@ -317,23 +319,25 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;ChainConfig&gt; <span class="kw">for </span>v0_1::ChainConfig {
-    <span class="kw">fn </span>from(chain_config: ChainConfig) -&gt; v0_1::ChainConfig {
-        <span class="kw">let </span>ChainConfig {
+<span class="kw">impl </span>From&lt;v0_99::ChainConfig&gt; <span class="kw">for </span>ChainConfig {
+    <span class="kw">fn </span>from(chain_config: v0_99::ChainConfig) -&gt; ChainConfig {
+        <span class="kw">let </span>v0_99::ChainConfig {
             chain_id,
             max_block_size,
             base_fee,
             fee_contract,
             fee_recipient,
+            stake_table_contract,
             ..
         } = chain_config;
 
-        v0_1::ChainConfig {
+        ChainConfig {
             chain_id,
             max_block_size,
             base_fee,
             fee_contract,
             fee_recipient,
+            stake_table_contract,
         }
     }
 }

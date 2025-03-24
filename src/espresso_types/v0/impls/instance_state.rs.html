@@ -402,9 +402,43 @@
 <a href="#401" id="401">401</a>
 <a href="#402" id="402">402</a>
 <a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
+<a href="#404" id="404">404</a>
+<a href="#405" id="405">405</a>
+<a href="#406" id="406">406</a>
+<a href="#407" id="407">407</a>
+<a href="#408" id="408">408</a>
+<a href="#409" id="409">409</a>
+<a href="#410" id="410">410</a>
+<a href="#411" id="411">411</a>
+<a href="#412" id="412">412</a>
+<a href="#413" id="413">413</a>
+<a href="#414" id="414">414</a>
+<a href="#415" id="415">415</a>
+<a href="#416" id="416">416</a>
+<a href="#417" id="417">417</a>
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, sync::Arc};
 
-<span class="kw">use </span>async_lock::RwLock;
+<span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
+</span><span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>async_trait::async_trait;
 <span class="kw">use </span>hotshot::types::BLSPubKey;
 <span class="kw">use </span>hotshot_types::{
@@ -421,12 +455,14 @@
     traits::MembershipPersistence,
     v0_1::NoStorage,
     v0_3::{IndexedStake, Validator},
-    EpochCommittees, SeqTypes,
+    SeqTypes,
 };
 <span class="kw">use </span><span class="kw">crate</span>::v0::{
     traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo, L1Client, PubKey,
     Timestamp, Upgrade, UpgradeMode,
 };
+<span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
+</span><span class="kw">use </span><span class="kw">crate</span>::EpochCommittees;
 
 <span class="doccomment">/// Represents the immutable state of a node.
 ///
@@ -571,6 +607,36 @@
     }
 
     <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
+    </span><span class="kw">pub fn </span>mock_v3() -&gt; <span class="self">Self </span>{
+        <span class="kw">use </span>ethers_conv::ToAlloy;
+        <span class="kw">use </span>vbs::version::StaticVersion;
+
+        <span class="kw">let </span>chain_config = ChainConfig::default();
+        <span class="kw">let </span>l1 = L1Client::new(<span class="macro">vec!</span>[<span class="string">"http://localhost:3331"</span>.parse().unwrap()])
+            .expect(<span class="string">"Failed to create L1 client"</span>);
+
+        <span class="kw">let </span>membership = Arc::new(RwLock::new(EpochCommittees::new_stake(
+            <span class="macro">vec!</span>[],
+            <span class="macro">vec!</span>[],
+            l1.clone(),
+            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            Arc::new(mock::MockStateCatchup::default()),
+            NoStorage,
+        )));
+
+        <span class="kw">let </span>coordinator = EpochMembershipCoordinator::new(membership, <span class="number">100</span>);
+        <span class="self">Self</span>::new(
+            <span class="number">0</span>,
+            ChainConfig::default(),
+            L1Client::new(<span class="macro">vec!</span>[<span class="string">"http://localhost:3331"</span>.parse().unwrap()])
+                .expect(<span class="string">"Failed to create L1 client"</span>),
+            mock::MockStateCatchup::default(),
+            StaticVersion::&lt;<span class="number">0</span>, <span class="number">3</span>&gt;::version(),
+            coordinator,
+        )
+    }
+
+    <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
     </span><span class="kw">pub fn </span>mock_v99() -&gt; <span class="self">Self </span>{
         <span class="kw">use </span>ethers_conv::ToAlloy;
         <span class="kw">use </span>vbs::version::StaticVersion;
@@ -618,8 +684,8 @@
         <span class="self">self
     </span>}
 
-    <span class="kw">pub fn </span>with_current_version(<span class="kw-2">mut </span><span class="self">self</span>, ver: Version) -&gt; <span class="self">Self </span>{
-        <span class="self">self</span>.current_version = ver;
+    <span class="kw">pub fn </span>with_current_version(<span class="kw-2">mut </span><span class="self">self</span>, version: Version) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.current_version = version;
         <span class="self">self
     </span>}
 

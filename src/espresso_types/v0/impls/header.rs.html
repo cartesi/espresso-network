@@ -1754,7 +1754,8 @@
 <a href="#1753" id="1753">1753</a>
 <a href="#1754" id="1754">1754</a>
 <a href="#1755" id="1755">1755</a>
-<a href="#1756" id="1756">1756</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
+<a href="#1756" id="1756">1756</a>
+<a href="#1757" id="1757">1757</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 
 <span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>ark_serialize::CanonicalSerialize;
@@ -2091,7 +2092,7 @@
                 </span>builder_signature: builder_signature.first().copied(),
             }),
             <span class="number">3 </span>=&gt; <span class="self">Self</span>::V3(v0_3::Header {
-                chain_config: v0_1::ResolvableChainConfig::from(v0_1::ChainConfig::from(
+                chain_config: v0_3::ResolvableChainConfig::from(v0_3::ChainConfig::from(
                     chain_config,
                 )),
                 height,
@@ -2319,7 +2320,7 @@
                 builder_signature: builder_signature.first().copied(),
             }),
             <span class="number">3 </span>=&gt; <span class="self">Self</span>::V3(v0_3::Header {
-                chain_config: v0_1::ResolvableChainConfig::from(v0_1::ChainConfig::from(
+                chain_config: v0_3::ResolvableChainConfig::from(v0_3::ChainConfig::from(
                     chain_config,
                 )),
                 height,
@@ -2755,6 +2756,7 @@
             <span class="kw">match </span>instance_state.upgrades.get(<span class="kw-2">&amp;</span>version) {
                 <span class="prelude-val">Some</span>(upgrade) =&gt; <span class="kw">match </span>upgrade.upgrade_type {
                     UpgradeType::Fee { chain_config } =&gt; chain_config,
+                    UpgradeType::Epoch { chain_config } =&gt; chain_config,
                     <span class="kw">_ </span>=&gt; Header::get_chain_config(<span class="kw-2">&amp;</span>validated_state, instance_state).<span class="kw">await</span><span class="question-mark">?</span>,
                 },
                 <span class="prelude-val">None </span>=&gt; Header::get_chain_config(<span class="kw-2">&amp;</span>validated_state, instance_state).<span class="kw">await</span><span class="question-mark">?</span>,
