@@ -830,11 +830,7 @@
 <a href="#829" id="829">829</a>
 <a href="#830" id="830">830</a>
 <a href="#831" id="831">831</a>
-<a href="#832" id="832">832</a>
-<a href="#833" id="833">833</a>
-<a href="#834" id="834">834</a>
-<a href="#835" id="835">835</a>
-<a href="#836" id="836">836</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#832" id="832">832</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -854,7 +850,6 @@
 <span class="kw">use </span>hotshot_types::{
     consensus::{ConsensusMetricsValue, OuterConsensus},
     data::{vid_disperse::vid_total_weight, Leaf2, QuorumProposalWrapper},
-    drb::DrbComputation,
     epoch_membership::EpochMembershipCoordinator,
     event::Event,
     message::{Proposal, UpgradeLock},
@@ -1165,9 +1160,6 @@
 
     <span class="doccomment">/// Membership for Quorum certs/votes and DA committee certs/votes.
     </span><span class="kw">pub </span>membership: EpochMembershipCoordinator&lt;TYPES&gt;,
-
-    <span class="doccomment">/// In-progress DRB computation task.
-    </span><span class="kw">pub </span>drb_computation: DrbComputation&lt;TYPES&gt;,
 
     <span class="doccomment">/// Output events to application
     </span><span class="kw">pub </span>output_event_stream: async_broadcast::Sender&lt;Event&lt;TYPES&gt;&gt;,

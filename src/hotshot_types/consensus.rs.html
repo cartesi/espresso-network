@@ -1163,7 +1163,7 @@
 <span class="kw">pub use </span><span class="kw">crate</span>::utils::{View, ViewInner};
 <span class="kw">use crate</span>::{
     data::{Leaf2, QuorumProposalWrapper, VidCommitment, VidDisperse, VidDisperseShare},
-    drb::DrbSeedsAndResults,
+    drb::DrbResults,
     epoch_membership::EpochMembershipCoordinator,
     error::HotShotError,
     event::{HotShotAction, LeafInfo},
@@ -1471,7 +1471,7 @@
     </span><span class="kw">pub </span>epoch_height: u64,
 
     <span class="doccomment">/// Tables for the DRB seeds and results.
-    </span><span class="kw">pub </span>drb_seeds_and_results: DrbSeedsAndResults&lt;TYPES&gt;,
+    </span><span class="kw">pub </span>drb_results: DrbResults&lt;TYPES&gt;,
 }
 
 <span class="doccomment">/// This struct holds a payload and its metadata
@@ -1590,7 +1590,7 @@
             next_epoch_high_qc,
             metrics,
             epoch_height,
-            drb_seeds_and_results: DrbSeedsAndResults::new(),
+            drb_results: DrbResults::new(),
         }
     }
 

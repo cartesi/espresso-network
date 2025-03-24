@@ -2337,7 +2337,7 @@
 
                         <span class="comment">// Compare calculated commitment with requested commitment
                         </span><span class="kw">if </span>commit != req.<span class="number">0 </span>{
-                            <span class="macro">tracing::error!</span>(<span class="string">"commitment type mismatch for AVIDM check"</span>);
+                            <span class="macro">tracing::warn!</span>(<span class="string">"commitment type mismatch for AVIDM check"</span>);
                             <span class="kw">return </span><span class="prelude-val">None</span>;
                         }
                     },
