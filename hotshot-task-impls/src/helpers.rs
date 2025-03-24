@@ -264,7 +264,7 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
             let mut membership_writer = membership.write().await;
             write_callback(&mut *membership_writer);
         }
-        // Cancel old DRB computation tasks.
+
         let mut consensus_writer = consensus.write().await;
         consensus_writer
             .drb_results
