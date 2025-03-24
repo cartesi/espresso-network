@@ -245,7 +245,12 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -475,9 +480,14 @@
     </span><span class="kw">pub </span>stop_voting_time: u64,
     <span class="doccomment">/// Number of blocks in an epoch, zero means there are no epochs
     </span><span class="kw">pub </span>epoch_height: u64,
-    <span class="doccomment">/// Epoch start block
+    <span class="doccomment">/// Epoch start block   
+    </span><span class="attr">#[serde(default = <span class="string">"default_epoch_start_block"</span>)]
     </span><span class="kw">pub </span>epoch_start_block: u64,
 }
+
+<span class="kw">fn </span>default_epoch_start_block() -&gt; u64 {
+    <span class="number">1
+</span>}
 
 <span class="kw">impl</span>&lt;KEY: SignatureKey&gt; HotShotConfig&lt;KEY&gt; {
     <span class="doccomment">/// Update a hotshot config to have a view-based upgrade.
