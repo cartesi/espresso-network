@@ -777,7 +777,7 @@ impl Membership<SeqTypes> for EpochCommittees {
         let address = contract_address?;
 
         let stake_tables = self
-            .get_stake_table_from_contract(address.to_alloy(), block_header.height())
+            .get_stake_table_from_contract(address.to_alloy(), block_header.l1_head())
             .await
             .inspect_err(|e| {
                 tracing::error!(?e, "`add_epoch_root`, error retrieving stake table");
