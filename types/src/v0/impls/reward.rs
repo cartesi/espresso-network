@@ -427,7 +427,9 @@ pub async fn catchup_missing_accounts(
         .leader(view, Some(epoch))
         .context(format!("leader for epoch {epoch:?} not found"))?;
 
-    let validator = membership.get_validator_config(&epoch, leader).unwrap();
+    let validator = membership
+        .get_validator_config(&epoch, leader)
+        .context("validator not found")?;
     let mut reward_accounts = HashSet::new();
     reward_accounts.insert(validator.account.to_ethers().into());
     let delegators = validator

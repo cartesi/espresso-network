@@ -239,7 +239,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> CreateTaskState
             vote_dependencies: BTreeMap::new(),
             network: Arc::clone(&handle.hotshot.network),
             membership: handle.hotshot.membership_coordinator.clone(),
-            drb_computation: None,
             output_event_stream: handle.hotshot.external_event_stream.0.clone(),
             id: handle.hotshot.id,
             storage: Arc::clone(&handle.storage),
