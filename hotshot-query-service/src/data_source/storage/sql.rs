@@ -1880,6 +1880,7 @@ mod test {
         let null_quorum_data = QuorumData2 {
             leaf_commit: Commitment::<Leaf2<MockTypes>>::default_commitment_no_preimage(),
             epoch: None,
+            block_number: Some(height),
         };
 
         let mut qc = QuorumCertificate2::new(
