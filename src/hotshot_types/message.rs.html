@@ -740,7 +740,10 @@
 <a href="#739" id="739">739</a>
 <a href="#740" id="740">740</a>
 <a href="#741" id="741">741</a>
-<a href="#742" id="742">742</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -981,7 +984,10 @@
     </span>ProposalResponse2(Proposal&lt;TYPES, QuorumProposal2&lt;TYPES&gt;&gt;),
 
     <span class="doccomment">/// Message for the next leader containing our highest QC
-    </span>HighQc(QuorumCertificate2&lt;TYPES&gt;),
+    </span>HighQc(
+        QuorumCertificate2&lt;TYPES&gt;,
+        <span class="prelude-ty">Option</span>&lt;NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
+    ),
 
     <span class="doccomment">/// Message for the next leader containing our highest QC
     </span>ExtendedQc(
@@ -1114,7 +1120,7 @@
                     },
                     GeneralConsensusMessage::UpgradeProposal(message) =&gt; message.data.view_number(),
                     GeneralConsensusMessage::UpgradeVote(message) =&gt; message.view_number(),
-                    GeneralConsensusMessage::HighQc(qc)
+                    GeneralConsensusMessage::HighQc(qc, <span class="kw">_</span>)
                     | GeneralConsensusMessage::ExtendedQc(qc, <span class="kw">_</span>) =&gt; qc.view_number(),
                 }
             },
@@ -1185,7 +1191,7 @@
                     },
                     GeneralConsensusMessage::UpgradeProposal(message) =&gt; message.data.epoch(),
                     GeneralConsensusMessage::UpgradeVote(message) =&gt; message.epoch(),
-                    GeneralConsensusMessage::HighQc(qc)
+                    GeneralConsensusMessage::HighQc(qc, <span class="kw">_</span>)
                     | GeneralConsensusMessage::ExtendedQc(qc, <span class="kw">_</span>) =&gt; qc.epoch(),
                 }
             },

@@ -1093,9 +1093,7 @@
 <a href="#1092" id="1092">1092</a>
 <a href="#1093" id="1093">1093</a>
 <a href="#1094" id="1094">1094</a>
-<a href="#1095" id="1095">1095</a>
-<a href="#1096" id="1096">1096</a>
-<a href="#1097" id="1097">1097</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer node persistence.
+<a href="#1095" id="1095">1095</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sequencer node persistence.
 //!
 //! This module implements the persistence required for a sequencer node to rejoin the network and
 //! resume participating in consensus, in the event that its process crashes or is killed and loses
@@ -1784,14 +1782,12 @@
 
         <span class="kw">let </span>genesis_view = ViewNumber::genesis();
 
+        <span class="kw">let </span>leaf =
+            Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::default()).<span class="kw">await</span>;
         <span class="kw">let </span>data: NextEpochQuorumData2&lt;SeqTypes&gt; = QuorumData2 {
-            leaf_commit: Leaf2::genesis::&lt;TestVersions&gt;(
-                <span class="kw-2">&amp;</span>ValidatedState::default(),
-                <span class="kw-2">&amp;</span>NodeState::default(),
-            )
-            .<span class="kw">await
-            </span>.commit(),
+            leaf_commit: leaf.commit(),
             epoch: <span class="prelude-val">Some</span>(EpochNumber::new(<span class="number">1</span>)),
+            block_number: <span class="prelude-val">Some</span>(leaf.height()),
         }
         .into();
 

@@ -651,7 +651,12 @@
 <a href="#650" id="650">650</a>
 <a href="#651" id="651">651</a>
 <a href="#652" id="652">652</a>
-<a href="#653" id="653">653</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#653" id="653">653</a>
+<a href="#654" id="654">654</a>
+<a href="#655" id="655">655</a>
+<a href="#656" id="656">656</a>
+<a href="#657" id="657">657</a>
+<a href="#658" id="658">658</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -904,11 +909,16 @@
     ),
 
     <span class="doccomment">/// A replica send us a High QC
-    </span>HighQcRecv(QuorumCertificate2&lt;TYPES&gt;, TYPES::SignatureKey),
+    </span>HighQcRecv(
+        QuorumCertificate2&lt;TYPES&gt;,
+        <span class="prelude-ty">Option</span>&lt;NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
+        TYPES::SignatureKey,
+    ),
 
     <span class="doccomment">/// Send our HighQc to the next leader, should go to the same leader as our vote
     </span>HighQcSend(
         QuorumCertificate2&lt;TYPES&gt;,
+        <span class="prelude-ty">Option</span>&lt;NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
         TYPES::SignatureKey,
         TYPES::SignatureKey,
     ),
@@ -1010,7 +1020,7 @@
             | HotShotEvent::VidRequestRecv(request, <span class="kw">_</span>) =&gt; <span class="prelude-val">Some</span>(request.view),
             HotShotEvent::VidResponseSend(<span class="kw">_</span>, <span class="kw">_</span>, proposal)
             | HotShotEvent::VidResponseRecv(<span class="kw">_</span>, proposal) =&gt; <span class="prelude-val">Some</span>(proposal.data.view_number()),
-            HotShotEvent::HighQcRecv(qc, <span class="kw">_</span>)
+            HotShotEvent::HighQcRecv(qc, ..)
             | HotShotEvent::HighQcSend(qc, ..)
             | HotShotEvent::ExtendedQcRecv(qc, ..)
             | HotShotEvent::ExtendedQcSend(qc, ..) =&gt; <span class="prelude-val">Some</span>(qc.view_number()),
@@ -1289,7 +1299,7 @@
                     proposal.data.view_number()
                 )
             },
-            HotShotEvent::HighQcRecv(qc, <span class="kw">_</span>) =&gt; {
+            HotShotEvent::HighQcRecv(qc, ..) =&gt; {
                 <span class="macro">write!</span>(f, <span class="string">"HighQcRecv(view_number={:?}"</span>, qc.view_number())
             },
             HotShotEvent::HighQcSend(qc, ..) =&gt; {

@@ -1916,7 +1916,19 @@
 <a href="#1915" id="1915">1915</a>
 <a href="#1916" id="1916">1916</a>
 <a href="#1917" id="1917">1917</a>
-<a href="#1918" id="1918">1918</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1918" id="1918">1918</a>
+<a href="#1919" id="1919">1919</a>
+<a href="#1920" id="1920">1920</a>
+<a href="#1921" id="1921">1921</a>
+<a href="#1922" id="1922">1922</a>
+<a href="#1923" id="1923">1923</a>
+<a href="#1924" id="1924">1924</a>
+<a href="#1925" id="1925">1925</a>
+<a href="#1926" id="1926">1926</a>
+<a href="#1927" id="1927">1927</a>
+<a href="#1928" id="1928">1928</a>
+<a href="#1929" id="1929">1929</a>
+<a href="#1930" id="1930">1930</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -3039,9 +3051,16 @@
             metadata,
         );
 
+        <span class="kw">let </span>block_number = <span class="kw">if </span>V::Base::VERSION &lt; V::Epochs::VERSION {
+            <span class="prelude-val">None
+        </span>} <span class="kw">else </span>{
+            <span class="prelude-val">Some</span>(<span class="number">0u64</span>)
+        };
+
         <span class="kw">let </span>null_quorum_data = QuorumData2 {
             leaf_commit: Commitment::&lt;Leaf2&lt;TYPES&gt;&gt;::default_commitment_no_preimage(),
             epoch,
+            block_number,
         };
 
         <span class="kw">let </span>justify_qc = QuorumCertificate2::new(
@@ -3371,12 +3390,17 @@
 
         <span class="kw">let </span>genesis_view = &lt;TYPES::View <span class="kw">as </span>ConsensusTime&gt;::genesis();
 
-        <span class="kw">let </span>data = QuorumData2 {
-            leaf_commit: Leaf2::genesis::&lt;V&gt;(validated_state, instance_state)
-                .<span class="kw">await
-                </span>.commit(),
-            epoch: genesis_epoch_from_version::&lt;V, TYPES&gt;(), <span class="comment">// #3967 make sure this is enough of a gate for epochs
+        <span class="kw">let </span>genesis_leaf = Leaf2::genesis::&lt;V&gt;(validated_state, instance_state).<span class="kw">await</span>;
+        <span class="kw">let </span>block_number = <span class="kw">if </span>upgrade_lock.epochs_enabled(genesis_view).<span class="kw">await </span>{
+            <span class="prelude-val">Some</span>(genesis_leaf.height())
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
         </span>};
+        <span class="kw">let </span>data = QuorumData2 {
+            leaf_commit: genesis_leaf.commit(),
+            epoch: genesis_epoch_from_version::&lt;V, TYPES&gt;(), <span class="comment">// #3967 make sure this is enough of a gate for epochs
+            </span>block_number,
+        };
 
         <span class="kw">let </span>versioned_data =
             VersionedVoteData::&lt;<span class="kw">_</span>, <span class="kw">_</span>, V&gt;::new_infallible(data.clone(), genesis_view, <span class="kw-2">&amp;</span>upgrade_lock)

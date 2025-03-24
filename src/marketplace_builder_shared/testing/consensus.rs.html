@@ -190,7 +190,9 @@
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
 <a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines types used when simulating consensus in tests
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module defines types used when simulating consensus in tests
 
 </span><span class="kw">use </span>std::marker::PhantomData;
 
@@ -307,9 +309,11 @@
             </span>},
             <span class="prelude-val">Some</span>(prev_proposal) =&gt; {
                 <span class="kw">let </span>prev_justify_qc = <span class="kw-2">&amp;</span>prev_proposal.justify_qc();
+                <span class="kw">let </span>prev_leaf = Leaf2::from_quorum_proposal(prev_proposal);
                 <span class="kw">let </span>quorum_data = QuorumData2::&lt;TestTypes&gt; {
-                    leaf_commit: Committable::commit(<span class="kw-2">&amp;</span>Leaf2::from_quorum_proposal(prev_proposal)),
+                    leaf_commit: Committable::commit(<span class="kw-2">&amp;</span>prev_leaf),
                     epoch: <span class="self">self</span>.epoch,
+                    block_number: <span class="prelude-val">Some</span>(prev_leaf.height()),
                 };
 
                 <span class="comment">// form a justify qc

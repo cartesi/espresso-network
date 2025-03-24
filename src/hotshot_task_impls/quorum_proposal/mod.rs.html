@@ -660,7 +660,65 @@
 <a href="#659" id="659">659</a>
 <a href="#660" id="660">660</a>
 <a href="#661" id="661">661</a>
-<a href="#662" id="662">662</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#662" id="662">662</a>
+<a href="#663" id="663">663</a>
+<a href="#664" id="664">664</a>
+<a href="#665" id="665">665</a>
+<a href="#666" id="666">666</a>
+<a href="#667" id="667">667</a>
+<a href="#668" id="668">668</a>
+<a href="#669" id="669">669</a>
+<a href="#670" id="670">670</a>
+<a href="#671" id="671">671</a>
+<a href="#672" id="672">672</a>
+<a href="#673" id="673">673</a>
+<a href="#674" id="674">674</a>
+<a href="#675" id="675">675</a>
+<a href="#676" id="676">676</a>
+<a href="#677" id="677">677</a>
+<a href="#678" id="678">678</a>
+<a href="#679" id="679">679</a>
+<a href="#680" id="680">680</a>
+<a href="#681" id="681">681</a>
+<a href="#682" id="682">682</a>
+<a href="#683" id="683">683</a>
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a>
+<a href="#687" id="687">687</a>
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a>
+<a href="#690" id="690">690</a>
+<a href="#691" id="691">691</a>
+<a href="#692" id="692">692</a>
+<a href="#693" id="693">693</a>
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -681,13 +739,13 @@
     consensus::OuterConsensus,
     epoch_membership::EpochMembershipCoordinator,
     message::UpgradeLock,
-    simple_certificate::{QuorumCertificate2, UpgradeCertificate},
+    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
     traits::{
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
         storage::Storage,
     },
-    utils::EpochTransitionIndicator,
+    utils::{is_last_block_in_epoch, EpochTransitionIndicator},
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -710,6 +768,13 @@
 
     <span class="doccomment">/// Table for the in-progress proposal dependency tasks.
     </span><span class="kw">pub </span>proposal_dependencies: BTreeMap&lt;TYPES::View, JoinHandle&lt;()&gt;&gt;,
+
+    <span class="doccomment">/// Formed QCs
+    </span><span class="kw">pub </span>formed_quorum_certificates: BTreeMap&lt;TYPES::View, QuorumCertificate2&lt;TYPES&gt;&gt;,
+
+    <span class="doccomment">/// Formed eQCs
+    </span><span class="kw">pub </span>formed_extended_quorum_certificates:
+        BTreeMap&lt;TYPES::View, NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
 
     <span class="doccomment">/// Immutable instance state
     </span><span class="kw">pub </span>instance_state: Arc&lt;TYPES::InstanceState&gt;,
@@ -748,9 +813,6 @@
 
     <span class="doccomment">/// Number of blocks in an epoch, zero means there are no epochs
     </span><span class="kw">pub </span>epoch_height: u64,
-
-    <span class="doccomment">/// The highest_qc we've seen at the start of this task
-    </span><span class="kw">pub </span>highest_qc: QuorumCertificate2&lt;TYPES&gt;,
 }
 
 <span class="kw">impl</span>&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt;
@@ -1009,7 +1071,6 @@
                 upgrade_lock: <span class="self">self</span>.upgrade_lock.clone(),
                 id: <span class="self">self</span>.id,
                 view_start_time: Instant::now(),
-                highest_qc: <span class="self">self</span>.highest_qc.clone(),
                 epoch_height: <span class="self">self</span>.epoch_height,
             },
         );
@@ -1043,6 +1104,101 @@
         }
         <span class="bool-val">false
     </span>}
+
+    <span class="kw">async fn </span>update_high_qc(<span class="kw-2">&amp;mut </span><span class="self">self</span>, qc: QuorumCertificate2&lt;TYPES&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.consensus
+            .write()
+            .<span class="kw">await
+            </span>.update_high_qc(qc.clone())
+            .wrap()
+            .context(<span class="macro">error!</span>(
+                <span class="string">"Failed to update high QC in internal consensus state!"
+            </span>))<span class="question-mark">?</span>;
+
+        <span class="comment">// Then update the high QC in storage
+        </span><span class="self">self</span>.storage
+            .write()
+            .<span class="kw">await
+            </span>.update_high_qc2(qc)
+            .<span class="kw">await
+            </span>.wrap()
+            .context(<span class="macro">error!</span>(<span class="string">"Failed to update high QC in storage!"</span>))
+    }
+
+    <span class="kw">async fn </span>update_next_epoch_high_qc(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        qc: NextEpochQuorumCertificate2&lt;TYPES&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.consensus
+            .write()
+            .<span class="kw">await
+            </span>.update_next_epoch_high_qc(qc.clone())
+            .wrap()
+            .context(<span class="macro">error!</span>(
+                <span class="string">"Failed to update next epoch high QC in internal consensus state!"
+            </span>))<span class="question-mark">?</span>;
+
+        <span class="comment">// Then update the next epoch high QC in storage
+        </span><span class="self">self</span>.storage
+            .write()
+            .<span class="kw">await
+            </span>.update_next_epoch_high_qc2(qc)
+            .<span class="kw">await
+            </span>.wrap()
+            .context(<span class="macro">error!</span>(<span class="string">"Failed to update next epoch high QC in storage!"</span>))
+    }
+
+    <span class="doccomment">/// Hanldles checking that both certificates for an eqc exist and stores if they do.  Also handles storing the QC for cases
+    /// where we do not need a next epoch QC.
+    </span><span class="kw">async fn </span>check_eqc_and_store(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        view_number: TYPES::View,
+        qc: Either&lt;QuorumCertificate2&lt;TYPES&gt;, NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>(qc, next_epoch_qc) = <span class="kw">match </span>qc {
+            Either::Left(qc) =&gt; {
+                <span class="kw">let </span><span class="prelude-val">Some</span>(block_number) = qc.data.block_number <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="self">self</span>.update_high_qc(qc).<span class="kw">await</span>;
+                };
+
+                <span class="kw">if </span>!<span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await
+                    </span>|| !is_last_block_in_epoch(block_number, <span class="self">self</span>.epoch_height)
+                {
+                    <span class="kw">return </span><span class="self">self</span>.update_high_qc(qc).<span class="kw">await</span>;
+                }
+                <span class="kw">let </span><span class="prelude-val">Some</span>(next_epoch_qc) =
+                    <span class="self">self</span>.formed_extended_quorum_certificates.get(<span class="kw-2">&amp;</span>view_number)
+                <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                };
+                <span class="kw">if </span>next_epoch_qc.data.leaf_commit != qc.data.leaf_commit {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                }
+                (qc, next_epoch_qc.clone())
+            },
+            Either::Right(next_epoch_qc) =&gt; {
+                <span class="kw">if </span>!<span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                }
+                <span class="kw">let </span><span class="prelude-val">Some</span>(high_qc) = <span class="self">self</span>.formed_quorum_certificates.get(<span class="kw-2">&amp;</span>view_number) <span class="kw">else </span>{
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                };
+                <span class="kw">if </span>high_qc.data.leaf_commit != next_epoch_qc.data.leaf_commit {
+                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                }
+                (high_qc.clone(), next_epoch_qc)
+            },
+        };
+        <span class="comment">// clean up old qcs
+        </span><span class="self">self</span>.formed_extended_quorum_certificates = <span class="self">self
+            </span>.formed_extended_quorum_certificates
+            .split_off(<span class="kw-2">&amp;</span>view_number);
+        <span class="self">self</span>.formed_quorum_certificates = <span class="self">self</span>.formed_quorum_certificates.split_off(<span class="kw-2">&amp;</span>view_number);
+        <span class="comment">// Store the new eqc
+        </span><span class="self">self</span>.update_high_qc(qc).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.update_next_epoch_high_qc(next_epoch_qc).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
+    }
 
     <span class="doccomment">/// Handles a consensus event received on the event stream
     </span><span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, latest_proposed_view = <span class="kw-2">*</span><span class="self">self</span>.latest_proposed_view, epoch = <span class="self">self</span>.cur_epoch.map(|x| <span class="kw-2">*</span>x)), name = <span class="string">"handle method"</span>, level = <span class="string">"error"</span>, target = <span class="string">"QuorumProposalTaskState"</span>)]
@@ -1092,23 +1248,12 @@
                             <span class="string">"Received a QC for a view that was not &gt; than our current high QC"
                         </span>);
                     }
-                    <span class="self">self</span>.consensus
-                        .write()
-                        .<span class="kw">await
-                        </span>.update_high_qc(qc.clone())
-                        .wrap()
-                        .context(<span class="macro">error!</span>(
-                            <span class="string">"Failed to update high QC in internal consensus state!"
-                        </span>))<span class="question-mark">?</span>;
 
-                    <span class="comment">// Then update the high QC in storage
-                    </span><span class="self">self</span>.storage
-                        .write()
-                        .<span class="kw">await
-                        </span>.update_high_qc2(qc.clone())
-                        .<span class="kw">await
-                        </span>.wrap()
-                        .context(<span class="macro">error!</span>(<span class="string">"Failed to update high QC in storage!"</span>))<span class="question-mark">?</span>;
+                    <span class="self">self</span>.formed_quorum_certificates
+                        .insert(qc.view_number(), qc.clone());
+
+                    <span class="self">self</span>.check_eqc_and_store(qc.view_number(), Either::Left(qc.clone()))
+                        .<span class="kw">await</span><span class="question-mark">?</span>;
 
                     handle_eqc_formed(qc.view_number(), qc.data.leaf_commit, <span class="self">self</span>, <span class="kw-2">&amp;</span>event_sender)
                         .<span class="kw">await</span>;
@@ -1231,27 +1376,6 @@
                 <span class="kw">let </span>keep_view = TYPES::View::new(view.saturating_sub(<span class="number">1</span>));
                 <span class="self">self</span>.cancel_tasks(keep_view);
             },
-            HotShotEvent::HighQcSend(qc, ..) | HotShotEvent::ExtendedQcSend(qc, ..) =&gt; {
-                <span class="macro">ensure!</span>(qc.view_number() &gt; <span class="self">self</span>.highest_qc.view_number());
-                <span class="kw">let </span>cert_epoch_number = qc.data.epoch;
-
-                <span class="kw">let </span>epoch_membership = <span class="self">self
-                    </span>.membership_coordinator
-                    .membership_for_epoch(cert_epoch_number)
-                    .<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="kw">let </span>membership_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
-
-                qc.is_valid_cert(
-                    StakeTableEntries::&lt;TYPES&gt;::from(membership_stake_table).<span class="number">0</span>,
-                    membership_success_threshold,
-                    <span class="kw-2">&amp;</span><span class="self">self</span>.upgrade_lock,
-                )
-                .<span class="kw">await
-                </span>.context(|e| <span class="macro">warn!</span>(<span class="string">"Quorum certificate {:?} was invalid: {}"</span>, qc.data(), e))<span class="question-mark">?</span>;
-
-                <span class="self">self</span>.highest_qc = qc.clone();
-            },
             HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) =&gt; {
                 <span class="comment">// Only update if the qc is from a newer view
                 </span><span class="kw">let </span>current_next_epoch_qc =
@@ -1260,23 +1384,15 @@
                     next_epoch_qc.view_number &gt; current_next_epoch_qc.unwrap().view_number,
                     <span class="macro">debug!</span>(<span class="string">"Received a next epoch QC for a view that was not &gt; than our current next epoch high QC"</span>)
                 );
-                <span class="self">self</span>.consensus
-                    .write()
-                    .<span class="kw">await
-                    </span>.update_next_epoch_high_qc(next_epoch_qc.clone())
-                    .wrap()
-                    .context(<span class="macro">error!</span>(
-                        <span class="string">"Failed to update next epoch high QC in internal consensus state!"
-                    </span>))<span class="question-mark">?</span>;
 
-                <span class="comment">// Then update the next epoch high QC in storage
-                </span><span class="self">self</span>.storage
-                    .write()
-                    .<span class="kw">await
-                    </span>.update_next_epoch_high_qc2(next_epoch_qc.clone())
-                    .<span class="kw">await
-                    </span>.wrap()
-                    .context(<span class="macro">error!</span>(<span class="string">"Failed to update next epoch high QC in storage!"</span>))<span class="question-mark">?</span>;
+                <span class="self">self</span>.formed_extended_quorum_certificates
+                    .insert(next_epoch_qc.view_number(), next_epoch_qc.clone());
+
+                <span class="self">self</span>.check_eqc_and_store(
+                    next_epoch_qc.view_number(),
+                    Either::Right(next_epoch_qc.clone()),
+                )
+                .<span class="kw">await</span><span class="question-mark">?</span>;
 
                 handle_eqc_formed(
                     next_epoch_qc.view_number(),

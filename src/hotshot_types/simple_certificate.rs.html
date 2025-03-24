@@ -752,7 +752,8 @@
 <a href="#751" id="751">751</a>
 <a href="#752" id="752">752</a>
 <a href="#753" id="753">753</a>
-<a href="#754" id="754">754</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1221,6 +1222,7 @@
         <span class="kw">let </span>data = QuorumData2 {
             leaf_commit: Commitment::from_raw(bytes),
             epoch: <span class="prelude-val">None</span>,
+            block_number: <span class="prelude-val">None</span>,
         };
 
         <span class="kw">let </span>bytes: [u8; <span class="number">32</span>] = <span class="self">self</span>.vote_commitment.into();

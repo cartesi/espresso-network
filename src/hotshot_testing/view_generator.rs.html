@@ -682,7 +682,9 @@
 <a href="#681" id="681">681</a>
 <a href="#682" id="682">682</a>
 <a href="#683" id="683">683</a>
-<a href="#684" id="684">684</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#684" id="684">684</a>
+<a href="#685" id="685">685</a>
+<a href="#686" id="686">686</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -947,6 +949,7 @@
         <span class="kw">let </span>quorum_data = QuorumData2 {
             leaf_commit: old.leaf.commit(),
             epoch: old_epoch,
+            block_number: <span class="prelude-val">Some</span>(old.leaf.height()),
         };
 
         <span class="comment">//let (old_private_key, old_public_key) = key_pair_for_id::&lt;TestTypes&gt;(*old_view);
@@ -1211,6 +1214,7 @@
             QuorumData2 {
                 leaf_commit: <span class="self">self</span>.leaf.commit(),
                 epoch: <span class="self">self</span>.epoch_number,
+                block_number: <span class="prelude-val">Some</span>(<span class="self">self</span>.leaf.height()),
             },
             <span class="self">self</span>.view_number,
             <span class="kw-2">&amp;</span>handle.public_key(),

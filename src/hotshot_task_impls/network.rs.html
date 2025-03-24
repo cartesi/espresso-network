@@ -1381,7 +1381,9 @@
 <a href="#1380" id="1380">1380</a>
 <a href="#1381" id="1381">1381</a>
 <a href="#1382" id="1382">1382</a>
-<a href="#1383" id="1383">1383</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1383" id="1383">1383</a>
+<a href="#1384" id="1384">1384</a>
+<a href="#1385" id="1385">1385</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1690,7 +1692,9 @@
                             <span class="macro">tracing::error!</span>(<span class="string">"Received upgrade vote!"</span>);
                             HotShotEvent::UpgradeVoteRecv(message)
                         },
-                        GeneralConsensusMessage::HighQc(qc) =&gt; HotShotEvent::HighQcRecv(qc, sender),
+                        GeneralConsensusMessage::HighQc(qc, next_qc) =&gt; {
+                            HotShotEvent::HighQcRecv(qc, next_qc, sender)
+                        },
                         GeneralConsensusMessage::ExtendedQc(qc, next_epoch_qc) =&gt; {
                             HotShotEvent::ExtendedQcRecv(qc, next_epoch_qc, sender)
                         },
@@ -2532,10 +2536,10 @@
                 };
                 <span class="prelude-val">Some</span>((sender, message, TransmitType::Direct(to)))
             },
-            HotShotEvent::HighQcSend(quorum_cert, leader, sender) =&gt; <span class="prelude-val">Some</span>((
+            HotShotEvent::HighQcSend(quorum_cert, next_epoch_qc, leader, sender) =&gt; <span class="prelude-val">Some</span>((
                 sender,
                 MessageKind::Consensus(SequencingMessage::General(
-                    GeneralConsensusMessage::HighQc(quorum_cert),
+                    GeneralConsensusMessage::HighQc(quorum_cert, next_epoch_qc),
                 )),
                 TransmitType::Direct(leader),
             )),

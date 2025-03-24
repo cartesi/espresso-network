@@ -548,7 +548,24 @@
 <a href="#547" id="547">547</a>
 <a href="#548" id="548">548</a>
 <a href="#549" id="549">549</a>
-<a href="#550" id="550">550</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -580,8 +597,7 @@
         signature_key::SignatureKey,
     },
     utils::{is_last_block_in_epoch, option_epoch_from_block_number},
-    vote::{Certificate, HasViewNumber},
-    StakeTableEntries,
+    vote::HasViewNumber,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <span class="kw">use </span>tracing::instrument;
@@ -589,7 +605,10 @@
 
 <span class="kw">use crate</span>::{
     events::HotShotEvent,
-    helpers::{broadcast_event, parent_leaf_and_state, wait_for_next_epoch_qc},
+    helpers::{
+        broadcast_event, parent_leaf_and_state, validate_qc_and_next_epoch_qc,
+        wait_for_next_epoch_qc,
+    },
     quorum_proposal::{QuorumProposalTaskState, UpgradeLock, Versions},
 };
 
@@ -664,9 +683,6 @@
     <span class="doccomment">/// The time this view started
     </span><span class="kw">pub </span>view_start_time: Instant,
 
-    <span class="doccomment">/// The highest_qc we've seen at the start of this task
-    </span><span class="kw">pub </span>highest_qc: QuorumCertificate2&lt;TYPES&gt;,
-
     <span class="doccomment">/// Number of blocks in an epoch, zero means there are no epochs
     </span><span class="kw">pub </span>epoch_height: u64,
 }
@@ -675,23 +691,20 @@
     <span class="doccomment">/// Return the next HighQc we get from the event stream
     </span><span class="kw">async fn </span>wait_for_qc_event(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        rx: <span class="kw-2">&amp;mut </span>Receiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
+        <span class="kw-2">mut </span>rx: Receiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;QuorumCertificate2&lt;TYPES&gt;&gt; {
         <span class="kw">while let </span><span class="prelude-val">Ok</span>(event) = rx.recv_direct().<span class="kw">await </span>{
-            <span class="kw">if let </span>HotShotEvent::HighQcRecv(qc, _sender) = event.as_ref() {
-                <span class="kw">let </span>prev_epoch = qc.data.epoch;
-                <span class="kw">let </span>epoch_membership = <span class="self">self</span>.membership.get_new_epoch(prev_epoch).<span class="kw">await</span>.ok()<span class="question-mark">?</span>;
-                <span class="kw">let </span>membership_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
-                <span class="kw">let </span>membership_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
-
-                <span class="kw">if </span>qc
-                    .is_valid_cert(
-                        StakeTableEntries::&lt;TYPES&gt;::from(membership_stake_table).<span class="number">0</span>,
-                        membership_success_threshold,
-                        <span class="kw-2">&amp;</span><span class="self">self</span>.upgrade_lock,
-                    )
-                    .<span class="kw">await
-                    </span>.is_ok()
+            <span class="kw">if let </span>HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
+                <span class="kw">if </span>validate_qc_and_next_epoch_qc(
+                    qc,
+                    maybe_next_epoch_qc.as_ref(),
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.consensus,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership.coordinator,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.upgrade_lock,
+                    <span class="self">self</span>.epoch_height,
+                )
+                .<span class="kw">await
+                </span>.is_ok()
                 {
                     <span class="kw">return </span><span class="prelude-val">Some</span>(qc.clone());
                 }
@@ -701,46 +714,62 @@
     </span>}
     <span class="doccomment">/// Waits for the configured timeout for nodes to send HighQc messages to us.  We'll
     /// then propose with the highest QC from among these proposals.
-    </span><span class="kw">async fn </span>wait_for_highest_qc(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="macro">tracing::error!</span>(<span class="string">"waiting for QC"</span>);
+    </span><span class="kw">async fn </span>wait_for_highest_qc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;QuorumCertificate2&lt;TYPES&gt;&gt; {
+        <span class="macro">tracing::debug!</span>(<span class="string">"waiting for QC"</span>);
         <span class="comment">// If we haven't upgraded to Hotstuff 2 just return the high qc right away
-        </span><span class="kw">if </span><span class="self">self
-            </span>.upgrade_lock
-            .version(<span class="self">self</span>.view_number)
-            .<span class="kw">await
-            </span>.is_ok_and(|version| version &lt; V::Epochs::VERSION)
-        {
-            <span class="kw">return</span>;
-        }
+        </span><span class="macro">ensure!</span>(
+            <span class="self">self</span>.upgrade_lock.epochs_enabled(<span class="self">self</span>.view_number).<span class="kw">await</span>,
+            <span class="macro">error!</span>(<span class="string">"Epochs are not enabled yet we tried to wait for Highest QC."</span>)
+        );
+
+        <span class="kw">let </span><span class="kw-2">mut </span>highest_qc = <span class="self">self</span>.consensus.read().<span class="kw">await</span>.high_qc().clone();
+
         <span class="kw">let </span>wait_duration = Duration::from_millis(<span class="self">self</span>.timeout / <span class="number">2</span>);
+
+        <span class="kw">let </span><span class="kw-2">mut </span>rx = <span class="self">self</span>.receiver.clone();
+
+        <span class="comment">// drain any qc off the queue
+        </span><span class="kw">while let </span><span class="prelude-val">Ok</span>(event) = rx.try_recv() {
+            <span class="kw">if let </span>HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
+                <span class="kw">if </span>validate_qc_and_next_epoch_qc(
+                    qc,
+                    maybe_next_epoch_qc.as_ref(),
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.consensus,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.membership.coordinator,
+                    <span class="kw-2">&amp;</span><span class="self">self</span>.upgrade_lock,
+                    <span class="self">self</span>.epoch_height,
+                )
+                .<span class="kw">await
+                </span>.is_ok()
+                    &amp;&amp; qc.view_number() &gt; highest_qc.view_number()
+                {
+                    highest_qc = qc.clone();
+                }
+            }
+        }
 
         <span class="comment">// TODO configure timeout
         </span><span class="kw">while </span><span class="self">self</span>.view_start_time.elapsed() &lt; wait_duration {
-            <span class="kw">let </span><span class="prelude-val">Some</span>(time_spent) = Instant::now().checked_duration_since(<span class="self">self</span>.view_start_time)
-            <span class="kw">else </span>{
-                <span class="comment">// Shouldn't be possible, now must be after the start
-                </span><span class="kw">return</span>;
-            };
-            <span class="kw">let </span><span class="prelude-val">Some</span>(time_left) = wait_duration.checked_sub(time_spent) <span class="kw">else </span>{
-                <span class="comment">// No time left
-                </span><span class="kw">return</span>;
-            };
-            <span class="kw">let </span><span class="prelude-val">Ok</span>(maybe_qc) = tokio::time::timeout(
-                time_left,
-                <span class="self">self</span>.wait_for_qc_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>.receiver.clone()),
-            )
-            .<span class="kw">await
+            <span class="kw">let </span>time_spent = Instant::now()
+                .checked_duration_since(<span class="self">self</span>.view_start_time)
+                .ok_or(<span class="macro">error!</span>(<span class="string">"Time elapsed since the start of the task is negative. This should never happen."</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span>time_left = wait_duration
+                .checked_sub(time_spent)
+                .ok_or(<span class="macro">info!</span>(<span class="string">"No time left"</span>))<span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="prelude-val">Ok</span>(maybe_qc) =
+                tokio::time::timeout(time_left, <span class="self">self</span>.wait_for_qc_event(rx.clone())).<span class="kw">await
             else </span>{
-                <span class="comment">// we timeout out, don't wait any longer
-                </span><span class="kw">return</span>;
+                <span class="macro">tracing::info!</span>(<span class="string">"Some nodes did not respond with their HighQc in time. Continuing with the highest QC that we received: {highest_qc:?}"</span>);
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(highest_qc);
             };
             <span class="kw">let </span><span class="prelude-val">Some</span>(qc) = maybe_qc <span class="kw">else </span>{
                 <span class="kw">continue</span>;
             };
-            <span class="kw">if </span>qc.view_number() &gt; <span class="self">self</span>.highest_qc.view_number() {
-                <span class="self">self</span>.highest_qc = qc;
+            <span class="kw">if </span>qc.view_number() &gt; highest_qc.view_number() {
+                highest_qc = qc;
             }
         }
+        <span class="prelude-val">Ok</span>(highest_qc.clone())
     }
     <span class="doccomment">/// Publishes a proposal given the [`CommitmentAndMetadata`], [`VidDisperse`]
     /// and high qc [`hotshot_types::simple_certificate::QuorumCertificate`],
@@ -872,11 +901,11 @@
             </span>);
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
-        <span class="kw">let </span>is_high_qc_for_last_block = <span class="self">self
-            </span>.consensus
-            .read()
-            .<span class="kw">await
-            </span>.is_leaf_for_last_block(parent_qc.data.leaf_commit);
+        <span class="kw">let </span>is_high_qc_for_last_block = <span class="kw">if let </span><span class="prelude-val">Some</span>(block_number) = parent_qc.data.block_number {
+            is_last_block_in_epoch(block_number, <span class="self">self</span>.epoch_height)
+        } <span class="kw">else </span>{
+            <span class="bool-val">false
+        </span>};
         <span class="kw">let </span>next_epoch_qc = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(<span class="self">self</span>.view_number).<span class="kw">await
             </span>&amp;&amp; is_high_qc_for_last_block
         {
@@ -958,7 +987,7 @@
     <span class="kw">type </span>Output = Vec&lt;Vec&lt;Vec&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;&gt;&gt;;
 
     <span class="attr">#[allow(clippy::no_effect_underscore_binding, clippy::too_many_lines)]
-    </span><span class="kw">async fn </span>handle_dep_result(<span class="kw-2">mut </span><span class="self">self</span>, res: <span class="self">Self</span>::Output) {
+    </span><span class="kw">async fn </span>handle_dep_result(<span class="self">self</span>, res: <span class="self">Self</span>::Output) {
         <span class="kw">let </span><span class="kw-2">mut </span>commit_and_metadata: <span class="prelude-ty">Option</span>&lt;CommitmentAndMetadata&lt;TYPES&gt;&gt; = <span class="prelude-val">None</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>timeout_certificate = <span class="prelude-val">None</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>view_sync_finalize_cert = <span class="prelude-val">None</span>;
@@ -1013,8 +1042,13 @@
         } <span class="kw">else if </span>version &lt; V::Epochs::VERSION {
             <span class="self">self</span>.consensus.read().<span class="kw">await</span>.high_qc().clone()
         } <span class="kw">else </span>{
-            <span class="self">self</span>.wait_for_highest_qc().<span class="kw">await</span>;
-            <span class="self">self</span>.highest_qc.clone()
+            <span class="kw">match </span><span class="self">self</span>.wait_for_highest_qc().<span class="kw">await </span>{
+                <span class="prelude-val">Ok</span>(qc) =&gt; qc,
+                <span class="prelude-val">Err</span>(e) =&gt; {
+                    <span class="macro">tracing::error!</span>(<span class="string">"Error while waiting for highest QC: {:?}"</span>, e);
+                    <span class="kw">return</span>;
+                },
+            }
         };
 
         <span class="kw">if </span>commit_and_metadata.is_none() {
