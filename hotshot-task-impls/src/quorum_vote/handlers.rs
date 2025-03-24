@@ -55,7 +55,7 @@ async fn get_computed_drb_result<TYPES: NodeType, I: NodeImplementation<TYPES>, 
         .consensus
         .read()
         .await
-        .drb_seeds_and_results
+        .drb_results
         .results
         .get(&epoch_number)
         .cloned()
@@ -161,9 +161,8 @@ async fn store_drb_seed_and_result<TYPES: NodeType, I: NodeImplementation<TYPES>
                 .consensus
                 .write()
                 .await
-                .drb_seeds_and_results
-                .results
-                .insert(current_epoch_number + 1, result);
+                .drb_results
+                .store_result(current_epoch_number + 1, result);
             handle_drb_result::<TYPES, I>(
                 task_state.membership.membership(),
                 current_epoch_number + 1,
