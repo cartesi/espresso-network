@@ -219,38 +219,44 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             event_receiver.clone(),
         );
 
-        let next_epoch_qc_dependency = EventDependency::new(
+        let epoch_height = self.epoch_height;
+
+        // Dependency that is fulfilled by the NextEpochQc2Formed if we need it
+        // Otherwise, it is fulfilled by the Qc2Formed event if the block is not the last block in the epoch
+        let mut next_epoch_qc_dependency = EventDependency::new(
             event_receiver.clone(),
             Box::new(move |event| {
                 let event = event.as_ref();
                 if let HotShotEvent::NextEpochQc2Formed(Either::Left(qc)) = event {
-                    qc.view_number() + 1 == view_number
+                    return qc.view_number() + 1 == view_number;
+                }
+                if let HotShotEvent::Qc2Formed(Either::Left(qc)) = event {
+                    let Some(block_number) = qc.data.block_number else {
+                        return false;
+                    };
+                    if qc.view_number() + 1 != view_number {
+                        return false;
+                    }
+                    // if the qc formed is not for the last block we don't need a next epoch qc,
+                    // so we can return true
+                    return !is_last_block_in_epoch(block_number, epoch_height);
                 } else {
                     false
                 }
             }),
         );
-        let mut require_next_epoch_qc = false;
         match event.as_ref() {
             HotShotEvent::SendPayloadCommitmentAndMetadata(..) => {
                 payload_commitment_dependency.mark_as_completed(Arc::clone(&event));
             },
-            HotShotEvent::QuorumProposalPreliminarilyValidated(..) => {
+            HotShotEvent::QuorumProposalPreliminarilyValidated(_) => {
                 proposal_dependency.mark_as_completed(event);
             },
             HotShotEvent::Qc2Formed(quorum_certificate) => match quorum_certificate {
                 Either::Right(_) => {
                     timeout_dependency.mark_as_completed(event);
                 },
-                Either::Left(qc) => {
-                    if qc.data.block_number.is_some_and(|block_number| {
-                        is_last_block_in_epoch(block_number, self.epoch_height)
-                    }) && !self
-                        .formed_extended_quorum_certificates
-                        .contains_key(&qc.view_number())
-                    {
-                        require_next_epoch_qc = true;
-                    }
+                Either::Left(_) => {
                     qc_dependency.mark_as_completed(event);
                 },
             },
@@ -262,7 +268,15 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             },
             _ => {},
         };
-
+        let last_view_number = view_number - 1;
+        if let Some(qc) = self
+            .formed_extended_quorum_certificates
+            .get(&last_view_number)
+        {
+            next_epoch_qc_dependency.mark_as_completed(Arc::new(HotShotEvent::NextEpochQc2Formed(
+                Either::Left(qc.clone()),
+            )));
+        }
         // We have three cases to consider:
         let mut secondary_deps = vec![
             // 1. A timeout cert was received
@@ -274,14 +288,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
         if *view_number > 1 {
             secondary_deps.push(AndDependency::from_deps(vec![
                 qc_dependency,
+                next_epoch_qc_dependency,
                 proposal_dependency,
             ]));
         } else {
             secondary_deps.push(AndDependency::from_deps(vec![qc_dependency]));
-        }
-
-        if require_next_epoch_qc {
-            secondary_deps.push(AndDependency::from_deps(vec![next_epoch_qc_dependency]));
         }
 
         let primary_deps = vec![payload_commitment_dependency, vid_share_dependency];

@@ -889,7 +889,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             .next()
             .expect("INCONSISTENT STATE: anchor leaf not in state map!");
         if **anchor_entry.0 != old_anchor_view.saturating_sub(1) {
-            tracing::error!(
+            tracing::warn!(
                 "Something about GC has failed. Older leaf exists than the previous anchor leaf."
             );
         }
@@ -1113,12 +1113,10 @@ impl<TYPES: NodeType> Consensus<TYPES> {
 
     /// Returns true if our high QC is for the block equal or greater than the root epoch block
     pub fn is_high_qc_ge_root_block(&self) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&self.high_qc().data.leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the high QC");
-            return false;
-        };
-        let block_height = leaf.height();
-        is_ge_epoch_root(block_height, self.epoch_height)
+        self.high_qc()
+            .data
+            .block_number
+            .is_some_and(|block_number| is_ge_epoch_root(block_number, self.epoch_height))
     }
 }
 
