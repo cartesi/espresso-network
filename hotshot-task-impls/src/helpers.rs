@@ -271,7 +271,6 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
             .garbage_collect(next_epoch_number);
         drop(consensus_writer);
 
-        // Store the DRB seed input for the epoch after the next one.
         let Ok(drb_seed_input_vec) = bincode::serialize(&decided_leaf.justify_qc().signatures)
         else {
             tracing::error!("Failed to serialize the QC signature.");
