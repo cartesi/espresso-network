@@ -219,10 +219,7 @@ fn start_drb_task<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         .await
         .unwrap();
         let mut consensus_writer = consensus.write().await;
-        consensus_writer
-            .drb_seeds_and_results
-            .results
-            .insert(epoch, drb_result);
+        consensus_writer.drb_results.store_result(epoch, drb_result);
         drop(consensus_writer);
         handle_drb_result::<TYPES, I>(&membership, epoch, &storage, drb_result).await;
         drb_result
@@ -270,7 +267,7 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         // Cancel old DRB computation tasks.
         let mut consensus_writer = consensus.write().await;
         consensus_writer
-            .drb_seeds_and_results
+            .drb_results
             .garbage_collect(next_epoch_number);
         drop(consensus_writer);
 
