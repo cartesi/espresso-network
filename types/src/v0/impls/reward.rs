@@ -324,7 +324,10 @@ pub fn apply_rewards(
         reward_state = reward_state.persistent_update_with(account, |balance| {
             let balance = balance.copied();
             match balance.unwrap_or_default().0.checked_add(amount.0) {
-                Some(updated) => Some(updated.into()),
+                Some(updated) => {
+                    tracing::error!("updated balance for account {:?}: {:?}", account, updated);
+                    Some(updated.into())
+                },
                 None => {
                     err = Some(format!("overflowed reward balance for account {}", account));
                     balance
@@ -333,7 +336,7 @@ pub fn apply_rewards(
         })?;
 
         if let Some(error) = err {
-            tracing::warn!(error);
+            tracing::error!(error);
             bail!(error)
         }
         Ok::<(), anyhow::Error>(())
