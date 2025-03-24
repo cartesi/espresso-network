@@ -368,7 +368,8 @@
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
 <a href="#369" id="369">369</a>
-<a href="#370" id="370">370</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -413,6 +414,7 @@
     },
     HotShotConfig, PeerConfig,
 };
+<span class="kw">use </span>primitive_types::U256;
 <span class="kw">use </span>tokio::{
     runtime::Handle,
     task::{block_in_place, yield_now},
@@ -474,7 +476,7 @@
         <span class="kw">let </span>stake = <span class="number">1u64</span>;
         <span class="kw">let </span>known_nodes_with_stake = (<span class="number">0</span>..num_staked_nodes.into())
             .map(|id| PeerConfig {
-                stake_table_entry: pub_keys[id].stake_table_entry(stake),
+                stake_table_entry: pub_keys[id].stake_table_entry(U256::from(stake)),
                 state_ver_key: state_key_pairs[id].ver_key(),
             })
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();

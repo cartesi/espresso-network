@@ -686,7 +686,8 @@
 <a href="#685" id="685">685</a>
 <a href="#686" id="686">686</a>
 <a href="#687" id="687">687</a>
-<a href="#688" id="688">688</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#688" id="688">688</a>
+<a href="#689" id="689">689</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     future::Future,
     io::{Error <span class="kw">as </span>IoError, ErrorKind <span class="kw">as </span>IoErrorKind},
     pin::Pin,
@@ -1185,6 +1186,7 @@
         PeerConfig,
     };
     <span class="kw">use </span>libp2p::{core::transport::dummy::DummyTransport, quic::Connection};
+    <span class="kw">use </span>primitive_types::U256;
     <span class="kw">use </span>rand::Rng;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -1297,7 +1299,7 @@
 
         <span class="comment">// Create a stake table with the key
         </span><span class="kw">let </span>peer_config = PeerConfig {
-            stake_table_entry: keypair.<span class="number">0</span>.stake_table_entry(<span class="number">1</span>),
+            stake_table_entry: keypair.<span class="number">0</span>.stake_table_entry(U256::from(<span class="number">1</span>)),
             state_ver_key: StateVerKey::default(),
         };
         <span class="kw">let </span>membership =
@@ -1330,7 +1332,7 @@
 
         <span class="comment">// Create a stake table with the key
         </span><span class="kw">let </span>peer_config = PeerConfig {
-            stake_table_entry: keypair.<span class="number">0</span>.stake_table_entry(<span class="number">1</span>),
+            stake_table_entry: keypair.<span class="number">0</span>.stake_table_entry(U256::from(<span class="number">1</span>)),
             state_ver_key: StateVerKey::default(),
         };
         <span class="kw">let </span>membership = Arc::new(RwLock::new(&lt;TestTypes <span class="kw">as </span>NodeType&gt;::Membership::new(

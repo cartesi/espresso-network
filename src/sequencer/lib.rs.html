@@ -2027,7 +2027,7 @@
                 .iter()
                 .zip(<span class="kw-2">&amp;</span>state_key_pairs)
                 .map(|(pub_key, state_key_pair)| PeerConfig::&lt;PubKey&gt; {
-                    stake_table_entry: pub_key.stake_table_entry(<span class="number">1</span>),
+                    stake_table_entry: pub_key.stake_table_entry(U256::from(<span class="number">1</span>)),
                     state_ver_key: state_key_pair.ver_key(),
                 })
                 .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();

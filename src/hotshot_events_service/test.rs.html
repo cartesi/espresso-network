@@ -270,7 +270,8 @@
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
 <a href="#271" id="271">271</a>
-<a href="#272" id="272">272</a></pre></div><pre class="rust"><code><span class="attr">#[cfg(test)]
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a></pre></div><pre class="rust"><code><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>std::sync::Arc;
 
@@ -288,6 +289,7 @@
         },
         PeerConfig,
     };
+    <span class="kw">use </span>primitive_types::U256;
     <span class="kw">use </span>surf_disco::Client;
     <span class="kw">use </span>tide_disco::{App, Url};
     <span class="kw">use </span>tokio::spawn;
@@ -369,7 +371,7 @@
         <span class="kw">let </span>state_key_pair = StateKeyPair::generate();
 
         <span class="kw">let </span>peer_config = PeerConfig::&lt;BLSPubKey&gt; {
-            stake_table_entry: pub_key.stake_table_entry(<span class="number">1</span>),
+            stake_table_entry: pub_key.stake_table_entry(U256::from(<span class="number">1</span>)),
             state_ver_key: state_key_pair.ver_key(),
         };
 

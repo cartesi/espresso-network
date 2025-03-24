@@ -233,7 +233,8 @@
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
 <a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
 
 <span class="kw">use </span>anyhow::Context;
 <span class="kw">use </span>async_lock::RwLock;
@@ -319,6 +320,7 @@
         PeerConfig,
     };
     <span class="kw">use </span>portpicker::pick_unused_port;
+    <span class="kw">use </span>primitive_types::U256;
     <span class="kw">use </span>rand::{rngs::OsRng, RngCore};
     <span class="kw">use </span>tide_disco::{App, Url};
     <span class="kw">use </span>tokio::{spawn, task::JoinHandle, time::sleep};
@@ -338,7 +340,7 @@
                 <span class="kw">let </span>state_key_pair = StateKeyPair::generate();
 
                 PeerConfig::&lt;BLSPubKey&gt; {
-                    stake_table_entry: pub_key.stake_table_entry(NODE_STAKE),
+                    stake_table_entry: pub_key.stake_table_entry(U256::from(NODE_STAKE)),
                     state_ver_key: state_key_pair.ver_key(),
                 }
             })

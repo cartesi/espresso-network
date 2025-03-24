@@ -242,7 +242,10 @@
 <a href="#241" id="241">241</a>
 <a href="#242" id="242">242</a>
 <a href="#243" id="243">243</a>
-<a href="#244" id="244">244</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -254,6 +257,7 @@
 <span class="kw">use </span>bincode::Options;
 <span class="kw">use </span>displaydoc::Display;
 <span class="kw">use </span>light_client::StateVerKey;
+<span class="kw">use </span>primitive_types::U256;
 <span class="kw">use </span>tracing::error;
 <span class="kw">use </span>traits::{node_implementation::NodeType, signature_key::SignatureKey};
 <span class="kw">use </span>url::Url;
@@ -347,7 +351,9 @@
     <span class="doccomment">/// get the public config of the validator
     </span><span class="kw">pub fn </span>public_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PeerConfig&lt;KEY&gt; {
         PeerConfig {
-            stake_table_entry: <span class="self">self</span>.public_key.stake_table_entry(<span class="self">self</span>.stake_value),
+            stake_table_entry: <span class="self">self
+                </span>.public_key
+                .stake_table_entry(U256::from(<span class="self">self</span>.stake_value)),
             state_ver_key: <span class="self">self</span>.state_key_pair.<span class="number">0</span>.ver_key(),
         }
     }

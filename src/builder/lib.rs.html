@@ -522,7 +522,8 @@
 <a href="#521" id="521">521</a>
 <a href="#522" id="522">522</a>
 <a href="#523" id="523">523</a>
-<a href="#524" id="524">524</a></pre></div><pre class="rust"><code><span class="kw">use </span>espresso_types::SeqTypes;
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a></pre></div><pre class="rust"><code><span class="kw">use </span>espresso_types::SeqTypes;
 <span class="kw">use </span>hotshot_builder_api::v0_1::builder::{
     Error <span class="kw">as </span>BuilderApiError, Options <span class="kw">as </span>HotshotBuilderApiOptions,
 };
@@ -605,6 +606,7 @@
         HotShotConfig, PeerConfig, ValidatorConfig,
     };
     <span class="kw">use </span>jf_signature::bls_over_bn254::VerKey;
+    <span class="kw">use </span>primitive_types::U256;
     <span class="kw">use </span>sequencer::{context::Consensus, network, SequencerApiVersion};
     <span class="kw">use </span>surf_disco::Client;
     <span class="kw">use </span>vbs::version::StaticVersion;
@@ -698,7 +700,7 @@
             .iter()
             .zip(<span class="kw-2">&amp;</span>state_key_pairs)
             .map(|(pub_key, state_key_pair)| PeerConfig::&lt;PubKey&gt; {
-                stake_table_entry: pub_key.stake_table_entry(stake_value),
+                stake_table_entry: pub_key.stake_table_entry(U256::from(stake_value)),
                 state_ver_key: state_key_pair.ver_key(),
             })
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
