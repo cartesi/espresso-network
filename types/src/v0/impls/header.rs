@@ -39,6 +39,7 @@ use crate::{
     v0_99::{self, ChainConfig, IterableFeeInfo, SolverAuctionResults},
     BlockMerkleCommitment, BuilderSignature, EpochVersion, FeeAccount, FeeAmount, FeeInfo,
     FeeMerkleCommitment, Header, L1BlockInfo, L1Snapshot, Leaf2, NamespaceId, NsTable, SeqTypes,
+    UpgradeType,
 };
 
 impl v0_1::Header {
@@ -995,8 +996,12 @@ impl BlockHeader<SeqTypes> for Header {
         let mut validated_state = parent_state.clone();
 
         let chain_config = if version > instance_state.current_version {
-            match instance_state.upgrade_chain_config(version) {
-                Some(chain_config) => chain_config,
+            match instance_state.upgrades.get(&version) {
+                Some(upgrade) => match upgrade.upgrade_type {
+                    UpgradeType::Fee { chain_config } => chain_config,
+                    UpgradeType::Epoch { chain_config } => chain_config,
+                    _ => Header::get_chain_config(&validated_state, instance_state).await?,
+                },
                 None => Header::get_chain_config(&validated_state, instance_state).await?,
             }
         } else {
