@@ -528,12 +528,7 @@
 <a href="#527" id="527">527</a>
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
-<a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#530" id="530">530</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -949,12 +944,11 @@
 
     <span class="kw">let </span>(state, delta) = <span class="kw">if </span>is_last_block_in_epoch(proposed_leaf.height(), epoch_height)
         &amp;&amp; proposed_leaf.height() == parent.height()
-        &amp;&amp; maybe_parent_delta.is_some()
     {
         <span class="comment">// This is an epoch transition. We do not want to call `validate_and_apply_header` second
         // time for the same block. Just grab the state and delta from the parent and update the shared
         // state with those.
-        </span>(parent_state, maybe_parent_delta.unwrap())
+        </span>(parent_state, maybe_parent_delta)
     } <span class="kw">else </span>{
         <span class="kw">let </span>version = upgrade_lock.version(view_number).<span class="kw">await</span><span class="question-mark">?</span>;
 
@@ -971,17 +965,13 @@
             </span>.wrap()
             .context(<span class="macro">warn!</span>(<span class="string">"Block header doesn't extend the proposal!"</span>))<span class="question-mark">?</span>;
 
-        (Arc::new(validated_state), Arc::new(state_delta))
+        (Arc::new(validated_state), <span class="prelude-val">Some</span>(Arc::new(state_delta)))
     };
 
     <span class="comment">// Now that we've rounded everyone up, we need to update the shared state
     </span><span class="kw">let </span><span class="kw-2">mut </span>consensus_writer = consensus.write().<span class="kw">await</span>;
 
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = consensus_writer.update_leaf(
-        proposed_leaf.clone(),
-        Arc::clone(<span class="kw-2">&amp;</span>state),
-        <span class="prelude-val">Some</span>(Arc::clone(<span class="kw-2">&amp;</span>delta)),
-    ) {
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = consensus_writer.update_leaf(proposed_leaf.clone(), Arc::clone(<span class="kw-2">&amp;</span>state), delta) {
         <span class="macro">tracing::trace!</span>(<span class="string">"{e:?}"</span>);
     }
 

@@ -495,7 +495,9 @@
 <a href="#494" id="494">494</a>
 <a href="#495" id="495">495</a>
 <a href="#496" id="496">496</a>
-<a href="#497" id="497">497</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a>
+<a href="#499" id="499">499</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -829,6 +831,8 @@
 </span><span class="kw">pub fn </span>epoch_from_block_number(block_number: u64, epoch_height: u64) -&gt; u64 {
     <span class="kw">if </span>epoch_height == <span class="number">0 </span>{
         <span class="number">0
+    </span>} <span class="kw">else if </span>block_number == <span class="number">0 </span>{
+        <span class="number">1
     </span>} <span class="kw">else if </span>block_number % epoch_height == <span class="number">0 </span>{
         block_number / epoch_height
     } <span class="kw">else </span>{
@@ -932,9 +936,9 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_epoch_from_block_number() {
-        <span class="comment">// block 0 is always epoch 0
+        <span class="comment">// block 0 is always epoch 1
         </span><span class="kw">let </span>epoch = epoch_from_block_number(<span class="number">0</span>, <span class="number">10</span>);
-        <span class="macro">assert_eq!</span>(<span class="number">0</span>, epoch);
+        <span class="macro">assert_eq!</span>(<span class="number">1</span>, epoch);
 
         <span class="kw">let </span>epoch = epoch_from_block_number(<span class="number">1</span>, <span class="number">10</span>);
         <span class="macro">assert_eq!</span>(<span class="number">1</span>, epoch);
