@@ -518,10 +518,6 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                 Ok((qc, maybe_next_epoch_qc)) => {
                     if let Some(neqc) = maybe_next_epoch_qc {
                         next_epoch_qc = Some(neqc.clone());
-                        if let Err(e) = self.consensus.write().await.update_next_epoch_high_qc(neqc)
-                        {
-                            tracing::error!("Failed to update next epoch high QC: {:?}", e);
-                        }
                     }
                     qc
                 },
