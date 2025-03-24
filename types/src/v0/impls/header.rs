@@ -1088,7 +1088,6 @@ impl BlockHeader<SeqTypes> for Header {
         if version == EpochVersion::version()
             && !first_two_epochs(parent_leaf.height(), instance_state).await
         {
-            tracing::error!(">>>> x1");
             leader_config = Some(
                 catchup_missing_accounts(instance_state, &mut validated_state, parent_leaf, view)
                     .await?,

@@ -888,7 +888,6 @@ impl ValidatedState {
         if version == EpochVersion::version()
             && !first_two_epochs(parent_leaf.height(), instance).await
         {
-            tracing::error!(">>>> x1");
             let validator =
                 catchup_missing_accounts(instance, &mut validated_state, parent_leaf, parent_view)
                     .await?;

@@ -185,14 +185,14 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         while self.view_start_time.elapsed() < wait_duration {
             let time_spent = Instant::now()
                 .checked_duration_since(self.view_start_time)
-                .ok_or(error!("Shouldn't be possible, now must be after the start"))?;
+                .ok_or(error!("Time elapsed since the start of the task is negative. This should never happen."))?;
             let time_left = wait_duration
                 .checked_sub(time_spent)
                 .ok_or(info!("No time left"))?;
             let Ok(maybe_qc) =
                 tokio::time::timeout(time_left, self.wait_for_qc_event(rx.clone())).await
             else {
-                tracing::info!("we timeout out, don't wait any longer");
+                tracing::info!("Some nodes did not respond with their HighQc in time. Continuing with the highest QC that we received: {highest_qc:?}");
                 return Ok(highest_qc);
             };
             let Some(qc) = maybe_qc else {
