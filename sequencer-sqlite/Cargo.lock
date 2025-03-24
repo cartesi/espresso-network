@@ -7056,6 +7056,7 @@ dependencies = [
  "hotshot",
  "hotshot-events-service",
  "hotshot-types",
+ "primitive-types",
  "rand 0.8.5",
  "serde",
  "sqlx",
