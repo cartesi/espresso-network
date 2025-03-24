@@ -394,7 +394,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                     self.consensus
                         .read()
                         .await
-                        .drb_seeds_and_results
+                        .drb_results
                         .results
                         .get(&(*epoch_val + 1))
                         .copied()
