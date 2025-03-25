@@ -548,11 +548,27 @@ contract StakeTable_register_Test is Test {
     }
 }
 
-contract StakeTableV2 is S {
+contract StakeTableV2Test is S {
+    uint256 newValue = 2;
+    // override the getVersion function to return a different version
+
+    function getVersion()
+        public
+        pure
+        virtual
+        override
+        returns (uint8 majorVersion, uint8 minorVersion, uint8 patchVersion)
+    {
+        return (2, 0, 0);
+    }
+}
+
+contract StakeTableV3 is StakeTableV2Test {
     // override the getVersion function to return a different version
     function getVersion()
         public
         pure
+        virtual
         override
         returns (uint8 majorVersion, uint8 minorVersion, uint8 patchVersion)
     {
@@ -569,14 +585,14 @@ contract StakeTableUpgradeTest is Test {
     }
 
     function test_upgrade_succeeds() public {
-        (uint8 majorVersion,,) = StakeTableV2(stakeTableRegisterTest.proxy()).getVersion();
+        (uint8 majorVersion,,) = StakeTableV2Test(stakeTableRegisterTest.proxy()).getVersion();
         assertEq(majorVersion, 1);
 
         vm.startPrank(stakeTableRegisterTest.admin());
         address proxy = stakeTableRegisterTest.proxy();
-        S(proxy).upgradeToAndCall(address(new StakeTableV2()), "");
+        S(proxy).upgradeToAndCall(address(new StakeTableV2Test()), "");
 
-        (uint8 majorVersionNew,,) = StakeTableV2(proxy).getVersion();
+        (uint8 majorVersionNew,,) = StakeTableV2Test(proxy).getVersion();
         assertEq(majorVersionNew, 2);
 
         assertNotEq(majorVersion, majorVersionNew);
@@ -586,11 +602,12 @@ contract StakeTableUpgradeTest is Test {
     function test_upgrade_reverts_when_not_admin() public {
         address notAdmin = makeAddr("not_admin");
 
-        (uint8 majorVersion,,) = StakeTableV2(stakeTableRegisterTest.proxy()).getVersion();
+        (uint8 majorVersion,,) = StakeTableV2Test(stakeTableRegisterTest.proxy()).getVersion();
         assertEq(majorVersion, 1);
 
         vm.startPrank(notAdmin);
-        try S(stakeTableRegisterTest.proxy()).upgradeToAndCall(address(new StakeTableV2()), "") {
+        try S(stakeTableRegisterTest.proxy()).upgradeToAndCall(address(new StakeTableV2Test()), "")
+        {
             fail();
         } catch (bytes memory lowLevelData) {
             // Handle custom error
@@ -601,7 +618,7 @@ contract StakeTableUpgradeTest is Test {
             assertEq(selector, OwnableUpgradeable.OwnableUnauthorizedAccount.selector);
         }
 
-        (uint8 majorVersionNew,,) = StakeTableV2(stakeTableRegisterTest.proxy()).getVersion();
+        (uint8 majorVersionNew,,) = StakeTableV2Test(stakeTableRegisterTest.proxy()).getVersion();
         assertEq(majorVersionNew, 1);
 
         assertEq(majorVersion, majorVersionNew);
@@ -619,5 +636,36 @@ contract StakeTableUpgradeTest is Test {
             }
             assertEq(selector, Initializable.InvalidInitialization.selector);
         }
+    }
+
+    function test_initialize_function_is_protected_when_upgraded() public {
+        vm.startPrank(stakeTableRegisterTest.admin());
+        address proxy = stakeTableRegisterTest.proxy();
+        S(proxy).upgradeToAndCall(address(new StakeTableV2Test()), "");
+
+        try S(proxy).initialize(address(0), address(0), 0, address(0)) {
+            fail();
+        } catch (bytes memory lowLevelData) {
+            // Handle custom error
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            assertEq(selector, Initializable.InvalidInitialization.selector);
+        }
+        vm.stopPrank();
+    }
+
+    function testStorageLayoutIsCompatible() public {
+        string[] memory cmds = new string[](4);
+        cmds[0] = "node";
+        cmds[1] = "contracts/test/script/compare-storage-layout.js";
+        cmds[2] = "StakeTable";
+        cmds[3] = "StakeTableV2Test";
+
+        bytes memory output = vm.ffi(cmds);
+        string memory result = string(output);
+
+        assertEq(result, "true");
     }
 }
