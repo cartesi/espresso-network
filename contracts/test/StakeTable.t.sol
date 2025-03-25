@@ -19,6 +19,9 @@ import { LightClientMock } from "../test/mocks/LightClientMock.sol";
 import { InitializedAt } from "../src/InitializedAt.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { IPlonkVerifier as V } from "../src/interfaces/IPlonkVerifier.sol";
+import { OwnableUpgradeable } from
+    "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Token contract
 import { EspToken } from "../src/EspToken.sol";
@@ -28,7 +31,6 @@ import { StakeTable as S } from "../src/StakeTable.sol";
 import { StakeTableMock } from "../test/mocks/StakeTableMock.sol";
 import { DeployStakeTableScript } from "./script/StakeTable.s.sol";
 import { DeployEspTokenScript } from "./script/EspToken.s.sol";
-
 // TODO: currently missing several tests
 // TODO: test only owner methods access control
 
@@ -94,7 +96,7 @@ contract StakeTable_register_Test is Test {
         lcMock = new LightClientMock(genesis, genesisStakeTableState, 864000);
 
         DeployEspTokenScript tokenDeployer = new DeployEspTokenScript();
-        (address tokenAddress, address admin) = tokenDeployer.run(tokenGrantRecipient);
+        (address tokenAddress,) = tokenDeployer.run(tokenGrantRecipient);
         token = EspToken(tokenAddress);
 
         vm.prank(tokenGrantRecipient);
@@ -543,5 +545,79 @@ contract StakeTable_register_Test is Test {
     // solhint-disable-next-line no-empty-blocks
     function test_revertIf_undelegate_AfterValidatorExit() public {
         // TODO
+    }
+}
+
+contract StakeTableV2 is S {
+    // override the getVersion function to return a different version
+    function getVersion()
+        public
+        pure
+        override
+        returns (uint8 majorVersion, uint8 minorVersion, uint8 patchVersion)
+    {
+        return (2, 0, 0);
+    }
+}
+
+contract StakeTableUpgradeTest is Test {
+    StakeTable_register_Test stakeTableRegisterTest;
+
+    function setUp() public {
+        stakeTableRegisterTest = new StakeTable_register_Test();
+        stakeTableRegisterTest.setUp();
+    }
+
+    function test_upgrade_succeeds() public {
+        (uint8 majorVersion,,) = StakeTableV2(stakeTableRegisterTest.proxy()).getVersion();
+        assertEq(majorVersion, 1);
+
+        vm.startPrank(stakeTableRegisterTest.admin());
+        address proxy = stakeTableRegisterTest.proxy();
+        S(proxy).upgradeToAndCall(address(new StakeTableV2()), "");
+
+        (uint8 majorVersionNew,,) = StakeTableV2(proxy).getVersion();
+        assertEq(majorVersionNew, 2);
+
+        assertNotEq(majorVersion, majorVersionNew);
+        vm.stopPrank();
+    }
+
+    function test_upgrade_reverts_when_not_admin() public {
+        address notAdmin = makeAddr("not_admin");
+
+        (uint8 majorVersion,,) = StakeTableV2(stakeTableRegisterTest.proxy()).getVersion();
+        assertEq(majorVersion, 1);
+
+        vm.startPrank(notAdmin);
+        try S(stakeTableRegisterTest.proxy()).upgradeToAndCall(address(new StakeTableV2()), "") {
+            fail();
+        } catch (bytes memory lowLevelData) {
+            // Handle custom error
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            assertEq(selector, OwnableUpgradeable.OwnableUnauthorizedAccount.selector);
+        }
+
+        (uint8 majorVersionNew,,) = StakeTableV2(stakeTableRegisterTest.proxy()).getVersion();
+        assertEq(majorVersionNew, 1);
+
+        assertEq(majorVersion, majorVersionNew);
+        vm.stopPrank();
+    }
+
+    function test_initialize_function_is_protected() public {
+        try S(stakeTableRegisterTest.proxy()).initialize(address(0), address(0), 0, address(0)) {
+            fail();
+        } catch (bytes memory lowLevelData) {
+            // Handle custom error
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            assertEq(selector, Initializable.InvalidInitialization.selector);
+        }
     }
 }
