@@ -549,22 +549,12 @@ contract StakeTable_register_Test is Test {
 }
 
 contract StakeTableV2Test is S {
-    uint256 newValue = 2;
-    // override the getVersion function to return a different version
+    uint256 public newValue;
 
-    function getVersion()
-        public
-        pure
-        virtual
-        override
-        returns (uint8 majorVersion, uint8 minorVersion, uint8 patchVersion)
-    {
-        return (2, 0, 0);
+    function initializeV2(uint256 _newValue) public reinitializer(2) {
+        newValue = _newValue;
     }
-}
 
-contract StakeTableV3 is StakeTableV2Test {
-    // override the getVersion function to return a different version
     function getVersion()
         public
         pure
@@ -656,7 +646,7 @@ contract StakeTableUpgradeTest is Test {
         vm.stopPrank();
     }
 
-    function testStorageLayoutIsCompatible() public {
+    function test_storage_layout_is_compatible() public {
         string[] memory cmds = new string[](4);
         cmds[0] = "node";
         cmds[1] = "contracts/test/script/compare-storage-layout.js";
@@ -667,5 +657,27 @@ contract StakeTableUpgradeTest is Test {
         string memory result = string(output);
 
         assertEq(result, "true");
+    }
+
+    function test_reinitialize_succeeds_only_once() public {
+        vm.startPrank(stakeTableRegisterTest.admin());
+        address proxy = stakeTableRegisterTest.proxy();
+        S(proxy).upgradeToAndCall(
+            address(new StakeTableV2Test()), abi.encodeWithSignature("initializeV2(uint256)", 2)
+        );
+
+        assertEq(StakeTableV2Test(proxy).newValue(), 2);
+
+        try StakeTableV2Test(proxy).initializeV2(3) {
+            fail();
+        } catch (bytes memory lowLevelData) {
+            // Handle custom error
+            bytes4 selector;
+            assembly {
+                selector := mload(add(lowLevelData, 32))
+            }
+            assertEq(selector, Initializable.InvalidInitialization.selector);
+        }
+        vm.stopPrank();
     }
 }
