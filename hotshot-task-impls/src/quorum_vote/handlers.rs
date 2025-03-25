@@ -414,7 +414,6 @@ pub(crate) async fn update_shared_state<
 
     let (state, delta) = if is_last_block_in_epoch(proposed_leaf.height(), epoch_height)
         && proposed_leaf.height() == parent.height()
-    // && maybe_parent_delta.is_some()
     {
         // This is an epoch transition. We do not want to call `validate_and_apply_header` second
         // time for the same block. Just grab the state and delta from the parent and update the shared
