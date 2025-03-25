@@ -1240,7 +1240,9 @@
 <a href="#1239" id="1239">1239</a>
 <a href="#1240" id="1240">1240</a>
 <a href="#1241" id="1241">1241</a>
-<a href="#1242" id="1242">1242</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1242" id="1242">1242</a>
+<a href="#1243" id="1243">1243</a>
+<a href="#1244" id="1244">1244</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -2460,14 +2462,8 @@
     }
 
     <span class="kw">for </span>epoch_info <span class="kw">in </span>start_epoch_info {
-        <span class="macro">tracing::debug!</span>(<span class="string">"Calling add_drb_result for epoch {:?}"</span>, epoch_info.epoch);
-        membership
-            .write()
-            .<span class="kw">await
-            </span>.add_drb_result(epoch_info.epoch, epoch_info.drb_result);
-
         <span class="kw">if let </span><span class="prelude-val">Some</span>(block_header) = <span class="kw-2">&amp;</span>epoch_info.block_header {
-            <span class="macro">tracing::debug!</span>(<span class="string">"Calling add_epoch_root for epoch {:?}"</span>, epoch_info.epoch);
+            <span class="macro">tracing::info!</span>(<span class="string">"Calling add_epoch_root for epoch {:?}"</span>, epoch_info.epoch);
             <span class="kw">let </span>write_callback = {
                 <span class="kw">let </span>membership_reader = membership.read().<span class="kw">await</span>;
                 membership_reader
@@ -2480,6 +2476,14 @@
                 write_callback(<span class="kw-2">&amp;mut *</span>membership_writer);
             }
         }
+    }
+
+    <span class="kw">for </span>epoch_info <span class="kw">in </span>start_epoch_info {
+        <span class="macro">tracing::info!</span>(<span class="string">"Calling add_drb_result for epoch {:?}"</span>, epoch_info.epoch);
+        membership
+            .write()
+            .<span class="kw">await
+            </span>.add_drb_result(epoch_info.epoch, epoch_info.drb_result);
     }
 }
 </code></pre></div></section></main></body></html>
