@@ -406,7 +406,7 @@ pub async fn first_two_epochs(height: u64, instance_state: &NodeState) -> bool {
 
     let first_epoch = coordinator.membership().read().await.first_epoch();
 
-    epoch == first_epoch || epoch == first_epoch + 1 || true
+    epoch == first_epoch || epoch == first_epoch + 1
 }
 
 pub async fn catchup_missing_accounts(
