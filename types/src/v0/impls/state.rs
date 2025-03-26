@@ -895,8 +895,8 @@ impl ValidatedState {
                 instance,
                 &mut validated_state,
                 parent_leaf,
-                *parent_view,
-                parent_height + 1,
+                *proposed_header.view().unwrap(),
+                proposed_header.height(),
             )
             .await?;
 
