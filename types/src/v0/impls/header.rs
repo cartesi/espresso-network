@@ -1085,7 +1085,7 @@ impl BlockHeader<SeqTypes> for Header {
                 .remember_blocks_merkle_tree(
                     instance_state,
                     height,
-                    parent_leaf.view_number(),
+                    view,
                     &mut validated_state.block_merkle_tree,
                 )
                 .await
