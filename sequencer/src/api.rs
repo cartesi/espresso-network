@@ -903,7 +903,7 @@ pub mod test_helpers {
                         let marketplace_builder_url = marketplace_builder_url.clone();
                         async move {
                             if i == 0 {
-                                opt.serve(|metrics, consumer| {
+                                opt.serve(|metrics, consumer, storage| {
                                     let cfg = cfg.clone();
                                     async move {
                                         Ok(cfg
@@ -911,6 +911,7 @@ pub mod test_helpers {
                                                 0,
                                                 state,
                                                 persistence,
+                                                storage,
                                                 catchup,
                                                 &*metrics,
                                                 STAKE_TABLE_CAPACITY_FOR_TEST,
@@ -930,6 +931,7 @@ pub mod test_helpers {
                                     i,
                                     state,
                                     persistence,
+                                    None,
                                     catchup,
                                     &NoMetrics,
                                     STAKE_TABLE_CAPACITY_FOR_TEST,
@@ -2064,6 +2066,7 @@ mod test {
                 1,
                 ValidatedState::default(),
                 no_storage::Options,
+                None,
                 StatePeers::<StaticVersion<0, 1>>::from_urls(
                     vec![format!("http://localhost:{port}").parse().unwrap()],
                     Default::default(),
@@ -2173,6 +2176,7 @@ mod test {
                 1,
                 ValidatedState::default(),
                 no_storage::Options,
+                None,
                 StatePeers::<StaticVersion<0, 1>>::from_urls(
                     vec![format!("http://localhost:{port}").parse().unwrap()],
                     Default::default(),
@@ -2404,14 +2408,17 @@ mod test {
         // Test a catchup request for node #0, which is connected to an honest peer.
         // The catchup should successfully retrieve the correct chain config.
         let node = &network.peers[0];
-        let peers = node.node_state().peers;
-        peers.try_fetch_chain_config(0, cf.commit()).await.unwrap();
+        let state_catchup = node.node_state().state_catchup;
+        state_catchup
+            .try_fetch_chain_config(0, cf.commit())
+            .await
+            .unwrap();
 
         // Test a catchup request for node #1, which is connected to a dishonest peer.
         // This request will result in an error due to the malicious chain config provided by the peer.
         let node = &network.peers[1];
-        let peers = node.node_state().peers;
-        peers
+        let state_catchup = node.node_state().state_catchup;
+        state_catchup
             .try_fetch_chain_config(0, cf.commit())
             .await
             .unwrap_err();

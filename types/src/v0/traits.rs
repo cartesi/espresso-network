@@ -1,6 +1,13 @@
 //! This module contains all the traits used for building the sequencer types.
 //! It also includes some trait implementations that cannot be implemented in an external crate.
-use std::{cmp::max, collections::BTreeMap, fmt::Debug, num::NonZeroU64, ops::Range, sync::Arc};
+use std::{
+    cmp::max,
+    collections::BTreeMap,
+    fmt::Debug,
+    num::NonZeroU64,
+    ops::Range,
+    sync::{Arc, OnceLock},
+};
 
 use anyhow::{bail, ensure, Context};
 use async_trait::async_trait;
@@ -31,7 +38,6 @@ use hotshot_types::{
     PeerConfig,
 };
 use indexmap::IndexMap;
-use itertools::Itertools;
 use serde::{de::DeserializeOwned, Serialize};
 
 use super::{
@@ -499,153 +505,227 @@ impl<T: StateCatchup + ?Sized> StateCatchup for Arc<T> {
     }
 }
 
-/// Catchup from multiple providers tries each provider in a round robin fashion until it succeeds.
-#[async_trait]
-impl<T: StateCatchup> StateCatchup for Vec<T> {
-    async fn try_fetch_leaves(&self, retry: usize, height: u64) -> anyhow::Result<Vec<Leaf2>> {
-        for provider in self {
-            match provider.try_fetch_leaves(retry, height).await {
-                Ok(leaves) => return Ok(leaves),
-                Err(err) => {
-                    tracing::info!(
-                        provider = provider.name(),
-                        "failed to fetch leaves: {err:#}"
-                    );
-                },
-            }
-        }
+#[derive(Clone)]
+pub struct LocalAndRemoteStateCatchup<L: StateCatchup, R: StateCatchup> {
+    local: Option<L>,
+    remote: OnceLock<R>,
+}
 
-        bail!("could not fetch leaves from any provider");
+impl<L: StateCatchup, R: StateCatchup> LocalAndRemoteStateCatchup<L, R> {
+    pub fn new(local: Option<L>) -> Self {
+        Self {
+            local,
+            remote: OnceLock::new(),
+        }
     }
-    #[tracing::instrument(skip(self, instance))]
+
+    pub fn set_remote_provider(&self, remote: R) -> anyhow::Result<()> {
+        self.remote.set(remote).map_err(|_| anyhow::anyhow!("failed to set remote provider"))
+    }
+}
+
+/// Catchup from a list of providers, where the first is local and the second is remote.
+#[async_trait]
+impl<L: StateCatchup, R: StateCatchup> StateCatchup for LocalAndRemoteStateCatchup<L, R> {
+    async fn try_fetch_leaves(&self, _retry: usize, _height: u64) -> anyhow::Result<Vec<Leaf2>> {
+        unreachable!()
+    }
+
     async fn try_fetch_accounts(
         &self,
-        retry: usize,
+        _retry: usize,
+        _instance: &NodeState,
+        _height: u64,
+        _view: ViewNumber,
+        _fee_merkle_tree_root: FeeMerkleCommitment,
+        _accounts: &[FeeAccount],
+    ) -> anyhow::Result<FeeMerkleTree> {
+        unreachable!()
+    }
+
+    async fn try_remember_blocks_merkle_tree(
+        &self,
+        _retry: usize,
+        _instance: &NodeState,
+        _height: u64,
+        _view: ViewNumber,
+        _mt: &mut BlockMerkleTree,
+    ) -> anyhow::Result<()> {
+        unreachable!()
+    }
+
+    async fn try_fetch_chain_config(
+        &self,
+        _retry: usize,
+        _commitment: Commitment<ChainConfig>,
+    ) -> anyhow::Result<ChainConfig> {
+        unreachable!()
+    }
+
+    #[tracing::instrument(skip(self, _instance))]
+    async fn try_fetch_reward_accounts(
+        &self,
+        _retry: usize,
+        _instance: &NodeState,
+        _height: u64,
+        _view: ViewNumber,
+        _reward_merkle_tree_root: RewardMerkleCommitment,
+        _accounts: &[RewardAccount],
+    ) -> anyhow::Result<RewardMerkleTree> {
+        unreachable!()
+    }
+
+    async fn fetch_accounts(
+        &self,
         instance: &NodeState,
         height: u64,
         view: ViewNumber,
         fee_merkle_tree_root: FeeMerkleCommitment,
-        accounts: &[FeeAccount],
-    ) -> anyhow::Result<FeeMerkleTree> {
-        for provider in self {
-            match provider
-                .try_fetch_accounts(
-                    retry,
+        accounts: Vec<FeeAccount>,
+    ) -> anyhow::Result<Vec<FeeAccountProof>> {
+        // Try the local provider first. If it fails, try the remote provider.
+        if let Some(local) = self.local.as_ref() {
+            let local_result = local
+                .fetch_accounts(
                     instance,
                     height,
                     view,
                     fee_merkle_tree_root,
-                    accounts,
+                    accounts.clone(),
                 )
-                .await
-            {
-                Ok(tree) => return Ok(tree),
-                Err(err) => {
-                    tracing::info!(
-                        ?accounts,
-                        provider = provider.name(),
-                        "failed to fetch accounts: {err:#}"
-                    );
-                },
+                .await;
+            if local_result.is_ok() {
+                return local_result;
             }
         }
 
-        bail!("could not fetch account from any provider");
+        // If the local provider fails, try the remote provider.
+        self.remote
+            .get()
+            .with_context(|| "local provider failed and remote provider was not initialized")?
+            .fetch_accounts(instance, height, view, fee_merkle_tree_root, accounts)
+            .await
     }
 
-    #[tracing::instrument(skip(self, instance, mt))]
-    async fn try_remember_blocks_merkle_tree(
+    async fn fetch_leaf(
         &self,
-        retry: usize,
+        height: u64,
+        stake_table: Vec<PeerConfig<PubKey>>,
+        success_threshold: NonZeroU64,
+        epoch_height: u64,
+    ) -> anyhow::Result<Leaf2> {
+        // Try the local provider first. If it fails, try the remote provider.
+        if let Some(local) = self.local.as_ref() {
+            let local_result = local
+                .fetch_leaf(height, stake_table.clone(), success_threshold, epoch_height)
+                .await;
+            if local_result.is_ok() {
+                return local_result;
+            }
+        }
+
+        // If the local provider fails, try the remote provider.
+        self.remote
+            .get()
+            .with_context(|| "local provider failed and remote provider was not initialized")?
+            .fetch_leaf(height, stake_table, success_threshold, epoch_height)
+            .await
+    }
+
+    async fn fetch_chain_config(
+        &self,
+        commitment: Commitment<ChainConfig>,
+    ) -> anyhow::Result<ChainConfig> {
+        // Try the local provider first. If it fails, try the remote provider.
+        if let Some(local) = self.local.as_ref() {
+            let local_result = local.fetch_chain_config(commitment).await;
+            if local_result.is_ok() {
+                return local_result;
+            }
+        }
+
+        self.remote
+            .get()
+            .with_context(|| "local provider failed and remote provider was not initialized")?
+            .fetch_chain_config(commitment)
+            .await
+    }
+
+    async fn remember_blocks_merkle_tree(
+        &self,
         instance: &NodeState,
         height: u64,
         view: ViewNumber,
         mt: &mut BlockMerkleTree,
     ) -> anyhow::Result<()> {
-        for provider in self {
-            match provider
-                .try_remember_blocks_merkle_tree(retry, instance, height, view, mt)
-                .await
-            {
-                Ok(()) => return Ok(()),
-                Err(err) => {
-                    tracing::info!(
-                        provider = provider.name(),
-                        "failed to fetch frontier: {err:#}"
-                    );
-                },
+        // Try the local provider first. If it fails, try the remote provider.
+        if let Some(local) = self.local.as_ref() {
+            let local_result = local
+                .remember_blocks_merkle_tree(instance, height, view, mt)
+                .await;
+            if local_result.is_ok() {
+                return local_result;
             }
         }
 
-        bail!("could not fetch account from any provider");
+        self.remote
+            .get()
+            .with_context(|| "local provider failed and remote provider was not initialized")?
+            .remember_blocks_merkle_tree(instance, height, view, mt)
+            .await
     }
 
-    async fn try_fetch_chain_config(
+    async fn fetch_reward_accounts(
         &self,
-        retry: usize,
-        commitment: Commitment<ChainConfig>,
-    ) -> anyhow::Result<ChainConfig> {
-        for provider in self {
-            match provider.try_fetch_chain_config(retry, commitment).await {
-                Ok(cf) => return Ok(cf),
-                Err(err) => {
-                    tracing::info!(
-                        provider = provider.name(),
-                        "failed to fetch chain config: {err:#}"
-                    );
-                },
-            }
-        }
-
-        bail!("could not fetch chain config from any provider");
-    }
-
-    #[tracing::instrument(skip(self, instance))]
-    async fn try_fetch_reward_accounts(
-        &self,
-        retry: usize,
         instance: &NodeState,
         height: u64,
         view: ViewNumber,
         reward_merkle_tree_root: RewardMerkleCommitment,
-        accounts: &[RewardAccount],
-    ) -> anyhow::Result<RewardMerkleTree> {
-        for provider in self {
-            match provider
-                .try_fetch_reward_accounts(
-                    retry,
+        accounts: Vec<RewardAccount>,
+    ) -> anyhow::Result<Vec<RewardAccountProof>> {
+        // Try the local provider first. If it fails, try the remote provider.
+        if let Some(local) = self.local.as_ref() {
+            let local_result = local
+                .fetch_reward_accounts(
                     instance,
                     height,
                     view,
                     reward_merkle_tree_root,
-                    accounts,
+                    accounts.clone(),
                 )
-                .await
-            {
-                Ok(tree) => return Ok(tree),
-                Err(err) => {
-                    tracing::info!(
-                        ?accounts,
-                        provider = provider.name(),
-                        "failed to fetch reward accounts: {err:#}"
-                    );
-                },
+                .await;
+            if local_result.is_ok() {
+                return local_result;
             }
         }
 
-        bail!("could not fetch account from any provider");
+        self.remote
+            .get()
+            .with_context(|| "local provider failed and remote provider was not initialized")?
+            .fetch_reward_accounts(instance, height, view, reward_merkle_tree_root, accounts)
+            .await
     }
 
     fn backoff(&self) -> &BackoffParams {
-        // Use whichever provider's backoff is most conservative.
-        self.iter()
-            .map(|p| p.backoff())
-            .max()
-            .expect("provider list not empty")
+        unreachable!()
     }
 
     fn name(&self) -> String {
-        format!("[{}]", self.iter().map(StateCatchup::name).join(","))
+        format!(
+            "[{}]",
+            format!(
+                "Local: {}, Remote: {}",
+                self.local
+                    .as_ref()
+                    .as_ref()
+                    .map(|l| l.name())
+                    .unwrap_or_else(|| "not initialized".to_string()),
+                self.remote
+                    .get()
+                    .map(|r| r.name())
+                    .unwrap_or_else(|| "not initialized".to_string())
+            )
+        )
     }
 }
 

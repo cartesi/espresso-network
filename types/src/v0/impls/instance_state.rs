@@ -32,8 +32,8 @@ pub struct NodeState {
     pub node_id: u64,
     pub chain_config: crate::v0_99::ChainConfig,
     pub l1_client: L1Client,
-    #[debug("{}", peers.name())]
-    pub peers: Arc<dyn StateCatchup>,
+    #[debug("{}", state_catchup.name())]
+    pub state_catchup: Arc<dyn StateCatchup>,
     pub genesis_header: GenesisHeader,
     pub genesis_state: ValidatedState,
     pub l1_genesis: Option<L1BlockInfo>,
@@ -86,7 +86,7 @@ impl NodeState {
         node_id: u64,
         chain_config: ChainConfig,
         l1_client: L1Client,
-        catchup: impl StateCatchup + 'static,
+        state_catchup: impl StateCatchup + 'static,
         current_version: Version,
         coordinator: EpochMembershipCoordinator<SeqTypes>,
     ) -> Self {
@@ -94,7 +94,7 @@ impl NodeState {
             node_id,
             chain_config,
             l1_client,
-            peers: Arc::new(catchup),
+            state_catchup: Arc::new(state_catchup),
             genesis_header: Default::default(),
             genesis_state: ValidatedState {
                 chain_config: chain_config.into(),

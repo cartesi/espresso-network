@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use committable::{Commitment, Committable};
 use espresso_types::{
     config::PublicNetworkConfig,
-    traits::SequencerPersistence,
     v0::traits::StateCatchup,
     v0_1::{RewardAccount, RewardAccountProof, RewardMerkleCommitment, RewardMerkleTree},
     v0_99::ChainConfig,
@@ -61,21 +60,6 @@ impl<ApiVer: StaticVersionType> Client<ServerError, ApiVer> {
 
     pub fn get<T: DeserializeOwned>(&self, route: &str) -> Request<T, ServerError, ApiVer> {
         self.inner.get(route)
-    }
-}
-
-/// A catchup implementation that falls back to a remote provider, but prefers a local provider when
-/// supported.
-pub(crate) async fn local_and_remote(
-    persistence: impl SequencerPersistence,
-    remote: impl StateCatchup + 'static,
-) -> Arc<dyn StateCatchup> {
-    match persistence.into_catchup_provider(*remote.backoff()) {
-        Ok(local) => Arc::new(vec![local, Arc::new(remote)]),
-        Err(err) => {
-            tracing::warn!("not using local catchup: {err:#}");
-            Arc::new(remote)
-        },
     }
 }
 

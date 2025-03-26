@@ -3,7 +3,9 @@
 
 use std::{
     collections::HashMap,
+    future::Future,
     marker::PhantomData,
+    pin::Pin,
     sync::{Arc, Weak},
     time::{Duration, Instant},
 };
@@ -17,7 +19,7 @@ use network::{Bytes, Receiver, Sender};
 use parking_lot::RwLock;
 use rand::seq::SliceRandom;
 use recipient_source::RecipientSource;
-use request::{Request, Response};
+use request::Request;
 use tokio::{
     spawn,
     time::{sleep, timeout},
@@ -236,7 +238,7 @@ impl<
     /// # Errors
     /// - If the request was invalid
     /// - If there was a critical error (e.g. the channel was closed)
-    pub async fn request_indefinitely(
+    pub async fn request_indefinitely<V, F>(
         self: &Arc<Self>,
         public_key: &K,
         private_key: &K::PrivateKey,
@@ -245,7 +247,13 @@ impl<
         estimated_request_ttl: Duration,
         // The request to make
         request: Req,
-    ) -> std::result::Result<Req::Response, RequestError> {
+        // The function to use to validate responses
+        response_validation_fn: V,
+    ) -> std::result::Result<Req::Response, RequestError>
+    where
+        V: Fn(&Req, &Req::Response) -> F + Clone + Send + Sync + 'static,
+        F: Future<Output = Result<()>> + Send + 'static,
+    {
         loop {
             // Sign a request message
             let request_message = RequestMessage::new_signed(public_key, private_key, &request)
@@ -256,7 +264,14 @@ impl<
                 })?;
 
             // Request the data, handling the errors appropriately
-            match self.request(request_message, estimated_request_ttl).await {
+            match self
+                .request::<V, F>(
+                    request_message,
+                    estimated_request_ttl,
+                    response_validation_fn.clone(),
+                )
+                .await
+            {
                 Ok(response) => return Ok(response),
                 Err(RequestError::Timeout) => continue,
                 Err(e) => return Err(e),
@@ -272,11 +287,16 @@ impl<
     /// - If the request times out
     /// - If the channel is closed (this is an internal error)
     /// - If the request we sign is invalid
-    pub async fn request(
+    pub async fn request<V, F>(
         self: &Arc<Self>,
         request_message: RequestMessage<Req, K>,
         timeout_duration: Duration,
-    ) -> std::result::Result<Req::Response, RequestError> {
+        response_validation_fn: V,
+    ) -> std::result::Result<Req::Response, RequestError>
+    where
+        V: Fn(&Req, &Req::Response) -> F + Clone + Send + Sync + 'static,
+        F: Future<Output = Result<()>> + Send + 'static,
+    {
         timeout(timeout_duration, async move {
             // Calculate the hash of the request
             let request_hash = blake3::hash(&request_message.request.to_bytes().map_err(|e| {
@@ -305,6 +325,9 @@ impl<
                         sender,
                         receiver,
                         request: request_message.request.clone(),
+                        response_validation_fn: Box::new(move |req, resp| {
+                            Box::pin(response_validation_fn(req, resp))
+                        }),
                         active_requests: Arc::clone(&self.active_requests),
                         request_hash,
                     }));
@@ -322,7 +345,12 @@ impl<
             let mut recipients = self
                 .recipient_source
                 .get_expected_responders(&request_message.request)
-                .await;
+                .await
+                .map_err(|e| {
+                    RequestError::InvalidRequest(anyhow::anyhow!(
+                        "failed to get expected responders for request: {e}"
+                    ))
+                })?;
             recipients.shuffle(&mut rand::thread_rng());
 
             // Create a request message and serialize it
@@ -512,7 +540,12 @@ impl<
         let response_task = AbortOnDropHandle::new(tokio::spawn(async move {
             if timeout(response_validate_timeout, async move {
                 // Make sure the response is valid for the given request
-                if let Err(e) = response.response.validate(&active_request.request).await {
+                if let Err(e) = (active_request.response_validation_fn)(
+                    &active_request.request,
+                    &response.response,
+                )
+                .await
+                {
                     warn!("Received invalid response: {e}");
                     return;
                 }
@@ -546,7 +579,13 @@ pub struct ActiveRequestInner<R: Request> {
     receiver: async_broadcast::Receiver<R::Response>,
     /// The request that we are waiting for a response to
     request: R,
-
+    /// The function to use to validate responses
+    response_validation_fn: Box<
+        dyn Fn(&R, &R::Response) -> Pin<Box<dyn Future<Output = Result<()>> + Send>>
+            + Send
+            + Sync
+            + 'static,
+    >,
     /// A copy of the map of currently active requests
     active_requests: ActiveRequestsMap<R>,
     /// The hash of the request. We need this so we can remove ourselves from the map
@@ -586,6 +625,7 @@ mod tests {
             sender,
             receiver,
             request: TestRequest(vec![1, 2, 3]),
+            response_validation_fn: Box::new(|_req, _resp| Box::pin(async { Ok(()) })),
             active_requests: Arc::clone(&active_requests),
             request_hash: blake3::hash(&[1, 2, 3]),
         }));
@@ -636,9 +676,9 @@ mod tests {
     // Implement the [`RecipientSource`] trait for the [`TestSender`] type
     #[async_trait]
     impl RecipientSource<TestRequest, BLSPubKey> for TestSender {
-        async fn get_expected_responders(&self, _request: &TestRequest) -> Vec<BLSPubKey> {
+        async fn get_expected_responders(&self, _request: &TestRequest) -> Result<Vec<BLSPubKey>> {
             // Get all the participants in the network
-            self.network.keys().copied().collect()
+            Ok(self.network.keys().copied().collect())
         }
     }
 
@@ -662,14 +702,6 @@ mod tests {
     impl Request for TestRequest {
         type Response = Vec<u8>;
         async fn validate(&self) -> Result<()> {
-            Ok(())
-        }
-    }
-
-    // Implement the [`Response`] trait for the [`TestRequest`] type
-    #[async_trait]
-    impl Response<TestRequest> for Vec<u8> {
-        async fn validate(&self, _request: &TestRequest) -> Result<()> {
             Ok(())
         }
     }
@@ -832,7 +864,11 @@ mod tests {
                     .expect("failed to create request message");
 
                 // Request the data from the protocol
-                let response = protocol.request(request, config.request_timeout).await?;
+                let response = protocol
+                    .request(request, config.request_timeout, |_req, _resp| async move {
+                        Ok(())
+                    })
+                    .await?;
 
                 // Make sure the response is the hash of the request
                 assert_eq!(response, request_hash);
@@ -963,7 +999,11 @@ mod tests {
                 // Start requesting it
                 one_clone
                     .0
-                    .request(request_message, Duration::from_secs(20))
+                    .request(
+                        request_message,
+                        Duration::from_secs(20),
+                        |_req, _resp| async move { Ok(()) },
+                    )
                     .await?;
 
                 Ok::<(), anyhow::Error>(())

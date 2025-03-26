@@ -20,7 +20,7 @@ use async_lock::RwLock;
 use catchup::StatePeers;
 use context::SequencerContext;
 use espresso_types::{
-    traits::{EventConsumer, MembershipPersistence},
+    traits::{EventConsumer, LocalAndRemoteStateCatchup, MembershipPersistence, StateCatchup},
     BackoffParams, EpochCommittees, L1ClientOptions, NodeState, PubKey, SeqTypes,
     SolverAuctionResultsProvider, ValidatedState,
 };
@@ -28,6 +28,7 @@ use ethers_conv::ToAlloy;
 use genesis::L1Finalized;
 // Should move `STAKE_TABLE_CAPACITY` in the sequencer repo when we have variate stake table support
 use hotshot_libp2p_networking::network::behaviours::dht::store::persistent::DhtNoPersistence;
+use hotshot_query_service::data_source::storage::SqlStorage;
 use libp2p::Multiaddr;
 use network::libp2p::split_off_peer_id;
 use options::Identity;
@@ -198,6 +199,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
     metrics: &dyn Metrics,
     persistence: P,
     l1_params: L1Params,
+    storage: Option<Arc<SqlStorage>>,
     seq_versions: V,
     event_consumer: impl EventConsumer + 'static,
     is_da: bool,
@@ -463,15 +465,21 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         genesis_state.prefund_account(address, amount);
     }
 
-    let peers = catchup::local_and_remote(
-        persistence.clone(),
-        StatePeers::<SequencerApiVersion>::from_urls(
-            network_params.state_peers,
-            network_params.catchup_backoff,
-            metrics,
-        ),
-    )
-    .await;
+    // Create the local catchup provider
+    let local_catchup_provider = persistence
+        .clone()
+        .into_catchup_provider(network_params.catchup_backoff)
+        .ok()
+        .or_else(|| {
+            tracing::error!("Failed to create local catchup provider. Using remote only");
+            None
+        });
+
+    // Create the state catchup with the local provider. The remote provider will be added later.
+    let state_catchup: Arc<
+        LocalAndRemoteStateCatchup<Arc<dyn StateCatchup>, Arc<dyn StateCatchup>>,
+    > = Arc::new(LocalAndRemoteStateCatchup::new(local_catchup_provider));
+
     // Create the HotShot membership
     let membership = EpochCommittees::new_stake(
         network_config.config.known_nodes_with_stake.clone(),
@@ -481,7 +489,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
             .chain_config
             .stake_table_contract
             .map(|a| a.to_alloy()),
-        peers.clone(),
+        state_catchup.clone(),
         persistence.clone(),
     );
 
@@ -499,7 +507,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         upgrades: genesis.upgrades,
         current_version: V::Base::VERSION,
         epoch_height: None,
-        peers,
+        state_catchup: state_catchup.clone(),
         coordinator: coordinator.clone(),
     };
 
@@ -549,6 +557,8 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         validator_config,
         coordinator,
         instance_state,
+        state_catchup,
+        storage,
         persistence,
         network,
         Some(network_params.state_relay_server_url),
@@ -598,6 +608,7 @@ pub mod testing {
         },
         types::EventType::Decide,
     };
+    use hotshot_query_service::data_source::storage::SqlStorage;
     use hotshot_stake_table::vec_based::StakeTable;
     use hotshot_testing::block_builder::{
         BuilderTask, SimpleBuilderImplementation, TestBuilderImplementation,
@@ -899,6 +910,7 @@ pub mod testing {
                     i,
                     ValidatedState::default(),
                     no_storage::Options,
+                    None,
                     NullStateCatchup::default(),
                     &NoMetrics,
                     STAKE_TABLE_CAPACITY_FOR_TEST,
@@ -942,7 +954,8 @@ pub mod testing {
             i: usize,
             mut state: ValidatedState,
             mut persistence_opt: P,
-            catchup: impl StateCatchup + 'static,
+            storage: Option<Arc<SqlStorage>>,
+            _catchup: impl StateCatchup + 'static,
             metrics: &dyn Metrics,
             stake_table_capacity: u64,
             event_consumer: impl EventConsumer + 'static,
@@ -986,14 +999,29 @@ pub mod testing {
             let chain_config = state.chain_config.resolve().unwrap_or_default();
             let l1_client =
                 L1Client::new(vec![self.l1_url.clone()]).expect("failed to create L1 client");
-            let peers = catchup::local_and_remote(persistence.clone(), catchup).await;
+
+            // Create the local catchup provider
+            let local_catchup_provider = persistence
+                .clone()
+                .into_catchup_provider(BackoffParams::default())
+                .ok()
+                .or_else(|| {
+                    tracing::error!("Failed to create local catchup provider. Using remote only");
+                    None
+                });
+
+            // Create the state catchup with the local provider. The remote provider will be added later.
+            let state_catchup: Arc<
+                LocalAndRemoteStateCatchup<Arc<dyn StateCatchup>, Arc<dyn StateCatchup>>,
+            > = Arc::new(LocalAndRemoteStateCatchup::new(local_catchup_provider));
+
             // Create the HotShot membership
             let membership = EpochCommittees::new_stake(
                 config.known_nodes_with_stake.clone(),
                 config.known_da_nodes.clone(),
                 l1_client.clone(),
                 chain_config.stake_table_contract.map(|a| a.to_alloy()),
-                peers.clone(),
+                state_catchup.clone(),
                 persistence.clone(),
             );
             let membership = Arc::new(RwLock::new(membership));
@@ -1004,7 +1032,7 @@ pub mod testing {
                 i as u64,
                 chain_config,
                 l1_client,
-                peers,
+                state_catchup.clone(),
                 V::Base::VERSION,
                 coordinator.clone(),
             )
@@ -1031,6 +1059,8 @@ pub mod testing {
                 validator_config,
                 coordinator,
                 node_state,
+                state_catchup,
+                storage,
                 persistence,
                 network,
                 self.state_relay_url.clone(),

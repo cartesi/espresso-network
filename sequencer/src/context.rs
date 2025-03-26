@@ -8,8 +8,7 @@ use anyhow::Context;
 use async_lock::RwLock;
 use derivative::Derivative;
 use espresso_types::{
-    v0::traits::{EventConsumer as PersistenceEventConsumer, SequencerPersistence},
-    NodeState, PubKey, Transaction, ValidatedState,
+    traits::{LocalAndRemoteStateCatchup, StateCatchup}, v0::traits::{EventConsumer as PersistenceEventConsumer, SequencerPersistence}, NodeState, PubKey, Transaction, ValidatedState
 };
 use futures::{
     future::{join_all, Future},
@@ -21,6 +20,7 @@ use hotshot::{
 };
 use hotshot_events_service::events_source::{EventConsumer, EventsStreamer};
 use hotshot_orchestrator::client::OrchestratorClient;
+use hotshot_query_service::data_source::storage::SqlStorage;
 use hotshot_types::{
     consensus::ConsensusMetricsValue,
     data::{Leaf2, ViewNumber},
@@ -34,12 +34,8 @@ use hotshot_types::{
     PeerConfig, ValidatorConfig,
 };
 use parking_lot::Mutex;
-use request_response::{network::Bytes, RequestResponse, RequestResponseConfig};
-use tokio::{
-    spawn,
-    sync::mpsc::{channel, Receiver},
-    task::JoinHandle,
-};
+use request_response::RequestResponseConfig;
+use tokio::{spawn, sync::mpsc::channel, task::JoinHandle};
 use tracing::{Instrument, Level};
 use url::Url;
 
@@ -48,7 +44,7 @@ use crate::{
     proposal_fetcher::ProposalFetcherConfig,
     request_response::{
         data_source::DataSource, network::Sender as RequestResponseSender,
-        recipient_source::RecipientSource, request::Request,
+        recipient_source::RecipientSource, RequestResponseProtocol,
     },
     state_signature::StateSigner,
     static_stake_table_commitment, Node, SeqTypes, SequencerApiVersion,
@@ -68,14 +64,7 @@ pub struct SequencerContext<N: ConnectedNetwork<PubKey>, P: SequencerPersistence
     /// The request-response protocol
     #[derivative(Debug = "ignore")]
     #[allow(dead_code)]
-    request_response_protocol: RequestResponse<
-        RequestResponseSender,
-        Receiver<Bytes>,
-        Request,
-        RecipientSource,
-        DataSource,
-        PubKey,
-    >,
+    request_response_protocol: RequestResponseProtocol<Node<N, P>, V>,
 
     /// Context for generating state signatures.
     state_signer: Arc<StateSigner<SequencerApiVersion>>,
@@ -108,6 +97,8 @@ impl<N: ConnectedNetwork<PubKey>, P: SequencerPersistence, V: Versions> Sequence
         validator_config: ValidatorConfig<<SeqTypes as NodeType>::SignatureKey>,
         coordinator: EpochMembershipCoordinator<SeqTypes>,
         instance_state: NodeState,
+        state_catchup: Arc<LocalAndRemoteStateCatchup<Arc<dyn StateCatchup>, Arc<dyn StateCatchup>>>,
+        storage: Option<Arc<SqlStorage>>,
         persistence: P,
         network: Arc<N>,
         state_relay_server: Option<Url>,
@@ -149,14 +140,16 @@ impl<N: ConnectedNetwork<PubKey>, P: SequencerPersistence, V: Versions> Sequence
         )));
 
         let persistence = Arc::new(persistence);
+
         let membership = coordinator.membership().clone();
+        let coordinator = EpochMembershipCoordinator::new(membership, config.epoch_height);
 
         let handle = SystemContext::init(
             validator_config.public_key,
             validator_config.private_key.clone(),
             instance_state.node_id,
             config.clone(),
-            coordinator,
+            coordinator.clone(),
             network.clone(),
             initializer,
             ConsensusMetricsValue::new(metrics),
@@ -187,15 +180,24 @@ impl<N: ConnectedNetwork<PubKey>, P: SequencerPersistence, V: Versions> Sequence
         };
 
         // Create the request-response protocol
-        let request_response_protocol = RequestResponse::new(
+        let request_response_protocol = RequestResponseProtocol::new(
             request_response_config,
             RequestResponseSender::new(outbound_message_sender),
             request_response_receiver,
             RecipientSource {
-                memberships: membership,
+                memberships: coordinator,
+                consensus: handle.hotshot.clone(),
             },
-            DataSource {},
+            DataSource {
+                storage: storage.clone(),
+                node_state: instance_state.clone(),
+            },
+            validator_config.public_key,
+            validator_config.private_key.clone(),
         );
+
+        // Set the remote provider in the state catchup
+        state_catchup.set_remote_provider(Arc::new(request_response_protocol.clone()))?;
 
         // Create the external event handler
         let mut tasks = TaskList::default();
@@ -235,14 +237,7 @@ impl<N: ConnectedNetwork<PubKey>, P: SequencerPersistence, V: Versions> Sequence
         persistence: Arc<P>,
         state_signer: StateSigner<SequencerApiVersion>,
         external_event_handler: ExternalEventHandler<V>,
-        request_response_protocol: RequestResponse<
-            RequestResponseSender,
-            Receiver<Bytes>,
-            Request,
-            RecipientSource,
-            DataSource,
-            PubKey,
-        >,
+        request_response_protocol: RequestResponseProtocol<Node<N, P>, V>,
         event_streamer: Arc<RwLock<EventsStreamer<SeqTypes>>>,
         node_state: NodeState,
         network_config: NetworkConfig<PubKey>,
