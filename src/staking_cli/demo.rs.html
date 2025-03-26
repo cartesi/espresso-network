@@ -115,13 +115,30 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
-    network::EthereumWallet,
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a></pre></div><pre class="rust"><code><span class="kw">use </span>alloy::{
+    network::{EthereumWallet, TransactionBuilder <span class="kw">as _</span>},
     primitives::{
         utils::{format_ether, parse_ether},
         U256,
     },
     providers::{Provider, ProviderBuilder, WalletProvider},
+    rpc::types::TransactionRequest,
     signers::local::{coins_bip39::English, MnemonicBuilder},
 };
 <span class="kw">use </span>anyhow::Result;
@@ -142,7 +159,7 @@
 /// loaded directly from the environment.
 ///
 /// Account indexes 10 to 14 of the dev mnemonic are used for the validator accounts.
-</span><span class="kw">pub async fn </span>stake_for_demo(config: <span class="kw-2">&amp;</span>Config) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+</span><span class="kw">pub async fn </span>stake_for_demo(config: <span class="kw-2">&amp;</span>Config, num_validators: u16) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="macro">tracing::info!</span>(<span class="string">"staking to stake table contract for demo"</span>);
 
     <span class="kw">let </span>mk_provider = <span class="kw">async </span>|account_index| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt; {
@@ -158,6 +175,7 @@
     };
 
     <span class="kw">let </span>grant_recipient = mk_provider(config.account_index).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>chain_id = grant_recipient.get_chain_id().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="macro">tracing::info!</span>(
         <span class="string">"grant recipient account for token funding: {}"</span>,
         grant_recipient.default_signer_address()
@@ -172,18 +190,32 @@
     <span class="kw">let </span>fund_amount_eth = <span class="string">"1000"</span>;
     <span class="kw">let </span>fund_amount = parse_ether(fund_amount_eth)<span class="question-mark">?</span>;
 
-    <span class="kw">for </span>val_index <span class="kw">in </span><span class="number">0</span>..=<span class="number">4 </span>{
-        <span class="comment">// 10 to 14 % commission
-        </span><span class="kw">let </span>commission = Commission::try_from(<span class="number">1000u16 </span>+ <span class="number">100u16 </span>* val_index)<span class="question-mark">?</span>;
+    <span class="kw">for </span>val_index <span class="kw">in </span><span class="number">0</span>..num_validators {
+        <span class="comment">// use accounts 10 to 14 of the default mnemonics, hopefully not used for anything else
+        </span><span class="kw">let </span>validator_provider = mk_provider(<span class="number">20u32 </span>+ val_index <span class="kw">as </span>u32).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>validator_address = validator_provider.default_signer_address();
+
+        <span class="macro">tracing::info!</span>(<span class="string">"fund val {val_index} address: {validator_address}, {fund_amount_eth} ETH"</span>);
+        <span class="kw">let </span>tx = TransactionRequest::default()
+            .with_to(validator_address)
+            .with_chain_id(chain_id)
+            .with_value(fund_amount);
+        <span class="kw">let </span>receipt = grant_recipient
+            .send_transaction(tx)
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.get_receipt()
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">assert!</span>(receipt.status());
+
+        <span class="kw">let </span>bal = validator_provider.get_balance(validator_address).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="comment">// 1% commission and more
+        </span><span class="kw">let </span>commission = Commission::try_from(<span class="number">100u16 </span>+ <span class="number">10u16 </span>* val_index)<span class="question-mark">?</span>;
 
         <span class="comment">// delegate 100 to 500 ESP
-        </span><span class="kw">let </span>delegate_amount = parse_ether(<span class="string">"100"</span>)<span class="question-mark">? </span>* U256::from(val_index + <span class="number">1</span>);
+        </span><span class="kw">let </span>delegate_amount = parse_ether(<span class="string">"100"</span>)<span class="question-mark">? </span>* U256::from(val_index % <span class="number">5 </span>+ <span class="number">1</span>);
         <span class="kw">let </span>delegate_amount_esp = format_ether(delegate_amount);
 
-        <span class="comment">// use accounts 10 to 14 of the default mnemonics, hopefully not used for anything else
-        </span><span class="kw">let </span>validator_provider = mk_provider(<span class="number">10u32 </span>+ val_index <span class="kw">as </span>u32).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>validator_address = validator_provider.default_signer_address();
-        <span class="kw">let </span>bal = validator_provider.get_balance(validator_address).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="macro">tracing::info!</span>(<span class="string">"validator {val_index} address: {validator_address}, balance: {bal}"</span>);
         <span class="kw">let </span>consensus_private_key = parse_bls_priv_key(<span class="kw-2">&amp;</span>dotenvy::var(<span class="macro">format!</span>(
             <span class="string">"ESPRESSO_DEMO_SEQUENCER_STAKING_PRIVATE_KEY_{val_index}"

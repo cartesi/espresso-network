@@ -323,7 +323,13 @@
 <a href="#322" id="322">322</a>
 <a href="#323" id="323">323</a>
 <a href="#324" id="324">324</a>
-<a href="#325" id="325">325</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::path::PathBuf;
 
 <span class="kw">use </span>alloy::{
     network::EthereumWallet,
@@ -508,7 +514,13 @@
         </span>validator_address: Address,
     },
     <span class="doccomment">/// Register the validators and delegates for the local demo.
-    </span>StakeForDemo,
+    </span>StakeForDemo {
+        <span class="doccomment">/// The number of validators to register.
+        ///
+        /// The default (5) works for the local native and docker demos.
+        </span><span class="attr">#[clap(long, default_value_t = <span class="number">5</span>)]
+        </span>num_validators: u16,
+    },
 }
 
 <span class="kw">fn </span>exit_err(msg: <span class="kw">impl </span>AsRef&lt;str&gt;, err: <span class="kw">impl </span>core::fmt::Display) -&gt; ! {
@@ -639,8 +651,8 @@
         Commands::ClaimValidatorExit { validator_address } =&gt; {
             claim_validator_exit(stake_table, validator_address).<span class="kw">await
         </span>},
-        Commands::StakeForDemo =&gt; {
-            stake_for_demo(<span class="kw-2">&amp;</span>config).<span class="kw">await</span>.unwrap();
+        Commands::StakeForDemo { num_validators } =&gt; {
+            stake_for_demo(<span class="kw-2">&amp;</span>config, num_validators).<span class="kw">await</span>.unwrap();
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         },
         <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
