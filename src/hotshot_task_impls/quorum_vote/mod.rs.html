@@ -830,7 +830,10 @@
 <a href="#829" id="829">829</a>
 <a href="#830" id="830">830</a>
 <a href="#831" id="831">831</a>
-<a href="#832" id="832">832</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#832" id="832">832</a>
+<a href="#833" id="833">833</a>
+<a href="#834" id="834">834</a>
+<a href="#835" id="835">835</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1437,8 +1440,11 @@
                 <span class="comment">// Check that the signature is valid
                 </span><span class="macro">ensure!</span>(
                     sender.validate(<span class="kw-2">&amp;</span>share.signature, payload_commitment.as_ref()),
-                    <span class="string">"VID share signature is invalid"
-                </span>);
+                    <span class="string">"VID share signature is invalid, sender: {}, signature: {:?}, payload_commitment: {:?}"</span>,
+                    sender,
+                    share.signature,
+                    payload_commitment
+                );
 
                 <span class="kw">let </span>vid_epoch = share.data.epoch();
                 <span class="kw">let </span>target_epoch = share.data.target_epoch();
