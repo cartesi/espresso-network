@@ -1173,7 +1173,7 @@
                 node_id,
                 <span class="number">1</span>,
                 <span class="comment">// This is the config for node 0
-                </span>node_id &lt; test_config.da_staked_committee_size.try_into().unwrap(),
+                </span>node_id &lt; test_config.da_staked_committee_size <span class="kw">as </span>u64,
             )
         });
 

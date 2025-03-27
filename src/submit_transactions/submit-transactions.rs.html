@@ -718,7 +718,7 @@
         <span class="attr">#[cfg(feature = <span class="string">"benchmarking"</span>)]
         </span>{
             num_block += <span class="number">1</span>;
-            <span class="kw">if </span>!has_started &amp;&amp; (num_block <span class="kw">as </span>usize) &gt;= opt.benchmark_start_block.into() {
+            <span class="kw">if </span>!has_started &amp;&amp; (num_block <span class="kw">as </span>usize) &gt;= usize::from(opt.benchmark_start_block) {
                 has_started = <span class="bool-val">true</span>;
                 start = Instant::now();
             }
@@ -769,7 +769,7 @@
         }
 
         <span class="attr">#[cfg(feature = <span class="string">"benchmarking"</span>)]
-        </span><span class="kw">if </span>!benchmark_finish &amp;&amp; (num_block <span class="kw">as </span>usize) &gt;= opt.benchmark_end_block.into() {
+        </span><span class="kw">if </span>!benchmark_finish &amp;&amp; (num_block <span class="kw">as </span>usize) &gt;= usize::from(opt.benchmark_end_block) {
             <span class="kw">let </span>block_range = <span class="macro">format!</span>(<span class="string">"{}~{}"</span>, opt.benchmark_start_block, opt.benchmark_end_block,);
             <span class="kw">let </span>transaction_size_range_in_bytes = <span class="macro">format!</span>(<span class="string">"{}~{}"</span>, opt.min_size, opt.max_size,);
             <span class="kw">let </span>transactions_per_batch_range = <span class="macro">format!</span>(

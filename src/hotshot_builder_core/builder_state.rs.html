@@ -1770,8 +1770,8 @@
     </span><span class="kw">let </span>maximum_stored_view_number_smaller_than_quorum_proposal = global_state_read_lock
         .spawned_builder_states
         .keys()
-        .map(|builder_state_id| <span class="kw-2">*</span>builder_state_id.parent_view)
-        .filter(|view_number| view_number &lt; <span class="kw-2">&amp;</span>current_view_number)
+        .map(|builder_state_id| builder_state_id.parent_view)
+        .filter(|view_number| <span class="kw-2">*</span>view_number &lt; current_view_number)
         .max();
 
     <span class="comment">// If we have a maximum view number that meets our criteria, then we should
@@ -1788,7 +1788,7 @@
                 .spawned_builder_states
                 .keys()
                 .filter(|builder_state_id| {
-                    builder_state_id.parent_view.u64()
+                    builder_state_id.parent_view
                         == maximum_stored_view_number_smaller_than_quorum_proposal
                 })
         {
