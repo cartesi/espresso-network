@@ -212,22 +212,13 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         );
         // TODO configure timeout
         while self.view_start_time.elapsed() < wait_duration {
-            tracing::error!(
-                "lrzasik: view_start_time {:?}, wait duration {:?}, check",
-                self.view_start_time,
-                wait_duration
-            );
             let time_spent = Instant::now()
-                .checked_duration_since(self.view_start_time)
-                .ok_or(error!("Time elapsed since the start of the task is negative. This should never happen."))?;
+            .checked_duration_since(self.view_start_time)
+            .ok_or(error!("Time elapsed since the start of the task is negative. This should never happen."))?;
             let time_left = wait_duration
                 .checked_sub(time_spent)
                 .ok_or(info!("No time left"))?;
             let Ok(Ok(event)) = tokio::time::timeout(time_left, rx.recv_direct()).await else {
-                tracing::info!(
-                    "Some nodes did not respond with their Transition Qc in time. \
-                    Continuing with the highest transition QC that we received: {transition_qc:?}"
-                );
                 return Ok(transition_qc);
             };
             if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
@@ -396,14 +387,22 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         let builder_commitment = commitment_and_metadata.builder_commitment.clone();
         let metadata = commitment_and_metadata.metadata.clone();
 
-        if version >= V::Epochs::VERSION
-            && self.consensus.read().await.is_qc_forming_eqc(&parent_qc)
-        {
+        if version >= V::Epochs::VERSION {
             tracing::info!("Reached end of epoch.");
-            ensure!(
-                builder_commitment == BuilderCommitment::from_bytes([]),
-                "We're trying to propose non empty block in the epoch transition. Do not propose."
-            );
+            let Some(parent_block_number) = parent_qc.data.block_number else {
+                tracing::error!("Parent QC does not have a block number. Do not propose.");
+                return Ok(());
+            };
+            if is_epoch_transition(parent_block_number, self.epoch_height)
+                && parent_block_number % self.epoch_height != 0
+            {
+                ensure!(
+                    builder_commitment == BuilderCommitment::from_bytes([]),
+                    "We're trying to propose non empty block in the epoch transition. Do not propose. View number: {}. Parent Block number: {}",
+                    self.view_number,
+                    parent_block_number,
+                );
+            }
         }
         let block_header = if version < V::Marketplace::VERSION {
             TYPES::BlockHeader::new_legacy(
@@ -525,8 +524,9 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             _pd: PhantomData,
         };
         tracing::debug!(
-            "Sending proposal for view {:?}",
+            "Sending proposal for view {:?}, height {:?}",
             proposed_leaf.view_number(),
+            proposed_leaf.height()
         );
 
         broadcast_event(
@@ -614,49 +614,49 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
 
         let mut maybe_next_epoch_qc = None;
 
-        tracing::error!("lrzasik: trying to grab parent qc");
-        let maybe_parent_qc =
-            if let Some(qc) = parent_qc {
-                Some(qc)
-            } else if version < V::Epochs::VERSION {
-                Some(self.consensus.read().await.high_qc().clone())
-            } else if proposal_cert.is_some() {
-                // If we have a view change evidence, we need to wait need to propose with the transition QC
-                match self.wait_for_transition_qc().await {
-                    Ok(Some((qc, next_epoch_qc))) => {
-                        let Some(epoch) = maybe_epoch else {
-                            tracing::error!(
-                                "No epoch found on view change evidence, but we are in epoch mode"
-                            );
+        let parent_qc = if let Some(qc) = parent_qc {
+            qc
+        } else if version < V::Epochs::VERSION {
+            self.consensus.read().await.high_qc().clone()
+        } else if proposal_cert.is_some() {
+            // If we have a view change evidence, we need to wait need to propose with the transition QC
+            if let Ok(Some((qc, next_epoch_qc))) = self.wait_for_transition_qc().await {
+                let Some(epoch) = maybe_epoch else {
+                    tracing::error!(
+                        "No epoch found on view change evidence, but we are in epoch mode"
+                    );
+                    return;
+                };
+                if qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| epoch_from_block_number(bn, self.epoch_height) == *epoch)
+                {
+                    maybe_next_epoch_qc = Some(next_epoch_qc);
+                    qc
+                } else {
+                    match self.wait_for_highest_qc().await {
+                        Ok(qc) => qc,
+                        Err(e) => {
+                            tracing::error!("Error while waiting for highest QC: {:?}", e);
                             return;
-                        };
-                        if !qc.data.block_number.is_some_and(|bn| {
-                            epoch_from_block_number(bn, self.epoch_height) == *epoch
-                        }) {
-                            tracing::error!(
-                                "Transition QC is not for the same epoch as we are proposing"
-                            );
-                            None
-                        } else {
-                            maybe_next_epoch_qc = Some(next_epoch_qc);
-                            Some(qc)
-                        }
-                    },
-                    Ok(None) => {
-                        tracing::error!("No transition QC found");
-                        None
-                    },
-                    Err(e) => {
-                        tracing::error!("Error while waiting for transition QC: {:?}", e);
-                        return;
-                    },
+                        },
+                    }
                 }
             } else {
-                None
-            };
-
-        let parent_qc = if maybe_parent_qc.is_none() {
-            tracing::error!("lrzasik: trying to grab parent highest qc");
+                let Ok(qc) = self.wait_for_highest_qc().await else {
+                    tracing::error!("Error while waiting for highest QC");
+                    return;
+                };
+                if qc.data.block_number.is_some_and(|bn| {
+                    is_epoch_transition(bn, self.epoch_height) && bn % self.epoch_height != 0
+                }) {
+                    tracing::error!("High is in transition but we need to propose with transition QC, do nothing");
+                    return;
+                }
+                qc
+            }
+        } else {
             match self.wait_for_highest_qc().await {
                 Ok(qc) => qc,
                 Err(e) => {
@@ -664,11 +664,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                     return;
                 },
             }
-        } else {
-            maybe_parent_qc.unwrap()
         };
-
-        tracing::error!("lrzasik: parent qc is ready");
 
         if commit_and_metadata.is_none() {
             tracing::error!(

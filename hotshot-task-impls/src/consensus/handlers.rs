@@ -238,6 +238,11 @@ pub async fn send_high_qc<TYPES: NodeType, V: Versions, I: NodeImplementation<TY
             task_state.epoch_height,
         )
         .await?;
+        tracing::trace!(
+            "Sending high QC for view {:?}, height {:?}",
+            high_qc.view_number(),
+            high_qc.data.block_number
+        );
         broadcast_event(
             Arc::new(HotShotEvent::HighQcSend(
                 high_qc,

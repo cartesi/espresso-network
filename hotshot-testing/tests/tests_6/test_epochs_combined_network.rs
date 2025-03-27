@@ -8,12 +8,9 @@ use std::time::Duration;
 
 use hotshot_example_types::{
     node_types::{
-        CombinedImpl, EpochUpgradeTestVersions, EpochsTestVersions, Libp2pImpl, MemoryImpl,
-        PushCdnImpl, RandomOverlapQuorumFilterConfig, StableQuorumFilterConfig,
-        TestConsecutiveLeaderTypes, TestTwoStakeTablesTypes, TestTypes, TestTypesEpochCatchupTypes,
-        TestTypesRandomizedCommitteeMembers, TestTypesRandomizedLeader,
+        CombinedImpl, EpochsTestVersions,
+        TestTwoStakeTablesTypes, TestTypes,
     },
-    testable_delay::{DelayConfig, DelayOptions, DelaySettings, SupportedTraitTypesForAsyncDelay},
 };
 use hotshot_macros::cross_tests;
 use hotshot_testing::{
@@ -22,7 +19,6 @@ use hotshot_testing::{
     overall_safety_task::OverallSafetyPropertiesDescription,
     spinning_task::{ChangeNode, NodeAction, SpinningTaskDescription},
     test_builder::{TestDescription, TimingData},
-    view_sync_task::ViewSyncTaskDescription,
 };
 
 // A run where the CDN crashes part-way through, epochs enabled.

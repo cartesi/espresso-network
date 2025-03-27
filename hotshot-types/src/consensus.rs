@@ -37,8 +37,8 @@ use crate::{
     },
     utils::{
         epoch_from_block_number, is_epoch_transition, is_ge_epoch_root, is_last_block,
-        option_epoch_from_block_number, BuilderCommitment, LeafCommitment, StateAndDelta,
-        Terminator,
+        is_transition_block, option_epoch_from_block_number, BuilderCommitment, LeafCommitment,
+        StateAndDelta, Terminator,
     },
     vote::{Certificate, HasViewNumber},
 };
@@ -442,6 +442,24 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         metrics: Arc<ConsensusMetricsValue>,
         epoch_height: u64,
     ) -> Self {
+        let transition_qc = if let Some(ref next_epoch_high_qc) = next_epoch_high_qc {
+            if high_qc
+                .data
+                .block_number
+                .is_some_and(|bn| is_transition_block(bn, epoch_height))
+            {
+                if high_qc.data.leaf_commit == next_epoch_high_qc.data.leaf_commit {
+                    Some((high_qc.clone(), next_epoch_high_qc.clone()))
+                } else {
+                    tracing::error!("Next epoch high QC has different leaf commit to high QC");
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         Consensus {
             validated_state_map,
             vid_shares: vid_shares.unwrap_or_default(),
@@ -459,7 +477,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             metrics,
             epoch_height,
             drb_results: DrbResults::new(),
-            transition_qc: None,
+            transition_qc,
             highest_block: 0,
         }
     }

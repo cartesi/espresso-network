@@ -663,36 +663,57 @@ pub(crate) async fn update_high_qc<TYPES: NodeType, I: NodeImplementation<TYPES>
     proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
     validation_info: &ValidationInfo<TYPES, I, V>,
 ) -> Result<()> {
+    let in_transition_epoch = proposal
+        .data
+        .justify_qc()
+        .data
+        .block_number
+        .is_some_and(|bn| {
+            !is_transition_block(bn, validation_info.epoch_height)
+                && bn % validation_info.epoch_height != 0
+                && is_epoch_transition(bn, validation_info.epoch_height)
+        });
     let justify_qc = proposal.data.justify_qc();
     let maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc();
-    if let Err(e) = validation_info
-        .storage
-        .write()
-        .await
-        .update_high_qc2(justify_qc.clone())
-        .await
-    {
-        bail!("Failed to store High QC, not voting; error = {:?}", e);
-    }
-    if let Some(ref next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
+    if !in_transition_epoch {
         if let Err(e) = validation_info
             .storage
             .write()
             .await
-            .update_next_epoch_high_qc2(next_epoch_justify_qc.clone())
+            .update_high_qc2(justify_qc.clone())
             .await
         {
-            bail!(
-                "Failed to store next epoch High QC, not voting; error = {:?}",
-                e
-            );
+            bail!("Failed to store High QC, not voting; error = {:?}", e);
+        }
+        if let Some(ref next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
+            if let Err(e) = validation_info
+                .storage
+                .write()
+                .await
+                .update_next_epoch_high_qc2(next_epoch_justify_qc.clone())
+                .await
+            {
+                bail!(
+                    "Failed to store next epoch High QC, not voting; error = {:?}",
+                    e
+                );
+            }
         }
     }
     let mut consensus_writer = validation_info.consensus.write().await;
     consensus_writer.update_high_qc(justify_qc.clone())?;
     if let Some(ref next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
-        consensus_writer.update_next_epoch_high_qc(next_epoch_justify_qc.clone())?
+        consensus_writer.update_next_epoch_high_qc(next_epoch_justify_qc.clone())?;
+        if justify_qc
+            .data
+            .block_number
+            .is_some_and(|bn| is_transition_block(bn, validation_info.epoch_height))
+        {
+            consensus_writer
+                .update_transition_qc(justify_qc.clone(), next_epoch_justify_qc.clone());
+        }
     }
+
     Ok(())
 }
 
@@ -718,17 +739,14 @@ pub(crate) async fn validate_epoch_transition_qc<
     proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
     validation_info: &ValidationInfo<TYPES, I, V>,
 ) -> Result<()> {
-    if !is_epoch_transition(
-        proposal.data.block_header().block_number(),
-        validation_info.epoch_height,
-    ) {
-        return Ok(());
-    }
     let proposed_qc = proposal.data.justify_qc();
-    let Some(block_number) = proposed_qc.data().block_number else {
+    let Some(qc_block_number) = proposed_qc.data().block_number else {
         bail!("Justify QC has no block number");
     };
-    if is_transition_block(block_number, validation_info.epoch_height) {
+    if !is_epoch_transition(qc_block_number, validation_info.epoch_height) {
+        return Ok(());
+    }
+    if is_transition_block(qc_block_number, validation_info.epoch_height) {
         let Some(next_epoch_qc) = proposal.data.next_epoch_justify_qc() else {
             bail!("Next epoch justify QC is not present");
         };
@@ -767,7 +785,8 @@ pub(crate) async fn validate_epoch_transition_qc<
         );
         ensure!(
             proposal.data.view_change_evidence().is_none(),
-            "Second to last block and last block of epoch must directly extend previous block"
+            "Second to last block and last block of epoch must directly extend previous block, Qc Block number: {qc_block_number}, Proposal Block number: {}",
+            proposal.data.block_header().block_number()
         );
         ensure!(
             proposed_qc.view_number() + 1 == proposal.data.view_number()

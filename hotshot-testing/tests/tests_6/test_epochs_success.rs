@@ -19,9 +19,8 @@ use hotshot_macros::cross_tests;
 use hotshot_testing::{
     block_builder::SimpleBuilderImplementation,
     completion_task::{CompletionTaskDescription, TimeBasedCompletionTaskDescription},
-    overall_safety_task::OverallSafetyPropertiesDescription,
     spinning_task::{ChangeNode, NodeAction, SpinningTaskDescription},
-    test_builder::{TestDescription, TimingData},
+    test_builder::TestDescription,
     view_sync_task::ViewSyncTaskDescription,
 };
 

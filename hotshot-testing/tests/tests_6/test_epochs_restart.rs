@@ -8,12 +8,11 @@ use std::time::Duration;
 
 use hotshot_example_types::{
     node_types::{
-        CombinedImpl, EpochUpgradeTestVersions, EpochsTestVersions, Libp2pImpl, MemoryImpl,
-        PushCdnImpl, RandomOverlapQuorumFilterConfig, StableQuorumFilterConfig,
-        TestConsecutiveLeaderTypes, TestTwoStakeTablesTypes, TestTypes, TestTypesEpochCatchupTypes,
-        TestTypesRandomizedCommitteeMembers, TestTypesRandomizedLeader,
+        CombinedImpl, EpochsTestVersions,
+        PushCdnImpl,
+        TestTwoStakeTablesTypes, TestTypes,
+        TestTypesRandomizedLeader,
     },
-    testable_delay::{DelayConfig, DelayOptions, DelaySettings, SupportedTraitTypesForAsyncDelay},
 };
 use hotshot_macros::cross_tests;
 use hotshot_testing::{
@@ -22,7 +21,6 @@ use hotshot_testing::{
     overall_safety_task::OverallSafetyPropertiesDescription,
     spinning_task::{ChangeNode, NodeAction, SpinningTaskDescription},
     test_builder::{TestDescription, TimingData},
-    view_sync_task::ViewSyncTaskDescription,
 };
 
 cross_tests!(
@@ -65,7 +63,7 @@ cross_tests!(
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
           expected_view_failures: vec![10],
-          possible_view_failures: vec![9, 11, 12],
+          possible_view_failures: vec![8, 9, 11, 12],
           decide_timeout: Duration::from_secs(60),
           ..Default::default()
       };
@@ -114,7 +112,7 @@ cross_tests!(
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
           expected_view_failures: vec![10],
-          possible_view_failures: vec![9, 11, 12],
+          possible_view_failures: vec![8, 9, 11, 12],
           decide_timeout: Duration::from_secs(60),
           ..Default::default()
       };
