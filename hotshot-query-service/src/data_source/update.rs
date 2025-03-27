@@ -15,7 +15,6 @@ use std::iter::once;
 
 use anyhow::{ensure, Context};
 use async_trait::async_trait;
-use futures::future::Future;
 use hotshot::types::{Event, EventType};
 use hotshot_types::{
     data::{ns_table::parse_ns_table, Leaf2, VidCommitment, VidDisperseShare, VidShare},
@@ -260,7 +259,8 @@ pub trait VersionedDataSource: Send + Sync {
 /// underlying storage, and are saved if the process restarts. It also allows pending changes to be
 /// rolled back ([revert](Self::revert)) so that they are never written back to storage and are no
 /// longer reflected even through the data source object which was used to make the changes.
+#[async_trait]
 pub trait Transaction: Send + Sync {
-    fn commit(self) -> impl Future<Output = anyhow::Result<()>> + Send;
-    fn revert(self) -> impl Future + Send;
+    async fn commit(self) -> anyhow::Result<()>;
+    async fn revert(self);
 }

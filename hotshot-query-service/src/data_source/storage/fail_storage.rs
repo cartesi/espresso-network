@@ -16,7 +16,6 @@ use std::{ops::RangeBounds, sync::Arc};
 
 use async_lock::Mutex;
 use async_trait::async_trait;
-use futures::future::Future;
 use hotshot_types::{data::VidShare, traits::node_implementation::NodeType};
 use vec1::Vec1;
 
@@ -307,6 +306,7 @@ impl<T> Transaction<T> {
     }
 }
 
+#[async_trait]
 impl<T> update::Transaction for Transaction<T>
 where
     T: update::Transaction,
@@ -316,8 +316,8 @@ where
         self.inner.commit().await
     }
 
-    fn revert(self) -> impl Future + Send {
-        self.inner.revert()
+    async fn revert(self) {
+        self.inner.revert().await
     }
 }
 

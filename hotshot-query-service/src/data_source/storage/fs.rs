@@ -26,7 +26,6 @@ use std::{
 use async_trait::async_trait;
 use atomic_store::{AtomicStore, AtomicStoreLoader, PersistenceError};
 use committable::Committable;
-use futures::future::Future;
 use hotshot_types::{
     data::{VidCommitment, VidShare},
     traits::{block_contents::BlockHeader, node_implementation::NodeType},
@@ -331,6 +330,8 @@ impl<T: Revert> Drop for Transaction<T> {
         self.inner.revert();
     }
 }
+
+#[async_trait]
 impl<Types> update::Transaction
     for Transaction<OwnedRwLockWriteGuard<FileSystemStorageInner<Types>>>
 where
@@ -347,12 +348,12 @@ where
         Ok(())
     }
 
-    fn revert(self) -> impl Future + Send {
+    async fn revert(self) {
         // The revert is handled when `self` is dropped.
-        async move {}
     }
 }
 
+#[async_trait]
 impl<Types> update::Transaction for Transaction<OwnedRwLockReadGuard<FileSystemStorageInner<Types>>>
 where
     Types: NodeType,
@@ -363,9 +364,8 @@ where
         Ok(())
     }
 
-    fn revert(self) -> impl Future + Send {
+    async fn revert(self) {
         // The revert is handled when `self` is dropped.
-        async move {}
     }
 }
 
