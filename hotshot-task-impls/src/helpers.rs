@@ -698,7 +698,10 @@ pub(crate) async fn update_high_qc<TYPES: NodeType, I: NodeImplementation<TYPES>
 
 async fn transition_qc<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>(
     validation_info: &ValidationInfo<TYPES, I, V>,
-) -> Option<QuorumCertificate2<TYPES>> {
+) -> Option<(
+    QuorumCertificate2<TYPES>,
+    NextEpochQuorumCertificate2<TYPES>,
+)> {
     validation_info
         .consensus
         .read()
@@ -720,10 +723,17 @@ pub(crate) async fn validate_epoch_transition_qc<
         proposal.data.block_header().block_number(),
         validation_info.epoch_height,
     ) {
+        let Some(next_epoch_qc) = proposal.data.next_epoch_justify_qc() else {
+            bail!("Next epoch justify QC is not present");
+        };
+        ensure!(
+            next_epoch_qc.data.leaf_commit == proposed_qc.data().leaf_commit,
+            "Next epoch QC has different leaf commit to justify QC"
+        );
         // Height is epoch height - 2
         ensure!(
             transition_qc(validation_info).await.is_none_or(
-                |qc| qc.view_number() >= proposed_qc.view_number()
+                |(qc, _)| qc.view_number() >= proposed_qc.view_number()
             ),
             "First transition block must have view number greater than or equal to previous transition QC"
         );
@@ -738,7 +748,7 @@ pub(crate) async fn validate_epoch_transition_qc<
             .consensus
             .write()
             .await
-            .update_transition_qc(proposal.data.justify_qc().clone());
+            .update_transition_qc(proposed_qc.clone(), next_epoch_qc.clone());
         // reset the high qc to the transition qc
         update_high_qc(proposal, validation_info).await?;
     } else {
@@ -746,7 +756,7 @@ pub(crate) async fn validate_epoch_transition_qc<
         ensure!(
             transition_qc(validation_info)
                 .await
-                .is_none_or(|qc| qc.view_number() > proposed_qc.view_number()),
+                .is_none_or(|(qc, _)| qc.view_number() > proposed_qc.view_number()),
             "Transition block must have view number greater than previous transition QC"
         );
         ensure!(
@@ -755,7 +765,7 @@ pub(crate) async fn validate_epoch_transition_qc<
         );
         ensure!(
             proposed_qc.view_number() == validation_info.consensus.read().await.high_qc().view_number() + 1
-             || transition_qc(validation_info).await.is_some_and(|qc| &qc == proposed_qc),
+             || transition_qc(validation_info).await.is_some_and(|(qc, _)| &qc == proposed_qc),
             "Transition proposals must either extend the transition QC or extend the previous view directly"
         );
         ensure!(

@@ -205,24 +205,29 @@ pub async fn send_high_qc<TYPES: NodeType, V: Versions, I: NodeImplementation<TY
             .await?
             .leader(new_view_number)
             .await?;
-        let maybe_next_epoch_qc = if high_qc
+
+        let (high_qc, maybe_next_epoch_qc) = if high_qc
             .data
             .block_number
             .is_some_and(|b| is_epoch_transition(b, task_state.epoch_height))
         {
-            Some(
-                task_state
-                    .consensus
-                    .read()
-                    .await
-                    .next_epoch_high_qc()
-                    .ok_or(warn!(
-                        "High QC is for the last block but we don't have next epoch QC."
-                    ))?
-                    .clone(),
+            let Some((qc, next_epoch_qc)) =
+                task_state.consensus.read().await.transition_qc().cloned()
+            else {
+                bail!("We don't have a transition QC");
+            };
+            validate_qc_and_next_epoch_qc(
+                &high_qc,
+                Some(&next_epoch_qc),
+                &task_state.consensus,
+                &task_state.membership_coordinator,
+                &task_state.upgrade_lock,
+                task_state.epoch_height,
             )
+            .await?;
+            (qc, Some(next_epoch_qc))
         } else {
-            None
+            (high_qc, None)
         };
         validate_qc_and_next_epoch_qc(
             &high_qc,

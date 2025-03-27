@@ -23,7 +23,7 @@ use hotshot_types::{
     data::{Leaf2, QuorumProposal2, QuorumProposalWrapper, VidDisperse, ViewChangeEvidence2},
     epoch_membership::EpochMembership,
     message::Proposal,
-    simple_certificate::{QuorumCertificate2, UpgradeCertificate},
+    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
     traits::{
         block_contents::BlockHeader,
         node_implementation::{NodeImplementation, NodeType},
@@ -149,7 +149,14 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         None
     }
 
-    async fn wait_for_transition_qc(&self) -> Result<Option<QuorumCertificate2<TYPES>>> {
+    async fn wait_for_transition_qc(
+        &self,
+    ) -> Result<
+        Option<(
+            QuorumCertificate2<TYPES>,
+            NextEpochQuorumCertificate2<TYPES>,
+        )>,
+    > {
         ensure!(
             self.upgrade_lock.epochs_enabled(self.view_number).await,
             error!("Epochs are not enabled yet we tried to wait for Highest QC.")
@@ -172,9 +179,12 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 } else {
                     continue;
                 }
+                let Some(next_epoch_qc) = maybe_next_epoch_qc else {
+                    continue;
+                };
                 if validate_qc_and_next_epoch_qc(
                     qc,
-                    maybe_next_epoch_qc.as_ref(),
+                    Some(next_epoch_qc),
                     &self.consensus,
                     &self.membership.coordinator,
                     &self.upgrade_lock,
@@ -184,9 +194,9 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 .is_ok()
                     && transition_qc
                         .as_ref()
-                        .is_none_or(|tqc| qc.view_number() > tqc.view_number())
+                        .is_none_or(|tqc| qc.view_number() > tqc.0.view_number())
                 {
-                    transition_qc = Some(qc.clone());
+                    transition_qc = Some((qc.clone(), next_epoch_qc.clone()));
                 }
             }
         }
@@ -202,9 +212,12 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 } else {
                     continue;
                 }
+                let Some(next_epoch_qc) = maybe_next_epoch_qc else {
+                    continue;
+                };
                 if validate_qc_and_next_epoch_qc(
                     qc,
-                    maybe_next_epoch_qc.as_ref(),
+                    Some(next_epoch_qc),
                     &self.consensus,
                     &self.membership.coordinator,
                     &self.upgrade_lock,
@@ -214,9 +227,9 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 .is_ok()
                     && transition_qc
                         .as_ref()
-                        .is_none_or(|tqc| qc.view_number() > tqc.view_number())
+                        .is_none_or(|tqc| qc.view_number() > tqc.0.view_number())
                 {
-                    transition_qc = Some(qc.clone());
+                    transition_qc = Some((qc.clone(), next_epoch_qc.clone()));
                 }
             }
         }
@@ -284,6 +297,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
     /// Publishes a proposal given the [`CommitmentAndMetadata`], [`VidDisperse`]
     /// and high qc [`hotshot_types::simple_certificate::QuorumCertificate`],
     /// with optional [`ViewChangeEvidence`].
+    #[allow(clippy::too_many_arguments)]
     #[instrument(skip_all, fields(id = self.id, view_number = *self.view_number, latest_proposed_view = *self.latest_proposed_view))]
     async fn publish_proposal(
         &self,
@@ -293,6 +307,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         formed_upgrade_certificate: Option<UpgradeCertificate<TYPES>>,
         decided_upgrade_certificate: Arc<RwLock<Option<UpgradeCertificate<TYPES>>>>,
         parent_qc: QuorumCertificate2<TYPES>,
+        maybe_next_epoch_qc: Option<NextEpochQuorumCertificate2<TYPES>>,
     ) -> Result<()> {
         let (parent_leaf, state) = parent_leaf_and_state(
             &self.sender,
@@ -353,7 +368,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         if version >= V::Epochs::VERSION
             && self.consensus.read().await.is_qc_forming_eqc(&parent_qc)
         {
-            tracing::info!("Reached end of epoch. Proposing the same block again to form an eQC.");
+            tracing::info!("Reached end of epoch.");
         }
         let block_header = if version < V::Marketplace::VERSION {
             TYPES::BlockHeader::new_legacy(
@@ -414,14 +429,18 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         let next_epoch_qc = if self.upgrade_lock.epochs_enabled(self.view_number).await
             && is_high_qc_for_last_block
         {
-            wait_for_next_epoch_qc(
-                &parent_qc,
-                &self.consensus,
-                self.timeout,
-                self.view_start_time,
-                &self.receiver,
-            )
-            .await
+            if maybe_next_epoch_qc.is_some() {
+                maybe_next_epoch_qc
+            } else {
+                wait_for_next_epoch_qc(
+                    &parent_qc,
+                    &self.consensus,
+                    self.timeout,
+                    self.view_start_time,
+                    &self.receiver,
+                )
+                .await
+            }
         } else {
             None
         };
@@ -557,6 +576,8 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
             }
         };
 
+        let mut maybe_next_epoch_qc = None;
+
         let parent_qc =
             if let Some(qc) = parent_qc {
                 qc
@@ -565,7 +586,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
             } else if proposal_cert.is_some() {
                 // If we have a view change evidence, we need to wait need to propose with the transition QC
                 match self.wait_for_transition_qc().await {
-                    Ok(Some(qc)) => {
+                    Ok(Some((qc, next_epoch_qc))) => {
                         let Some(epoch) = maybe_epoch else {
                             tracing::error!(
                                 "No epoch found on view change evidence, but we are in epoch mode"
@@ -580,6 +601,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                             );
                             return;
                         }
+                        maybe_next_epoch_qc = Some(next_epoch_qc);
                         qc
                     },
                     Ok(None) => {
@@ -621,6 +643,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                 self.formed_upgrade_certificate.clone(),
                 Arc::clone(&self.upgrade_lock.decided_upgrade_certificate),
                 parent_qc,
+                maybe_next_epoch_qc,
             )
             .await
         {

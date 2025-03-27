@@ -333,7 +333,10 @@ pub struct Consensus<TYPES: NodeType> {
     pub drb_results: DrbResults<TYPES>,
 
     /// The transition QC for the current epoch
-    transition_qc: Option<QuorumCertificate2<TYPES>>,
+    transition_qc: Option<(
+        QuorumCertificate2<TYPES>,
+        NextEpochQuorumCertificate2<TYPES>,
+    )>,
 }
 
 /// This struct holds a payload and its metadata
@@ -483,13 +486,22 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     }
 
     /// Get the transition QC.
-    pub fn transition_qc(&self) -> Option<&QuorumCertificate2<TYPES>> {
+    pub fn transition_qc(
+        &self,
+    ) -> Option<&(
+        QuorumCertificate2<TYPES>,
+        NextEpochQuorumCertificate2<TYPES>,
+    )> {
         self.transition_qc.as_ref()
     }
 
     /// Update the transition QC.
-    pub fn update_transition_qc(&mut self, qc: QuorumCertificate2<TYPES>) {
-        if let Some(transition_qc) = &self.transition_qc {
+    pub fn update_transition_qc(
+        &mut self,
+        qc: QuorumCertificate2<TYPES>,
+        next_epoch_qc: NextEpochQuorumCertificate2<TYPES>,
+    ) {
+        if let Some((transition_qc, next_epoch_qc)) = &self.transition_qc {
             if transition_qc.view_number() == qc.view_number() {
                 if transition_qc.data().leaf_commit != qc.data().leaf_commit {
                     tracing::error!(
@@ -501,8 +513,16 @@ impl<TYPES: NodeType> Consensus<TYPES> {
                 }
                 return;
             }
+            if next_epoch_qc.data.leaf_commit != qc.data().leaf_commit {
+                tracing::error!(
+                    "Next epoch QC for view {:?} has different leaf commit {:?} to {:?}",
+                    qc.view_number(),
+                    next_epoch_qc.data.leaf_commit,
+                    qc.data().leaf_commit
+                );
+            }
         }
-        self.transition_qc = Some(qc);
+        self.transition_qc = Some((qc, next_epoch_qc));
     }
 
     /// Get the next epoch high QC.
