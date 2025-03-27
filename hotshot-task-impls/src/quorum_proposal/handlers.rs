@@ -515,6 +515,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
     type Output = Vec<Vec<Vec<Arc<HotShotEvent<TYPES>>>>>;
 
     #[allow(clippy::no_effect_underscore_binding, clippy::too_many_lines)]
+    #[instrument(skip_all, fields(id = self.id, view_number = *self.view_number, latest_proposed_view = *self.latest_proposed_view))]
     async fn handle_dep_result(self, res: Self::Output) {
         let mut commit_and_metadata: Option<CommitmentAndMetadata<TYPES>> = None;
         let mut timeout_certificate = None;
@@ -582,11 +583,12 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
 
         let mut maybe_next_epoch_qc = None;
 
-        let parent_qc =
+        tracing::error!("lrzasik: trying to grab parent qc");
+        let maybe_parent_qc =
             if let Some(qc) = parent_qc {
-                qc
+                Some(qc)
             } else if version < V::Epochs::VERSION {
-                self.consensus.read().await.high_qc().clone()
+                Some(self.consensus.read().await.high_qc().clone())
             } else if proposal_cert.is_some() {
                 // If we have a view change evidence, we need to wait need to propose with the transition QC
                 match self.wait_for_transition_qc().await {
@@ -603,14 +605,15 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                             tracing::error!(
                                 "Transition QC is not for the same epoch as we are proposing"
                             );
-                            return;
+                            None
+                        } else {
+                            maybe_next_epoch_qc = Some(next_epoch_qc);
+                            Some(qc)
                         }
-                        maybe_next_epoch_qc = Some(next_epoch_qc);
-                        qc
                     },
                     Ok(None) => {
                         tracing::error!("No transition QC found");
-                        return;
+                        None
                     },
                     Err(e) => {
                         tracing::error!("Error while waiting for transition QC: {:?}", e);
@@ -618,14 +621,23 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                     },
                 }
             } else {
-                match self.wait_for_highest_qc().await {
-                    Ok(qc) => qc,
-                    Err(e) => {
-                        tracing::error!("Error while waiting for highest QC: {:?}", e);
-                        return;
-                    },
-                }
+                None
             };
+
+        let parent_qc = if maybe_parent_qc.is_none() {
+            tracing::error!("lrzasik: trying to grab parent highest qc");
+            match self.wait_for_highest_qc().await {
+                Ok(qc) => qc,
+                Err(e) => {
+                    tracing::error!("Error while waiting for highest QC: {:?}", e);
+                    return;
+                },
+            }
+        } else {
+            maybe_parent_qc.unwrap()
+        };
+
+        tracing::error!("lrzasik: parent qc is ready");
 
         if commit_and_metadata.is_none() {
             tracing::error!(
