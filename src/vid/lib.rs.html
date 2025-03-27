@@ -75,7 +75,22 @@
 <a href="#74" id="74">74</a>
 <a href="#75" id="75">75</a>
 <a href="#76" id="76">76</a>
-<a href="#77" id="77">77</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2024 Espresso Systems (espressosys.com)
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot-VID library.
 
 // You should have received a copy of the MIT License
@@ -85,6 +100,7 @@
 </span><span class="attr">#![deny(missing_docs)]
 
 </span><span class="kw">use </span>displaydoc::Display;
+<span class="kw">use </span>jf_merkle_tree::MerkleTreeError;
 <span class="kw">use </span>jf_poseidon2::Poseidon2Error;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
@@ -105,10 +121,24 @@
     </span>Argument(String),
     <span class="doccomment">/// internal error: {0}
     </span>Internal(anyhow::Error),
+    <span class="doccomment">/// Insufficient shares
+    </span>InsufficientShares,
+    <span class="doccomment">/// Share index out of bound
+    </span>IndexOutOfBound,
+    <span class="doccomment">/// Invalid parameter
+    </span>InvalidParam,
+    <span class="doccomment">/// Invalid VID share
+    </span>InvalidShare,
 }
 
 <span class="kw">impl </span>From&lt;Poseidon2Error&gt; <span class="kw">for </span>VidError {
     <span class="kw">fn </span>from(err: Poseidon2Error) -&gt; <span class="self">Self </span>{
+        VidError::Internal(err.into())
+    }
+}
+
+<span class="kw">impl </span>From&lt;MerkleTreeError&gt; <span class="kw">for </span>VidError {
+    <span class="kw">fn </span>from(err: MerkleTreeError) -&gt; <span class="self">Self </span>{
         VidError::Internal(err.into())
     }
 }

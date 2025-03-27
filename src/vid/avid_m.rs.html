@@ -547,7 +547,14 @@
 <a href="#546" id="546">546</a>
 <a href="#547" id="547">547</a>
 <a href="#548" id="548">548</a>
-<a href="#549" id="549">549</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module implements the AVID-M scheme, whose name came after the DispersedLedger paper &lt;https://www.usenix.org/conference/nsdi22/presentation/yang&gt;.
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module implements the AVID-M scheme, whose name came after the DispersedLedger paper &lt;https://www.usenix.org/conference/nsdi22/presentation/yang&gt;.
 //!
 //! To disperse a payload to a number of storage nodes according to a weight
 //! distribution, the payload is first converted into field elements and then
@@ -583,6 +590,7 @@
 <span class="kw">mod </span>config;
 
 <span class="kw">pub mod </span>namespaced;
+<span class="kw">pub mod </span>proofs;
 
 <span class="attr">#[cfg(all(not(feature = <span class="string">"sha256"</span>), not(feature = <span class="string">"keccak256"</span>)))]
 </span><span class="kw">type </span>Config = config::Poseidon2Config;
@@ -673,7 +681,7 @@
     <span class="doccomment">/// Construct a new [`AvidMParam`].
     </span><span class="kw">pub fn </span>new(recovery_threshold: usize, total_weights: usize) -&gt; VidResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">if </span>recovery_threshold == <span class="number">0 </span>|| total_weights &lt; recovery_threshold {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Invalid Parameter."</span>.to_string()));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InvalidParam);
         }
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             total_weights,
@@ -685,8 +693,7 @@
 <span class="doccomment">/// Helper: initialize a FFT domain
 </span><span class="attr">#[inline]
 </span><span class="kw">fn </span>radix2_domain&lt;F: PrimeField&gt;(domain_size: usize) -&gt; VidResult&lt;Radix2EvaluationDomain&lt;F&gt;&gt; {
-    Radix2EvaluationDomain::&lt;F&gt;::new(domain_size)
-        .ok_or_else(|| VidError::Argument(<span class="string">"Invalid Param."</span>.to_string()))
+    Radix2EvaluationDomain::&lt;F&gt;::new(domain_size).ok_or_else(|| VidError::InvalidParam)
 }
 
 <span class="doccomment">/// Dummy struct for AVID-M scheme.
@@ -764,8 +771,7 @@
         <span class="macro">end_timer!</span>(hash_timer);
 
         <span class="kw">let </span>mt_timer = <span class="macro">start_timer!</span>(|| <span class="string">"Constructing Merkle tree"</span>);
-        <span class="kw">let </span>mt = MerkleTree::from_elems(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>compressed_raw_shares)
-            .map_err(|err| VidError::Internal(err.into()))<span class="question-mark">?</span>;
+        <span class="kw">let </span>mt = MerkleTree::from_elems(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>compressed_raw_shares)<span class="question-mark">?</span>;
         <span class="macro">end_timer!</span>(mt_timer);
 
         <span class="prelude-val">Ok</span>((mt, raw_shares))
@@ -777,118 +783,16 @@
         <span class="self">Self</span>::raw_encode(param, <span class="kw-2">&amp;</span>payload)
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>verify_internal(
+    <span class="doccomment">/// Consume in the constructed Merkle tree and the raw shares from `raw_encode`, provide the AvidM commitment and shares.
+    </span><span class="kw">fn </span>distribute_shares(
         param: <span class="kw-2">&amp;</span>AvidMParam,
-        commit: <span class="kw-2">&amp;</span>AvidMCommit,
-        share: <span class="kw-2">&amp;</span>RawAvidMShare,
-    ) -&gt; VidResult&lt;<span class="kw">crate</span>::VerificationResult&gt; {
-        <span class="kw">if </span>share.range.end &gt; param.total_weights || share.range.len() != share.payload.len() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Invalid share"</span>.to_string()));
-        }
-        <span class="kw">for </span>(i, index) <span class="kw">in </span>share.range.clone().enumerate() {
-            <span class="kw">let </span>compressed_payload = Config::raw_share_digest(<span class="kw-2">&amp;</span>share.payload[i])<span class="question-mark">?</span>;
-            <span class="kw">if </span>MerkleTree::verify(
-                commit.commit,
-                index <span class="kw">as </span>u64,
-                compressed_payload,
-                <span class="kw-2">&amp;</span>share.mt_proofs[i],
-            )
-            .map_err(|err| VidError::Internal(err.into()))<span class="question-mark">?
-            </span>.is_err()
-            {
-                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(()));
-            }
-        }
-        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(()))
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>recover_fields(param: <span class="kw-2">&amp;</span>AvidMParam, shares: <span class="kw-2">&amp;</span>[AvidMShare]) -&gt; VidResult&lt;Vec&lt;F&gt;&gt; {
-        <span class="kw">let </span>recovery_threshold: usize = param.recovery_threshold;
-
-        <span class="comment">// Each share's payload contains some evaluations from `num_polys`
-        // polynomials.
-        </span><span class="kw">let </span>num_polys = shares
-            .iter()
-            .find(|s| !s.content.payload.is_empty())
-            .ok_or(VidError::Argument(<span class="string">"All shares are empty"</span>.to_string()))<span class="question-mark">?
-            </span>.content
-            .payload[<span class="number">0</span>]
-            .len();
-
-        <span class="kw">let </span><span class="kw-2">mut </span>raw_shares = HashMap::new();
-        <span class="kw">for </span>share <span class="kw">in </span>shares {
-            <span class="kw">if </span>share.content.range.len() != share.content.payload.len()
-                || share.content.range.end &gt; param.total_weights
-            {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Invalid shares"</span>.to_string()));
-            }
-            <span class="kw">for </span>(i, p) <span class="kw">in </span>share.content.range.clone().zip(<span class="kw-2">&amp;</span>share.content.payload) {
-                <span class="kw">if </span>p.len() != num_polys {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Invalid shares"</span>.to_string()));
-                }
-                <span class="kw">if </span>raw_shares.contains_key(<span class="kw-2">&amp;</span>i) {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Overlapping shares"</span>.to_string()));
-                }
-                raw_shares.insert(i, p);
-                <span class="kw">if </span>raw_shares.len() &gt;= recovery_threshold {
-                    <span class="kw">break</span>;
-                }
-            }
-            <span class="kw">if </span>raw_shares.len() &gt;= recovery_threshold {
-                <span class="kw">break</span>;
-            }
-        }
-
-        <span class="kw">if </span>raw_shares.len() &lt; recovery_threshold {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Insufficient shares."</span>.to_string()));
-        }
-
-        <span class="kw">let </span>domain = radix2_domain::&lt;F&gt;(param.total_weights)<span class="question-mark">?</span>;
-
-        <span class="comment">// Lagrange interpolation
-        // step 1: find all evaluation points and their raw shares
-        </span><span class="kw">let </span>(x, raw_shares): (Vec&lt;<span class="kw">_</span>&gt;, Vec&lt;<span class="kw">_</span>&gt;) = raw_shares
-            .into_iter()
-            .map(|(i, p)| (domain.element(i), p))
-            .unzip();
-        <span class="comment">// step 2: interpolate each polynomial
-        </span><span class="prelude-val">Ok</span>((<span class="number">0</span>..num_polys)
-            .into_par_iter()
-            .map(|poly_index| {
-                jf_utils::reed_solomon_code::reed_solomon_erasure_decode(
-                    x.iter().zip(raw_shares.iter().map(|p| p[poly_index])),
-                    recovery_threshold,
-                )
-                .map_err(|err| VidError::Internal(err.into()))
-            })
-            .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?
-            </span>.into_iter()
-            .flatten()
-            .collect())
-    }
-}
-
-<span class="kw">impl </span>VidScheme <span class="kw">for </span>AvidMScheme {
-    <span class="kw">type </span>Param = AvidMParam;
-
-    <span class="kw">type </span>Share = AvidMShare;
-
-    <span class="kw">type </span>Commit = AvidMCommit;
-
-    <span class="kw">fn </span>commit(param: <span class="kw-2">&amp;</span><span class="self">Self</span>::Param, payload: <span class="kw-2">&amp;</span>[u8]) -&gt; VidResult&lt;<span class="self">Self</span>::Commit&gt; {
-        <span class="kw">let </span>(mt, <span class="kw">_</span>) = <span class="self">Self</span>::pad_and_encode(param, payload)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(AvidMCommit {
-            commit: mt.commitment(),
-        })
-    }
-
-    <span class="kw">fn </span>disperse(
-        param: <span class="kw-2">&amp;</span><span class="self">Self</span>::Param,
         distribution: <span class="kw-2">&amp;</span>[u32],
-        payload: <span class="kw-2">&amp;</span>[u8],
-    ) -&gt; VidResult&lt;(<span class="self">Self</span>::Commit, Vec&lt;<span class="self">Self</span>::Share&gt;)&gt; {
-        <span class="kw">let </span>payload_byte_len = payload.len();
-        <span class="kw">let </span>total_weights = distribution.iter().sum::&lt;u32&gt;() <span class="kw">as </span>usize;
+        mt: MerkleTree,
+        raw_shares: Vec&lt;Vec&lt;F&gt;&gt;,
+        payload_byte_len: usize,
+    ) -&gt; VidResult&lt;(AvidMCommit, Vec&lt;AvidMShare&gt;)&gt; {
+        <span class="comment">// let payload_byte_len = payload.len();
+        </span><span class="kw">let </span>total_weights = distribution.iter().sum::&lt;u32&gt;() <span class="kw">as </span>usize;
         <span class="kw">if </span>total_weights != param.total_weights {
             <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(
                 <span class="string">"Weight distribution is inconsistent with the given param"</span>.to_string(),
@@ -897,10 +801,6 @@
         <span class="kw">if </span>distribution.iter().any(|<span class="kw-2">&amp;</span>w| w == <span class="number">0</span>) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Weight cannot be zero"</span>.to_string()));
         }
-
-        <span class="kw">let </span>disperse_timer = <span class="macro">start_timer!</span>(|| <span class="macro">format!</span>(<span class="string">"Disperse {} bytes"</span>, payload_byte_len));
-
-        <span class="kw">let </span>(mt, raw_shares) = <span class="self">Self</span>::pad_and_encode(param, payload)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>distribute_timer = <span class="macro">start_timer!</span>(|| <span class="string">"Distribute codewords to the storage nodes"</span>);
         <span class="comment">// Distribute the raw shares to each storage node according to the weight
@@ -953,8 +853,120 @@
             commit: mt.commitment(),
         };
 
-        <span class="macro">end_timer!</span>(disperse_timer);
         <span class="prelude-val">Ok</span>((commit, shares))
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>verify_internal(
+        param: <span class="kw-2">&amp;</span>AvidMParam,
+        commit: <span class="kw-2">&amp;</span>AvidMCommit,
+        share: <span class="kw-2">&amp;</span>RawAvidMShare,
+    ) -&gt; VidResult&lt;<span class="kw">crate</span>::VerificationResult&gt; {
+        <span class="kw">if </span>share.range.end &gt; param.total_weights || share.range.len() != share.payload.len() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InvalidShare);
+        }
+        <span class="kw">for </span>(i, index) <span class="kw">in </span>share.range.clone().enumerate() {
+            <span class="kw">let </span>compressed_payload = Config::raw_share_digest(<span class="kw-2">&amp;</span>share.payload[i])<span class="question-mark">?</span>;
+            <span class="kw">if </span>MerkleTree::verify(
+                commit.commit,
+                index <span class="kw">as </span>u64,
+                compressed_payload,
+                <span class="kw-2">&amp;</span>share.mt_proofs[i],
+            )<span class="question-mark">?
+            </span>.is_err()
+            {
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(()));
+            }
+        }
+        <span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(()))
+    }
+
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>recover_fields(param: <span class="kw-2">&amp;</span>AvidMParam, shares: <span class="kw-2">&amp;</span>[AvidMShare]) -&gt; VidResult&lt;Vec&lt;F&gt;&gt; {
+        <span class="kw">let </span>recovery_threshold: usize = param.recovery_threshold;
+
+        <span class="comment">// Each share's payload contains some evaluations from `num_polys`
+        // polynomials.
+        </span><span class="kw">let </span>num_polys = shares
+            .iter()
+            .find(|s| !s.content.payload.is_empty())
+            .ok_or(VidError::Argument(<span class="string">"All shares are empty"</span>.to_string()))<span class="question-mark">?
+            </span>.content
+            .payload[<span class="number">0</span>]
+            .len();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>raw_shares = HashMap::new();
+        <span class="kw">for </span>share <span class="kw">in </span>shares {
+            <span class="kw">if </span>share.content.range.len() != share.content.payload.len()
+                || share.content.range.end &gt; param.total_weights
+            {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InvalidShare);
+            }
+            <span class="kw">for </span>(i, p) <span class="kw">in </span>share.content.range.clone().zip(<span class="kw-2">&amp;</span>share.content.payload) {
+                <span class="kw">if </span>p.len() != num_polys {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InvalidShare);
+                }
+                <span class="kw">if </span>raw_shares.contains_key(<span class="kw-2">&amp;</span>i) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InvalidShare);
+                }
+                raw_shares.insert(i, p);
+                <span class="kw">if </span>raw_shares.len() &gt;= recovery_threshold {
+                    <span class="kw">break</span>;
+                }
+            }
+            <span class="kw">if </span>raw_shares.len() &gt;= recovery_threshold {
+                <span class="kw">break</span>;
+            }
+        }
+
+        <span class="kw">if </span>raw_shares.len() &lt; recovery_threshold {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InsufficientShares);
+        }
+
+        <span class="kw">let </span>domain = radix2_domain::&lt;F&gt;(param.total_weights)<span class="question-mark">?</span>;
+
+        <span class="comment">// Lagrange interpolation
+        // step 1: find all evaluation points and their raw shares
+        </span><span class="kw">let </span>(x, raw_shares): (Vec&lt;<span class="kw">_</span>&gt;, Vec&lt;<span class="kw">_</span>&gt;) = raw_shares
+            .into_iter()
+            .map(|(i, p)| (domain.element(i), p))
+            .unzip();
+        <span class="comment">// step 2: interpolate each polynomial
+        </span><span class="prelude-val">Ok</span>((<span class="number">0</span>..num_polys)
+            .into_par_iter()
+            .map(|poly_index| {
+                jf_utils::reed_solomon_code::reed_solomon_erasure_decode(
+                    x.iter().zip(raw_shares.iter().map(|p| p[poly_index])),
+                    recovery_threshold,
+                )
+                .map_err(|err| VidError::Internal(err.into()))
+            })
+            .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?
+            </span>.into_iter()
+            .flatten()
+            .collect())
+    }
+}
+
+<span class="kw">impl </span>VidScheme <span class="kw">for </span>AvidMScheme {
+    <span class="kw">type </span>Param = AvidMParam;
+
+    <span class="kw">type </span>Share = AvidMShare;
+
+    <span class="kw">type </span>Commit = AvidMCommit;
+
+    <span class="kw">fn </span>commit(param: <span class="kw-2">&amp;</span><span class="self">Self</span>::Param, payload: <span class="kw-2">&amp;</span>[u8]) -&gt; VidResult&lt;<span class="self">Self</span>::Commit&gt; {
+        <span class="kw">let </span>(mt, <span class="kw">_</span>) = <span class="self">Self</span>::pad_and_encode(param, payload)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(AvidMCommit {
+            commit: mt.commitment(),
+        })
+    }
+
+    <span class="kw">fn </span>disperse(
+        param: <span class="kw-2">&amp;</span><span class="self">Self</span>::Param,
+        distribution: <span class="kw-2">&amp;</span>[u32],
+        payload: <span class="kw-2">&amp;</span>[u8],
+    ) -&gt; VidResult&lt;(<span class="self">Self</span>::Commit, Vec&lt;<span class="self">Self</span>::Share&gt;)&gt; {
+        <span class="kw">let </span>(mt, raw_shares) = <span class="self">Self</span>::pad_and_encode(param, payload)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::distribute_shares(param, distribution, mt, raw_shares, payload.len())
     }
 
     <span class="kw">fn </span>verify_share(
@@ -1089,7 +1101,9 @@
             bytes_random
         };
 
+        <span class="kw">let </span>disperse_timer = <span class="macro">start_timer!</span>(|| <span class="macro">format!</span>(<span class="string">"Disperse {} bytes"</span>, payload_byte_len));
         <span class="kw">let </span>(commit, shares) = AvidMScheme::disperse(<span class="kw-2">&amp;</span>params, <span class="kw-2">&amp;</span>weights, <span class="kw-2">&amp;</span>payload).unwrap();
+        <span class="macro">end_timer!</span>(disperse_timer);
 
         <span class="kw">let </span>recover_timer = <span class="macro">start_timer!</span>(|| <span class="string">"Recovery"</span>);
         AvidMScheme::recover(<span class="kw-2">&amp;</span>params, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>shares).unwrap();

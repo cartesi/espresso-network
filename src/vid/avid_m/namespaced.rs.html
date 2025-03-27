@@ -244,7 +244,13 @@
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a></pre></div><pre class="rust"><code><span class="doccomment">//! This file implements the namespaced AvidM scheme.
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a></pre></div><pre class="rust"><code><span class="doccomment">//! This file implements the namespaced AvidM scheme.
 
 </span><span class="kw">use </span>std::ops::Range;
 
@@ -370,7 +376,7 @@
         <span class="kw">if </span>!(share.ns_commits.len() == share.ns_lens.len()
             &amp;&amp; share.ns_commits.len() == share.content.len())
         {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::Argument(<span class="string">"Invalid share"</span>.to_string()));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InvalidShare);
         }
         <span class="comment">// Verify the share for each namespace
         </span><span class="kw">for </span>(commit, content) <span class="kw">in </span>share.ns_commits.iter().zip(share.content.iter()) {
@@ -396,6 +402,9 @@
 
     <span class="doccomment">/// Recover the entire payload from enough share
     </span><span class="kw">pub fn </span>recover(param: <span class="kw-2">&amp;</span>NsAvidMParam, shares: <span class="kw-2">&amp;</span>[NsAvidMShare]) -&gt; VidResult&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">if </span>shares.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InsufficientShares);
+        }
         <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="macro">vec!</span>[];
         <span class="kw">for </span>ns_id <span class="kw">in </span><span class="number">0</span>..shares[<span class="number">0</span>].ns_lens.len() {
             result.append(<span class="kw-2">&amp;mut </span><span class="self">Self</span>::ns_recover(param, ns_id, shares)<span class="question-mark">?</span>)
@@ -409,6 +418,9 @@
         ns_id: usize,
         shares: <span class="kw-2">&amp;</span>[NsAvidMShare],
     ) -&gt; VidResult&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">if </span>shares.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(VidError::InsufficientShares);
+        }
         <span class="kw">let </span>ns_commit = shares[<span class="number">0</span>].ns_commits[ns_id];
         <span class="kw">let </span>shares: Vec&lt;<span class="kw">_</span>&gt; = shares
             .iter()
