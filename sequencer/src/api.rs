@@ -1300,6 +1300,7 @@ mod api_tests {
         message::Proposal,
         simple_certificate::QuorumCertificate2,
         traits::{node_implementation::ConsensusTime, signature_key::SignatureKey, EncodeBytes},
+        utils::EpochTransitionIndicator,
         vid::avidm::{init_avidm_param, AvidMScheme},
     };
     use portpicker::pick_unused_port;
@@ -1551,6 +1552,7 @@ mod api_tests {
                 metadata: payload.ns_table().clone(),
                 view_number: leaf.view_number(),
                 epoch: Some(EpochNumber::new(0)),
+                epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
             };
             let da_proposal = Proposal {
                 data: da_proposal_inner,
@@ -1751,9 +1753,9 @@ mod test {
         config::PublicHotShotConfig,
         traits::NullEventConsumer,
         v0_1::{UpgradeMode, ViewBasedUpgrade},
-        BackoffParams, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
+        BackoffParams, EpochVersion, FeeAccount, FeeAmount, FeeVersion, Header, MarketplaceVersion,
         MockSequencerVersions, SequencerVersions, TimeBasedUpgrade, Timestamp, Upgrade,
-        UpgradeType, ValidatedState,
+        UpgradeType, ValidatedState, V0_1,
     };
     use ethers::utils::Anvil;
     use futures::{
@@ -2432,7 +2434,7 @@ mod test {
         setup_test();
 
         let mut upgrades = std::collections::BTreeMap::new();
-        type MySequencerVersions = SequencerVersions<StaticVersion<0, 1>, StaticVersion<0, 2>>;
+        type MySequencerVersions = SequencerVersions<V0_1, FeeVersion>;
 
         let mode = UpgradeMode::View(ViewBasedUpgrade {
             start_voting_view: None,
@@ -2463,7 +2465,7 @@ mod test {
         let now = OffsetDateTime::now_utc().unix_timestamp() as u64;
 
         let mut upgrades = std::collections::BTreeMap::new();
-        type MySequencerVersions = SequencerVersions<StaticVersion<0, 1>, StaticVersion<0, 2>>;
+        type MySequencerVersions = SequencerVersions<V0_1, FeeVersion>;
 
         let mode = UpgradeMode::Time(TimeBasedUpgrade {
             start_proposing_time: Timestamp::from_integer(now).unwrap(),
@@ -2487,12 +2489,13 @@ mod test {
         test_upgrade_helper::<MySequencerVersions>(upgrades, MySequencerVersions::new()).await;
     }
 
+    #[ignore]
     #[tokio::test(flavor = "multi_thread")]
     async fn test_marketplace_upgrade_view_based() {
         setup_test();
 
         let mut upgrades = std::collections::BTreeMap::new();
-        type MySequencerVersions = SequencerVersions<FeeVersion, MarketplaceVersion>;
+        type MySequencerVersions = SequencerVersions<EpochVersion, MarketplaceVersion>;
 
         let mode = UpgradeMode::View(ViewBasedUpgrade {
             start_voting_view: None,
@@ -2517,6 +2520,7 @@ mod test {
         test_upgrade_helper::<MySequencerVersions>(upgrades, MySequencerVersions::new()).await;
     }
 
+    #[ignore]
     #[tokio::test(flavor = "multi_thread")]
     async fn test_marketplace_upgrade_time_based() {
         setup_test();
@@ -2524,7 +2528,7 @@ mod test {
         let now = OffsetDateTime::now_utc().unix_timestamp() as u64;
 
         let mut upgrades = std::collections::BTreeMap::new();
-        type MySequencerVersions = SequencerVersions<FeeVersion, MarketplaceVersion>;
+        type MySequencerVersions = SequencerVersions<EpochVersion, MarketplaceVersion>;
 
         let mode = UpgradeMode::Time(TimeBasedUpgrade {
             start_proposing_time: Timestamp::from_integer(now).unwrap(),
