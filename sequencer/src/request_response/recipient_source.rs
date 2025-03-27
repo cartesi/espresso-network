@@ -36,18 +36,29 @@ impl<I: NodeImplementation<SeqTypes>, V: Versions> RecipientSourceTrait<Request,
             .unwrap_or(EpochNumber::genesis());
 
         // Get the stake table for the epoch
-        let stake_table = self
-            .memberships
-            .wait_for_catchup(epoch_number)
-            .await
-            .with_context(|| "failed to get stake table for epoch")?;
+        let stake_table = self.memberships.wait_for_catchup(epoch_number).await;
+
+        let stake_table = match stake_table {
+            Ok(stake_table) => stake_table
+                .stake_table()
+                .await
+                .iter()
+                .map(|entry| entry.stake_table_entry.stake_key)
+                .collect(),
+            Err(e) => {
+                self.memberships
+                    .membership_for_epoch(Some(EpochNumber::genesis()))
+                    .await
+                    .with_context(|| "failed to get stake table for epoch")?
+                    .stake_table()
+                    .await
+                    .iter()
+                    .map(|entry| entry.stake_table_entry.stake_key)
+                    .collect()
+            },
+        };
 
         // Get everyone in the stake table
-        Ok(stake_table
-            .stake_table()
-            .await
-            .iter()
-            .map(|entry| entry.stake_table_entry.stake_key)
-            .collect())
+        Ok(stake_table)
     }
 }

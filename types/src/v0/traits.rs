@@ -38,7 +38,14 @@ use hotshot_types::{
     PeerConfig,
 };
 use indexmap::IndexMap;
+use jf_merkle_tree::{
+    light_weight::LightWeightMerkleTree,
+    prelude::{Sha3Digest, Sha3Node},
+};
 use serde::{de::DeserializeOwned, Serialize};
+use tokio::select;
+use tokio_util::task::AbortOnDropHandle;
+use tracing::warn;
 
 use super::{
     impls::NodeState,
@@ -506,12 +513,19 @@ impl<T: StateCatchup + ?Sized> StateCatchup for Arc<T> {
 }
 
 #[derive(Clone)]
-pub struct LocalAndRemoteStateCatchup<L: StateCatchup, R: StateCatchup> {
+pub struct LocalAndRemoteStateCatchup<
+    L: StateCatchup + Clone + Send + Sync + 'static,
+    R: StateCatchup + Clone + Send + Sync + 'static,
+> {
     local: Option<L>,
     remote: OnceLock<R>,
 }
 
-impl<L: StateCatchup, R: StateCatchup> LocalAndRemoteStateCatchup<L, R> {
+impl<
+        L: StateCatchup + Clone + Send + Sync + 'static,
+        R: StateCatchup + Clone + Send + Sync + 'static,
+    > LocalAndRemoteStateCatchup<L, R>
+{
     pub fn new(local: Option<L>) -> Self {
         Self {
             local,
@@ -520,13 +534,20 @@ impl<L: StateCatchup, R: StateCatchup> LocalAndRemoteStateCatchup<L, R> {
     }
 
     pub fn set_remote_provider(&self, remote: R) -> anyhow::Result<()> {
-        self.remote.set(remote).map_err(|_| anyhow::anyhow!("failed to set remote provider"))
+        tracing::warn!("Setting remote provider");
+        self.remote
+            .set(remote)
+            .map_err(|_| anyhow::anyhow!("failed to set remote provider"))
     }
 }
 
 /// Catchup from a list of providers, where the first is local and the second is remote.
 #[async_trait]
-impl<L: StateCatchup, R: StateCatchup> StateCatchup for LocalAndRemoteStateCatchup<L, R> {
+impl<
+        L: StateCatchup + Clone + Send + Sync + 'static,
+        R: StateCatchup + Clone + Send + Sync + 'static,
+    > StateCatchup for LocalAndRemoteStateCatchup<L, R>
+{
     async fn try_fetch_leaves(&self, _retry: usize, _height: u64) -> anyhow::Result<Vec<Leaf2>> {
         unreachable!()
     }
@@ -583,28 +604,63 @@ impl<L: StateCatchup, R: StateCatchup> StateCatchup for LocalAndRemoteStateCatch
         fee_merkle_tree_root: FeeMerkleCommitment,
         accounts: Vec<FeeAccount>,
     ) -> anyhow::Result<Vec<FeeAccountProof>> {
-        // Try the local provider first. If it fails, try the remote provider.
-        if let Some(local) = self.local.as_ref() {
-            let local_result = local
+        // Spawn a task to fetch accounts from the local provider
+        let instance_clone = instance.clone();
+        let accounts_clone = accounts.clone();
+        let local = self.local.clone();
+        let local_handle = if let Some(local) = local {
+            Some(AbortOnDropHandle::new(tokio::spawn(async move {
+                local
+                    .fetch_accounts(
+                        &instance_clone,
+                        height,
+                        view,
+                        fee_merkle_tree_root,
+                        accounts_clone,
+                    )
+                    .await
+            })))
+        } else {
+            None
+        };
+
+        // Get the remote provider
+        let remote_provider = self
+            .remote
+            .get()
+            .with_context(|| "remote provider was not initialized")?
+            .clone();
+
+        let instance_clone = instance.clone();
+        let accounts_clone = accounts.clone();
+
+        // Spawn a task to fetch accounts from the remote provider
+        let remote_handle = AbortOnDropHandle::new(tokio::spawn(async move {
+            remote_provider
                 .fetch_accounts(
-                    instance,
+                    &instance_clone,
                     height,
                     view,
                     fee_merkle_tree_root,
-                    accounts.clone(),
+                    accounts_clone,
                 )
-                .await;
-            if local_result.is_ok() {
-                return local_result;
-            }
-        }
+                .await
+        }));
 
-        // If the local provider fails, try the remote provider.
-        self.remote
-            .get()
-            .with_context(|| "local provider failed and remote provider was not initialized")?
-            .fetch_accounts(instance, height, view, fee_merkle_tree_root, accounts)
-            .await
+        if let Some(local_handle) = local_handle {
+            select! {
+                local_result = local_handle => {
+                    warn!("Fetched accounts from local");
+                    local_result.with_context(|| "failed to join on local provider")?
+                }
+                remote_result = remote_handle => {
+                    warn!("Fetched accounts from remote");
+                    remote_result.with_context(|| "failed to join on remote provider")?
+                }
+            }
+        } else {
+            remote_handle.await?
+        }
     }
 
     async fn fetch_leaf(
@@ -614,41 +670,89 @@ impl<L: StateCatchup, R: StateCatchup> StateCatchup for LocalAndRemoteStateCatch
         success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -> anyhow::Result<Leaf2> {
-        // Try the local provider first. If it fails, try the remote provider.
-        if let Some(local) = self.local.as_ref() {
-            let local_result = local
-                .fetch_leaf(height, stake_table.clone(), success_threshold, epoch_height)
-                .await;
-            if local_result.is_ok() {
-                return local_result;
-            }
-        }
+        // Spawn a task to fetch accounts from the local provider
+        let local = self.local.clone();
+        let stake_table_clone = stake_table.clone();
+        let local_handle = if let Some(local) = local {
+            Some(AbortOnDropHandle::new(tokio::spawn(async move {
+                local
+                    .fetch_leaf(height, stake_table_clone, success_threshold, epoch_height)
+                    .await
+            })))
+        } else {
+            None
+        };
 
-        // If the local provider fails, try the remote provider.
-        self.remote
+        // Get the remote provider
+        let remote_provider = self
+            .remote
             .get()
-            .with_context(|| "local provider failed and remote provider was not initialized")?
-            .fetch_leaf(height, stake_table, success_threshold, epoch_height)
-            .await
+            .with_context(|| "remote provider was not initialized")?
+            .clone();
+
+        // Spawn a task to fetch accounts from the remote provider
+        let remote_handle = AbortOnDropHandle::new(tokio::spawn(async move {
+            remote_provider
+                .fetch_leaf(height, stake_table, success_threshold, epoch_height)
+                .await
+        }));
+
+        if let Some(local_handle) = local_handle {
+            select! {
+                local_result = local_handle => {
+                    warn!("Fetched leaf from local");
+                    local_result.with_context(|| "failed to join on local provider")?
+                }
+                remote_result = remote_handle => {
+                    warn!("Fetched leaf from remote");
+                    remote_result.with_context(|| "failed to join on remote provider")?
+                }
+            }
+        } else {
+            remote_handle.await?
+        }
     }
 
     async fn fetch_chain_config(
         &self,
         commitment: Commitment<ChainConfig>,
     ) -> anyhow::Result<ChainConfig> {
-        // Try the local provider first. If it fails, try the remote provider.
-        if let Some(local) = self.local.as_ref() {
-            let local_result = local.fetch_chain_config(commitment).await;
-            if local_result.is_ok() {
-                return local_result;
-            }
-        }
+        // Spawn a task to fetch accounts from the local provider
+        let local = self.local.clone();
+        let local_handle = if let Some(local) = local {
+            Some(AbortOnDropHandle::new(tokio::spawn(async move {
+                local.fetch_chain_config(commitment).await
+            })))
+        } else {
+            None
+        };
 
-        self.remote
+        // Get the remote provider
+        let remote_provider = self
+            .remote
             .get()
-            .with_context(|| "local provider failed and remote provider was not initialized")?
-            .fetch_chain_config(commitment)
-            .await
+            .with_context(|| "remote provider was not initialized")?
+            .clone();
+
+        // Spawn a task to fetch accounts from the remote provider
+        let remote_handle = AbortOnDropHandle::new(tokio::spawn(async move {
+            remote_provider.fetch_chain_config(commitment).await
+        }));
+
+        if let Some(local_handle) = local_handle {
+            select! {
+                local_result = local_handle => {
+                    warn!("Fetched chain config from local");
+                    local_result.with_context(|| "failed to join on local provider")?
+                }
+                remote_result = remote_handle => {
+                    warn!("Fetched chain config from remote");
+                    remote_result.with_context(|| "failed to join on remote provider")?
+                }
+            }
+        } else {
+            remote_handle.await?
+        }
     }
 
     async fn remember_blocks_merkle_tree(
@@ -658,21 +762,76 @@ impl<L: StateCatchup, R: StateCatchup> StateCatchup for LocalAndRemoteStateCatch
         view: ViewNumber,
         mt: &mut BlockMerkleTree,
     ) -> anyhow::Result<()> {
-        // Try the local provider first. If it fails, try the remote provider.
-        if let Some(local) = self.local.as_ref() {
-            let local_result = local
-                .remember_blocks_merkle_tree(instance, height, view, mt)
-                .await;
-            if local_result.is_ok() {
-                return local_result;
-            }
-        }
+        let mut mt_clone = mt.clone();
 
-        self.remote
+        // Spawn a task to fetch accounts from the local provider
+        let instance_clone = instance.clone();
+        let local = self.local.clone();
+        let local_handle: Option<
+            AbortOnDropHandle<
+                Result<
+                    LightWeightMerkleTree<Commitment<super::Header>, Sha3Digest, u64, 3, Sha3Node>,
+                    anyhow::Error,
+                >,
+            >,
+        > = if let Some(local) = local {
+            Some(AbortOnDropHandle::new(tokio::spawn(async move {
+                local
+                    .remember_blocks_merkle_tree(&instance_clone, height, view, &mut mt_clone)
+                    .await
+                    .with_context(|| "failed to remember blocks merkle tree on local provider")?;
+                Ok(mt_clone)
+            })))
+        } else {
+            None
+        };
+
+        // Get the remote provider
+        let remote_provider = self
+            .remote
             .get()
-            .with_context(|| "local provider failed and remote provider was not initialized")?
-            .remember_blocks_merkle_tree(instance, height, view, mt)
-            .await
+            .with_context(|| "remote provider was not initialized")?
+            .clone();
+
+        let instance_clone = instance.clone();
+        let mut mt_clone = mt.clone();
+
+        // Spawn a task to fetch accounts from the remote provider
+        let remote_handle: AbortOnDropHandle<
+            Result<
+                LightWeightMerkleTree<Commitment<super::Header>, Sha3Digest, u64, 3, Sha3Node>,
+                anyhow::Error,
+            >,
+        > = AbortOnDropHandle::new(tokio::spawn(async move {
+            remote_provider
+                .remember_blocks_merkle_tree(&instance_clone, height, view, &mut mt_clone)
+                .await
+                .with_context(|| "failed to remember blocks merkle tree on remote provider")?;
+            Ok(mt_clone)
+        }));
+
+        if let Some(local_handle) = local_handle {
+            select! {
+                local_result = local_handle => {
+                    warn!("Fetched blocks merkle tree from local");
+                    let mt_out = local_result.with_context(|| "failed to join on local provider")?.with_context(|| "failed to remember blocks merkle tree on local provider")?;
+                    *mt = mt_out;
+                    Ok(())
+                }
+                remote_result = remote_handle => {
+                    warn!("Fetched blocks merkle tree from remote");
+                    let mt_out = remote_result.with_context(|| "failed to join on remote provider")?.with_context(|| "failed to remember blocks merkle tree on remote provider")?;
+                    *mt = mt_out;
+                    Ok(())
+                }
+            }
+        } else {
+            let mt_out = remote_handle
+                .await?
+                .with_context(|| "failed to remember blocks merkle tree on remote provider")?;
+            *mt = mt_out;
+            Ok(())
+        }
     }
 
     async fn fetch_reward_accounts(
@@ -683,27 +842,63 @@ impl<L: StateCatchup, R: StateCatchup> StateCatchup for LocalAndRemoteStateCatch
         reward_merkle_tree_root: RewardMerkleCommitment,
         accounts: Vec<RewardAccount>,
     ) -> anyhow::Result<Vec<RewardAccountProof>> {
-        // Try the local provider first. If it fails, try the remote provider.
-        if let Some(local) = self.local.as_ref() {
-            let local_result = local
+        // Spawn a task to fetch accounts from the local provider
+        let instance_clone = instance.clone();
+        let accounts_clone = accounts.clone();
+        let local = self.local.clone();
+        let local_handle = if let Some(local) = local {
+            Some(AbortOnDropHandle::new(tokio::spawn(async move {
+                local
+                    .fetch_reward_accounts(
+                        &instance_clone,
+                        height,
+                        view,
+                        reward_merkle_tree_root,
+                        accounts_clone,
+                    )
+                    .await
+            })))
+        } else {
+            None
+        };
+
+        // Get the remote provider
+        let remote_provider = self
+            .remote
+            .get()
+            .with_context(|| "remote provider was not initialized")?
+            .clone();
+
+        let instance_clone = instance.clone();
+        let accounts_clone = accounts.clone();
+
+        // Spawn a task to fetch accounts from the remote provider
+        let remote_handle = AbortOnDropHandle::new(tokio::spawn(async move {
+            remote_provider
                 .fetch_reward_accounts(
-                    instance,
+                    &instance_clone,
                     height,
                     view,
                     reward_merkle_tree_root,
-                    accounts.clone(),
+                    accounts_clone,
                 )
-                .await;
-            if local_result.is_ok() {
-                return local_result;
-            }
-        }
+                .await
+        }));
 
-        self.remote
-            .get()
-            .with_context(|| "local provider failed and remote provider was not initialized")?
-            .fetch_reward_accounts(instance, height, view, reward_merkle_tree_root, accounts)
-            .await
+        if let Some(local_handle) = local_handle {
+            select! {
+                local_result = local_handle => {
+                    warn!("Fetched reward accounts from local");
+                    local_result.with_context(|| "failed to join on local provider")?
+                }
+                remote_result = remote_handle => {
+                    warn!("Fetched reward accounts from remote");
+                    remote_result.with_context(|| "failed to join on remote provider")?
+                }
+            }
+        } else {
+            remote_handle.await?
+        }
     }
 
     fn backoff(&self) -> &BackoffParams {

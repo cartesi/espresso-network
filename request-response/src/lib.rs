@@ -347,6 +347,7 @@ impl<
                 .get_expected_responders(&request_message.request)
                 .await
                 .map_err(|e| {
+                    warn!("failed to get expected responders for request: {e:#}");
                     RequestError::InvalidRequest(anyhow::anyhow!(
                         "failed to get expected responders for request: {e}"
                     ))
@@ -509,7 +510,7 @@ impl<
             .and_then(|result| result);
 
             if let Err(e) = result {
-                warn!("Failed to send response to requester: {e}");
+                warn!("Failed to send response to requester: {e:#}");
             }
         }));
 

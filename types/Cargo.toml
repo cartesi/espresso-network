@@ -19,6 +19,7 @@ bincode = { workspace = true }
 blake3 = { workspace = true }
 bytesize = { workspace = true }
 clap = { workspace = true }
+tokio-util = { version = "0.7", default-features = false, features = ["rt"] }
 cld = { workspace = true }
 committable = { workspace = true }
 contract-bindings-alloy = { workspace = true }
