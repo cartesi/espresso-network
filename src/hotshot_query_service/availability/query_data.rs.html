@@ -743,7 +743,69 @@
 <a href="#742" id="742">742</a>
 <a href="#743" id="743">743</a>
 <a href="#744" id="744">744</a>
-<a href="#745" id="745">745</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -767,7 +829,7 @@
         node_implementation::{NodeType, Versions},
         EncodeBytes,
     },
-    vid::advz::advz_scheme,
+    vid::advz::{advz_scheme, ADVZCommitment, ADVZCommon},
 };
 <span class="kw">use </span>jf_vid::VidScheme;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -1196,6 +1258,68 @@
 <span class="kw">impl</span>&lt;Types: NodeType&gt; HeightIndexed <span class="kw">for </span>PayloadQueryData&lt;Types&gt; {
     <span class="kw">fn </span>height(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
         <span class="self">self</span>.height
+    }
+}
+
+<span class="doccomment">/// The old VidCommonQueryData, associated with ADVZ VID Scheme.
+</span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(bound = <span class="string">""</span>)]
+</span><span class="kw">pub struct </span>ADVZCommonQueryData&lt;Types: NodeType&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) height: u64,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) block_hash: BlockHash&lt;Types&gt;,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) payload_hash: ADVZCommitment,
+    <span class="kw">pub</span>(<span class="kw">crate</span>) common: ADVZCommon,
+}
+
+<span class="kw">impl</span>&lt;Types: NodeType&gt; ADVZCommonQueryData&lt;Types&gt; {
+    <span class="kw">pub fn </span>new(header: Header&lt;Types&gt;, common: ADVZCommon) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>VidCommitment::V0(payload_hash) = header.payload_commitment() <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"Inconsistent header type."</span>));
+        };
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            height: header.block_number(),
+            block_hash: header.commit(),
+            payload_hash,
+            common,
+        })
+    }
+
+    <span class="kw">pub async fn </span>genesis&lt;HsVer: Versions&gt;(
+        validated_state: <span class="kw-2">&amp;</span>Types::ValidatedState,
+        instance_state: <span class="kw-2">&amp;</span>Types::InstanceState,
+    ) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>leaf = Leaf::&lt;Types&gt;::genesis::&lt;HsVer&gt;(validated_state, instance_state).<span class="kw">await</span>;
+        <span class="kw">let </span>payload = leaf.block_payload().unwrap();
+        <span class="kw">let </span>bytes = payload.encode();
+        <span class="kw">let </span>disperse = advz_scheme(GENESIS_VID_NUM_STORAGE_NODES)
+            .disperse(bytes)
+            .unwrap();
+
+        <span class="self">Self</span>::new(leaf.block_header().clone(), disperse.common)
+    }
+
+    <span class="kw">pub fn </span>block_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BlockHash&lt;Types&gt; {
+        <span class="self">self</span>.block_hash
+    }
+
+    <span class="kw">pub fn </span>payload_hash(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ADVZCommitment {
+        <span class="self">self</span>.payload_hash
+    }
+
+    <span class="kw">pub fn </span>common(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ADVZCommon {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.common
+    }
+}
+
+<span class="kw">impl</span>&lt;Types: NodeType&gt; HeightIndexed <span class="kw">for </span>ADVZCommonQueryData&lt;Types&gt; {
+    <span class="kw">fn </span>height(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.height
+    }
+}
+
+<span class="kw">impl</span>&lt;Types: NodeType&gt; HeightIndexed <span class="kw">for </span>(ADVZCommonQueryData&lt;Types&gt;, <span class="prelude-ty">Option</span>&lt;VidShare&gt;) {
+    <span class="kw">fn </span>height(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
+        <span class="self">self</span>.<span class="number">0</span>.height
     }
 }
 
