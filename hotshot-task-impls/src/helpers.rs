@@ -718,11 +718,17 @@ pub(crate) async fn validate_epoch_transition_qc<
     proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
     validation_info: &ValidationInfo<TYPES, I, V>,
 ) -> Result<()> {
-    let proposed_qc = proposal.data.justify_qc();
-    if is_transition_block(
+    if !is_epoch_transition(
         proposal.data.block_header().block_number(),
         validation_info.epoch_height,
     ) {
+        return Ok(());
+    }
+    let proposed_qc = proposal.data.justify_qc();
+    let Some(block_number) = proposed_qc.data().block_number else {
+        bail!("Justify QC has no block number");
+    };
+    if is_transition_block(block_number, validation_info.epoch_height) {
         let Some(next_epoch_qc) = proposal.data.next_epoch_justify_qc() else {
             bail!("Next epoch justify QC is not present");
         };
@@ -733,9 +739,9 @@ pub(crate) async fn validate_epoch_transition_qc<
         // Height is epoch height - 2
         ensure!(
             transition_qc(validation_info).await.is_none_or(
-                |(qc, _)| qc.view_number() >= proposed_qc.view_number()
+                |(qc, _)| qc.view_number() <= proposed_qc.view_number()
             ),
-            "First transition block must have view number greater than or equal to previous transition QC"
+            "Proposed transition qc must have view number greater than or equal to previous transition QC"
         );
         ensure!(
             is_transition_block(
@@ -756,7 +762,7 @@ pub(crate) async fn validate_epoch_transition_qc<
         ensure!(
             transition_qc(validation_info)
                 .await
-                .is_none_or(|(qc, _)| qc.view_number() > proposed_qc.view_number()),
+                .is_none_or(|(qc, _)| qc.view_number() < proposed_qc.view_number()),
             "Transition block must have view number greater than previous transition QC"
         );
         ensure!(
@@ -764,13 +770,9 @@ pub(crate) async fn validate_epoch_transition_qc<
             "Second to last block and last block of epoch must directly extend previous block"
         );
         ensure!(
-            proposed_qc.view_number() == validation_info.consensus.read().await.high_qc().view_number() + 1
-             || transition_qc(validation_info).await.is_some_and(|(qc, _)| &qc == proposed_qc),
-            "Transition proposals must either extend the transition QC or extend the previous view directly"
-        );
-        ensure!(
-            proposed_qc.view_number() + 1 == proposal.data.view_number(),
-            "Transition proposals must extend the previous view directly"
+            proposed_qc.view_number() + 1 == proposal.data.view_number()
+            || transition_qc(validation_info).await.is_some_and(|(qc, _)| &qc == proposed_qc),
+            "Transition proposals must extend the previous view directly, or extend the previous transition block"
         );
     }
     Ok(())
@@ -802,12 +804,13 @@ pub async fn validate_proposal_safety_and_liveness<
         .version(proposal.data.view_number())
         .await
         .is_ok_and(|v| v >= V::Epochs::VERSION)
-        && is_epoch_transition(
-            proposal.data.block_header().block_number(),
-            validation_info.epoch_height,
-        )
     {
-        validate_epoch_transition_qc(&proposal, validation_info).await?;
+        let Some(block_number) = proposal.data.justify_qc().data.block_number else {
+            bail!("Quorum Proposal has no block number but it's after the epoch upgrade");
+        };
+        if is_epoch_transition(block_number, validation_info.epoch_height) {
+            validate_epoch_transition_qc(&proposal, validation_info).await?;
+        }
     }
 
     let proposed_leaf = Leaf2::from_quorum_proposal(&proposal.data);

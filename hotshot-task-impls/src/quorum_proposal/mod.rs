@@ -25,7 +25,7 @@ use hotshot_types::{
         signature_key::SignatureKey,
         storage::Storage,
     },
-    utils::{is_epoch_transition, EpochTransitionIndicator},
+    utils::{is_epoch_transition, is_transition_block, EpochTransitionIndicator},
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -474,6 +474,13 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             .formed_extended_quorum_certificates
             .split_off(&view_number);
         self.formed_quorum_certificates = self.formed_quorum_certificates.split_off(&view_number);
+
+        if is_transition_block(qc.data.block_number.unwrap(), self.epoch_height) {
+            self.consensus
+                .write()
+                .await
+                .update_transition_qc(qc.clone(), next_epoch_qc.clone());
+        }
         // Store the new eqc
         self.update_high_qc(qc).await?;
         self.update_next_epoch_high_qc(next_epoch_qc).await?;
