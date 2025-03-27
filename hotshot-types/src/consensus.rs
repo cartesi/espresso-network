@@ -1067,9 +1067,10 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             return false;
         };
         let leaf_view = leaf.view_number();
-        let leaf_block_number = leaf.height();
+        let mut last_leaf_block_number = leaf.height();
 
         let mut last_visited_view_number = leaf_view;
+
         let mut is_leaf_extended = true;
         if let Err(e) = self.visit_leaf_ancestors(
             leaf_view,
@@ -1091,12 +1092,13 @@ impl<TYPES: NodeType> Consensus<TYPES> {
                     is_leaf_extended = false;
                     return false;
                 }
-                if leaf_block_number != leaf.height() {
+                if last_leaf_block_number != leaf.height() + 1 {
                     tracing::trace!("The chain is broken. Block numbers do not match.");
                     is_leaf_extended = false;
                     return false;
                 }
                 last_visited_view_number = leaf.view_number();
+                last_leaf_block_number = leaf.height();
                 true
             },
         ) {

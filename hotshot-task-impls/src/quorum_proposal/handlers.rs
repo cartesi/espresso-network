@@ -29,7 +29,10 @@ use hotshot_types::{
         node_implementation::{NodeImplementation, NodeType},
         signature_key::SignatureKey,
     },
-    utils::{is_epoch_transition, option_epoch_from_block_number},
+    utils::{
+        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        option_epoch_from_block_number,
+    },
     vote::HasViewNumber,
 };
 use hotshot_utils::anytrace::*;
@@ -144,6 +147,80 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             }
         }
         None
+    }
+
+    async fn wait_for_transition_qc(&self) -> Result<Option<QuorumCertificate2<TYPES>>> {
+        ensure!(
+            self.upgrade_lock.epochs_enabled(self.view_number).await,
+            error!("Epochs are not enabled yet we tried to wait for Highest QC.")
+        );
+
+        let consensus_reader = self.consensus.read().await;
+        let mut transition_qc = consensus_reader.transition_qc().cloned();
+
+        let wait_duration = Duration::from_millis(self.timeout / 2);
+
+        let mut rx = self.receiver.clone();
+
+        // drain any qc off the queue
+        while let Ok(event) = rx.try_recv() {
+            if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
+                if let Some(block_number) = qc.data.block_number {
+                    if !is_transition_block(block_number, self.epoch_height) {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+                if validate_qc_and_next_epoch_qc(
+                    qc,
+                    maybe_next_epoch_qc.as_ref(),
+                    &self.consensus,
+                    &self.membership.coordinator,
+                    &self.upgrade_lock,
+                    self.epoch_height,
+                )
+                .await
+                .is_ok()
+                    && transition_qc
+                        .as_ref()
+                        .is_none_or(|tqc| qc.view_number() > tqc.view_number())
+                {
+                    transition_qc = Some(qc.clone());
+                }
+            }
+        }
+
+        // TODO configure timeout
+        while self.view_start_time.elapsed() < wait_duration {
+            let event = rx.recv_direct().await?;
+            if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
+                if let Some(block_number) = qc.data.block_number {
+                    if !is_transition_block(block_number, self.epoch_height) {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+                if validate_qc_and_next_epoch_qc(
+                    qc,
+                    maybe_next_epoch_qc.as_ref(),
+                    &self.consensus,
+                    &self.membership.coordinator,
+                    &self.upgrade_lock,
+                    self.epoch_height,
+                )
+                .await
+                .is_ok()
+                    && transition_qc
+                        .as_ref()
+                        .is_none_or(|tqc| qc.view_number() > tqc.view_number())
+                {
+                    transition_qc = Some(qc.clone());
+                }
+            }
+        }
+        Ok(transition_qc)
     }
     /// Waits for the configured timeout for nodes to send HighQc messages to us.  We'll
     /// then propose with the highest QC from among these proposals.
@@ -273,17 +350,12 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         let builder_commitment = commitment_and_metadata.builder_commitment.clone();
         let metadata = commitment_and_metadata.metadata.clone();
 
-        let block_header = if version >= V::Epochs::VERSION
+        if version >= V::Epochs::VERSION
             && self.consensus.read().await.is_qc_forming_eqc(&parent_qc)
         {
             tracing::info!("Reached end of epoch. Proposing the same block again to form an eQC.");
-            let block_header = parent_leaf.block_header().clone();
-            tracing::debug!(
-                "Proposing block no. {} to form the eQC.",
-                block_header.block_number()
-            );
-            block_header
-        } else if version < V::Marketplace::VERSION {
+        }
+        let block_header = if version < V::Marketplace::VERSION {
             TYPES::BlockHeader::new_legacy(
                 state.as_ref(),
                 self.instance_state.as_ref(),
@@ -470,19 +542,64 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
             );
             return;
         };
-        let parent_qc = if let Some(qc) = parent_qc {
-            qc
-        } else if version < V::Epochs::VERSION {
-            self.consensus.read().await.high_qc().clone()
+
+        let mut maybe_epoch = None;
+        let proposal_cert = if let Some(view_sync_cert) = view_sync_finalize_cert {
+            maybe_epoch = view_sync_cert.data.epoch;
+            Some(ViewChangeEvidence2::ViewSync(view_sync_cert))
         } else {
-            match self.wait_for_highest_qc().await {
-                Ok(qc) => qc,
-                Err(e) => {
-                    tracing::error!("Error while waiting for highest QC: {:?}", e);
-                    return;
+            match timeout_certificate {
+                Some(timeout_cert) => {
+                    maybe_epoch = timeout_cert.data.epoch;
+                    Some(ViewChangeEvidence2::Timeout(timeout_cert))
                 },
+                None => None,
             }
         };
+
+        let parent_qc =
+            if let Some(qc) = parent_qc {
+                qc
+            } else if version < V::Epochs::VERSION {
+                self.consensus.read().await.high_qc().clone()
+            } else if proposal_cert.is_some() {
+                // If we have a view change evidence, we need to wait need to propose with the transition QC
+                match self.wait_for_transition_qc().await {
+                    Ok(Some(qc)) => {
+                        let Some(epoch) = maybe_epoch else {
+                            tracing::error!(
+                                "No epoch found on view change evidence, but we are in epoch mode"
+                            );
+                            return;
+                        };
+                        if !qc.data.block_number.is_some_and(|bn| {
+                            epoch_from_block_number(bn, self.epoch_height) == *epoch
+                        }) {
+                            tracing::error!(
+                                "Transition QC is not for the same epoch as we are proposing"
+                            );
+                            return;
+                        }
+                        qc
+                    },
+                    Ok(None) => {
+                        tracing::error!("No transition QC found");
+                        return;
+                    },
+                    Err(e) => {
+                        tracing::error!("Error while waiting for transition QC: {:?}", e);
+                        return;
+                    },
+                }
+            } else {
+                match self.wait_for_highest_qc().await {
+                    Ok(qc) => qc,
+                    Err(e) => {
+                        tracing::error!("Error while waiting for highest QC: {:?}", e);
+                        return;
+                    },
+                }
+            };
 
         if commit_and_metadata.is_none() {
             tracing::error!(
@@ -495,12 +612,6 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
             tracing::error!("Somehow completed the proposal dependency task without a VID share");
             return;
         }
-
-        let proposal_cert = if let Some(view_sync_cert) = view_sync_finalize_cert {
-            Some(ViewChangeEvidence2::ViewSync(view_sync_cert))
-        } else {
-            timeout_certificate.map(ViewChangeEvidence2::Timeout)
-        };
 
         if let Err(e) = self
             .publish_proposal(
