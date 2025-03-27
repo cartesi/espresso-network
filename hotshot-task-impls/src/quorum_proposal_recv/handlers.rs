@@ -19,7 +19,7 @@ use hotshot_types::{
     simple_certificate::{QuorumCertificate, QuorumCertificate2},
     simple_vote::HasEpoch,
     traits::{
-        block_contents::BlockHeader,
+        block_contents::{BlockHeader, BlockPayload},
         election::Membership,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType},
         signature_key::SignatureKey,
@@ -134,6 +134,38 @@ pub async fn validate_proposal_liveness<
     Ok(())
 }
 
+async fn validate_epoch_transition_block<
+    TYPES: NodeType,
+    I: NodeImplementation<TYPES>,
+    V: Versions,
+>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+    validation_info: &ValidationInfo<TYPES, I, V>,
+) -> Result<()> {
+    if !validation_info
+        .upgrade_lock
+        .epochs_enabled(proposal.data.view_number())
+        .await
+    {
+        return Ok(());
+    }
+    if !is_epoch_transition(
+        proposal.data.block_header().block_number(),
+        validation_info.epoch_height,
+    ) {
+        return Ok(());
+    }
+    // TODO: Is this the best way to do this?
+    let (empty_payload, metadata) = <TYPES as NodeType>::BlockPayload::empty();
+    let header = proposal.data.block_header();
+    ensure!(
+        empty_payload.builder_commitment(&metadata) == header.builder_commitment()
+            && &metadata == header.metadata(),
+        "Block is not empty"
+    );
+    Ok(())
+}
+
 /// Handles the `QuorumProposalRecv` event by first validating the cert itself for the view, and then
 /// updating the states, which runs when the proposal cannot be found in the internal state map.
 ///
@@ -175,6 +207,8 @@ pub(crate) async fn handle_quorum_proposal_recv<
         proposal_block_number,
         validation_info.epoch_height,
     );
+
+    validate_epoch_transition_block(proposal, &validation_info).await?;
 
     validate_qc_and_next_epoch_qc(
         &justify_qc,

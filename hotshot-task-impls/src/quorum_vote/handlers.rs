@@ -411,40 +411,33 @@ pub(crate) async fn update_shared_state<
         );
     };
 
-    let (Some(parent_state), maybe_parent_delta) = validated_view.state_and_delta() else {
+    let (Some(parent_state), _) = validated_view.state_and_delta() else {
         bail!("Parent state not found! Consensus internally inconsistent");
     };
 
-    let (state, delta) = if is_epoch_transition(proposed_leaf.height(), epoch_height)
-        && proposed_leaf.height() == parent.height()
-    {
-        // This is an epoch transition. We do not want to call `validate_and_apply_header` second
-        // time for the same block. Just grab the state and delta from the parent and update the shared
-        // state with those.
-        (parent_state, maybe_parent_delta)
-    } else {
-        let version = upgrade_lock.version(view_number).await?;
+    let version = upgrade_lock.version(view_number).await?;
 
-        let (validated_state, state_delta) = parent_state
-            .validate_and_apply_header(
-                &instance_state,
-                &parent,
-                &proposed_leaf.block_header().clone(),
-                vid_share.data.payload_byte_len(),
-                version,
-                *view_number,
-            )
-            .await
-            .wrap()
-            .context(warn!("Block header doesn't extend the proposal!"))?;
-
-        (Arc::new(validated_state), Some(Arc::new(state_delta)))
-    };
+    let (validated_state, state_delta) = parent_state
+        .validate_and_apply_header(
+            &instance_state,
+            &parent,
+            &proposed_leaf.block_header().clone(),
+            vid_share.data.payload_byte_len(),
+            version,
+            *view_number,
+        )
+        .await
+        .wrap()
+        .context(warn!("Block header doesn't extend the proposal!"))?;
 
     // Now that we've rounded everyone up, we need to update the shared state
     let mut consensus_writer = consensus.write().await;
 
-    if let Err(e) = consensus_writer.update_leaf(proposed_leaf.clone(), Arc::clone(&state), delta) {
+    if let Err(e) = consensus_writer.update_leaf(
+        proposed_leaf.clone(),
+        Arc::new(validated_state),
+        Some(Arc::new(state_delta)),
+    ) {
         tracing::trace!("{e:?}");
     }
 
