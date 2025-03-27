@@ -395,14 +395,21 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 "Failed to update high QC in internal consensus state!"
             ))?;
 
-        // Then update the high QC in storage
-        self.storage
-            .write()
-            .await
-            .update_high_qc2(qc)
-            .await
-            .wrap()
-            .context(error!("Failed to update high QC in storage!"))
+        // Don't update storage if we're in the epoch transition
+        if qc.data.block_number.is_none()
+            || (!is_epoch_transition(qc.data.block_number.unwrap(), self.epoch_height)
+                && !qc.data.block_number.unwrap() % self.epoch_height == 0)
+        {
+            // Then update the high QC in storage
+            self.storage
+                .write()
+                .await
+                .update_high_qc2(qc)
+                .await
+                .wrap()
+                .context(error!("Failed to update high QC in storage!"))?;
+        }
+        Ok(())
     }
 
     async fn update_next_epoch_high_qc(
@@ -419,13 +426,20 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             ))?;
 
         // Then update the next epoch high QC in storage
-        self.storage
-            .write()
-            .await
-            .update_next_epoch_high_qc2(qc)
-            .await
-            .wrap()
-            .context(error!("Failed to update next epoch high QC in storage!"))
+        // Don't update storage if we're in the epoch transition
+        if qc.data.block_number.is_none()
+            || (!is_epoch_transition(qc.data.block_number.unwrap(), self.epoch_height)
+                && !qc.data.block_number.unwrap() % self.epoch_height == 0)
+        {
+            self.storage
+                .write()
+                .await
+                .update_next_epoch_high_qc2(qc)
+                .await
+                .wrap()
+                .context(error!("Failed to update next epoch high QC in storage!"))?;
+        }
+        Ok(())
     }
 
     /// Hanldles checking that both certificates for an eqc exist and stores if they do.  Also handles storing the QC for cases

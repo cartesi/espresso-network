@@ -187,16 +187,22 @@ pub(crate) async fn handle_quorum_proposal_validated<
         included_txns,
         decided_upgrade_cert,
     } = if version >= V::Epochs::VERSION {
-        decide_from_proposal_2::<TYPES, I, V>(
-            proposal,
-            OuterConsensus::new(Arc::clone(&task_state.consensus.inner_consensus)),
-            Arc::clone(&task_state.upgrade_lock.decided_upgrade_certificate),
-            &task_state.public_key,
-            version >= V::Epochs::VERSION,
-            task_state.membership.membership(),
-            &task_state.storage,
-        )
-        .await
+        // Skip the decide rule for the last block of the epoch.  This is so
+        // that we do not decide the block with epoch_height -2 before we enter the new epoch
+        if proposal.block_header().block_number() % task_state.epoch_height != 0 {
+            decide_from_proposal_2::<TYPES, I, V>(
+                proposal,
+                OuterConsensus::new(Arc::clone(&task_state.consensus.inner_consensus)),
+                Arc::clone(&task_state.upgrade_lock.decided_upgrade_certificate),
+                &task_state.public_key,
+                version >= V::Epochs::VERSION,
+                task_state.membership.membership(),
+                &task_state.storage,
+            )
+            .await
+        } else {
+            LeafChainTraversalOutcome::default()
+        }
     } else {
         decide_from_proposal::<TYPES, I, V>(
             proposal,
@@ -304,6 +310,12 @@ pub(crate) async fn handle_quorum_proposal_validated<
         // We don't need to hold this while we broadcast
         drop(consensus_writer);
 
+        tracing::error!(
+            "Successfully sent decide event, leaf views: {:?}, leaf views len: {:?}, qc view: {:?}",
+            decided_view_number,
+            leaf_views.len(),
+            new_decide_qc.as_ref().unwrap().view_number()
+        );
         // Send an update to everyone saying that we've reached a decide
         broadcast_event(
             Event {
@@ -318,7 +330,6 @@ pub(crate) async fn handle_quorum_proposal_validated<
             &task_state.output_event_stream,
         )
         .await;
-        tracing::debug!("Successfully sent decide event");
 
         if version >= V::Epochs::VERSION {
             for leaf_view in leaf_views {

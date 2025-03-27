@@ -155,6 +155,13 @@ async fn validate_epoch_transition_block<
     ) {
         return Ok(());
     }
+    // transition block does not have to be empty
+    if is_transition_block(
+        proposal.data.block_header().block_number(),
+        validation_info.epoch_height,
+    ) {
+        return Ok(());
+    }
     // TODO: Is this the best way to do this?
     let (empty_payload, metadata) = <TYPES as NodeType>::BlockPayload::empty();
     let header = proposal.data.block_header();

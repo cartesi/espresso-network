@@ -167,6 +167,16 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 tracing::error!("Epoch is required for epoch-based view change");
                 return None;
             };
+            let Some(mut high_qc_block_number) =
+                self.consensus.read().await.high_qc().data.block_number
+            else {
+                tracing::error!("High QC does not have a block number. Do not propose.");
+                return None;
+            };
+            high_qc_block_number = std::cmp::max(
+                high_qc_block_number,
+                self.consensus.read().await.highest_block,
+            );
             if self
                 .consensus
                 .read()
@@ -178,15 +188,19 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     };
                     e == epoch
                 })
-                || is_epoch_transition(
-                    self.consensus.read().await.highest_block + 1,
-                    self.epoch_height,
-                )
+                || is_epoch_transition(high_qc_block_number, self.epoch_height)
             {
                 // We are proposing a transition block it should be empty
-                self.send_empty_block(event_stream, block_view, block_epoch, version)
-                    .await;
-                return None;
+                if high_qc_block_number % self.epoch_height != 0 {
+                    tracing::error!(
+                        "Sending empty block event. View number: {}. Parent Block number: {}",
+                        block_view,
+                        high_qc_block_number
+                    );
+                    self.send_empty_block(event_stream, block_view, block_epoch, version)
+                        .await;
+                    return None;
+                }
             }
         }
 
