@@ -25,7 +25,7 @@ use hotshot_types::{
         signature_key::SignatureKey,
         storage::Storage,
     },
-    utils::{is_last_block_in_epoch, EpochTransitionIndicator},
+    utils::{is_epoch_transition, EpochTransitionIndicator},
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -442,7 +442,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 };
 
                 if !self.upgrade_lock.epochs_enabled(view_number).await
-                    || !is_last_block_in_epoch(block_number, self.epoch_height)
+                    || !is_epoch_transition(block_number, self.epoch_height)
                 {
                     return self.update_high_qc(qc).await;
                 }

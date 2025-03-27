@@ -26,7 +26,10 @@ use hotshot_types::{
         storage::Storage,
         ValidatedState,
     },
-    utils::{epoch_from_block_number, is_last_block_in_epoch, option_epoch_from_block_number},
+    utils::{
+        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        option_epoch_from_block_number,
+    },
     vote::HasViewNumber,
 };
 use hotshot_utils::anytrace::*;
@@ -73,7 +76,7 @@ async fn verify_drb_result<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Ver
 ) -> Result<()> {
     // Skip if this is not the expected block.
     if task_state.epoch_height == 0
-        || !is_last_block_in_epoch(
+        || !is_epoch_transition(
             proposal.block_header().block_number(),
             task_state.epoch_height,
         )
@@ -136,8 +139,8 @@ async fn store_drb_result<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Vers
         decided_block_number,
         task_state.epoch_height,
     ));
-    // Skip storing the received result if this is not the last block.
-    if is_last_block_in_epoch(decided_block_number, task_state.epoch_height) {
+    // Skip storing the received result if this is not the transition block.
+    if is_transition_block(decided_block_number, task_state.epoch_height) {
         if let Some(result) = decided_leaf.next_drb_result {
             // We don't need to check value existence and consistency because it should be
             // impossible to decide on a block with different DRB results.
@@ -412,7 +415,7 @@ pub(crate) async fn update_shared_state<
         bail!("Parent state not found! Consensus internally inconsistent");
     };
 
-    let (state, delta) = if is_last_block_in_epoch(proposed_leaf.height(), epoch_height)
+    let (state, delta) = if is_epoch_transition(proposed_leaf.height(), epoch_height)
         && proposed_leaf.height() == parent.height()
     {
         // This is an epoch transition. We do not want to call `validate_and_apply_header` second
@@ -470,7 +473,7 @@ pub(crate) async fn submit_vote<TYPES: NodeType, I: NodeImplementation<TYPES>, V
     // If the proposed leaf is for the last block in the epoch and the node is part of the quorum committee
     // in the next epoch, the node should vote to achieve the double quorum.
     let committee_member_in_next_epoch = leaf.with_epoch
-        && is_last_block_in_epoch(leaf.height(), epoch_height)
+        && is_epoch_transition(leaf.height(), epoch_height)
         && membership.next_epoch().await?.has_stake(&public_key).await;
 
     ensure!(

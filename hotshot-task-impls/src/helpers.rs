@@ -34,8 +34,8 @@ use hotshot_types::{
         BlockPayload, ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_epoch_root, is_last_block_in_epoch,
-        option_epoch_from_block_number, Terminator, View, ViewInner,
+        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_first_transition_block,
+        is_transition_block, option_epoch_from_block_number, Terminator, View, ViewInner,
     },
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
@@ -43,6 +43,7 @@ use hotshot_types::{
 use hotshot_utils::anytrace::*;
 use tokio::time::timeout;
 use tracing::instrument;
+use vbs::version::StaticVersionType;
 
 use crate::{events::HotShotEvent, quorum_proposal_recv::ValidationInfo, request::REQUEST_TIMEOUT};
 
@@ -658,6 +659,113 @@ pub(crate) async fn parent_leaf_and_state<TYPES: NodeType, V: Versions>(
     Ok((leaf.clone(), Arc::clone(state)))
 }
 
+pub(crate) async fn update_high_qc<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+    validation_info: &ValidationInfo<TYPES, I, V>,
+) -> Result<()> {
+    let justify_qc = proposal.data.justify_qc();
+    let maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc();
+    if let Err(e) = validation_info
+        .storage
+        .write()
+        .await
+        .update_high_qc2(justify_qc.clone())
+        .await
+    {
+        bail!("Failed to store High QC, not voting; error = {:?}", e);
+    }
+    if let Some(ref next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
+        if let Err(e) = validation_info
+            .storage
+            .write()
+            .await
+            .update_next_epoch_high_qc2(next_epoch_justify_qc.clone())
+            .await
+        {
+            bail!(
+                "Failed to store next epoch High QC, not voting; error = {:?}",
+                e
+            );
+        }
+    }
+    let mut consensus_writer = validation_info.consensus.write().await;
+    consensus_writer.update_high_qc(justify_qc.clone())?;
+    if let Some(ref next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
+        consensus_writer.update_next_epoch_high_qc(next_epoch_justify_qc.clone())?
+    }
+    Ok(())
+}
+
+async fn transition_qc<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>(
+    validation_info: &ValidationInfo<TYPES, I, V>,
+) -> Option<QuorumCertificate2<TYPES>> {
+    validation_info
+        .consensus
+        .read()
+        .await
+        .transition_qc()
+        .cloned()
+}
+
+pub(crate) async fn validate_epoch_transition_qc<
+    TYPES: NodeType,
+    I: NodeImplementation<TYPES>,
+    V: Versions,
+>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+    validation_info: &ValidationInfo<TYPES, I, V>,
+) -> Result<()> {
+    let proposed_qc = proposal.data.justify_qc();
+    if is_transition_block(
+        proposal.data.block_header().block_number(),
+        validation_info.epoch_height,
+    ) {
+        // Height is epoch height - 2
+        ensure!(
+            transition_qc(validation_info).await.is_none_or(
+                |qc| qc.view_number() >= proposed_qc.view_number()
+            ),
+            "First transition block must have view number greater than or equal to previous transition QC"
+        );
+        ensure!(
+            is_transition_block(
+                proposed_qc.data.block_number.unwrap(),
+                validation_info.epoch_height
+            ),
+            "Block with height epoch height - 2 must have justify_qc for transition block height"
+        );
+        validation_info
+            .consensus
+            .write()
+            .await
+            .update_transition_qc(proposal.data.justify_qc().clone());
+        // reset the high qc to the transition qc
+        update_high_qc(proposal, validation_info).await?;
+    } else {
+        // Height is either epoch height - 1 or epoch height
+        ensure!(
+            transition_qc(validation_info)
+                .await
+                .is_none_or(|qc| qc.view_number() > proposed_qc.view_number()),
+            "Transition block must have view number greater than previous transition QC"
+        );
+        ensure!(
+            proposal.data.view_change_evidence().is_none(),
+            "Second to last block and last block of epoch must directly extend previous block"
+        );
+        ensure!(
+            proposed_qc.view_number() == validation_info.consensus.read().await.high_qc().view_number() + 1
+             || transition_qc(validation_info).await.is_some_and(|qc| &qc == proposed_qc),
+            "Transition proposals must either extend the transition QC or extend the previous view directly"
+        );
+        ensure!(
+            proposed_qc.view_number() + 1 == proposal.data.view_number(),
+            "Transition proposals must extend the previous view directly"
+        );
+    }
+    Ok(())
+}
+
 /// Validate the state and safety and liveness of a proposal then emit
 /// a `QuorumProposalValidated` event.
 ///
@@ -678,6 +786,19 @@ pub async fn validate_proposal_safety_and_liveness<
     sender: TYPES::SignatureKey,
 ) -> Result<()> {
     let view_number = proposal.data.view_number();
+
+    if validation_info
+        .upgrade_lock
+        .version(proposal.data.view_number())
+        .await
+        .is_ok_and(|v| v >= V::Epochs::VERSION)
+        && is_epoch_transition(
+            proposal.data.block_header().block_number(),
+            validation_info.epoch_height,
+        )
+    {
+        validate_epoch_transition_qc(&proposal, validation_info).await?;
+    }
 
     let proposed_leaf = Leaf2::from_quorum_proposal(&proposal.data);
     ensure!(
@@ -757,7 +878,7 @@ pub async fn validate_proposal_safety_and_liveness<
         );
 
         // Make sure that the epoch transition proposal includes the next epoch QC
-        if is_last_block_in_epoch(parent_leaf.height(), validation_info.epoch_height)
+        if is_epoch_transition(parent_leaf.height(), validation_info.epoch_height)
             && validation_info
                 .upgrade_lock
                 .epochs_enabled(view_number)
@@ -1049,11 +1170,11 @@ pub async fn validate_qc_and_next_epoch_qc<TYPES: NodeType, V: Versions>(
     if qc
         .data
         .block_number
-        .is_some_and(|b| is_last_block_in_epoch(b, epoch_height))
+        .is_some_and(|b| is_first_transition_block(b, epoch_height))
     {
         ensure!(
             maybe_next_epoch_qc.is_some(),
-            error!("Received High QC for the last block but not the next epoch QC")
+            error!("Received High QC for the transition block but not the next epoch QC")
         );
     }
 

@@ -36,7 +36,7 @@ use crate::{
         BlockPayload, ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_ge_epoch_root, is_last_block_in_epoch,
+        epoch_from_block_number, is_epoch_transition, is_ge_epoch_root,
         option_epoch_from_block_number, BuilderCommitment, LeafCommitment, StateAndDelta,
         Terminator,
     },
@@ -331,6 +331,9 @@ pub struct Consensus<TYPES: NodeType> {
 
     /// Tables for the DRB seeds and results.
     pub drb_results: DrbResults<TYPES>,
+
+    /// The transition QC for the current epoch
+    transition_qc: Option<QuorumCertificate2<TYPES>>,
 }
 
 /// This struct holds a payload and its metadata
@@ -450,6 +453,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             metrics,
             epoch_height,
             drb_results: DrbResults::new(),
+            transition_qc: None,
         }
     }
 
@@ -476,6 +480,29 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     /// Get the high QC.
     pub fn high_qc(&self) -> &QuorumCertificate2<TYPES> {
         &self.high_qc
+    }
+
+    /// Get the transition QC.
+    pub fn transition_qc(&self) -> Option<&QuorumCertificate2<TYPES>> {
+        self.transition_qc.as_ref()
+    }
+
+    /// Update the transition QC.
+    pub fn update_transition_qc(&mut self, qc: QuorumCertificate2<TYPES>) {
+        if let Some(transition_qc) = &self.transition_qc {
+            if transition_qc.view_number() == qc.view_number() {
+                if transition_qc.data().leaf_commit != qc.data().leaf_commit {
+                    tracing::error!(
+                        "Transition QC for view {:?} has different leaf commit {:?} to {:?}",
+                        qc.view_number(),
+                        transition_qc.data().leaf_commit,
+                        qc.data().leaf_commit
+                    );
+                }
+                return;
+            }
+        }
+        self.transition_qc = Some(qc);
     }
 
     /// Get the next epoch high QC.
@@ -1087,7 +1114,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             return false;
         };
         let block_height = leaf.height();
-        is_last_block_in_epoch(block_height, self.epoch_height)
+        is_epoch_transition(block_height, self.epoch_height)
     }
 
     /// Returns true if our high QC is for the last block in the epoch
@@ -1097,7 +1124,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             return false;
         };
         let block_height = leaf.height();
-        is_last_block_in_epoch(block_height, self.epoch_height)
+        is_epoch_transition(block_height, self.epoch_height)
     }
 
     /// Returns true if the `parent_leaf` formed an eQC for the previous epoch to the `proposed_leaf`

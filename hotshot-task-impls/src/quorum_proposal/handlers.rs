@@ -29,7 +29,7 @@ use hotshot_types::{
         node_implementation::{NodeImplementation, NodeType},
         signature_key::SignatureKey,
     },
-    utils::{is_last_block_in_epoch, option_epoch_from_block_number},
+    utils::{is_epoch_transition, option_epoch_from_block_number},
     vote::HasViewNumber,
 };
 use hotshot_utils::anytrace::*;
@@ -335,7 +335,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             return Ok(());
         }
         let is_high_qc_for_last_block = if let Some(block_number) = parent_qc.data.block_number {
-            is_last_block_in_epoch(block_number, self.epoch_height)
+            is_epoch_transition(block_number, self.epoch_height)
         } else {
             false
         };
@@ -353,22 +353,22 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         } else {
             None
         };
-        let next_drb_result =
-            if is_last_block_in_epoch(block_header.block_number(), self.epoch_height) {
-                if let Some(epoch_val) = &epoch {
-                    self.consensus
-                        .read()
-                        .await
-                        .drb_results
-                        .results
-                        .get(&(*epoch_val + 1))
-                        .copied()
-                } else {
-                    None
-                }
+        let next_drb_result = if is_epoch_transition(block_header.block_number(), self.epoch_height)
+        {
+            if let Some(epoch_val) = &epoch {
+                self.consensus
+                    .read()
+                    .await
+                    .drb_results
+                    .results
+                    .get(&(*epoch_val + 1))
+                    .copied()
             } else {
                 None
-            };
+            }
+        } else {
+            None
+        };
         let proposal = QuorumProposalWrapper {
             proposal: QuorumProposal2 {
                 block_header,

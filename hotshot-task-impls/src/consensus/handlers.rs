@@ -12,7 +12,7 @@ use hotshot_types::{
     event::{Event, EventType},
     simple_vote::{HasEpoch, QuorumVote2, TimeoutData2, TimeoutVote2},
     traits::node_implementation::{ConsensusTime, NodeImplementation, NodeType},
-    utils::{is_last_block_in_epoch, EpochTransitionIndicator},
+    utils::{is_epoch_transition, EpochTransitionIndicator},
     vote::{HasViewNumber, Vote},
 };
 use hotshot_utils::anytrace::*;
@@ -208,7 +208,7 @@ pub async fn send_high_qc<TYPES: NodeType, V: Versions, I: NodeImplementation<TY
         let maybe_next_epoch_qc = if high_qc
             .data
             .block_number
-            .is_some_and(|b| is_last_block_in_epoch(b, task_state.epoch_height))
+            .is_some_and(|b| is_epoch_transition(b, task_state.epoch_height))
         {
             Some(
                 task_state
