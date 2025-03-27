@@ -229,18 +229,14 @@ fn genesis_vid<Types: NodeType>(
 ///
 /// Only when a [`Transaction`] is committed are changes written back to storage, synchronized with
 /// any concurrent changes, and made visible to other connections to the same data source.
+#[async_trait]
 pub trait VersionedDataSource: Send + Sync {
     /// A transaction which can read and modify the data source.
-    type Transaction<'a>: Transaction
-    where
-        Self: 'a;
-
-    type ReadOnly<'a>: Transaction
-    where
-        Self: 'a;
+    type Transaction: Transaction;
+    type ReadOnly: Transaction;
 
     /// Start an atomic transaction on the data source.
-    fn write(&self) -> impl Future<Output = anyhow::Result<Self::Transaction<'_>>> + Send;
+    async fn write(&self) -> anyhow::Result<Self::Transaction>;
 
     /// Start a read-only transaction on the data source.
     ///
@@ -254,7 +250,7 @@ pub trait VersionedDataSource: Send + Sync {
     /// the write was committed.
     ///
     /// Read-only transactions do not need to be committed, and reverting has no effect.
-    fn read(&self) -> impl Future<Output = anyhow::Result<Self::ReadOnly<'_>>> + Send;
+    async fn read(&self) -> anyhow::Result<Self::ReadOnly>;
 }
 
 /// A unit of atomicity for updating a shared data source.

@@ -206,20 +206,15 @@ impl<S> FailStorage<S> {
     }
 }
 
+#[async_trait]
 impl<S> VersionedDataSource for FailStorage<S>
 where
     S: VersionedDataSource,
 {
-    type Transaction<'a>
-        = Transaction<S::Transaction<'a>>
-    where
-        Self: 'a;
-    type ReadOnly<'a>
-        = Transaction<S::ReadOnly<'a>>
-    where
-        Self: 'a;
+    type Transaction = Transaction<S::Transaction>;
+    type ReadOnly = Transaction<S::ReadOnly>;
 
-    async fn write(&self) -> anyhow::Result<<Self as VersionedDataSource>::Transaction<'_>> {
+    async fn write(&self) -> anyhow::Result<Self::Transaction> {
         self.failure
             .lock()
             .await
@@ -231,7 +226,7 @@ where
         })
     }
 
-    async fn read(&self) -> anyhow::Result<<Self as VersionedDataSource>::ReadOnly<'_>> {
+    async fn read(&self) -> anyhow::Result<Self::ReadOnly> {
         self.failure
             .lock()
             .await
