@@ -162,13 +162,17 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             error!("Epochs are not enabled yet we tried to wait for Highest QC.")
         );
 
-        let consensus_reader = self.consensus.read().await;
-        let mut transition_qc = consensus_reader.transition_qc().cloned();
+        let mut transition_qc = self.consensus.read().await.transition_qc().cloned();
 
         let wait_duration = Duration::from_millis(self.timeout / 2);
 
         let mut rx = self.receiver.clone();
 
+        tracing::error!(
+            "lrzasik: view_start_time {:?}, wait duration {:?}, we start draining",
+            self.view_start_time,
+            wait_duration
+        );
         // drain any qc off the queue
         while let Ok(event) = rx.try_recv() {
             if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
@@ -201,9 +205,31 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             }
         }
 
+        tracing::error!(
+            "lrzasik: view_start_time {:?}, wait duration {:?}, we drained now we wait and check",
+            self.view_start_time,
+            wait_duration
+        );
         // TODO configure timeout
         while self.view_start_time.elapsed() < wait_duration {
-            let event = rx.recv_direct().await?;
+            tracing::error!(
+                "lrzasik: view_start_time {:?}, wait duration {:?}, check",
+                self.view_start_time,
+                wait_duration
+            );
+            let time_spent = Instant::now()
+                .checked_duration_since(self.view_start_time)
+                .ok_or(error!("Time elapsed since the start of the task is negative. This should never happen."))?;
+            let time_left = wait_duration
+                .checked_sub(time_spent)
+                .ok_or(info!("No time left"))?;
+            let Ok(Ok(event)) = tokio::time::timeout(time_left, rx.recv_direct()).await else {
+                tracing::info!(
+                    "Some nodes did not respond with their Transition Qc in time. \
+                    Continuing with the highest transition QC that we received: {transition_qc:?}"
+                );
+                return Ok(transition_qc);
+            };
             if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
                 if let Some(block_number) = qc.data.block_number {
                     if !is_transition_block(block_number, self.epoch_height) {
@@ -233,6 +259,11 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 }
             }
         }
+        tracing::error!(
+            "lrzasik: view_start_time {:?}, wait duration {:?}, time elapsed",
+            self.view_start_time,
+            wait_duration
+        );
         Ok(transition_qc)
     }
     /// Waits for the configured timeout for nodes to send HighQc messages to us.  We'll
