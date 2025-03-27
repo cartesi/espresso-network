@@ -337,6 +337,9 @@ pub struct Consensus<TYPES: NodeType> {
         QuorumCertificate2<TYPES>,
         NextEpochQuorumCertificate2<TYPES>,
     )>,
+
+    /// The highest block number that we have seen
+    pub highest_block: u64,
 }
 
 /// This struct holds a payload and its metadata
@@ -457,6 +460,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
             epoch_height,
             drb_results: DrbResults::new(),
             transition_qc: None,
+            highest_block: 0,
         }
     }
 

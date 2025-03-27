@@ -254,6 +254,13 @@ pub(crate) async fn handle_quorum_proposal_recv<
             view_number,
             proposal_epoch
         );
+        let highest_block = validation_info.consensus.read().await.highest_block;
+        // update our highest block if it's higher or we're resetting the transition block
+        if highest_block < proposal_block_number
+            || is_transition_block(proposal_block_number, validation_info.epoch_height)
+        {
+            validation_info.consensus.write().await.highest_block = proposal_block_number;
+        }
         broadcast_event(
             Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
             event_sender,
@@ -277,6 +284,12 @@ pub(crate) async fn handle_quorum_proposal_recv<
         view_number,
         proposal_epoch
     );
+    let highest_block = validation_info.consensus.read().await.highest_block;
+    if highest_block < proposal_block_number
+        || is_transition_block(proposal_block_number, validation_info.epoch_height)
+    {
+        validation_info.consensus.write().await.highest_block = proposal_block_number;
+    }
     broadcast_event(
         Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
         event_sender,

@@ -27,7 +27,7 @@ use hotshot_types::{
         signature_key::{BuilderSignatureKey, SignatureKey},
         BlockPayload,
     },
-    utils::ViewInner,
+    utils::{is_epoch_transition, ViewInner},
 };
 use hotshot_utils::anytrace::*;
 use tokio::time::{sleep, timeout};
@@ -161,6 +161,35 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             },
         };
 
+        // Short circuit if we are in epochs and we are likely proposing a transition block
+        if version >= V::Epochs::VERSION {
+            let Some(epoch) = block_epoch else {
+                tracing::error!("Epoch is required for epoch-based view change");
+                return None;
+            };
+            if self
+                .consensus
+                .read()
+                .await
+                .transition_qc()
+                .is_some_and(|qc| {
+                    let Some(e) = qc.0.data.epoch else {
+                        return false;
+                    };
+                    e == epoch
+                })
+                || is_epoch_transition(
+                    self.consensus.read().await.highest_block + 1,
+                    self.epoch_height,
+                )
+            {
+                // We are proposing a transition block it should be empty
+                self.send_empty_block(event_stream, block_view, block_epoch, version)
+                    .await;
+                return None;
+            }
+        }
+
         // Request a block from the builder unless we are between versions.
         let block = {
             if self
@@ -196,44 +225,56 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             )
             .await;
         } else {
-            // If we couldn't get a block, send an empty block
-            tracing::info!(
-                "Failed to get a block for view {:?}, proposing empty block",
-                block_view
-            );
-
-            // Increment the metric for number of empty blocks proposed
-            self.consensus
-                .write()
-                .await
-                .metrics
-                .number_of_empty_blocks_proposed
-                .add(1);
-
-            let Some(null_fee) = null_block::builder_fee::<TYPES, V>(version, *block_view) else {
-                tracing::error!("Failed to get null fee");
-                return None;
-            };
-
-            // Create an empty block payload and metadata
-            let (_, metadata) = <TYPES as NodeType>::BlockPayload::empty();
-
-            // Broadcast the empty block
-            broadcast_event(
-                Arc::new(HotShotEvent::BlockRecv(PackedBundle::new(
-                    vec![].into(),
-                    metadata,
-                    block_view,
-                    block_epoch,
-                    vec1::vec1![null_fee],
-                    None,
-                ))),
-                event_stream,
-            )
-            .await;
+            self.send_empty_block(event_stream, block_view, block_epoch, version)
+                .await;
         };
 
         return None;
+    }
+
+    /// Send the event to the event stream that we are proposing an empty block
+    async fn send_empty_block(
+        &self,
+        event_stream: &Sender<Arc<HotShotEvent<TYPES>>>,
+        block_view: TYPES::View,
+        block_epoch: Option<TYPES::Epoch>,
+        version: Version,
+    ) {
+        // If we couldn't get a block, send an empty block
+        tracing::info!(
+            "Failed to get a block for view {:?}, proposing empty block",
+            block_view
+        );
+
+        // Increment the metric for number of empty blocks proposed
+        self.consensus
+            .write()
+            .await
+            .metrics
+            .number_of_empty_blocks_proposed
+            .add(1);
+
+        let Some(null_fee) = null_block::builder_fee::<TYPES, V>(version, *block_view) else {
+            tracing::error!("Failed to get null fee");
+            return;
+        };
+
+        // Create an empty block payload and metadata
+        let (_, metadata) = <TYPES as NodeType>::BlockPayload::empty();
+
+        // Broadcast the empty block
+        broadcast_event(
+            Arc::new(HotShotEvent::BlockRecv(PackedBundle::new(
+                vec![].into(),
+                metadata,
+                block_view,
+                block_epoch,
+                vec1::vec1![null_fee],
+                None,
+            ))),
+            event_stream,
+        )
+        .await;
     }
 
     /// Produce a block by fetching auction results from the solver and bundles from builders.
