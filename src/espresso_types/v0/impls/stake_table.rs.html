@@ -1097,7 +1097,11 @@
 <a href="#1096" id="1096">1096</a>
 <a href="#1097" id="1097">1097</a>
 <a href="#1098" id="1098">1098</a>
-<a href="#1099" id="1099">1099</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1099" id="1099">1099</a>
+<a href="#1100" id="1100">1100</a>
+<a href="#1101" id="1101">1101</a>
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     num::NonZeroU64,
@@ -1903,12 +1907,16 @@
             .fetch_leaf(drb_height, stake_table, success_threshold, epoch_height)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>((
-            leaf.block_header().clone(),
-            drb_leaf
-                .next_drb_result
-                .context(<span class="macro">format!</span>(<span class="string">"No DRB result on decided leaf at {drb_height}"</span>))<span class="question-mark">?</span>,
-        ))
+        <span class="kw">let </span><span class="prelude-val">Some</span>(drb) = drb_leaf.next_drb_result <span class="kw">else </span>{
+            <span class="macro">tracing::error!</span>(
+              <span class="string">"We received a leaf that should contain a DRB result, but the DRB result is missing: {:?}"</span>,
+              drb_leaf
+            );
+
+            <span class="macro">bail!</span>(<span class="string">"DRB leaf is missing the DRB result."</span>);
+        };
+
+        <span class="prelude-val">Ok</span>((leaf.block_header().clone(), drb))
     }
 
     <span class="kw">fn </span>add_drb_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: Epoch, drb: DrbResult) {
