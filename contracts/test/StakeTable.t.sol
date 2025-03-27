@@ -589,26 +589,23 @@ contract StakeTableUpgradeTest is Test {
         vm.stopPrank();
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_upgrade_reverts_when_not_admin() public {
         address notAdmin = makeAddr("not_admin");
-
-        (uint8 majorVersion,,) = StakeTableV2Test(stakeTableRegisterTest.proxy()).getVersion();
+        S proxy = S(stakeTableRegisterTest.proxy());
+        (uint8 majorVersion,,) = proxy.getVersion();
         assertEq(majorVersion, 1);
 
         vm.startPrank(notAdmin);
-        try S(stakeTableRegisterTest.proxy()).upgradeToAndCall(address(new StakeTableV2Test()), "")
-        {
-            fail();
-        } catch (bytes memory lowLevelData) {
-            // Handle custom error
-            bytes4 selector;
-            assembly {
-                selector := mload(add(lowLevelData, 32))
-            }
-            assertEq(selector, OwnableUpgradeable.OwnableUnauthorizedAccount.selector);
-        }
 
-        (uint8 majorVersionNew,,) = StakeTableV2Test(stakeTableRegisterTest.proxy()).getVersion();
+        address impl = address(new StakeTableV2Test());
+        vm.expectRevert(
+            abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notAdmin)
+        );
+
+        proxy.upgradeToAndCall(impl, "");
+
+        (uint8 majorVersionNew,,) = proxy.getVersion();
         assertEq(majorVersionNew, 1);
 
         assertEq(majorVersion, majorVersionNew);
@@ -616,33 +613,19 @@ contract StakeTableUpgradeTest is Test {
     }
 
     function test_initialize_function_is_protected() public {
-        try S(stakeTableRegisterTest.proxy()).initialize(address(0), address(0), 0, address(0)) {
-            fail();
-        } catch (bytes memory lowLevelData) {
-            // Handle custom error
-            bytes4 selector;
-            assembly {
-                selector := mload(add(lowLevelData, 32))
-            }
-            assertEq(selector, Initializable.InvalidInitialization.selector);
-        }
+        S proxy = S(stakeTableRegisterTest.proxy());
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        proxy.initialize(address(0), address(0), 0, address(0));
     }
 
     function test_initialize_function_is_protected_when_upgraded() public {
         vm.startPrank(stakeTableRegisterTest.admin());
-        address proxy = stakeTableRegisterTest.proxy();
-        S(proxy).upgradeToAndCall(address(new StakeTableV2Test()), "");
+        S proxy = S(stakeTableRegisterTest.proxy());
+        proxy.upgradeToAndCall(address(new StakeTableV2Test()), "");
 
-        try S(proxy).initialize(address(0), address(0), 0, address(0)) {
-            fail();
-        } catch (bytes memory lowLevelData) {
-            // Handle custom error
-            bytes4 selector;
-            assembly {
-                selector := mload(add(lowLevelData, 32))
-            }
-            assertEq(selector, Initializable.InvalidInitialization.selector);
-        }
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        proxy.initialize(address(0), address(0), 0, address(0));
+
         vm.stopPrank();
     }
 
@@ -661,23 +644,17 @@ contract StakeTableUpgradeTest is Test {
 
     function test_reinitialize_succeeds_only_once() public {
         vm.startPrank(stakeTableRegisterTest.admin());
-        address proxy = stakeTableRegisterTest.proxy();
-        S(proxy).upgradeToAndCall(
+        S proxy = S(stakeTableRegisterTest.proxy());
+        proxy.upgradeToAndCall(
             address(new StakeTableV2Test()), abi.encodeWithSignature("initializeV2(uint256)", 2)
         );
 
-        assertEq(StakeTableV2Test(proxy).newValue(), 2);
+        StakeTableV2Test proxyV2 = StakeTableV2Test(stakeTableRegisterTest.proxy());
+        assertEq(proxyV2.newValue(), 2);
 
-        try StakeTableV2Test(proxy).initializeV2(3) {
-            fail();
-        } catch (bytes memory lowLevelData) {
-            // Handle custom error
-            bytes4 selector;
-            assembly {
-                selector := mload(add(lowLevelData, 32))
-            }
-            assertEq(selector, Initializable.InvalidInitialization.selector);
-        }
+        vm.expectRevert(Initializable.InvalidInitialization.selector);
+        proxyV2.initializeV2(3);
+
         vm.stopPrank();
     }
 }
