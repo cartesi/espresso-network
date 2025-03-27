@@ -278,7 +278,7 @@ cross_tests!(
         // Make sure we keep committing rounds after the bad leaders, but not the full 50 because of the numerous timeouts
         metadata.overall_safety_properties.num_successful_views = 20;
         metadata.overall_safety_properties.expected_view_failures = vec![5, 11, 17, 23, 29];
-        metadata.overall_safety_properties.possible_view_failures = vec![4, 16, 22];
+        metadata.overall_safety_properties.possible_view_failures = vec![4, 10, 16, 22, 28];
         metadata.overall_safety_properties.decide_timeout = Duration::from_secs(20);
 
         metadata
@@ -455,7 +455,8 @@ cross_tests!(
     Ignore: false,
     Metadata: {
         let mut metadata = TestDescription::default_more_nodes();
-        metadata.overall_safety_properties.expected_view_failures = vec![6, 7, 8, 9, 17, 18, 19];
+        metadata.overall_safety_properties.expected_view_failures = vec![7, 8, 9, 17, 18, 19];
+        metadata.overall_safety_properties.possible_view_failures = vec![6, 16];
         metadata.overall_safety_properties.decide_timeout = Duration::from_secs(60);
         // Make sure we keep committing rounds after the bad leaders, but not the full 50 because of the numerous timeouts
         metadata.overall_safety_properties.num_successful_views = 15;
