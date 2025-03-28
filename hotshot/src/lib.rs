@@ -71,7 +71,7 @@ use hotshot_types::{
         states::ValidatedState,
         storage::Storage,
     },
-    utils::{genesis_epoch_from_version, option_epoch_from_block_number},
+    utils::genesis_epoch_from_version,
     HotShotConfig,
 };
 /// Reexport rand crate
