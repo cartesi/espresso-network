@@ -88,6 +88,7 @@ pub async fn validate_proposal_liveness<
     proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
     validation_info: &ValidationInfo<TYPES, I, V>,
 ) -> Result<()> {
+    let mut valid_epoch_transition = false;
     if validation_info
         .upgrade_lock
         .version(proposal.data.view_number())
@@ -99,6 +100,7 @@ pub async fn validate_proposal_liveness<
         };
         if is_epoch_transition(block_number, validation_info.epoch_height) {
             validate_epoch_transition_qc(proposal, validation_info).await?;
+            valid_epoch_transition = true;
         }
     }
     let mut consensus_writer = validation_info.consensus.write().await;
@@ -127,7 +129,7 @@ pub async fn validate_proposal_liveness<
 
     drop(consensus_writer);
 
-    if !liveness_check {
+    if !liveness_check && !valid_epoch_transition {
         bail!("Quorum Proposal failed the liveness check");
     }
 
