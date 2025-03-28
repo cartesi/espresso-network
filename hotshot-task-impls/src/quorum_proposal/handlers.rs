@@ -28,10 +28,11 @@ use hotshot_types::{
         block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType},
         signature_key::SignatureKey,
+        BlockPayload,
     },
     utils::{
         epoch_from_block_number, is_epoch_transition, is_transition_block,
-        option_epoch_from_block_number, BuilderCommitment,
+        option_epoch_from_block_number,
     },
     vote::HasViewNumber,
 };
@@ -387,8 +388,11 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             if is_epoch_transition(parent_block_number, self.epoch_height)
                 && parent_block_number % self.epoch_height != 0
             {
+                let (empty_payload, empty_metadata) = <TYPES as NodeType>::BlockPayload::empty();
+
                 ensure!(
-                    builder_commitment == BuilderCommitment::from_bytes([]),
+                    builder_commitment == empty_payload.builder_commitment(&metadata)
+                        && metadata == empty_metadata,
                     "We're trying to propose non empty block in the epoch transition. Do not propose. View number: {}. Parent Block number: {}",
                     self.view_number,
                     parent_block_number,
