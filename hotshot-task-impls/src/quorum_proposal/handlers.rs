@@ -26,7 +26,7 @@ use hotshot_types::{
     simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
     traits::{
         block_contents::BlockHeader,
-        node_implementation::{NodeImplementation, NodeType},
+        node_implementation::{ConsensusTime, NodeImplementation, NodeType},
         signature_key::SignatureKey,
     },
     utils::{
@@ -372,7 +372,14 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
         let builder_commitment = commitment_and_metadata.builder_commitment.clone();
         let metadata = commitment_and_metadata.metadata.clone();
 
-        if version >= V::Epochs::VERSION {
+        if version >= V::Epochs::VERSION
+            && self.view_number
+                != self
+                    .upgrade_lock
+                    .upgrade_view()
+                    .await
+                    .unwrap_or(TYPES::View::new(0))
+        {
             tracing::info!("Reached end of epoch.");
             let Some(parent_block_number) = parent_qc.data.block_number else {
                 tracing::error!("Parent QC does not have a block number. Do not propose.");

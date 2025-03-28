@@ -820,7 +820,7 @@ pub async fn validate_proposal_safety_and_liveness<
 
     if validation_info
         .upgrade_lock
-        .version(proposal.data.view_number())
+        .version(proposal.data.justify_qc().view_number())
         .await
         .is_ok_and(|v| v >= V::Epochs::VERSION)
     {

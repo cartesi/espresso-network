@@ -310,7 +310,7 @@ pub(crate) async fn handle_quorum_proposal_validated<
         // We don't need to hold this while we broadcast
         drop(consensus_writer);
 
-        tracing::error!(
+        tracing::debug!(
             "Successfully sent decide event, leaf views: {:?}, leaf views len: {:?}, qc view: {:?}",
             decided_view_number,
             leaf_views.len(),

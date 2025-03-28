@@ -162,16 +162,31 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
         };
 
         // Short circuit if we are in epochs and we are likely proposing a transition block
+        // If it's the first view of the upgrade, we don't need to check for transition blocks
         if version >= V::Epochs::VERSION {
             let Some(epoch) = block_epoch else {
                 tracing::error!("Epoch is required for epoch-based view change");
                 return None;
             };
-            let Some(mut high_qc_block_number) =
-                self.consensus.read().await.high_qc().data.block_number
-            else {
-                tracing::error!("High QC does not have a block number. Do not propose.");
-                return None;
+            let high_qc = self.consensus.read().await.high_qc().clone();
+            let mut high_qc_block_number = if let Some(bn) = high_qc.data.block_number {
+                bn
+            } else {
+                // If it's the first view after the upgrade the high QC won't have a block number
+                // So just use the highest_block number we've stored
+                if block_view
+                    > self
+                        .upgrade_lock
+                        .upgrade_view()
+                        .await
+                        .unwrap_or(TYPES::View::new(0))
+                        + 1
+                {
+                    tracing::error!("High QC in epoch version and not the first QC after upgrade");
+                    return None;
+                }
+                // 0 here so we use the highest block number in the calculation below
+                0
             };
             high_qc_block_number = std::cmp::max(
                 high_qc_block_number,
