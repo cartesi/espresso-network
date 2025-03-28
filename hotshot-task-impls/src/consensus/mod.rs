@@ -161,6 +161,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     cert_block_number,
                     self.epoch_height,
                 );
+                tracing::debug!(
+                    "Formed Extended QC for view {:?} and epoch {:?}.",
+                    cert_view,
+                    cert_epoch
+                );
                 // Transition to the new epoch by sending ViewChange
                 let next_epoch = cert_epoch.map(|x| x + 1);
                 tracing::info!("Entering new epoch: {:?}", next_epoch);

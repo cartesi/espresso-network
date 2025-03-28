@@ -722,9 +722,7 @@ pub(super) async fn handle_eqc_formed<
         tracing::debug!("We formed the eQC but we don't have the next epoch eQC at all.");
         return;
     };
-    if current_epoch_qc.view_number() != next_epoch_qc.view_number()
-        || current_epoch_qc.data != *next_epoch_qc.data
-    {
+    if current_epoch_qc.view_number() != cert_view || current_epoch_qc.data != *next_epoch_qc.data {
         tracing::debug!(
             "We formed the eQC but the current and next epoch QCs do not correspond to each other."
         );
