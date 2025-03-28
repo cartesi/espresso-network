@@ -402,7 +402,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
 
         // Don't update storage if we're in the epoch transition
         if !in_transition_epoch {
-            tracing::error!(
+            tracing::debug!(
                 "Updating high QC in storage for view {:?} and height {:?}",
                 qc.view_number(),
                 qc.data.block_number
