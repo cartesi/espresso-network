@@ -42,7 +42,6 @@ function compareLayouts(layoutA, layoutB) {
       a.offset !== b.offset ||
       a.type !== b.type
     ) {
-      console.error(`Mismatch at index ${i}:\n  A: ${JSON.stringify(a)}\n  B: ${JSON.stringify(b)}`);
       console.log("false");
       return false;
     }

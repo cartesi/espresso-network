@@ -566,6 +566,60 @@ contract StakeTableV2Test is S {
     }
 }
 
+contract StakeTableMissingFieldTest is Test {
+    struct Validator {
+        uint256 delegatedAmount;
+        ValidatorStatus status;
+    }
+
+    enum ValidatorStatus {
+        Unknown,
+        Active,
+        Exited
+    }
+
+    struct Undelegation {
+        uint256 amount;
+        uint256 unlocksAt;
+    }
+
+    LightClient public lightClient;
+    ERC20 public token;
+    mapping(address account => Validator validator) public validators;
+    mapping(bytes32 blsKeyHash => bool used) public blsKeys;
+    mapping(address validator => uint256 unlocksAt) public validatorExits;
+    mapping(address validator => mapping(address delegator => uint256 amount)) delegations;
+    mapping(address validator => mapping(address delegator => Undelegation)) undelegations;
+    // missing field: exitEscrowPeriod
+}
+
+contract StakeTableFieldsReorderedTest is Test {
+    struct Validator {
+        uint256 delegatedAmount;
+        ValidatorStatus status;
+    }
+
+    enum ValidatorStatus {
+        Unknown,
+        Active,
+        Exited
+    }
+
+    struct Undelegation {
+        uint256 amount;
+        uint256 unlocksAt;
+    }
+
+    ERC20 public token;
+    mapping(address account => Validator validator) public validators;
+    mapping(bytes32 blsKeyHash => bool used) public blsKeys;
+    mapping(address validator => uint256 unlocksAt) public validatorExits;
+    mapping(address validator => mapping(address delegator => uint256 amount)) delegations;
+    mapping(address validator => mapping(address delegator => Undelegation)) undelegations;
+    uint256 exitEscrowPeriod;
+    LightClient public lightClient; //re-ordered field
+}
+
 contract StakeTableUpgradeTest is Test {
     StakeTable_register_Test stakeTableRegisterTest;
 
@@ -642,7 +696,33 @@ contract StakeTableUpgradeTest is Test {
         assertEq(result, "true");
     }
 
-    function test_storage_layout_is_not_compatible_between_diff_contracts() public {
+    function test_storage_layout_is_incompatible_if_field_is_missing() public {
+        string[] memory cmds = new string[](4);
+        cmds[0] = "node";
+        cmds[1] = "contracts/test/script/compare-storage-layout.js";
+        cmds[2] = "StakeTable";
+        cmds[3] = "StakeTableMissingFieldTest";
+
+        bytes memory output = vm.ffi(cmds);
+        string memory result = string(output);
+
+        assertEq(result, "false");
+    }
+
+    function test_storage_layout_is_incompatible_if_fields_are_reordered() public {
+        string[] memory cmds = new string[](4);
+        cmds[0] = "node";
+        cmds[1] = "contracts/test/script/compare-storage-layout.js";
+        cmds[2] = "StakeTable";
+        cmds[3] = "StakeTableFieldsReorderedTest";
+
+        bytes memory output = vm.ffi(cmds);
+        string memory result = string(output);
+
+        assertEq(result, "false");
+    }
+
+    function test_storage_layout_is_incompatible_between_diff_contracts() public {
         string[] memory cmds = new string[](4);
         cmds[0] = "node";
         cmds[1] = "contracts/test/script/compare-storage-layout.js";
