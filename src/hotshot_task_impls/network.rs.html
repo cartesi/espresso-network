@@ -1383,7 +1383,18 @@
 <a href="#1382" id="1382">1382</a>
 <a href="#1383" id="1383">1383</a>
 <a href="#1384" id="1384">1384</a>
-<a href="#1385" id="1385">1385</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1385" id="1385">1385</a>
+<a href="#1386" id="1386">1386</a>
+<a href="#1387" id="1387">1387</a>
+<a href="#1388" id="1388">1388</a>
+<a href="#1389" id="1389">1389</a>
+<a href="#1390" id="1390">1390</a>
+<a href="#1391" id="1391">1391</a>
+<a href="#1392" id="1392">1392</a>
+<a href="#1393" id="1393">1393</a>
+<a href="#1394" id="1394">1394</a>
+<a href="#1395" id="1395">1395</a>
+<a href="#1396" id="1396">1396</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1451,7 +1462,18 @@
     <span class="attr">#[instrument(skip_all, name = <span class="string">"Network message task"</span>, level = <span class="string">"trace"</span>)]
     </span><span class="doccomment">/// Handles a (deserialized) message from the network
     </span><span class="kw">pub async fn </span>handle_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, message: Message&lt;TYPES&gt;) {
-        <span class="macro">tracing::info!</span>(<span class="string">"Received message from network:\n\n{:?}\n"</span>, message.kind);
+        <span class="kw">match </span><span class="kw-2">&amp;</span>message.kind {
+            MessageKind::Consensus(<span class="kw">_</span>) =&gt; <span class="macro">tracing::info!</span>(
+                <span class="string">"Received consensus message from network:\n\n{:?}\n"</span>,
+                message
+            ),
+            MessageKind::Data(<span class="kw">_</span>) =&gt; {
+                <span class="macro">tracing::trace!</span>(<span class="string">"Received data message from network:\n\n{:?}\n"</span>, message)
+            },
+            MessageKind::External(<span class="kw">_</span>) =&gt; {
+                <span class="macro">tracing::trace!</span>(<span class="string">"Received external message from network:\n\n{:?}\n"</span>, message)
+            },
+        }
 
         <span class="comment">// Match the message kind and send the appropriate event to the internal event stream
         </span><span class="kw">let </span>sender = message.sender;
