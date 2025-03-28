@@ -168,11 +168,6 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
 
         let mut rx = self.receiver.clone();
 
-        tracing::error!(
-            "lrzasik: view_start_time {:?}, wait duration {:?}, we start draining",
-            self.view_start_time,
-            wait_duration
-        );
         // drain any qc off the queue
         while let Ok(event) = rx.try_recv() {
             if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
@@ -204,12 +199,6 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 }
             }
         }
-
-        tracing::error!(
-            "lrzasik: view_start_time {:?}, wait duration {:?}, we drained now we wait and check",
-            self.view_start_time,
-            wait_duration
-        );
         // TODO configure timeout
         while self.view_start_time.elapsed() < wait_duration {
             let time_spent = Instant::now()
@@ -250,11 +239,6 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 }
             }
         }
-        tracing::error!(
-            "lrzasik: view_start_time {:?}, wait duration {:?}, time elapsed",
-            self.view_start_time,
-            wait_duration
-        );
         Ok(transition_qc)
     }
     /// Waits for the configured timeout for nodes to send HighQc messages to us.  We'll

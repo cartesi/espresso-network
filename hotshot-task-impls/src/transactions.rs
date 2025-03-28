@@ -557,11 +557,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     .leader(view)
                     .await?;
                 if leader == self.public_key {
-                    tracing::error!(
-                        "lrzasik: I'm a leader in view {:?} epoch {:?}, handling view change.",
-                        view,
-                        epoch
-                    );
                     self.handle_view_change(&event_stream, view, epoch).await;
                     return Ok(());
                 }
