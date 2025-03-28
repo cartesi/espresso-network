@@ -273,8 +273,8 @@
 <span class="kw">impl</span>&lt;F: PrimeField&gt; From&lt;ParsedLightClientState&gt; <span class="kw">for </span>GenericLightClientState&lt;F&gt; {
     <span class="kw">fn </span>from(v: ParsedLightClientState) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            view_number: v.view_num <span class="kw">as </span>usize,
-            block_height: v.block_height <span class="kw">as </span>usize,
+            view_number: v.view_num,
+            block_height: v.block_height,
             block_comm_root: u256_to_field(v.block_comm_root),
         }
     }
@@ -283,8 +283,8 @@
 <span class="kw">impl</span>&lt;F: PrimeField&gt; From&lt;GenericLightClientState&lt;F&gt;&gt; <span class="kw">for </span>ParsedLightClientState {
     <span class="kw">fn </span>from(v: GenericLightClientState&lt;F&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            view_num: v.view_number <span class="kw">as </span>u64,
-            block_height: v.block_height <span class="kw">as </span>u64,
+            view_num: v.view_number,
+            block_height: v.block_height,
             block_comm_root: field_to_u256(v.block_comm_root),
         }
     }

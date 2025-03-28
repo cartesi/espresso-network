@@ -37,7 +37,12 @@
 <a href="#36" id="36">36</a>
 <a href="#37" id="37">37</a>
 <a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#39" id="39">39</a>
+<a href="#40" id="40">40</a>
+<a href="#41" id="41">41</a>
+<a href="#42" id="42">42</a>
+<a href="#43" id="43">43</a>
+<a href="#44" id="44">44</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -53,7 +58,7 @@
     event::Event,
     traits::{
         node_implementation::{NodeImplementation, NodeType},
-        signature_key::SignatureKey,
+        signature_key::{SignatureKey, StateSignatureKey},
     },
 };
 
@@ -72,6 +77,11 @@
 
     <span class="doccomment">/// Get a reference to the private key.
     </span><span class="kw">fn </span>private_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey;
+
+    <span class="doccomment">/// Get a reference to the light client signing key.
+    </span><span class="kw">fn </span>state_private_key(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; <span class="kw-2">&amp;</span>&lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey;
 
     <span class="doccomment">/// Notify the system of an event within `hotshot-consensus`.
     </span><span class="kw">async fn </span>send_event(<span class="kw-2">&amp;</span><span class="self">self</span>, event: Event&lt;TYPES&gt;);

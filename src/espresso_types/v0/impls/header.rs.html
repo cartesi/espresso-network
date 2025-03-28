@@ -1755,7 +1755,25 @@
 <a href="#1754" id="1754">1754</a>
 <a href="#1755" id="1755">1755</a>
 <a href="#1756" id="1756">1756</a>
-<a href="#1757" id="1757">1757</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
+<a href="#1757" id="1757">1757</a>
+<a href="#1758" id="1758">1758</a>
+<a href="#1759" id="1759">1759</a>
+<a href="#1760" id="1760">1760</a>
+<a href="#1761" id="1761">1761</a>
+<a href="#1762" id="1762">1762</a>
+<a href="#1763" id="1763">1763</a>
+<a href="#1764" id="1764">1764</a>
+<a href="#1765" id="1765">1765</a>
+<a href="#1766" id="1766">1766</a>
+<a href="#1767" id="1767">1767</a>
+<a href="#1768" id="1768">1768</a>
+<a href="#1769" id="1769">1769</a>
+<a href="#1770" id="1770">1770</a>
+<a href="#1771" id="1771">1771</a>
+<a href="#1772" id="1772">1772</a>
+<a href="#1773" id="1773">1773</a>
+<a href="#1774" id="1774">1774</a>
+<a href="#1775" id="1775">1775</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::fmt;
 
 <span class="kw">use </span>anyhow::{ensure, Context};
 <span class="kw">use </span>ark_serialize::CanonicalSerialize;
@@ -1765,9 +1783,10 @@
 <span class="kw">use </span>hotshot_query_service::{availability::QueryableHeader, explorer::ExplorerHeader};
 <span class="kw">use </span>hotshot_types::{
     data::VidCommitment,
+    light_client::LightClientState,
     traits::{
         block_contents::{BlockHeader, BuilderFee},
-        node_implementation::NodeType,
+        node_implementation::{ConsensusTime, NodeType},
         signature_key::BuilderSignatureKey,
         BlockPayload, ValidatedState <span class="kw">as _</span>,
     },
@@ -2931,6 +2950,23 @@
     <span class="doccomment">/// Commit over fee_amount, payload_commitment and metadata
     </span><span class="kw">fn </span>builder_commitment(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BuilderCommitment {
         <span class="self">self</span>.builder_commitment().clone()
+    }
+
+    <span class="kw">fn </span>get_light_client_state(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        view: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::View,
+    ) -&gt; anyhow::Result&lt;LightClientState&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>block_comm_root_bytes = <span class="macro">vec!</span>[];
+        <span class="self">self</span>.block_merkle_tree_root()
+            .serialize_compressed(<span class="kw-2">&amp;mut </span>block_comm_root_bytes)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(LightClientState {
+            view_number: view.u64(),
+            block_height: <span class="self">self</span>.height(),
+            block_comm_root: hotshot_types::light_client::hash_bytes_to_field(
+                <span class="kw-2">&amp;</span>block_comm_root_bytes,
+            )<span class="question-mark">?</span>,
+        })
     }
 }
 

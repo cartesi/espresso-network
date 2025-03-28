@@ -610,7 +610,8 @@
 <a href="#609" id="609">609</a>
 <a href="#610" id="610">610</a>
 <a href="#611" id="611">611</a>
-<a href="#612" id="612">612</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#612" id="612">612</a>
+<a href="#613" id="613">613</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -670,12 +671,12 @@
 }
 
 <span class="kw">pub fn </span>default_hotshot_config&lt;TYPES: NodeType&gt;(
-    known_nodes_with_stake: Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
-    known_da_nodes: Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
+    known_nodes_with_stake: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;,
+    known_da_nodes: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;,
     num_bootstrap_nodes: usize,
     epoch_height: u64,
     epoch_start_block: u64,
-) -&gt; HotShotConfig&lt;TYPES::SignatureKey&gt; {
+) -&gt; HotShotConfig&lt;TYPES&gt; {
     HotShotConfig {
         start_threshold: (<span class="number">1</span>, <span class="number">1</span>),
         num_nodes_with_stake: NonZeroUsize::new(known_nodes_with_stake.len()).unwrap(),
@@ -707,15 +708,12 @@
 </span><span class="kw">pub fn </span>gen_node_lists&lt;TYPES: NodeType&gt;(
     num_staked_nodes: u64,
     num_da_nodes: u64,
-) -&gt; (
-    Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
-    Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
-) {
+) -&gt; (Vec&lt;PeerConfig&lt;TYPES&gt;&gt;, Vec&lt;PeerConfig&lt;TYPES&gt;&gt;) {
     <span class="kw">let </span><span class="kw-2">mut </span>staked_nodes = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>da_nodes = Vec::new();
 
     <span class="kw">for </span>n <span class="kw">in </span><span class="number">0</span>..num_staked_nodes {
-        <span class="kw">let </span>validator_config: ValidatorConfig&lt;TYPES::SignatureKey&gt; =
+        <span class="kw">let </span>validator_config: ValidatorConfig&lt;TYPES&gt; =
             ValidatorConfig::generated_from_seed_indexed([<span class="number">0u8</span>; <span class="number">32</span>], n, <span class="number">1</span>, n &lt; num_da_nodes);
 
         <span class="kw">let </span>peer_config = validator_config.public_config();
@@ -736,7 +734,7 @@
     ///
     /// Note: this is not the same as the `HotShotConfig` passed to test nodes for `SystemContext::init`;
     /// those configs are instead provided by the resource generators in the test launcher.
-    </span><span class="kw">pub </span>test_config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+    </span><span class="kw">pub </span>test_config: HotShotConfig&lt;TYPES&gt;,
     <span class="doccomment">/// Whether to skip initializing nodes that will start late, which will catch up later with
     /// `HotShotInitializer::from_reload` in the spinning task.
     </span><span class="kw">pub </span>skip_late: bool,
@@ -846,7 +844,7 @@
     node_id: u64,
     network: Network&lt;TYPES, I&gt;,
     memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
-    config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+    config: HotShotConfig&lt;TYPES&gt;,
     storage: I::Storage,
     marketplace_config: MarketplaceConfig&lt;TYPES, I&gt;,
 ) -&gt; SystemContextHandle&lt;TYPES, I, V&gt; {
@@ -862,12 +860,13 @@
     <span class="comment">// See whether or not we should be DA
     </span><span class="kw">let </span>is_da = node_id &lt; config.da_staked_committee_size <span class="kw">as </span>u64;
 
-    <span class="kw">let </span>validator_config: ValidatorConfig&lt;TYPES::SignatureKey&gt; =
+    <span class="kw">let </span>validator_config: ValidatorConfig&lt;TYPES&gt; =
         ValidatorConfig::generated_from_seed_indexed([<span class="number">0u8</span>; <span class="number">32</span>], node_id, <span class="number">1</span>, is_da);
 
     <span class="comment">// Get key pair for certificate aggregation
     </span><span class="kw">let </span>private_key = validator_config.private_key.clone();
     <span class="kw">let </span>public_key = validator_config.public_key.clone();
+    <span class="kw">let </span>state_private_key = validator_config.state_private_key.clone();
     <span class="kw">let </span>membership_coordinator = EpochMembershipCoordinator::new(memberships, config.epoch_height);
 
     <span class="kw">let </span>behaviour = (metadata.behaviour)(node_id);
@@ -878,6 +877,7 @@
                 .spawn_twin_handles(
                     public_key,
                     private_key,
+                    state_private_key,
                     node_id,
                     config,
                     membership_coordinator,
@@ -897,6 +897,7 @@
                 .spawn_handle(
                     public_key,
                     private_key,
+                    state_private_key,
                     node_id,
                     config,
                     membership_coordinator,
@@ -912,6 +913,7 @@
             <span class="kw">let </span>hotshot = SystemContext::&lt;TYPES, I, V&gt;::new(
                 public_key,
                 private_key,
+                state_private_key,
                 node_id,
                 config,
                 membership_coordinator,
@@ -1168,7 +1170,7 @@
         <span class="kw">let </span>da_staked_committee_size = test_config.da_staked_committee_size;
 
         <span class="kw">let </span>validator_config = Rc::new(<span class="kw">move </span>|node_id| {
-            ValidatorConfig::&lt;TYPES::SignatureKey&gt;::generated_from_seed_indexed(
+            ValidatorConfig::&lt;TYPES&gt;::generated_from_seed_indexed(
                 [<span class="number">0u8</span>; <span class="number">32</span>],
                 node_id,
                 <span class="number">1</span>,
@@ -1186,7 +1188,7 @@
             view_sync_timeout,
         } = timing_data;
         <span class="comment">// TODO this should really be using the timing config struct
-        </span><span class="kw">let </span>mod_hotshot_config = <span class="kw">move </span>|hotshot_config: <span class="kw-2">&amp;mut </span>HotShotConfig&lt;TYPES::SignatureKey&gt;| {
+        </span><span class="kw">let </span>mod_hotshot_config = <span class="kw">move </span>|hotshot_config: <span class="kw-2">&amp;mut </span>HotShotConfig&lt;TYPES&gt;| {
             hotshot_config.next_view_timeout = next_view_timeout;
             hotshot_config.builder_timeout = builder_timeout;
             hotshot_config.data_request_delay = data_request_delay;

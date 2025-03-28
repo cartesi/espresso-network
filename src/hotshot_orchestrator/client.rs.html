@@ -520,7 +520,12 @@
 <a href="#519" id="519">519</a>
 <a href="#520" id="520">520</a>
 <a href="#521" id="521">521</a>
-<a href="#522" id="522">522</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -532,7 +537,7 @@
 <span class="kw">use </span>futures::{Future, FutureExt};
 <span class="kw">use </span>hotshot_types::{
     network::{NetworkConfig, NetworkConfigSource},
-    traits::signature_key::SignatureKey,
+    traits::node_implementation::NodeType,
     PeerConfig, ValidatorConfig,
 };
 <span class="kw">use </span>libp2p_identity::PeerId;
@@ -689,15 +694,19 @@
 ///
 /// # Errors
 /// If we are unable to get the configuration from the orchestrator
-</span><span class="kw">pub async fn </span>get_complete_config&lt;K: SignatureKey&gt;(
+</span><span class="kw">pub async fn </span>get_complete_config&lt;TYPES: NodeType&gt;(
     client: <span class="kw-2">&amp;</span>OrchestratorClient,
-    <span class="kw-2">mut </span>validator_config: ValidatorConfig&lt;K&gt;,
+    <span class="kw-2">mut </span>validator_config: ValidatorConfig&lt;TYPES&gt;,
     libp2p_advertise_address: <span class="prelude-ty">Option</span>&lt;Multiaddr&gt;,
     libp2p_public_key: <span class="prelude-ty">Option</span>&lt;PeerId&gt;,
-) -&gt; anyhow::Result&lt;(NetworkConfig&lt;K&gt;, ValidatorConfig&lt;K&gt;, NetworkConfigSource)&gt; {
+) -&gt; anyhow::Result&lt;(
+    NetworkConfig&lt;TYPES&gt;,
+    ValidatorConfig&lt;TYPES&gt;,
+    NetworkConfigSource,
+)&gt; {
     <span class="comment">// get the configuration from the orchestrator
-    </span><span class="kw">let </span>run_config: NetworkConfig&lt;K&gt; = client
-        .post_and_wait_all_public_keys::&lt;K&gt;(
+    </span><span class="kw">let </span>run_config: NetworkConfig&lt;TYPES&gt; = client
+        .post_and_wait_all_public_keys::&lt;TYPES&gt;(
             <span class="kw-2">&amp;mut </span>validator_config,
             libp2p_advertise_address,
             libp2p_public_key,
@@ -772,11 +781,11 @@
     /// # Errors
     /// If we were unable to serialize the Libp2p data
     </span><span class="attr">#[allow(clippy::type_complexity)]
-    </span><span class="kw">pub async fn </span>get_config_without_peer&lt;K: SignatureKey&gt;(
+    </span><span class="kw">pub async fn </span>get_config_without_peer&lt;TYPES: NodeType&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         libp2p_advertise_address: <span class="prelude-ty">Option</span>&lt;Multiaddr&gt;,
         libp2p_public_key: <span class="prelude-ty">Option</span>&lt;PeerId&gt;,
-    ) -&gt; anyhow::Result&lt;NetworkConfig&lt;K&gt;&gt; {
+    ) -&gt; anyhow::Result&lt;NetworkConfig&lt;TYPES&gt;&gt; {
         <span class="comment">// Serialize our (possible) libp2p-specific data
         </span><span class="kw">let </span>request_body = vbs::Serializer::&lt;OrchestratorVersion&gt;::serialize(<span class="kw-2">&amp;</span>(
             libp2p_advertise_address,
@@ -803,7 +812,7 @@
         <span class="comment">// get the corresponding config
         </span><span class="kw">let </span>f = |client: Client&lt;ClientError, OrchestratorVersion&gt;| {
             <span class="kw">async move </span>{
-                <span class="kw">let </span>config: <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;K&gt;, ClientError&gt; = client
+                <span class="kw">let </span>config: <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;TYPES&gt;, ClientError&gt; = client
                     .post(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"api/config/{node_index}"</span>))
                     .send()
                     .<span class="kw">await</span>;
@@ -844,7 +853,7 @@
     ///
     /// Does not fail, retries internally until success.
     </span><span class="attr">#[instrument(skip_all, name = <span class="string">"orchestrator config"</span>)]
-    </span><span class="kw">pub async fn </span>get_config_after_collection&lt;K: SignatureKey&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NetworkConfig&lt;K&gt; {
+    </span><span class="kw">pub async fn </span>get_config_after_collection&lt;TYPES: NodeType&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NetworkConfig&lt;TYPES&gt; {
         <span class="comment">// Define the request for post-register configurations
         </span><span class="kw">let </span>get_config_after_collection = |client: Client&lt;ClientError, OrchestratorVersion&gt;| {
             <span class="kw">async move </span>{
@@ -918,13 +927,14 @@
     /// # Panics
     /// if unable to post
     </span><span class="attr">#[instrument(skip(<span class="self">self</span>), name = <span class="string">"orchestrator public keys"</span>)]
-    </span><span class="kw">pub async fn </span>post_and_wait_all_public_keys&lt;K: SignatureKey&gt;(
+    </span><span class="kw">pub async fn </span>post_and_wait_all_public_keys&lt;TYPES: NodeType&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        validator_config: <span class="kw-2">&amp;mut </span>ValidatorConfig&lt;K&gt;,
+        validator_config: <span class="kw-2">&amp;mut </span>ValidatorConfig&lt;TYPES&gt;,
         libp2p_advertise_address: <span class="prelude-ty">Option</span>&lt;Multiaddr&gt;,
         libp2p_public_key: <span class="prelude-ty">Option</span>&lt;PeerId&gt;,
-    ) -&gt; NetworkConfig&lt;K&gt; {
-        <span class="kw">let </span>pubkey: Vec&lt;u8&gt; = PeerConfig::&lt;K&gt;::to_bytes(<span class="kw-2">&amp;</span>validator_config.public_config()).clone();
+    ) -&gt; NetworkConfig&lt;TYPES&gt; {
+        <span class="kw">let </span>pubkey: Vec&lt;u8&gt; =
+            PeerConfig::&lt;TYPES&gt;::to_bytes(<span class="kw-2">&amp;</span>validator_config.public_config()).clone();
         <span class="kw">let </span>da_requested: bool = validator_config.is_da;
 
         <span class="comment">// Serialize our (possible) libp2p-specific data

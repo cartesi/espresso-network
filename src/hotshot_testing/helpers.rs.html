@@ -451,7 +451,9 @@
 <a href="#450" id="450">450</a>
 <a href="#451" id="451">451</a>
 <a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -569,10 +571,11 @@
     </span><span class="kw">let </span>is_da = node_id &lt; hotshot_config.da_staked_committee_size <span class="kw">as </span>u64;
 
     <span class="comment">// We assign node's public key and stake value rather than read from config file since it's a test
-    </span><span class="kw">let </span>validator_config: ValidatorConfig&lt;TYPES::SignatureKey&gt; =
+    </span><span class="kw">let </span>validator_config: ValidatorConfig&lt;TYPES&gt; =
         ValidatorConfig::generated_from_seed_indexed([<span class="number">0u8</span>; <span class="number">32</span>], node_id, <span class="number">1</span>, is_da);
     <span class="kw">let </span>private_key = validator_config.private_key.clone();
     <span class="kw">let </span>public_key = validator_config.public_key.clone();
+    <span class="kw">let </span>state_private_key = validator_config.state_private_key.clone();
 
     <span class="kw">let </span>memberships = Arc::new(RwLock::new(TYPES::Membership::new(
         hotshot_config.known_nodes_with_stake.clone(),
@@ -585,6 +588,7 @@
     <span class="kw">let </span>(c, s, r) = SystemContext::init(
         public_key,
         private_key,
+        state_private_key,
         node_id,
         hotshot_config,
         coordinator,

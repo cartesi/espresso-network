@@ -759,7 +759,7 @@
     v0_1::{RewardAccount, RewardAccountProof, RewardMerkleCommitment, RewardMerkleTree},
     v0_99::ChainConfig,
     BackoffParams, BlockMerkleTree, FeeAccount, FeeAccountProof, FeeMerkleCommitment,
-    FeeMerkleTree, Leaf2, NodeState,
+    FeeMerkleTree, Leaf2, NodeState, SeqTypes,
 };
 <span class="kw">use </span>futures::future::{Future, FutureExt, TryFuture, TryFutureExt};
 <span class="kw">use </span>hotshot_types::{
@@ -781,7 +781,7 @@
 <span class="kw">use </span>url::Url;
 <span class="kw">use </span>vbs::version::StaticVersionType;
 
-<span class="kw">use crate</span>::{api::BlocksFrontier, PubKey};
+<span class="kw">use </span><span class="kw">crate</span>::api::BlocksFrontier;
 
 <span class="comment">// This newtype is probably not worth having. It's only used to be able to log
 // URLs before doing requests.
@@ -973,8 +973,8 @@
     <span class="attr">#[tracing::instrument(skip(<span class="self">self</span>, my_own_validator_config))]
     </span><span class="kw">pub async fn </span>fetch_config(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        my_own_validator_config: ValidatorConfig&lt;PubKey&gt;,
-    ) -&gt; anyhow::Result&lt;NetworkConfig&lt;PubKey&gt;&gt; {
+        my_own_validator_config: ValidatorConfig&lt;SeqTypes&gt;,
+    ) -&gt; anyhow::Result&lt;NetworkConfig&lt;SeqTypes&gt;&gt; {
         <span class="self">self</span>.backoff()
             .retry(<span class="self">self</span>, <span class="kw">move </span>|provider, retry| {
                 <span class="kw">let </span>my_own_validator_config = my_own_validator_config.clone();

@@ -1499,7 +1499,7 @@
     /// If we are unable to calculate the replication factor
     </span><span class="attr">#[allow(clippy::too_many_arguments)]
     </span><span class="kw">pub async fn </span>from_config&lt;D: DhtPersistentStorage&gt;(
-        <span class="kw-2">mut </span>config: NetworkConfig&lt;T::SignatureKey&gt;,
+        <span class="kw-2">mut </span>config: NetworkConfig&lt;T&gt;,
         dht_persistent_storage: D,
         quorum_membership: Arc&lt;RwLock&lt;T::Membership&gt;&gt;,
         gossip_config: GossipConfig,

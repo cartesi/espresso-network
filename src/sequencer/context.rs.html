@@ -602,11 +602,7 @@
     data::{Leaf2, ViewNumber},
     epoch_membership::EpochMembershipCoordinator,
     network::NetworkConfig,
-    traits::{
-        metrics::Metrics,
-        network::ConnectedNetwork,
-        node_implementation::{NodeType, Versions},
-    },
+    traits::{metrics::Metrics, network::ConnectedNetwork, node_implementation::Versions},
     PeerConfig, ValidatorConfig,
 };
 <span class="kw">use </span>parking_lot::Mutex;
@@ -670,18 +666,18 @@
 
     node_state: NodeState,
 
-    network_config: NetworkConfig&lt;PubKey&gt;,
+    network_config: NetworkConfig&lt;SeqTypes&gt;,
 
     <span class="attr">#[derivative(Debug = <span class="string">"ignore"</span>)]
-    </span>validator_config: ValidatorConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;,
+    </span>validator_config: ValidatorConfig&lt;SeqTypes&gt;,
 }
 
 <span class="kw">impl</span>&lt;N: ConnectedNetwork&lt;PubKey&gt;, P: SequencerPersistence, V: Versions&gt; SequencerContext&lt;N, P, V&gt; {
     <span class="attr">#[tracing::instrument(skip_all, fields(node_id = instance_state.node_id))]
     #[allow(clippy::too_many_arguments)]
     </span><span class="kw">pub async fn </span>init(
-        network_config: NetworkConfig&lt;PubKey&gt;,
-        validator_config: ValidatorConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;,
+        network_config: NetworkConfig&lt;SeqTypes&gt;,
+        validator_config: ValidatorConfig&lt;SeqTypes&gt;,
         coordinator: EpochMembershipCoordinator&lt;SeqTypes&gt;,
         instance_state: NodeState,
         persistence: P,
@@ -717,7 +713,6 @@
                 .try_into()
                 .context(<span class="string">"stake table capacity out of range"</span>)<span class="question-mark">?</span>,
         );
-        <span class="kw">let </span>state_key_pair = validator_config.state_key_pair.clone();
 
         <span class="kw">let </span>event_streamer = Arc::new(RwLock::new(EventsStreamer::&lt;SeqTypes&gt;::new(
             config.known_nodes_with_stake.clone(),
@@ -730,6 +725,7 @@
         <span class="kw">let </span>handle = SystemContext::init(
             validator_config.public_key,
             validator_config.private_key.clone(),
+            validator_config.state_private_key.clone(),
             instance_state.node_id,
             config.clone(),
             coordinator,
@@ -742,7 +738,11 @@
         .<span class="kw">await</span><span class="question-mark">?
         </span>.<span class="number">0</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>state_signer = StateSigner::new(state_key_pair, stake_table_commit);
+        <span class="kw">let </span><span class="kw-2">mut </span>state_signer = StateSigner::new(
+            validator_config.state_private_key.clone(),
+            validator_config.state_public_key.clone(),
+            stake_table_commit,
+        );
         <span class="kw">if let </span><span class="prelude-val">Some</span>(url) = state_relay_server {
             state_signer = state_signer.with_relay_server(url);
         }
@@ -821,8 +821,8 @@
         &gt;,
         event_streamer: Arc&lt;RwLock&lt;EventsStreamer&lt;SeqTypes&gt;&gt;&gt;,
         node_state: NodeState,
-        network_config: NetworkConfig&lt;PubKey&gt;,
-        validator_config: ValidatorConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;,
+        network_config: NetworkConfig&lt;SeqTypes&gt;,
+        validator_config: ValidatorConfig&lt;SeqTypes&gt;,
         event_consumer: <span class="kw">impl </span>PersistenceEventConsumer + <span class="lifetime">'static</span>,
         anchor_view: <span class="prelude-ty">Option</span>&lt;ViewNumber&gt;,
         proposal_fetcher_cfg: ProposalFetcherConfig,
@@ -996,7 +996,7 @@
     }
 
     <span class="doccomment">/// Get the network config
-    </span><span class="kw">pub fn </span>network_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NetworkConfig&lt;PubKey&gt; {
+    </span><span class="kw">pub fn </span>network_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NetworkConfig&lt;SeqTypes&gt; {
         <span class="self">self</span>.network_config.clone()
     }
 }

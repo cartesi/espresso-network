@@ -879,7 +879,12 @@
 <a href="#878" id="878">878</a>
 <a href="#879" id="879">879</a>
 <a href="#880" id="880">880</a>
-<a href="#881" id="881">881</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#881" id="881">881</a>
+<a href="#882" id="882">882</a>
+<a href="#883" id="883">883</a>
+<a href="#884" id="884">884</a>
+<a href="#885" id="885">885</a>
+<a href="#886" id="886">886</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -904,7 +909,10 @@
 <span class="kw">use </span>futures::{stream::FuturesUnordered, FutureExt, StreamExt};
 <span class="kw">use </span>hotshot_types::{
     network::{BuilderType, NetworkConfig, PublicKeysFile},
-    traits::signature_key::{SignatureKey, StakeTableEntryType},
+    traits::{
+        node_implementation::NodeType,
+        signature_key::{SignatureKey, StakeTableEntryType},
+    },
     PeerConfig,
 };
 <span class="kw">use </span>libp2p_identity::{
@@ -951,13 +959,13 @@
 <span class="doccomment">/// The state of the orchestrator
 </span><span class="attr">#[derive(Default, Clone)]
 #[allow(clippy::struct_excessive_bools)]
-</span><span class="kw">struct </span>OrchestratorState&lt;KEY: SignatureKey&gt; {
+</span><span class="kw">struct </span>OrchestratorState&lt;TYPES: NodeType&gt; {
     <span class="doccomment">/// Tracks the latest node index we have generated a configuration for
     </span>latest_index: u16,
     <span class="doccomment">/// Tracks the latest temporary index we have generated for init validator's key pair
     </span>tmp_latest_index: u16,
     <span class="doccomment">/// The network configuration
-    </span>config: NetworkConfig&lt;KEY&gt;,
+    </span>config: NetworkConfig&lt;TYPES&gt;,
     <span class="doccomment">/// Whether the network configuration has been updated with all the peer's public keys/configs
     </span>peer_pub_ready: bool,
     <span class="doccomment">/// A map from public keys to `(node_index, is_da)`.
@@ -966,7 +974,7 @@
     /// Will be set to true once all nodes post they are ready to start
     </span>start: bool,
     <span class="doccomment">/// The total nodes that have posted they are ready to start
-    </span>nodes_connected: HashSet&lt;PeerConfig&lt;KEY&gt;&gt;,
+    </span>nodes_connected: HashSet&lt;PeerConfig&lt;TYPES&gt;&gt;,
     <span class="doccomment">/// The results of the benchmarks
     </span>bench_results: BenchResults,
     <span class="doccomment">/// The number of nodes that have posted their results
@@ -981,9 +989,9 @@
     </span>fixed_stake_table: bool,
 }
 
-<span class="kw">impl</span>&lt;KEY: SignatureKey + <span class="lifetime">'static</span>&gt; OrchestratorState&lt;KEY&gt; {
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; OrchestratorState&lt;TYPES&gt; {
     <span class="doccomment">/// create a new [`OrchestratorState`]
-    </span><span class="kw">pub fn </span>new(network_config: NetworkConfig&lt;KEY&gt;) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>new(network_config: NetworkConfig&lt;TYPES&gt;) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>peer_pub_ready = <span class="bool-val">false</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>fixed_stake_table = <span class="bool-val">false</span>;
 
@@ -1054,7 +1062,7 @@
 }
 
 <span class="doccomment">/// An api exposed by the orchestrator
-</span><span class="kw">pub trait </span>OrchestratorApi&lt;KEY: SignatureKey&gt; {
+</span><span class="kw">pub trait </span>OrchestratorApi&lt;TYPES: NodeType&gt; {
     <span class="doccomment">/// Post an identity to the orchestrator. Takes in optional
     /// arguments so others can identify us on the Libp2p network.
     /// # Errors
@@ -1067,7 +1075,7 @@
     <span class="doccomment">/// post endpoint for each node's config
     /// # Errors
     /// if unable to serve
-    </span><span class="kw">fn </span>post_getconfig(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _node_index: u16) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;KEY&gt;, ServerError&gt;;
+    </span><span class="kw">fn </span>post_getconfig(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _node_index: u16) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;TYPES&gt;, ServerError&gt;;
     <span class="doccomment">/// get endpoint for the next available temporary node index
     /// # Errors
     /// if unable to serve
@@ -1089,7 +1097,7 @@
     <span class="doccomment">/// get endpoint for the network config after all peers public keys are collected
     /// # Errors
     /// if unable to serve
-    </span><span class="kw">fn </span>post_config_after_peer_collected(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;KEY&gt;, ServerError&gt;;
+    </span><span class="kw">fn </span>post_config_after_peer_collected(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;TYPES&gt;, ServerError&gt;;
     <span class="doccomment">/// get endpoint for whether or not the run has started
     /// # Errors
     /// if unable to serve
@@ -1101,7 +1109,7 @@
     <span class="doccomment">/// A node POSTs its public key to let the orchestrator know that it is ready
     /// # Errors
     /// if unable to serve
-    </span><span class="kw">fn </span>post_ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_config: <span class="kw-2">&amp;</span>PeerConfig&lt;KEY&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), ServerError&gt;;
+    </span><span class="kw">fn </span>post_ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_config: <span class="kw-2">&amp;</span>PeerConfig&lt;TYPES&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), ServerError&gt;;
     <span class="doccomment">/// post endpoint for manually starting the orchestrator
     /// # Errors
     /// if unable to serve
@@ -1116,9 +1124,9 @@
     </span><span class="kw">fn </span>get_builders(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Url&gt;, ServerError&gt;;
 }
 
-<span class="kw">impl</span>&lt;KEY&gt; OrchestratorState&lt;KEY&gt;
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; OrchestratorState&lt;TYPES&gt;
 <span class="kw">where
-    </span>KEY: serde::Serialize + Clone + SignatureKey + <span class="lifetime">'static</span>,
+    </span>TYPES::SignatureKey: serde::Serialize + Clone + SignatureKey + <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// register a node with an unknown public key.
     /// this method should be used when we don't have a fixed stake table
@@ -1145,7 +1153,7 @@
         <span class="kw">let </span>node_index = <span class="self">self</span>.pub_posted.len() <span class="kw">as </span>u64;
 
         <span class="comment">// Deserialize the public key
-        </span><span class="kw">let </span>staked_pubkey = PeerConfig::&lt;KEY&gt;::from_bytes(pubkey).unwrap();
+        </span><span class="kw">let </span>staked_pubkey = PeerConfig::&lt;TYPES&gt;::from_bytes(pubkey).unwrap();
 
         <span class="self">self</span>.config
             .config
@@ -1214,7 +1222,7 @@
         }
 
         <span class="comment">// Deserialize the public key
-        </span><span class="kw">let </span>staked_pubkey = PeerConfig::&lt;KEY&gt;::from_bytes(pubkey).unwrap();
+        </span><span class="kw">let </span>staked_pubkey = PeerConfig::&lt;TYPES&gt;::from_bytes(pubkey).unwrap();
 
         <span class="comment">// Check if the node is allowed to connect, returning its index and config entry if so.
         </span><span class="kw">let </span><span class="prelude-val">Some</span>((node_index, node_config)) =
@@ -1263,9 +1271,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;KEY&gt; OrchestratorApi&lt;KEY&gt; <span class="kw">for </span>OrchestratorState&lt;KEY&gt;
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; OrchestratorApi&lt;TYPES&gt; <span class="kw">for </span>OrchestratorState&lt;TYPES&gt;
 <span class="kw">where
-    </span>KEY: serde::Serialize + Clone + SignatureKey + <span class="lifetime">'static</span>,
+    </span>TYPES::SignatureKey: serde::Serialize + Clone + SignatureKey + <span class="lifetime">'static</span>,
 {
     <span class="doccomment">/// Post an identity to the orchestrator. Takes in optional
     /// arguments so others can identify us on the Libp2p network.
@@ -1306,7 +1314,7 @@
 
     <span class="comment">// Assumes nodes will set their own index that they received from the
     // 'identity' endpoint
-    </span><span class="kw">fn </span>post_getconfig(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _node_index: u16) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;KEY&gt;, ServerError&gt; {
+    </span><span class="kw">fn </span>post_getconfig(<span class="kw-2">&amp;mut </span><span class="self">self</span>, _node_index: u16) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;TYPES&gt;, ServerError&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.config.clone())
     }
 
@@ -1350,7 +1358,7 @@
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.peer_pub_ready)
     }
 
-    <span class="kw">fn </span>post_config_after_peer_collected(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;KEY&gt;, ServerError&gt; {
+    <span class="kw">fn </span>post_config_after_peer_collected(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;NetworkConfig&lt;TYPES&gt;, ServerError&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.peer_pub_ready {
             <span class="kw">return </span><span class="prelude-val">Err</span>(ServerError {
                 status: tide_disco::StatusCode::BAD_REQUEST,
@@ -1373,7 +1381,7 @@
     }
 
     <span class="comment">// Assumes nodes do not post 'ready' twice
-    </span><span class="kw">fn </span>post_ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_config: <span class="kw-2">&amp;</span>PeerConfig&lt;KEY&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), ServerError&gt; {
+    </span><span class="kw">fn </span>post_ready(<span class="kw-2">&amp;mut </span><span class="self">self</span>, peer_config: <span class="kw-2">&amp;</span>PeerConfig&lt;TYPES&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), ServerError&gt; {
         <span class="comment">// If we have not disabled registration verification.
         // Is this node allowed to connect?
         </span><span class="kw">if </span>!<span class="self">self
@@ -1538,11 +1546,12 @@
 
 <span class="doccomment">/// Sets up all API routes
 </span><span class="attr">#[allow(clippy::too_many_lines)]
-</span><span class="kw">fn </span>define_api&lt;KEY, State, VER&gt;() -&gt; <span class="prelude-ty">Result</span>&lt;Api&lt;State, ServerError, VER&gt;, ApiError&gt;
+</span><span class="kw">fn </span>define_api&lt;TYPES, State, VER&gt;() -&gt; <span class="prelude-ty">Result</span>&lt;Api&lt;State, ServerError, VER&gt;, ApiError&gt;
 <span class="kw">where
-    </span>State: <span class="lifetime">'static </span>+ Send + Sync + ReadState + WriteState,
-    &lt;State <span class="kw">as </span>ReadState&gt;::State: Send + Sync + OrchestratorApi&lt;KEY&gt;,
-    KEY: serde::Serialize + SignatureKey,
+    </span>TYPES: NodeType,
+    State: <span class="lifetime">'static </span>+ Send + Sync + ReadState + WriteState,
+    &lt;State <span class="kw">as </span>ReadState&gt;::State: Send + Sync + OrchestratorApi&lt;TYPES&gt;,
+    TYPES::SignatureKey: serde::Serialize,
     VER: StaticVersionType + <span class="lifetime">'static</span>,
 {
     <span class="kw">let </span>api_toml = toml::from_str::&lt;toml::Value&gt;(<span class="macro">include_str!</span>(<span class="macro">concat!</span>(
@@ -1616,7 +1625,7 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>body_bytes = req.body_bytes();
                 body_bytes.drain(..<span class="number">12</span>);
                 <span class="comment">// Decode the payload-supplied pubkey
-                </span><span class="kw">let </span><span class="prelude-val">Some</span>(pubkey) = PeerConfig::&lt;KEY&gt;::from_bytes(<span class="kw-2">&amp;</span>body_bytes) <span class="kw">else </span>{
+                </span><span class="kw">let </span><span class="prelude-val">Some</span>(pubkey) = PeerConfig::&lt;TYPES&gt;::from_bytes(<span class="kw-2">&amp;</span>body_bytes) <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Err</span>(ServerError {
                         status: tide_disco::StatusCode::BAD_REQUEST,
                         message: <span class="string">"Malformed body"</span>.to_string(),
@@ -1698,12 +1707,12 @@
 /// This errors if tide disco runs into an issue during serving
 /// # Panics
 /// This panics if unable to register the api with tide disco
-</span><span class="kw">pub async fn </span>run_orchestrator&lt;KEY&gt;(
-    <span class="kw-2">mut </span>network_config: NetworkConfig&lt;KEY&gt;,
+</span><span class="kw">pub async fn </span>run_orchestrator&lt;TYPES: NodeType&gt;(
+    <span class="kw-2">mut </span>network_config: NetworkConfig&lt;TYPES&gt;,
     url: Url,
 ) -&gt; io::Result&lt;()&gt;
 <span class="kw">where
-    </span>KEY: SignatureKey + <span class="lifetime">'static </span>+ serde::Serialize,
+    </span>TYPES::SignatureKey: <span class="lifetime">'static </span>+ serde::Serialize,
 {
     <span class="kw">let </span>env_password = std::env::var(<span class="string">"ORCHESTRATOR_MANUAL_START_PASSWORD"</span>);
 
@@ -1722,8 +1731,8 @@
             </span><span class="kw">let </span>config_file_as_string: String = fs::read_to_string(filepath.clone())
                 .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">"Could not read config file located at {filepath}"</span>));
 
-            <span class="kw">let </span>file: PublicKeysFile&lt;KEY&gt; =
-                toml::from_str::&lt;PublicKeysFile&lt;KEY&gt;&gt;(<span class="kw-2">&amp;</span>config_file_as_string)
+            <span class="kw">let </span>file: PublicKeysFile&lt;TYPES&gt; =
+                toml::from_str::&lt;PublicKeysFile&lt;TYPES&gt;&gt;(<span class="kw-2">&amp;</span>config_file_as_string)
                     .expect(<span class="string">"Unable to convert config file to TOML"</span>);
 
             network_config.public_keys = file.public_keys;
@@ -1752,9 +1761,10 @@
     <span class="kw">let </span>web_api =
         define_api().map_err(|_e| io::Error::new(ErrorKind::Other, <span class="string">"Failed to define api"</span>));
 
-    <span class="kw">let </span>state: RwLock&lt;OrchestratorState&lt;KEY&gt;&gt; = RwLock::new(OrchestratorState::new(network_config));
+    <span class="kw">let </span>state: RwLock&lt;OrchestratorState&lt;TYPES&gt;&gt; =
+        RwLock::new(OrchestratorState::new(network_config));
 
-    <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;RwLock&lt;OrchestratorState&lt;KEY&gt;&gt;, ServerError&gt;::with_state(state);
+    <span class="kw">let </span><span class="kw-2">mut </span>app = App::&lt;RwLock&lt;OrchestratorState&lt;TYPES&gt;&gt;, ServerError&gt;::with_state(state);
     app.register_module::&lt;ServerError, OrchestratorVersion&gt;(<span class="string">"api"</span>, web_api.unwrap())
         .expect(<span class="string">"Error registering api"</span>);
     <span class="macro">tracing::error!</span>(<span class="string">"listening on {:?}"</span>, url);

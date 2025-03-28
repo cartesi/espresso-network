@@ -2768,7 +2768,71 @@
 <a href="#2767" id="2767">2767</a>
 <a href="#2768" id="2768">2768</a>
 <a href="#2769" id="2769">2769</a>
-<a href="#2770" id="2770">2770</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
+<a href="#2770" id="2770">2770</a>
+<a href="#2771" id="2771">2771</a>
+<a href="#2772" id="2772">2772</a>
+<a href="#2773" id="2773">2773</a>
+<a href="#2774" id="2774">2774</a>
+<a href="#2775" id="2775">2775</a>
+<a href="#2776" id="2776">2776</a>
+<a href="#2777" id="2777">2777</a>
+<a href="#2778" id="2778">2778</a>
+<a href="#2779" id="2779">2779</a>
+<a href="#2780" id="2780">2780</a>
+<a href="#2781" id="2781">2781</a>
+<a href="#2782" id="2782">2782</a>
+<a href="#2783" id="2783">2783</a>
+<a href="#2784" id="2784">2784</a>
+<a href="#2785" id="2785">2785</a>
+<a href="#2786" id="2786">2786</a>
+<a href="#2787" id="2787">2787</a>
+<a href="#2788" id="2788">2788</a>
+<a href="#2789" id="2789">2789</a>
+<a href="#2790" id="2790">2790</a>
+<a href="#2791" id="2791">2791</a>
+<a href="#2792" id="2792">2792</a>
+<a href="#2793" id="2793">2793</a>
+<a href="#2794" id="2794">2794</a>
+<a href="#2795" id="2795">2795</a>
+<a href="#2796" id="2796">2796</a>
+<a href="#2797" id="2797">2797</a>
+<a href="#2798" id="2798">2798</a>
+<a href="#2799" id="2799">2799</a>
+<a href="#2800" id="2800">2800</a>
+<a href="#2801" id="2801">2801</a>
+<a href="#2802" id="2802">2802</a>
+<a href="#2803" id="2803">2803</a>
+<a href="#2804" id="2804">2804</a>
+<a href="#2805" id="2805">2805</a>
+<a href="#2806" id="2806">2806</a>
+<a href="#2807" id="2807">2807</a>
+<a href="#2808" id="2808">2808</a>
+<a href="#2809" id="2809">2809</a>
+<a href="#2810" id="2810">2810</a>
+<a href="#2811" id="2811">2811</a>
+<a href="#2812" id="2812">2812</a>
+<a href="#2813" id="2813">2813</a>
+<a href="#2814" id="2814">2814</a>
+<a href="#2815" id="2815">2815</a>
+<a href="#2816" id="2816">2816</a>
+<a href="#2817" id="2817">2817</a>
+<a href="#2818" id="2818">2818</a>
+<a href="#2819" id="2819">2819</a>
+<a href="#2820" id="2820">2820</a>
+<a href="#2821" id="2821">2821</a>
+<a href="#2822" id="2822">2822</a>
+<a href="#2823" id="2823">2823</a>
+<a href="#2824" id="2824">2824</a>
+<a href="#2825" id="2825">2825</a>
+<a href="#2826" id="2826">2826</a>
+<a href="#2827" id="2827">2827</a>
+<a href="#2828" id="2828">2828</a>
+<a href="#2829" id="2829">2829</a>
+<a href="#2830" id="2830">2830</a>
+<a href="#2831" id="2831">2831</a>
+<a href="#2832" id="2832">2832</a>
+<a href="#2833" id="2833">2833</a>
+<a href="#2834" id="2834">2834</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::BTreeMap, path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -2814,7 +2878,8 @@
     event::{Event, EventType, HotShotAction, LeafInfo},
     message::{convert_proposal, Proposal},
     simple_certificate::{
-        NextEpochQuorumCertificate2, QuorumCertificate, QuorumCertificate2, UpgradeCertificate,
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
+        QuorumCertificate2, UpgradeCertificate,
     },
     traits::{
         block_contents::{BlockHeader, BlockPayload},
@@ -4575,6 +4640,42 @@
         tx.commit().<span class="kw">await
     </span>}
 
+    <span class="kw">async fn </span>add_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        state_cert: LightClientStateUpdateCertificate&lt;SeqTypes&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>state_cert_bytes = bincode::serialize(<span class="kw-2">&amp;</span>state_cert)
+            .context(<span class="string">"serializing light client state update certificate"</span>)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span><span class="kw-2">mut </span>tx = <span class="self">self</span>.db.write().<span class="kw">await</span><span class="question-mark">?</span>;
+        tx.upsert(
+            <span class="string">"state_cert"</span>,
+            [<span class="string">"epoch"</span>, <span class="string">"state_cert"</span>],
+            [<span class="string">"epoch"</span>],
+            [(state_cert.epoch.u64() <span class="kw">as </span>i64, state_cert_bytes)],
+        )
+        .<span class="kw">await</span><span class="question-mark">?</span>;
+        tx.commit().<span class="kw">await
+    </span>}
+
+    <span class="kw">async fn </span>load_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;LightClientStateUpdateCertificate&lt;SeqTypes&gt;&gt;&gt; {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(row) = <span class="self">self
+            </span>.db
+            .read()
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.fetch_optional(<span class="string">"SELECT state_cert from state_cert ORDER BY epoch DESC LIMIT 1"</span>)
+            .<span class="kw">await</span><span class="question-mark">?
+        </span><span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
+        };
+        <span class="kw">let </span>bytes: Vec&lt;u8&gt; = row.get(<span class="string">"state_cert"</span>);
+        bincode::deserialize(<span class="kw-2">&amp;</span>bytes)
+            .context(<span class="string">"deserializing light client state update certificate"</span>)
+            .map(<span class="prelude-val">Some</span>)
+    }
+
     <span class="kw">async fn </span>load_start_epoch_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;InitializerEpochInfo&lt;SeqTypes&gt;&gt;&gt; {
         <span class="kw">let </span>rows = <span class="self">self
             </span>.db
@@ -5298,6 +5399,8 @@
 
         <span class="kw">let </span>rows = <span class="number">300</span>;
 
+        <span class="macro">assert!</span>(storage.load_state_cert().<span class="kw">await</span>.unwrap().is_none());
+
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..rows {
             <span class="kw">let </span>view = ViewNumber::new(i);
             <span class="kw">let </span>validated_state = ValidatedState::default();
@@ -5324,6 +5427,13 @@
                 builder_commitment,
                 metadata,
             );
+
+            <span class="kw">let </span>state_cert = LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
+                epoch: EpochNumber::new(i),
+                light_client_state: Default::default(), <span class="comment">// filling arbitrary value
+                </span>signatures: <span class="macro">vec!</span>[],                     <span class="comment">// filling arbitrary value
+            </span>};
+            <span class="macro">assert!</span>(storage.add_state_cert(state_cert).<span class="kw">await</span>.is_ok());
 
             <span class="kw">let </span>null_quorum_data = QuorumData {
                 leaf_commit: Commitment::&lt;Leaf&gt;::default_commitment_no_preimage(),
@@ -5501,6 +5611,24 @@
             quorum_certificates_count, rows <span class="kw">as </span>i64,
             <span class="string">"quorum certificates count does not match rows"</span>,
         );
+
+        <span class="kw">let </span>(state_cert_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from state_cert"</span>)
+            .fetch_one(tx.as_mut())
+            .<span class="kw">await
+            </span>.unwrap();
+        <span class="macro">assert_eq!</span>(
+            state_cert_count, rows <span class="kw">as </span>i64,
+            <span class="string">"Light client state update certificates count does not match rows"</span>,
+        );
+        <span class="macro">assert_eq!</span>(
+            storage.load_state_cert().<span class="kw">await</span>.unwrap().unwrap(),
+            LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
+                epoch: EpochNumber::new(rows - <span class="number">1</span>),
+                light_client_state: Default::default(),
+                signatures: <span class="macro">vec!</span>[]
+            },
+            <span class="string">"Wrong light client state update certificate in the storage"</span>,
+        )
     }
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]

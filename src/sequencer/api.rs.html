@@ -2879,11 +2879,7 @@
 <a href="#2878" id="2878">2878</a>
 <a href="#2879" id="2879">2879</a>
 <a href="#2880" id="2880">2880</a>
-<a href="#2881" id="2881">2881</a>
-<a href="#2882" id="2882">2882</a>
-<a href="#2883" id="2883">2883</a>
-<a href="#2884" id="2884">2884</a>
-<a href="#2885" id="2885">2885</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
+<a href="#2881" id="2881">2881</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{pin::Pin, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>async_lock::RwLock;
@@ -2954,7 +2950,7 @@
     state_signer: Arc&lt;StateSigner&lt;SequencerApiVersion&gt;&gt;,
     event_streamer: Arc&lt;RwLock&lt;EventsStreamer&lt;SeqTypes&gt;&gt;&gt;,
     node_state: NodeState,
-    network_config: NetworkConfig&lt;PubKey&gt;,
+    network_config: NetworkConfig&lt;SeqTypes&gt;,
 
     <span class="attr">#[derivative(Debug = <span class="string">"ignore"</span>)]
     </span>handle: Arc&lt;RwLock&lt;Consensus&lt;N, P, V&gt;&gt;&gt;,
@@ -3004,7 +3000,7 @@
         Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.as_ref().get().<span class="kw">await</span>.get_ref().handle)
     }
 
-    <span class="kw">async fn </span>network_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NetworkConfig&lt;PubKey&gt; {
+    <span class="kw">async fn </span>network_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NetworkConfig&lt;SeqTypes&gt; {
         <span class="self">self</span>.consensus
             .as_ref()
             .get()
@@ -3059,14 +3055,12 @@
     </span><span class="kw">async fn </span>get_stake_table(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         epoch: <span class="prelude-ty">Option</span>&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch&gt;,
-    ) -&gt; Vec&lt;PeerConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;&gt; {
+    ) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="self">self</span>.as_ref().get_stake_table(epoch).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Get the stake table for the current epoch if not provided
-    </span><span class="kw">async fn </span>get_stake_table_current(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; Vec&lt;PeerConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;&gt; {
+    </span><span class="kw">async fn </span>get_stake_table_current(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="self">self</span>.as_ref().get_stake_table_current().<span class="kw">await
     </span>}
 }
@@ -3077,7 +3071,7 @@
     </span><span class="kw">async fn </span>get_stake_table(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         epoch: <span class="prelude-ty">Option</span>&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch&gt;,
-    ) -&gt; Vec&lt;PeerConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;&gt; {
+    ) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="kw">let </span><span class="prelude-val">Ok</span>(mem) = <span class="self">self
             </span>.consensus()
             .<span class="kw">await
@@ -3093,9 +3087,7 @@
     </span>}
 
     <span class="doccomment">/// Get the stake table for the current epoch if not provided
-    </span><span class="kw">async fn </span>get_stake_table_current(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; Vec&lt;PeerConfig&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;&gt; {
+    </span><span class="kw">async fn </span>get_stake_table_current(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="kw">let </span>epoch = <span class="self">self</span>.consensus().<span class="kw">await</span>.read().<span class="kw">await</span>.cur_epoch().<span class="kw">await</span>;
 
         <span class="self">self</span>.get_stake_table(epoch).<span class="kw">await

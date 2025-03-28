@@ -188,13 +188,7 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
+<a href="#190" id="190">190</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Ok;
 <span class="kw">use </span>async_lock::RwLock;
@@ -235,8 +229,8 @@
     <span class="kw">fn </span>new(
         <span class="comment">// Note: eligible_leaders is currently a haMemck because the DA leader == the quorum leader
         // but they should not have voting power.
-        </span>stake_committee_members: Vec&lt;hotshot_types::PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
-        da_committee_members: Vec&lt;hotshot_types::PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
+        </span>stake_committee_members: Vec&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt;,
+        da_committee_members: Vec&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             inner: StaticCommittee::new(stake_committee_members, da_committee_members),
@@ -245,18 +239,12 @@
         }
     }
 
-    <span class="kw">fn </span>stake_table(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-    ) -&gt; Vec&lt;hotshot_types::PeerConfig&lt;TYPES::SignatureKey&gt;&gt; {
+    <span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; Vec&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.stake_table(epoch)
     }
 
-    <span class="kw">fn </span>da_stake_table(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-    ) -&gt; Vec&lt;hotshot_types::PeerConfig&lt;TYPES::SignatureKey&gt;&gt; {
+    <span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; Vec&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.da_stake_table(epoch)
     }
@@ -283,7 +271,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         pub_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;hotshot_types::PeerConfig&lt;TYPES::SignatureKey&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.stake(pub_key, epoch)
     }
@@ -292,7 +280,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         pub_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-    ) -&gt; <span class="prelude-ty">Option</span>&lt;hotshot_types::PeerConfig&lt;TYPES::SignatureKey&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.da_stake(pub_key, epoch)
     }

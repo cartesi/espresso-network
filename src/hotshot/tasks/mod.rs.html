@@ -563,7 +563,9 @@
 <a href="#562" id="562">562</a>
 <a href="#563" id="563">563</a>
 <a href="#564" id="564">564</a>
-<a href="#565" id="565">565</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -612,7 +614,7 @@
     genesis_epoch_from_version, tasks::task_state::CreateTaskState, types::SystemContextHandle,
     ConsensusApi, ConsensusMetricsValue, ConsensusTaskRegistry, EpochMembershipCoordinator,
     HotShotConfig, HotShotInitializer, MarketplaceConfig, NetworkTaskRegistry, SignatureKey,
-    SystemContext, Versions,
+    StateSignatureKey, SystemContext, Versions,
 };
 
 <span class="doccomment">/// event for global event stream
@@ -885,8 +887,9 @@
         <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw-2">mut </span><span class="self">self</span>,
         public_key: TYPES::SignatureKey,
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
+        state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
         nonce: u64,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
         memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
@@ -899,6 +902,7 @@
         <span class="kw">let </span>hotshot = SystemContext::new(
             public_key,
             private_key,
+            state_private_key,
             nonce,
             config,
             memberships.clone(),

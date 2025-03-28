@@ -726,7 +726,12 @@
 <a href="#725" id="725">725</a>
 <a href="#726" id="726">726</a>
 <a href="#727" id="727">727</a>
-<a href="#728" id="728">728</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -761,7 +766,7 @@
     data::Leaf2,
     drb::INITIAL_DRB_RESULT,
     epoch_membership::EpochMembershipCoordinator,
-    simple_certificate::QuorumCertificate2,
+    simple_certificate::{LightClientStateUpdateCertificate, QuorumCertificate2},
     traits::{
         election::Membership,
         network::ConnectedNetwork,
@@ -927,6 +932,7 @@
             async_delay_config: launcher.metadata.async_delay_config,
             restart_contexts: HashMap::new(),
             channel_generator: launcher.resource_generators.channel_generator,
+            state_cert: LightClientStateUpdateCertificate::&lt;TYPES&gt;::genesis(),
         };
         <span class="kw">let </span>spinning_task = TestTask::&lt;SpinningTask&lt;TYPES, N, I, V&gt;&gt;::new(
             spinning_task_state,
@@ -1317,19 +1323,21 @@
         network: Network&lt;TYPES, I&gt;,
         memberships: TYPES::Membership,
         initializer: HotShotInitializer&lt;TYPES&gt;,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        validator_config: ValidatorConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
+        validator_config: ValidatorConfig&lt;TYPES&gt;,
         storage: I::Storage,
         marketplace_config: MarketplaceConfig&lt;TYPES, I&gt;,
     ) -&gt; Arc&lt;SystemContext&lt;TYPES, I, V&gt;&gt; {
         <span class="comment">// Get key pair for certificate aggregation
         </span><span class="kw">let </span>private_key = validator_config.private_key.clone();
         <span class="kw">let </span>public_key = validator_config.public_key.clone();
+        <span class="kw">let </span>state_private_key = validator_config.state_private_key.clone();
         <span class="kw">let </span>epoch_height = config.epoch_height;
 
         SystemContext::new(
             public_key,
             private_key,
+            state_private_key,
             node_id,
             config,
             EpochMembershipCoordinator::new(Arc::new(RwLock::new(memberships)), epoch_height),
@@ -1351,8 +1359,8 @@
         network: Network&lt;TYPES, I&gt;,
         memberships: Arc&lt;RwLock&lt;TYPES::Membership&gt;&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
-        validator_config: ValidatorConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
+        validator_config: ValidatorConfig&lt;TYPES&gt;,
         storage: I::Storage,
         marketplace_config: MarketplaceConfig&lt;TYPES, I&gt;,
         internal_channel: (
@@ -1364,11 +1372,13 @@
         <span class="comment">// Get key pair for certificate aggregation
         </span><span class="kw">let </span>private_key = validator_config.private_key.clone();
         <span class="kw">let </span>public_key = validator_config.public_key.clone();
+        <span class="kw">let </span>state_private_key = validator_config.state_private_key.clone();
         <span class="kw">let </span>epoch_height = config.epoch_height;
 
         SystemContext::new_from_channels(
             public_key,
             private_key,
+            state_private_key,
             node_id,
             config,
             EpochMembershipCoordinator::new(memberships, epoch_height),
@@ -1404,7 +1414,7 @@
     </span><span class="kw">pub </span>memberships: TYPES::Membership,
 
     <span class="doccomment">/// The config associated with this node.
-    </span><span class="kw">pub </span>config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+    </span><span class="kw">pub </span>config: HotShotConfig&lt;TYPES&gt;,
 
     <span class="doccomment">/// The marketplace config for this node.
     </span><span class="kw">pub </span>marketplace_config: MarketplaceConfig&lt;TYPES, I&gt;,

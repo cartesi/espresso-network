@@ -360,7 +360,7 @@
         BidTx, RollupRegistration, RollupRegistrationBody, RollupUpdate, RollupUpdatebody,
         SolverAuctionResults,
     },
-    PubKey, SeqTypes,
+    SeqTypes,
     Update::Set,
 };
 <span class="kw">use </span>hotshot::types::SignatureKey;
@@ -401,7 +401,7 @@
 }
 
 <span class="kw">pub struct </span>StakeTable {
-    <span class="kw">pub </span>known_nodes_with_stake: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+    <span class="kw">pub </span>known_nodes_with_stake: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
 }
 
 <span class="attr">#[async_trait]

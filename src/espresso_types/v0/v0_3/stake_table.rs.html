@@ -55,9 +55,9 @@
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
+<a href="#57" id="57">57</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::collections::HashMap;
 
+<span class="kw">use </span><span class="kw">crate</span>::SeqTypes;
 <span class="kw">use </span>alloy::primitives::{Address, U256};
 <span class="kw">use </span>derive_more::derive::{From, Into};
 <span class="kw">use </span>hotshot::types::{BLSPubKey, SignatureKey};
@@ -68,22 +68,20 @@
 <span class="kw">use </span>indexmap::IndexMap;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 
-<span class="kw">use </span><span class="kw">crate</span>::PubKey;
-
 <span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, From)]
 </span><span class="kw">pub struct </span>PermissionedStakeTableEntry(NodeInfoJf);
 
 <span class="doccomment">/// Stake table holding all staking information (DA and non-DA stakers)
 </span><span class="attr">#[derive(Debug, Clone, Serialize, Deserialize, From)]
-</span><span class="kw">pub struct </span>CombinedStakeTable(Vec&lt;PeerConfigKeys&lt;PubKey&gt;&gt;);
+</span><span class="kw">pub struct </span>CombinedStakeTable(Vec&lt;PeerConfigKeys&lt;SeqTypes&gt;&gt;);
 
 <span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="doccomment">/// NewType to disambiguate DA Membership
-</span><span class="kw">pub struct </span>DAMembers(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;PubKey&gt;&gt;);
+</span><span class="kw">pub struct </span>DAMembers(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;);
 
 <span class="attr">#[derive(Clone, Debug, From, Into, Serialize, Deserialize, PartialEq, Eq)]
 </span><span class="doccomment">/// NewType to disambiguate StakeTable
-</span><span class="kw">pub struct </span>StakeTable(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;PubKey&gt;&gt;);
+</span><span class="kw">pub struct </span>StakeTable(<span class="kw">pub </span>Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;);
 
 <span class="attr">#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(bound(deserialize = <span class="string">""</span>))]

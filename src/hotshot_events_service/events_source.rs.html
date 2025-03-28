@@ -185,7 +185,8 @@
 <a href="#184" id="184">184</a>
 <a href="#185" id="185">185</a>
 <a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{marker::PhantomData, sync::Arc};
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{marker::PhantomData, sync::Arc};
 
 <span class="kw">use </span>async_broadcast::{broadcast, InactiveReceiver, Sender <span class="kw">as </span>BroadcastSender};
 <span class="kw">use </span>async_trait::async_trait;
@@ -213,8 +214,9 @@
 }
 
 <span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(bound = <span class="string">"Types::SignatureKey: for&lt;'a&gt; Deserialize&lt;'a&gt;"</span>)]
 </span><span class="kw">pub struct </span>StartupInfo&lt;Types: NodeType&gt; {
-    <span class="kw">pub </span>known_node_with_stake: Vec&lt;PeerConfig&lt;Types::SignatureKey&gt;&gt;,
+    <span class="kw">pub </span>known_node_with_stake: Vec&lt;PeerConfig&lt;Types&gt;&gt;,
     <span class="kw">pub </span>non_staked_node_count: usize,
 }
 
@@ -233,12 +235,12 @@
     subscriber_send_channel: BroadcastSender&lt;Arc&lt;Event&lt;Types&gt;&gt;&gt;,
 
     <span class="comment">// required for sending startup info
-    </span>known_nodes_with_stake: Vec&lt;PeerConfig&lt;Types::SignatureKey&gt;&gt;,
+    </span>known_nodes_with_stake: Vec&lt;PeerConfig&lt;Types&gt;&gt;,
     non_staked_node_count: usize,
 }
 
 <span class="kw">impl</span>&lt;Types: NodeType&gt; EventsStreamer&lt;Types&gt; {
-    <span class="kw">pub fn </span>known_node_with_stake(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerConfig&lt;Types::SignatureKey&gt;&gt; {
+    <span class="kw">pub fn </span>known_node_with_stake(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerConfig&lt;Types&gt;&gt; {
         <span class="self">self</span>.known_nodes_with_stake.clone()
     }
 
@@ -342,7 +344,7 @@
 
 <span class="kw">impl</span>&lt;Types: NodeType&gt; EventsStreamer&lt;Types&gt; {
     <span class="kw">pub fn </span>new(
-        known_nodes_with_stake: Vec&lt;PeerConfig&lt;Types::SignatureKey&gt;&gt;,
+        known_nodes_with_stake: Vec&lt;PeerConfig&lt;Types&gt;&gt;,
         non_staked_node_count: usize,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>(<span class="kw-2">mut </span>subscriber_send_channel, to_subscribe_clone_recv) =

@@ -1242,7 +1242,34 @@
 <a href="#1241" id="1241">1241</a>
 <a href="#1242" id="1242">1242</a>
 <a href="#1243" id="1243">1243</a>
-<a href="#1244" id="1244">1244</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1244" id="1244">1244</a>
+<a href="#1245" id="1245">1245</a>
+<a href="#1246" id="1246">1246</a>
+<a href="#1247" id="1247">1247</a>
+<a href="#1248" id="1248">1248</a>
+<a href="#1249" id="1249">1249</a>
+<a href="#1250" id="1250">1250</a>
+<a href="#1251" id="1251">1251</a>
+<a href="#1252" id="1252">1252</a>
+<a href="#1253" id="1253">1253</a>
+<a href="#1254" id="1254">1254</a>
+<a href="#1255" id="1255">1255</a>
+<a href="#1256" id="1256">1256</a>
+<a href="#1257" id="1257">1257</a>
+<a href="#1258" id="1258">1258</a>
+<a href="#1259" id="1259">1259</a>
+<a href="#1260" id="1260">1260</a>
+<a href="#1261" id="1261">1261</a>
+<a href="#1262" id="1262">1262</a>
+<a href="#1263" id="1263">1263</a>
+<a href="#1264" id="1264">1264</a>
+<a href="#1265" id="1265">1265</a>
+<a href="#1266" id="1266">1266</a>
+<a href="#1267" id="1267">1267</a>
+<a href="#1268" id="1268">1268</a>
+<a href="#1269" id="1269">1269</a>
+<a href="#1270" id="1270">1270</a>
+<a href="#1271" id="1271">1271</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1261,9 +1288,10 @@
     drb::{DrbResult, INITIAL_DRB_RESULT},
     epoch_membership::EpochMembershipCoordinator,
     message::UpgradeLock,
+    simple_certificate::LightClientStateUpdateCertificate,
     traits::{
         block_contents::BlockHeader, election::Membership, network::BroadcastDelay,
-        node_implementation::Versions,
+        node_implementation::Versions, signature_key::StateSignatureKey,
     },
     utils::epoch_from_block_number,
 };
@@ -1353,8 +1381,11 @@
     <span class="doccomment">/// The private key of this node
     </span>private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
 
+    <span class="doccomment">/// The private key to sign the light client state
+    </span>state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
+
     <span class="doccomment">/// Configuration items for this hotshot instance
-    </span><span class="kw">pub </span>config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+    </span><span class="kw">pub </span>config: HotShotConfig&lt;TYPES&gt;,
 
     <span class="doccomment">/// The underlying network
     </span><span class="kw">pub </span>network: Arc&lt;I::Network&gt;,
@@ -1413,6 +1444,7 @@
         <span class="self">Self </span>{
             public_key: <span class="self">self</span>.public_key.clone(),
             private_key: <span class="self">self</span>.private_key.clone(),
+            state_private_key: <span class="self">self</span>.state_private_key.clone(),
             config: <span class="self">self</span>.config.clone(),
             network: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.network),
             membership_coordinator: <span class="self">self</span>.membership_coordinator.clone(),
@@ -1449,8 +1481,9 @@
     </span><span class="kw">pub async fn </span>new(
         public_key: TYPES::SignatureKey,
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
+        state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
         nonce: u64,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
         memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
@@ -1472,6 +1505,7 @@
         <span class="self">Self</span>::new_from_channels(
             public_key,
             private_key,
+            state_private_key,
             nonce,
             config,
             memberships,
@@ -1497,8 +1531,9 @@
     </span><span class="kw">pub async fn </span>new_from_channels(
         public_key: TYPES::SignatureKey,
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
+        state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
         nonce: u64,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
         membership_coordinator: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
@@ -1602,6 +1637,7 @@
             initializer.next_epoch_high_qc,
             Arc::clone(<span class="kw-2">&amp;</span>consensus_metrics),
             config.epoch_height,
+            initializer.state_cert,
         );
 
         <span class="kw">let </span>consensus = Arc::new(RwLock::new(consensus));
@@ -1616,6 +1652,7 @@
             instance_state: Arc::new(instance_state),
             public_key,
             private_key,
+            state_private_key,
             config,
             start_view: initializer.start_view,
             start_epoch: initializer.start_epoch,
@@ -1876,8 +1913,9 @@
     </span><span class="kw">pub async fn </span>init(
         public_key: TYPES::SignatureKey,
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
+        state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
         node_id: u64,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
         memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
@@ -1895,6 +1933,7 @@
         <span class="kw">let </span>hotshot = <span class="self">Self</span>::new(
             public_key,
             private_key,
+            state_private_key,
             node_id,
             config,
             memberships,
@@ -2039,8 +2078,9 @@
         <span class="kw-2">&amp;</span><span class="lifetime">'static </span><span class="kw-2">mut </span><span class="self">self</span>,
         public_key: TYPES::SignatureKey,
         private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
+        state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
         nonce: u64,
-        config: HotShotConfig&lt;TYPES::SignatureKey&gt;,
+        config: HotShotConfig&lt;TYPES&gt;,
         memberships: EpochMembershipCoordinator&lt;TYPES&gt;,
         network: Arc&lt;I::Network&gt;,
         initializer: HotShotInitializer&lt;TYPES&gt;,
@@ -2055,6 +2095,7 @@
         <span class="kw">let </span>left_system_context = SystemContext::new(
             public_key.clone(),
             private_key.clone(),
+            state_private_key.clone(),
             nonce,
             config.clone(),
             memberships.clone(),
@@ -2068,6 +2109,7 @@
         <span class="kw">let </span>right_system_context = SystemContext::new(
             public_key,
             private_key,
+            state_private_key,
             nonce,
             config,
             memberships,
@@ -2242,6 +2284,12 @@
     <span class="kw">fn </span>private_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey {
         <span class="kw-2">&amp;</span><span class="self">self</span>.hotshot.private_key
     }
+
+    <span class="kw">fn </span>state_private_key(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; <span class="kw-2">&amp;</span>&lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.hotshot.state_private_key
+    }
 }
 
 <span class="attr">#[derive(Clone, Debug, PartialEq)]
@@ -2307,6 +2355,9 @@
     <span class="doccomment">/// Saved VID shares
     </span><span class="kw">pub </span>saved_vid_shares: VidShares&lt;TYPES&gt;,
 
+    <span class="doccomment">/// The last formed light client state update certificate
+    </span><span class="kw">pub </span>state_cert: LightClientStateUpdateCertificate&lt;TYPES&gt;,
+
     <span class="doccomment">/// Saved epoch information. This must be sorted ascending by epoch.
     </span><span class="kw">pub </span>start_epoch_info: Vec&lt;InitializerEpochInfo&lt;TYPES&gt;&gt;,
 }
@@ -2340,6 +2391,7 @@
             instance_state,
             saved_vid_shares: BTreeMap::new(),
             epoch_height,
+            state_cert: LightClientStateUpdateCertificate::&lt;TYPES&gt;::genesis(),
             epoch_start_block,
             start_epoch_info,
         })
@@ -2404,6 +2456,7 @@
         saved_proposals: BTreeMap&lt;TYPES::View, Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;&gt;,
         saved_vid_shares: VidShares&lt;TYPES&gt;,
         decided_upgrade_certificate: <span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;TYPES&gt;&gt;,
+        state_cert: LightClientStateUpdateCertificate&lt;TYPES&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>anchor_state = Arc::new(TYPES::ValidatedState::from_header(
             anchor_leaf.block_header(),
@@ -2427,6 +2480,7 @@
             decided_upgrade_certificate,
             undecided_leaves: BTreeMap::new(),
             undecided_state: BTreeMap::new(),
+            state_cert,
             start_epoch_info,
         };
 

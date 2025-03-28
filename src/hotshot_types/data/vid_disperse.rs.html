@@ -874,7 +874,7 @@
 }
 
 <span class="kw">pub fn </span>vid_total_weight&lt;TYPES: NodeType&gt;(
-    stake_table: Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;,
+    stake_table: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;,
     epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
 ) -&gt; usize {
     <span class="kw">if </span>epoch.is_none() {
@@ -889,7 +889,7 @@
     }
 }
 
-<span class="kw">fn </span>approximate_weights&lt;Key: SignatureKey&gt;(stake_table: Vec&lt;PeerConfig&lt;Key&gt;&gt;) -&gt; Weights {
+<span class="kw">fn </span>approximate_weights&lt;TYPES: NodeType&gt;(stake_table: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;) -&gt; Weights {
     <span class="kw">let </span>total_stake = stake_table.iter().fold(U256::zero(), |acc, entry| {
         acc + entry.stake_table_entry.stake()
     });

@@ -369,7 +369,12 @@
 <a href="#368" id="368">368</a>
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
-<a href="#371" id="371">371</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -462,7 +467,7 @@
     </span>}
 
     <span class="kw">pub async fn </span>init_with_config(
-        update_config: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>HotShotConfig&lt;BLSPubKey&gt;),
+        update_config: <span class="kw">impl </span>FnOnce(<span class="kw-2">&amp;mut </span>HotShotConfig&lt;MockTypes&gt;),
         leaf_only: bool,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>(pub_keys, priv_keys): (Vec&lt;<span class="kw">_</span>&gt;, Vec&lt;<span class="kw">_</span>&gt;) = (<span class="number">0</span>..NUM_NODES)
@@ -542,6 +547,10 @@
 
                     <span class="kw">let </span>pub_keys = pub_keys.clone();
                     <span class="kw">let </span>master_map = master_map.clone();
+                    <span class="kw">let </span>state_priv_keys = state_key_pairs
+                        .iter()
+                        .map(|kp| kp.sign_key())
+                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 
                     <span class="kw">let </span>span = <span class="macro">info_span!</span>(<span class="string">"initialize node"</span>, node_id);
                     <span class="kw">async move </span>{
@@ -570,6 +579,7 @@
                         <span class="kw">let </span>hotshot = SystemContext::init(
                             pub_keys[node_id],
                             priv_key,
+                            state_priv_keys[node_id].clone(),
                             node_id <span class="kw">as </span>u64,
                             config,
                             memberships,

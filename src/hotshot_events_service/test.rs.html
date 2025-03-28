@@ -370,7 +370,7 @@
         <span class="kw">let </span>pub_key = BLSPubKey::from_private(<span class="kw-2">&amp;</span>private_key);
         <span class="kw">let </span>state_key_pair = StateKeyPair::generate();
 
-        <span class="kw">let </span>peer_config = PeerConfig::&lt;BLSPubKey&gt; {
+        <span class="kw">let </span>peer_config = PeerConfig::&lt;TestTypes&gt; {
             stake_table_entry: pub_key.stake_table_entry(U256::from(<span class="number">1</span>)),
             state_ver_key: state_key_pair.ver_key(),
         };

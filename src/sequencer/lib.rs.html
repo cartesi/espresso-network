@@ -1234,7 +1234,9 @@
 <a href="#1233" id="1233">1233</a>
 <a href="#1234" id="1234">1234</a>
 <a href="#1235" id="1235">1235</a>
-<a href="#1236" id="1236">1236</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>api;
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>api;
 <span class="kw">pub mod </span>catchup;
 <span class="kw">pub mod </span>context;
 <span class="kw">pub mod </span>genesis;
@@ -1528,7 +1530,8 @@
         public_key: pub_key,
         private_key: network_params.private_staking_key,
         stake_value: <span class="number">1</span>,
-        state_key_pair,
+        state_public_key: state_key_pair.ver_key(),
+        state_private_key: state_key_pair.sign_key(),
         is_da,
     };
 
@@ -1960,7 +1963,7 @@
     }
 
     <span class="kw">pub struct </span>TestConfigBuilder&lt;<span class="kw">const </span>NUM_NODES: usize&gt; {
-        config: HotShotConfig&lt;PubKey&gt;,
+        config: HotShotConfig&lt;SeqTypes&gt;,
         priv_keys: Vec&lt;BLSPrivKey&gt;,
         state_key_pairs: Vec&lt;StateKeyPair&gt;,
         master_map: Arc&lt;MasterMap&lt;PubKey&gt;&gt;,
@@ -2034,7 +2037,7 @@
             <span class="kw">let </span>known_nodes_with_stake = pub_keys
                 .iter()
                 .zip(<span class="kw-2">&amp;</span>state_key_pairs)
-                .map(|(pub_key, state_key_pair)| PeerConfig::&lt;PubKey&gt; {
+                .map(|(pub_key, state_key_pair)| PeerConfig::&lt;SeqTypes&gt; {
                     stake_table_entry: pub_key.stake_table_entry(U256::from(<span class="number">1</span>)),
                     state_ver_key: state_key_pair.ver_key(),
                 })
@@ -2042,7 +2045,7 @@
 
             <span class="kw">let </span>master_map = MasterMap::new();
 
-            <span class="kw">let </span>config: HotShotConfig&lt;PubKey&gt; = HotShotConfig {
+            <span class="kw">let </span>config: HotShotConfig&lt;SeqTypes&gt; = HotShotConfig {
                 fixed_leader_for_gpuvid: <span class="number">0</span>,
                 num_nodes_with_stake: num_nodes.try_into().unwrap(),
                 known_da_nodes: known_nodes_with_stake.clone(),
@@ -2090,7 +2093,7 @@
 
     <span class="attr">#[derive(Clone)]
     </span><span class="kw">pub struct </span>TestConfig&lt;<span class="kw">const </span>NUM_NODES: usize&gt; {
-        config: HotShotConfig&lt;PubKey&gt;,
+        config: HotShotConfig&lt;SeqTypes&gt;,
         priv_keys: Vec&lt;BLSPrivKey&gt;,
         state_key_pairs: Vec&lt;StateKeyPair&gt;,
         master_map: Arc&lt;MasterMap&lt;PubKey&gt;&gt;,
@@ -2106,7 +2109,7 @@
             <span class="self">self</span>.priv_keys.len()
         }
 
-        <span class="kw">pub fn </span>hotshot_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HotShotConfig&lt;PubKey&gt; {
+        <span class="kw">pub fn </span>hotshot_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HotShotConfig&lt;SeqTypes&gt; {
             <span class="kw-2">&amp;</span><span class="self">self</span>.config
         }
 
@@ -2199,7 +2202,8 @@
                 public_key: my_peer_config.stake_table_entry.stake_key,
                 private_key: <span class="self">self</span>.priv_keys[i].clone(),
                 stake_value: my_peer_config.stake_table_entry.stake_amount.as_u64(),
-                state_key_pair: <span class="self">self</span>.state_key_pairs[i].clone(),
+                state_public_key: <span class="self">self</span>.state_key_pairs[i].ver_key(),
+                state_private_key: <span class="self">self</span>.state_key_pairs[i].sign_key(),
                 is_da,
             };
 

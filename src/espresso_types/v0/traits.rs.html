@@ -1170,7 +1170,30 @@
 <a href="#1169" id="1169">1169</a>
 <a href="#1170" id="1170">1170</a>
 <a href="#1171" id="1171">1171</a>
-<a href="#1172" id="1172">1172</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
+<a href="#1172" id="1172">1172</a>
+<a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
 //! It also includes some trait implementations that cannot be implemented in an external crate.
 </span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, num::NonZeroU64, ops::Range, sync::Arc};
 
@@ -1192,7 +1215,8 @@
     event::{HotShotAction, LeafInfo},
     message::{convert_proposal, Proposal, UpgradeLock},
     simple_certificate::{
-        NextEpochQuorumCertificate2, QuorumCertificate, QuorumCertificate2, UpgradeCertificate,
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
+        QuorumCertificate2, UpgradeCertificate,
     },
     traits::{
         node_implementation::{ConsensusTime, NodeType, Versions},
@@ -1211,7 +1235,7 @@
     utils::BackoffParams,
     v0_1::{RewardAccount, RewardAccountProof, RewardMerkleCommitment, RewardMerkleTree},
     v0_3::{IndexedStake, Validator},
-    EpochVersion, PubKey, SequencerVersions,
+    EpochVersion, SequencerVersions,
 };
 <span class="kw">use crate</span>::{
     v0::impls::ValidatedState, v0_99::ChainConfig, BlockMerkleTree, Event, FeeAccount,
@@ -1225,7 +1249,7 @@
     <span class="kw">async fn </span>fetch_leaf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
-        stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
         success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
@@ -1412,7 +1436,7 @@
     <span class="kw">async fn </span>fetch_leaf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
-        stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
         success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
@@ -1546,7 +1570,7 @@
     <span class="kw">async fn </span>fetch_leaf(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
-        stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
         success_threshold: NonZeroU64,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
@@ -1894,6 +1918,9 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
     ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;SeqTypes&gt;&gt;&gt;;
     <span class="kw">async fn </span>load_start_epoch_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;InitializerEpochInfo&lt;SeqTypes&gt;&gt;&gt;;
+    <span class="kw">async fn </span>load_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;LightClientStateUpdateCertificate&lt;SeqTypes&gt;&gt;&gt;;
 
     <span class="doccomment">/// Load the latest known consensus state.
     ///
@@ -1996,12 +2023,19 @@
             .<span class="kw">await
             </span>.context(<span class="string">"loading start epoch info"</span>)<span class="question-mark">?</span>;
 
+        <span class="kw">let </span>state_cert = <span class="self">self
+            </span>.load_state_cert()
+            .<span class="kw">await
+            </span>.context(<span class="string">"loading light client state update certificate"</span>)<span class="question-mark">?
+            </span>.unwrap_or(LightClientStateUpdateCertificate::genesis());
+
         <span class="macro">tracing::info!</span>(
             <span class="question-mark">?</span>leaf,
             <span class="question-mark">?</span>view,
             <span class="question-mark">?</span>epoch,
             <span class="question-mark">?</span>high_qc,
             <span class="question-mark">?</span>validated_state,
+            <span class="question-mark">?</span>state_cert,
             <span class="string">"loaded consensus state"
         </span>);
 
@@ -2024,6 +2058,7 @@
                 undecided_state: Default::default(),
                 saved_vid_shares: Default::default(), <span class="comment">// TODO: implement saved_vid_shares
                 </span>start_epoch_info,
+                state_cert,
             },
             anchor_view,
         ))
@@ -2181,6 +2216,10 @@
         epoch: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch,
         block_header: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::BlockHeader,
     ) -&gt; anyhow::Result&lt;()&gt;;
+    <span class="kw">async fn </span>add_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        state_cert: LightClientStateUpdateCertificate&lt;SeqTypes&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt;;
 }
 
 <span class="attr">#[async_trait]
@@ -2298,6 +2337,13 @@
         block_header: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::BlockHeader,
     ) -&gt; anyhow::Result&lt;()&gt; {
         (<span class="kw-2">**</span><span class="self">self</span>).add_epoch_root(epoch, block_header).<span class="kw">await
+    </span>}
+
+    <span class="kw">async fn </span>update_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        state_cert: LightClientStateUpdateCertificate&lt;SeqTypes&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
+        (<span class="kw-2">**</span><span class="self">self</span>).add_state_cert(state_cert).<span class="kw">await
     </span>}
 }
 

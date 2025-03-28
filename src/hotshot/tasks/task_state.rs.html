@@ -346,7 +346,8 @@
 <a href="#345" id="345">345</a>
 <a href="#346" id="346">346</a>
 <a href="#347" id="347">347</a>
-<a href="#348" id="348">348</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -581,6 +582,7 @@
         <span class="self">Self </span>{
             public_key: handle.public_key().clone(),
             private_key: handle.private_key().clone(),
+            state_private_key: handle.state_private_key().clone(),
             consensus: OuterConsensus::new(consensus),
             instance_state: handle.hotshot.instance_state(),
             latest_voted_view: handle.cur_view().<span class="kw">await</span>,

@@ -441,7 +441,17 @@
 <a href="#440" id="440">440</a>
 <a href="#441" id="441">441</a>
 <a href="#442" id="442">442</a>
-<a href="#443" id="443">443</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -472,7 +482,9 @@
     data::Leaf2,
     event::Event,
     message::convert_proposal,
-    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2},
+    simple_certificate::{
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate2,
+    },
     traits::{
         network::{AsyncGenerator, ConnectedNetwork},
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
@@ -525,6 +537,8 @@
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) restart_contexts: HashMap&lt;usize, RestartContext&lt;TYPES, N, I, V&gt;&gt;,
     <span class="doccomment">/// Generate network channel for restart nodes
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) channel_generator: AsyncGenerator&lt;Network&lt;TYPES, I&gt;&gt;,
+    <span class="doccomment">/// The light client state update certificate
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) state_cert: LightClientStateUpdateCertificate&lt;TYPES&gt;,
 }
 
 <span class="attr">#[async_trait]
@@ -620,6 +634,7 @@
                                             BTreeMap::new(),
                                             BTreeMap::new(),
                                             <span class="prelude-val">None</span>,
+                                            <span class="self">self</span>.state_cert.clone(),
                                         );
                                         <span class="comment">// We assign node's public key and stake value rather than read from config file since it's a test
                                         </span><span class="kw">let </span>validator_config =
@@ -703,6 +718,10 @@
                                     )
                                     .<span class="kw">await</span>,
                                 );
+                                <span class="kw">let </span>state_cert = read_storage
+                                    .state_cert_cloned()
+                                    .<span class="kw">await
+                                    </span>.unwrap_or(LightClientStateUpdateCertificate::genesis());
                                 <span class="kw">let </span>saved_proposals = read_storage.proposals_cloned().<span class="kw">await</span>;
                                 <span class="kw">let </span><span class="kw-2">mut </span>vid_shares = BTreeMap::new();
                                 <span class="kw">for </span>(view, hash_map) <span class="kw">in </span>read_storage.vids_cloned().<span class="kw">await </span>{
@@ -726,6 +745,7 @@
                                     saved_proposals,
                                     vid_shares,
                                     decided_upgrade_certificate,
+                                    state_cert,
                                 );
                                 <span class="comment">// We assign node's public key and stake value rather than read from config file since it's a test
                                 </span><span class="kw">let </span>validator_config = ValidatorConfig::generated_from_seed_indexed(

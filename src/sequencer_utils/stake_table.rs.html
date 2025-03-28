@@ -276,7 +276,27 @@
 <a href="#275" id="275">275</a>
 <a href="#276" id="276">276</a>
 <a href="#277" id="277">277</a>
-<a href="#278" id="278">278</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{fs, path::Path, sync::Arc, time::Duration};
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{fs, path::Path, sync::Arc, time::Duration};
 
 <span class="doccomment">/// Utilities for loading an initial permissioned stake table from a toml file.
 ///
@@ -292,22 +312,25 @@
     signers::{coins_bip39::English, MnemonicBuilder, Signer <span class="kw">as _</span>},
     types::Address,
 };
-<span class="kw">use </span>hotshot::types::BLSPubKey;
+<span class="kw">use </span>hotshot::types::{BLSPubKey, SchnorrPubKey};
 <span class="kw">use </span>hotshot_contract_adapter::stake_table::{bls_jf_to_sol, NodeInfoJf};
-<span class="kw">use </span>hotshot_types::network::PeerConfigKeys;
+<span class="kw">use </span>hotshot_types::{network::PeerConfigKeys, traits::node_implementation::NodeType};
 <span class="kw">use </span>url::Url;
 
 <span class="doccomment">/// A stake table config stored in a file
 </span><span class="attr">#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(bound(deserialize = <span class="string">""</span>))]
-</span><span class="kw">pub struct </span>PermissionedStakeTableConfig {
+</span><span class="kw">pub struct </span>PermissionedStakeTableConfig&lt;TYPES: NodeType&gt; {
     <span class="doccomment">/// The list of public keys that are initially inserted into the
     /// permissioned stake table contract.
     </span><span class="attr">#[serde(default)]
-    </span><span class="kw">pub </span>public_keys: Vec&lt;PeerConfigKeys&lt;BLSPubKey&gt;&gt;,
+    </span><span class="kw">pub </span>public_keys: Vec&lt;PeerConfigKeys&lt;TYPES&gt;&gt;,
 }
 
-<span class="kw">impl </span>PermissionedStakeTableConfig {
+<span class="kw">impl</span>&lt;TYPES&gt; PermissionedStakeTableConfig&lt;TYPES&gt;
+<span class="kw">where
+    </span>TYPES: NodeType&lt;SignatureKey = BLSPubKey, StateSignatureKey = SchnorrPubKey&gt;,
+{
     <span class="kw">pub fn </span>from_toml_file(path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>config_file_as_string: String = fs::read_to_string(path)
             .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">"Could not read config file located at {}"</span>, path.display()));
@@ -323,8 +346,11 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;PermissionedStakeTableConfig&gt; <span class="kw">for </span>Vec&lt;NodeInfo&gt; {
-    <span class="kw">fn </span>from(value: PermissionedStakeTableConfig) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;TYPES&gt; From&lt;PermissionedStakeTableConfig&lt;TYPES&gt;&gt; <span class="kw">for </span>Vec&lt;NodeInfo&gt;
+<span class="kw">where
+    </span>TYPES: NodeType&lt;SignatureKey = BLSPubKey, StateSignatureKey = SchnorrPubKey&gt;,
+{
+    <span class="kw">fn </span>from(value: PermissionedStakeTableConfig&lt;TYPES&gt;) -&gt; <span class="self">Self </span>{
         value
             .public_keys
             .into_iter()
@@ -350,14 +376,17 @@
 <span class="doccomment">/// Information to add and remove stakers in the permissioned stake table contract.
 </span><span class="attr">#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(bound(deserialize = <span class="string">""</span>))]
-</span><span class="kw">pub struct </span>PermissionedStakeTableUpdate {
+</span><span class="kw">pub struct </span>PermissionedStakeTableUpdate&lt;TYPES: NodeType&gt; {
     <span class="attr">#[serde(default)]
     </span>stakers_to_remove: Vec&lt;StakerIdentity&gt;,
     <span class="attr">#[serde(default)]
-    </span>new_stakers: Vec&lt;PeerConfigKeys&lt;BLSPubKey&gt;&gt;,
+    </span>new_stakers: Vec&lt;PeerConfigKeys&lt;TYPES&gt;&gt;,
 }
 
-<span class="kw">impl </span>PermissionedStakeTableUpdate {
+<span class="kw">impl</span>&lt;TYPES&gt; PermissionedStakeTableUpdate&lt;TYPES&gt;
+<span class="kw">where
+    </span>TYPES: NodeType&lt;SignatureKey = BLSPubKey, StateSignatureKey = SchnorrPubKey&gt;,
+{
     <span class="kw">pub fn </span>from_toml_file(path: <span class="kw-2">&amp;</span>Path) -&gt; anyhow::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>config_file_as_string: String = fs::read_to_string(path)
             .unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">"Could not read config file located at {}"</span>, path.display()));
@@ -390,14 +419,17 @@
     }
 }
 
-<span class="kw">pub async fn </span>update_stake_table(
+<span class="kw">pub async fn </span>update_stake_table&lt;TYPES&gt;(
     l1url: Url,
     l1_interval: Duration,
     mnemonic: String,
     account_index: u32,
     contract_address: Address,
-    update: PermissionedStakeTableUpdate,
-) -&gt; anyhow::Result&lt;()&gt; {
+    update: PermissionedStakeTableUpdate&lt;TYPES&gt;,
+) -&gt; anyhow::Result&lt;()&gt;
+<span class="kw">where
+    </span>TYPES: NodeType&lt;SignatureKey = BLSPubKey, StateSignatureKey = SchnorrPubKey&gt;,
+{
     <span class="kw">let </span>provider = Provider::&lt;Http&gt;::try_from(l1url.to_string())<span class="question-mark">?</span>.interval(l1_interval);
     <span class="kw">let </span>chain_id = provider.get_chainid().<span class="kw">await</span><span class="question-mark">?</span>.as_u64();
     <span class="kw">let </span>wallet = MnemonicBuilder::&lt;English&gt;::default()
@@ -423,7 +455,11 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
     <span class="kw">use </span>hotshot::types::{BLSPubKey, SignatureKey};
-    <span class="kw">use </span>hotshot_types::{light_client::StateKeyPair, network::PeerConfigKeys};
+    <span class="kw">use </span>hotshot_example_types::node_types::TestTypes;
+    <span class="kw">use </span>hotshot_types::{
+        light_client::StateKeyPair, network::PeerConfigKeys, signature_key::SchnorrPubKey,
+        traits::node_implementation::NodeType,
+    };
     <span class="kw">use </span>toml::toml;
 
     <span class="kw">use crate</span>::{
@@ -431,20 +467,24 @@
         test_utils::setup_test,
     };
 
-    <span class="kw">fn </span>assert_peer_config_eq(p1: <span class="kw-2">&amp;</span>PeerConfigKeys&lt;BLSPubKey&gt;, p2: <span class="kw-2">&amp;</span>PeerConfigKeys&lt;BLSPubKey&gt;) {
+    <span class="kw">fn </span>assert_peer_config_eq&lt;TYPES: NodeType&gt;(
+        p1: <span class="kw-2">&amp;</span>PeerConfigKeys&lt;TYPES&gt;,
+        p2: <span class="kw-2">&amp;</span>PeerConfigKeys&lt;TYPES&gt;,
+    ) {
         <span class="macro">assert_eq!</span>(p1.stake_table_key, p2.stake_table_key);
         <span class="macro">assert_eq!</span>(p1.state_ver_key, p2.state_ver_key);
         <span class="macro">assert_eq!</span>(p1.stake, p2.stake);
         <span class="macro">assert_eq!</span>(p1.da, p2.da);
     }
 
-    <span class="kw">fn </span>mk_keys() -&gt; Vec&lt;PeerConfigKeys&lt;BLSPubKey&gt;&gt; {
+    <span class="kw">fn </span>mk_keys&lt;TYPES: NodeType&lt;SignatureKey = BLSPubKey, StateSignatureKey = SchnorrPubKey&gt;&gt;(
+    ) -&gt; Vec&lt;PeerConfigKeys&lt;TYPES&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>keys = Vec::new();
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">3 </span>{
             <span class="kw">let </span>(pubkey, <span class="kw">_</span>) = BLSPubKey::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], i);
             <span class="kw">let </span>state_kp = StateKeyPair::generate_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], i).<span class="number">0</span>;
             <span class="kw">let </span>ver_key = state_kp.ver_key();
-            keys.push(PeerConfigKeys {
+            keys.push(PeerConfigKeys::&lt;TYPES&gt; {
                 stake_table_key: pubkey,
                 state_ver_key: ver_key,
                 stake: i + <span class="number">1</span>,
@@ -458,7 +498,7 @@
     </span><span class="kw">fn </span>test_permissioned_stake_table_from_toml() {
         setup_test();
 
-        <span class="kw">let </span>keys = mk_keys();
+        <span class="kw">let </span>keys = mk_keys::&lt;TestTypes&gt;();
 
         <span class="kw">let </span>st_key_1 = keys[<span class="number">0</span>].stake_table_key.to_string();
         <span class="kw">let </span>verkey_1 = keys[<span class="number">0</span>].state_ver_key.to_string();
@@ -511,7 +551,7 @@
     </span><span class="kw">fn </span>test_permissioned_stake_table_update_from_toml() {
         setup_test();
 
-        <span class="kw">let </span>keys = mk_keys();
+        <span class="kw">let </span>keys = mk_keys::&lt;TestTypes&gt;();
 
         <span class="kw">let </span>st_key_1 = keys[<span class="number">0</span>].stake_table_key.to_string();
 

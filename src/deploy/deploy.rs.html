@@ -208,7 +208,7 @@
 <a href="#207" id="207">207</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{fs::File, io::stdout, path::PathBuf, time::Duration};
 
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>espresso_types::parse_duration;
+<span class="kw">use </span>espresso_types::{parse_duration, SeqTypes};
 <span class="kw">use </span>ethers::types::Address;
 <span class="kw">use </span>futures::FutureExt;
 <span class="kw">use </span>hotshot_stake_table::config::STAKE_TABLE_CAPACITY;
@@ -377,7 +377,7 @@
 
     <span class="kw">let </span>initial_stake_table = <span class="kw">if let </span><span class="prelude-val">Some</span>(path) = opt.initial_stake_table_path {
         <span class="macro">tracing::info!</span>(<span class="string">"Loading initial stake table from {:?}"</span>, path);
-        <span class="prelude-val">Some</span>(PermissionedStakeTableConfig::from_toml_file(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>.into())
+        <span class="prelude-val">Some</span>(PermissionedStakeTableConfig::&lt;SeqTypes&gt;::from_toml_file(<span class="kw-2">&amp;</span>path)<span class="question-mark">?</span>.into())
     } <span class="kw">else </span>{
         <span class="prelude-val">None
     </span>};

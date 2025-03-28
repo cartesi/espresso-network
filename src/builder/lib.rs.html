@@ -523,7 +523,8 @@
 <a href="#522" id="522">522</a>
 <a href="#523" id="523">523</a>
 <a href="#524" id="524">524</a>
-<a href="#525" id="525">525</a></pre></div><pre class="rust"><code><span class="kw">use </span>espresso_types::SeqTypes;
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a></pre></div><pre class="rust"><code><span class="kw">use </span>espresso_types::SeqTypes;
 <span class="kw">use </span>hotshot_builder_api::v0_1::builder::{
     Error <span class="kw">as </span>BuilderApiError, Options <span class="kw">as </span>HotshotBuilderApiOptions,
 };
@@ -605,7 +606,6 @@
         },
         HotShotConfig, PeerConfig, ValidatorConfig,
     };
-    <span class="kw">use </span>jf_signature::bls_over_bn254::VerKey;
     <span class="kw">use </span>primitive_types::U256;
     <span class="kw">use </span>sequencer::{context::Consensus, network, SequencerApiVersion};
     <span class="kw">use </span>surf_disco::Client;
@@ -616,7 +616,7 @@
 
     <span class="attr">#[derive(Clone)]
     </span><span class="kw">pub struct </span>HotShotTestConfig {
-        <span class="kw">pub </span>config: HotShotConfig&lt;PubKey&gt;,
+        <span class="kw">pub </span>config: HotShotConfig&lt;SeqTypes&gt;,
         priv_keys_staking_nodes: Vec&lt;BLSPrivKey&gt;,
         priv_keys_non_staking_nodes: Vec&lt;BLSPrivKey&gt;,
         staking_nodes_state_key_pairs: Vec&lt;StateKeyPair&gt;,
@@ -641,7 +641,7 @@
 
             <span class="kw">let </span>builder_url = hotshot_builder_url();
 
-            <span class="kw">let </span>config: HotShotConfig&lt;PubKey&gt; = HotShotConfig {
+            <span class="kw">let </span>config: HotShotConfig&lt;SeqTypes&gt; = HotShotConfig {
                 num_nodes_with_stake: NonZeroUsize::new(num_nodes_with_stake).unwrap(),
                 known_da_nodes: known_nodes_with_stake.clone(),
                 known_nodes_with_stake: known_nodes_with_stake.clone(),
@@ -683,7 +683,11 @@
     <span class="kw">pub fn </span>generate_stake_table_entries(
         num_nodes: u64,
         stake_value: u64,
-    ) -&gt; (Vec&lt;BLSPrivKey&gt;, Vec&lt;StateKeyPair&gt;, Vec&lt;PeerConfig&lt;PubKey&gt;&gt;) {
+    ) -&gt; (
+        Vec&lt;BLSPrivKey&gt;,
+        Vec&lt;StateKeyPair&gt;,
+        Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+    ) {
         <span class="comment">// Generate keys for the nodes.
         </span><span class="kw">let </span>priv_keys = (<span class="number">0</span>..num_nodes)
             .map(|<span class="kw">_</span>| PrivKey::generate(<span class="kw-2">&amp;mut </span>rand::thread_rng()))
@@ -699,7 +703,7 @@
         <span class="kw">let </span>nodes_with_stake = pub_keys
             .iter()
             .zip(<span class="kw-2">&amp;</span>state_key_pairs)
-            .map(|(pub_key, state_key_pair)| PeerConfig::&lt;PubKey&gt; {
+            .map(|(pub_key, state_key_pair)| PeerConfig::&lt;SeqTypes&gt; {
                 stake_table_entry: pub_key.stake_table_entry(U256::from(stake_value)),
                 state_ver_key: state_key_pair.ver_key(),
             })
@@ -727,11 +731,7 @@
         <span class="kw">pub fn </span>get_anvil(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Arc&lt;AnvilInstance&gt; {
             <span class="self">self</span>.anvil.clone()
         }
-        <span class="kw">pub fn </span>get_validator_config(
-            <span class="kw-2">&amp;</span><span class="self">self</span>,
-            i: usize,
-            is_staked: bool,
-        ) -&gt; ValidatorConfig&lt;hotshot_state_prover::QCVerKey&gt; {
+        <span class="kw">pub fn </span>get_validator_config(<span class="kw-2">&amp;</span><span class="self">self</span>, i: usize, is_staked: bool) -&gt; ValidatorConfig&lt;SeqTypes&gt; {
             <span class="kw">if </span>is_staked {
                 ValidatorConfig {
                     public_key: <span class="self">self</span>.config.known_nodes_with_stake[i]
@@ -742,7 +742,8 @@
                         .stake_table_entry
                         .stake_amount
                         .as_u64(),
-                    state_key_pair: <span class="self">self</span>.staking_nodes_state_key_pairs[i].clone(),
+                    state_public_key: <span class="self">self</span>.staking_nodes_state_key_pairs[i].ver_key(),
+                    state_private_key: <span class="self">self</span>.staking_nodes_state_key_pairs[i].sign_key(),
                     is_da: <span class="bool-val">true</span>,
                 }
             } <span class="kw">else </span>{
@@ -752,7 +753,8 @@
                         .stake_key,
                     private_key: <span class="self">self</span>.priv_keys_non_staking_nodes[i].clone(),
                     stake_value: <span class="number">0</span>,
-                    state_key_pair: <span class="self">self</span>.non_staking_nodes_state_key_pairs[i].clone(),
+                    state_public_key: <span class="self">self</span>.non_staking_nodes_state_key_pairs[i].ver_key(),
+                    state_private_key: <span class="self">self</span>.non_staking_nodes_state_key_pairs[i].sign_key(),
                     is_da: <span class="bool-val">true</span>,
                 }
             }
@@ -793,7 +795,7 @@
         <span class="comment">// enable hotshot event streaming
         </span><span class="kw">pub fn </span>enable_hotshot_node_event_streaming&lt;P: SequencerPersistence, V: Versions&gt;(
             hotshot_events_api_url: Url,
-            known_nodes_with_stake: Vec&lt;PeerConfig&lt;VerKey&gt;&gt;,
+            known_nodes_with_stake: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
             num_non_staking_nodes: usize,
             hotshot_context_handle: Arc&lt;Consensus&lt;network::Memory, P, V&gt;&gt;,
         ) {

@@ -1968,7 +1968,96 @@
 <a href="#1967" id="1967">1967</a>
 <a href="#1968" id="1968">1968</a>
 <a href="#1969" id="1969">1969</a>
-<a href="#1970" id="1970">1970</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1970" id="1970">1970</a>
+<a href="#1971" id="1971">1971</a>
+<a href="#1972" id="1972">1972</a>
+<a href="#1973" id="1973">1973</a>
+<a href="#1974" id="1974">1974</a>
+<a href="#1975" id="1975">1975</a>
+<a href="#1976" id="1976">1976</a>
+<a href="#1977" id="1977">1977</a>
+<a href="#1978" id="1978">1978</a>
+<a href="#1979" id="1979">1979</a>
+<a href="#1980" id="1980">1980</a>
+<a href="#1981" id="1981">1981</a>
+<a href="#1982" id="1982">1982</a>
+<a href="#1983" id="1983">1983</a>
+<a href="#1984" id="1984">1984</a>
+<a href="#1985" id="1985">1985</a>
+<a href="#1986" id="1986">1986</a>
+<a href="#1987" id="1987">1987</a>
+<a href="#1988" id="1988">1988</a>
+<a href="#1989" id="1989">1989</a>
+<a href="#1990" id="1990">1990</a>
+<a href="#1991" id="1991">1991</a>
+<a href="#1992" id="1992">1992</a>
+<a href="#1993" id="1993">1993</a>
+<a href="#1994" id="1994">1994</a>
+<a href="#1995" id="1995">1995</a>
+<a href="#1996" id="1996">1996</a>
+<a href="#1997" id="1997">1997</a>
+<a href="#1998" id="1998">1998</a>
+<a href="#1999" id="1999">1999</a>
+<a href="#2000" id="2000">2000</a>
+<a href="#2001" id="2001">2001</a>
+<a href="#2002" id="2002">2002</a>
+<a href="#2003" id="2003">2003</a>
+<a href="#2004" id="2004">2004</a>
+<a href="#2005" id="2005">2005</a>
+<a href="#2006" id="2006">2006</a>
+<a href="#2007" id="2007">2007</a>
+<a href="#2008" id="2008">2008</a>
+<a href="#2009" id="2009">2009</a>
+<a href="#2010" id="2010">2010</a>
+<a href="#2011" id="2011">2011</a>
+<a href="#2012" id="2012">2012</a>
+<a href="#2013" id="2013">2013</a>
+<a href="#2014" id="2014">2014</a>
+<a href="#2015" id="2015">2015</a>
+<a href="#2016" id="2016">2016</a>
+<a href="#2017" id="2017">2017</a>
+<a href="#2018" id="2018">2018</a>
+<a href="#2019" id="2019">2019</a>
+<a href="#2020" id="2020">2020</a>
+<a href="#2021" id="2021">2021</a>
+<a href="#2022" id="2022">2022</a>
+<a href="#2023" id="2023">2023</a>
+<a href="#2024" id="2024">2024</a>
+<a href="#2025" id="2025">2025</a>
+<a href="#2026" id="2026">2026</a>
+<a href="#2027" id="2027">2027</a>
+<a href="#2028" id="2028">2028</a>
+<a href="#2029" id="2029">2029</a>
+<a href="#2030" id="2030">2030</a>
+<a href="#2031" id="2031">2031</a>
+<a href="#2032" id="2032">2032</a>
+<a href="#2033" id="2033">2033</a>
+<a href="#2034" id="2034">2034</a>
+<a href="#2035" id="2035">2035</a>
+<a href="#2036" id="2036">2036</a>
+<a href="#2037" id="2037">2037</a>
+<a href="#2038" id="2038">2038</a>
+<a href="#2039" id="2039">2039</a>
+<a href="#2040" id="2040">2040</a>
+<a href="#2041" id="2041">2041</a>
+<a href="#2042" id="2042">2042</a>
+<a href="#2043" id="2043">2043</a>
+<a href="#2044" id="2044">2044</a>
+<a href="#2045" id="2045">2045</a>
+<a href="#2046" id="2046">2046</a>
+<a href="#2047" id="2047">2047</a>
+<a href="#2048" id="2048">2048</a>
+<a href="#2049" id="2049">2049</a>
+<a href="#2050" id="2050">2050</a>
+<a href="#2051" id="2051">2051</a>
+<a href="#2052" id="2052">2052</a>
+<a href="#2053" id="2053">2053</a>
+<a href="#2054" id="2054">2054</a>
+<a href="#2055" id="2055">2055</a>
+<a href="#2056" id="2056">2056</a>
+<a href="#2057" id="2057">2057</a>
+<a href="#2058" id="2058">2058</a>
+<a href="#2059" id="2059">2059</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashSet},
     fs::{<span class="self">self</span>, File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -1998,7 +2087,8 @@
     event::{Event, EventType, HotShotAction, LeafInfo},
     message::{convert_proposal, Proposal},
     simple_certificate::{
-        NextEpochQuorumCertificate2, QuorumCertificate, QuorumCertificate2, UpgradeCertificate,
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
+        QuorumCertificate2, UpgradeCertificate,
     },
     traits::{
         block_contents::{BlockHeader, BlockPayload},
@@ -2162,9 +2252,7 @@
         <span class="self">self</span>.path.join(<span class="string">"upgrade_certificate"</span>)
     }
 
-    <span class="attr">#[allow(dead_code)]
-    </span><span class="comment">// TODO(abdul): fix stake table persistence for new stake table types
-    </span><span class="kw">fn </span>stake_table_dir_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
+    <span class="kw">fn </span>stake_table_dir_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
         <span class="self">self</span>.path.join(<span class="string">"stake_table"</span>)
     }
 
@@ -2178,6 +2266,10 @@
 
     <span class="kw">fn </span>epoch_root_block_header_dir_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
         <span class="self">self</span>.path.join(<span class="string">"epoch_root_block_header"</span>)
+    }
+
+    <span class="kw">fn </span>light_client_state_update_certificate_dir_path(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PathBuf {
+        <span class="self">self</span>.path.join(<span class="string">"state_cert"</span>)
     }
 
     <span class="kw">fn </span>update_migration(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
@@ -3202,6 +3294,28 @@
         <span class="prelude-val">Ok</span>(())
     }
 
+    <span class="kw">async fn </span>add_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        state_cert: LightClientStateUpdateCertificate&lt;SeqTypes&gt;,
+    ) -&gt; anyhow::Result&lt;()&gt; {
+        <span class="kw">let </span>inner = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
+        <span class="kw">let </span>epoch = state_cert.epoch;
+        <span class="kw">let </span>dir_path = inner.light_client_state_update_certificate_dir_path();
+
+        fs::create_dir_all(dir_path.clone())
+            .context(<span class="string">"failed to create light client state update certificate dir"</span>)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>bytes = bincode::serialize(<span class="kw-2">&amp;</span>state_cert)
+            .context(<span class="string">"serialize light client state update certificate"</span>)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>file_path = dir_path.join(epoch.to_string()).with_extension(<span class="string">"txt"</span>);
+        fs::write(file_path, bytes).context(<span class="macro">format!</span>(
+            <span class="string">"writing light client state update certificate file for epoch {epoch:?}"
+        </span>))<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
     <span class="kw">async fn </span>load_start_epoch_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;Vec&lt;InitializerEpochInfo&lt;SeqTypes&gt;&gt;&gt; {
         <span class="kw">let </span>inner = <span class="self">self</span>.inner.read().<span class="kw">await</span>;
         <span class="kw">let </span>drb_dir_path = inner.epoch_drb_result_dir_path();
@@ -3244,6 +3358,37 @@
         }
 
         result.sort_by(|a, b| a.epoch.cmp(<span class="kw-2">&amp;</span>b.epoch));
+
+        <span class="prelude-val">Ok</span>(result)
+    }
+
+    <span class="kw">async fn </span>load_state_cert(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;LightClientStateUpdateCertificate&lt;SeqTypes&gt;&gt;&gt; {
+        <span class="kw">let </span>inner = <span class="self">self</span>.inner.read().<span class="kw">await</span>;
+        <span class="kw">let </span>dir_path = inner.light_client_state_update_certificate_dir_path();
+
+        <span class="kw">let </span><span class="kw-2">mut </span>result = <span class="prelude-val">None</span>;
+
+        <span class="kw">if </span>!dir_path.is_dir() {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(result);
+        }
+        <span class="kw">for </span>(epoch, path) <span class="kw">in </span>epoch_files(dir_path)<span class="question-mark">? </span>{
+            <span class="kw">if </span>result.as_ref().is_some_and(|cert| epoch &lt;= cert.epoch) {
+                <span class="kw">continue</span>;
+            }
+            <span class="kw">let </span>bytes = fs::read(<span class="kw-2">&amp;</span>path).context(<span class="macro">format!</span>(
+                <span class="string">"reading light client state update certificate {}"</span>,
+                path.display()
+            ))<span class="question-mark">?</span>;
+            result = <span class="prelude-val">Some</span>(
+                bincode::deserialize::&lt;LightClientStateUpdateCertificate&lt;SeqTypes&gt;&gt;(<span class="kw-2">&amp;</span>bytes)
+                    .context(<span class="macro">format!</span>(
+                        <span class="string">"parsing light client state update certificate {}"</span>,
+                        path.display()
+                    ))<span class="question-mark">?</span>,
+            );
+        }
 
         <span class="prelude-val">Ok</span>(result)
     }
@@ -3594,7 +3739,12 @@
 
         <span class="kw">let </span>qp_dir_path = inner.quorum_proposals_dir_path();
         fs::create_dir_all(qp_dir_path.clone()).expect(<span class="string">"failed to create proposals dir"</span>);
+
+        <span class="kw">let </span>state_cert_dir_path = inner.light_client_state_update_certificate_dir_path();
+        fs::create_dir_all(state_cert_dir_path.clone()).expect(<span class="string">"failed to create state cert dir"</span>);
         drop(inner);
+
+        <span class="macro">assert!</span>(storage.load_state_cert().<span class="kw">await</span>.unwrap().is_none());
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..rows {
             <span class="kw">let </span>view = ViewNumber::new(i);
@@ -3622,6 +3772,13 @@
                 builder_commitment,
                 metadata,
             );
+
+            <span class="kw">let </span>state_cert = LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
+                epoch: EpochNumber::new(i),
+                light_client_state: Default::default(), <span class="comment">// filling arbitrary value
+                </span>signatures: <span class="macro">vec!</span>[],                     <span class="comment">// filling arbitrary value
+            </span>};
+            <span class="macro">assert!</span>(storage.add_state_cert(state_cert).<span class="kw">await</span>.is_ok());
 
             <span class="kw">let </span>null_quorum_data = QuorumData {
                 leaf_commit: Commitment::&lt;Leaf&gt;::default_commitment_no_preimage(),
@@ -3782,6 +3939,27 @@
             qps_count, rows <span class="kw">as </span>usize,
             <span class="string">"quorum proposals count does not match"</span>,
         );
+
+        <span class="kw">let </span>state_certs =
+            fs::read_dir(inner.light_client_state_update_certificate_dir_path()).unwrap();
+        <span class="kw">let </span>state_cert_count = state_certs
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
+        <span class="macro">assert_eq!</span>(
+            state_cert_count, rows <span class="kw">as </span>usize,
+            <span class="string">"light client state update certificate count does not match"</span>,
+        );
+
+        <span class="macro">assert_eq!</span>(
+            storage.load_state_cert().<span class="kw">await</span>.unwrap().unwrap(),
+            LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
+                epoch: EpochNumber::new(rows - <span class="number">1</span>),
+                light_client_state: Default::default(),
+                signatures: <span class="macro">vec!</span>[]
+            },
+            <span class="string">"Wrong light client state update certificate in the storage"</span>,
+        )
     }
 
     <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]

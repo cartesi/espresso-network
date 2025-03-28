@@ -356,7 +356,7 @@
         state: LightClientState,
         signature: StateSignature,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-        <span class="kw">if </span>(state.block_height <span class="kw">as </span>u64) &lt;= <span class="self">self</span>.latest_block_height.unwrap_or(<span class="number">0</span>) {
+        <span class="kw">if </span>state.block_height &lt;= <span class="self">self</span>.latest_block_height.unwrap_or(<span class="number">0</span>) {
             <span class="comment">// This signature is no longer needed
             </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
@@ -375,7 +375,7 @@
                 <span class="string">"The posted signature is not valid."</span>.to_owned(),
             ));
         }
-        <span class="kw">let </span>block_height = state.block_height <span class="kw">as </span>u64;
+        <span class="kw">let </span>block_height = state.block_height;
         <span class="comment">// TODO(Chengyu): this serialization should be removed once `LightClientState` implements `Eq`.
         </span><span class="kw">let </span>bundles_at_height = <span class="self">self</span>.bundles.entry(block_height).or_insert_with(|| {
             <span class="self">self</span>.queue.insert(block_height);

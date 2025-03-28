@@ -912,7 +912,8 @@
 <a href="#911" id="911">911</a>
 <a href="#912" id="912">912</a>
 <a href="#913" id="913">913</a>
-<a href="#914" id="914">914</a></pre></div><pre class="rust"><code><span class="doccomment">//! A light client prover service
+<a href="#914" id="914">914</a>
+<a href="#915" id="915">915</a></pre></div><pre class="rust"><code><span class="doccomment">//! A light client prover service
 
 </span><span class="kw">use </span>std::{
     iter,
@@ -923,6 +924,7 @@
 <span class="kw">use </span>anyhow::{anyhow, Context, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span>contract_bindings_ethers::light_client::{LightClient, LightClientErrors};
 <span class="kw">use </span>displaydoc::Display;
+<span class="kw">use </span>espresso_types::SeqTypes;
 <span class="kw">use </span>ethers::{
     core::k256::ecdsa::SigningKey,
     middleware::{
@@ -1037,7 +1039,7 @@
 
 <span class="attr">#[derive(Debug, Deserialize)]
 </span><span class="kw">struct </span>PublicHotShotConfig {
-    known_nodes_with_stake: Vec&lt;PeerConfig&lt;BLSPubKey&gt;&gt;,
+    known_nodes_with_stake: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
 }
 
 <span class="attr">#[derive(Debug, Deserialize)]

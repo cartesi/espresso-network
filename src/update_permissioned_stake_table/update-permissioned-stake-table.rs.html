@@ -106,7 +106,7 @@
 
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>espresso_types::parse_duration;
+<span class="kw">use </span>espresso_types::{parse_duration, SeqTypes};
 <span class="kw">use </span>ethers::types::Address;
 <span class="kw">use </span>sequencer_utils::{
     logging,
@@ -192,7 +192,7 @@
 </span><span class="kw">async fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>opts = Options::parse();
     opts.logging.init();
-    <span class="kw">let </span>update = PermissionedStakeTableUpdate::from_toml_file(<span class="kw-2">&amp;</span>opts.update_toml_path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>update = PermissionedStakeTableUpdate::&lt;SeqTypes&gt;::from_toml_file(<span class="kw-2">&amp;</span>opts.update_toml_path)<span class="question-mark">?</span>;
 
     update_stake_table(
         opts.rpc_url,

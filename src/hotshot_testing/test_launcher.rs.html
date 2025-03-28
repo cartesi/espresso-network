@@ -85,10 +85,7 @@
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#87" id="87">87</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -125,9 +122,9 @@
     <span class="doccomment">/// generate new storage for each node
     </span><span class="kw">pub </span>storage: Generator&lt;TestStorage&lt;TYPES&gt;&gt;,
     <span class="doccomment">/// configuration used to generate each hotshot node
-    </span><span class="kw">pub </span>hotshot_config: Generator&lt;HotShotConfig&lt;TYPES::SignatureKey&gt;&gt;,
+    </span><span class="kw">pub </span>hotshot_config: Generator&lt;HotShotConfig&lt;TYPES&gt;&gt;,
     <span class="doccomment">/// config that contains the signature keys
-    </span><span class="kw">pub </span>validator_config: Generator&lt;ValidatorConfig&lt;TYPES::SignatureKey&gt;&gt;,
+    </span><span class="kw">pub </span>validator_config: Generator&lt;ValidatorConfig&lt;TYPES&gt;&gt;,
     <span class="doccomment">/// generate a new marketplace config for each node
     </span><span class="kw">pub </span>marketplace_config: Generator&lt;MarketplaceConfig&lt;TYPES, I&gt;&gt;,
 }
@@ -157,10 +154,7 @@
     }
     <span class="doccomment">/// Modifies the config used when generating nodes with `f`
     </span><span class="attr">#[must_use]
-    </span><span class="kw">pub fn </span>map_hotshot_config(
-        <span class="kw-2">mut </span><span class="self">self</span>,
-        f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>HotShotConfig&lt;TYPES::SignatureKey&gt;) + <span class="lifetime">'static</span>,
-    ) -&gt; <span class="self">Self </span>{
+    </span><span class="kw">pub fn </span>map_hotshot_config(<span class="kw-2">mut </span><span class="self">self</span>, f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span>HotShotConfig&lt;TYPES&gt;) + <span class="lifetime">'static</span>) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>test_config = <span class="self">self</span>.metadata.test_config.clone();
         f(<span class="kw-2">&amp;mut </span>test_config);
 

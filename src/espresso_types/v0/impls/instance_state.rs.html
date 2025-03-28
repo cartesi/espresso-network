@@ -456,8 +456,8 @@
     SeqTypes,
 };
 <span class="kw">use </span><span class="kw">crate</span>::v0::{
-    traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo, L1Client, PubKey,
-    Timestamp, Upgrade, UpgradeMode,
+    traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo, L1Client, Timestamp,
+    Upgrade, UpgradeMode,
 };
 <span class="attr">#[cfg(any(test, feature = <span class="string">"testing"</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::EpochCommittees;
@@ -728,7 +728,7 @@
 <span class="kw">impl </span>InstanceState <span class="kw">for </span>NodeState {}
 
 <span class="kw">impl </span>Upgrade {
-    <span class="kw">pub fn </span>set_hotshot_config_parameters(<span class="kw-2">&amp;</span><span class="self">self</span>, config: <span class="kw-2">&amp;mut </span>HotShotConfig&lt;PubKey&gt;) {
+    <span class="kw">pub fn </span>set_hotshot_config_parameters(<span class="kw-2">&amp;</span><span class="self">self</span>, config: <span class="kw-2">&amp;mut </span>HotShotConfig&lt;SeqTypes&gt;) {
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.mode {
             UpgradeMode::View(v) =&gt; {
                 config.start_proposing_view = v.start_proposing_view;

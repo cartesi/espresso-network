@@ -331,7 +331,7 @@
     <span class="kw">const </span>STAKED_NODES: usize = <span class="number">10</span>;
     <span class="kw">pub type </span>StaticVer01 = StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;;
 
-    <span class="kw">pub fn </span>generate_stake_table() -&gt; Vec&lt;PeerConfig&lt;BLSPubKey&gt;&gt; {
+    <span class="kw">pub fn </span>generate_stake_table() -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         (<span class="number">0</span>..STAKED_NODES)
             .map(|<span class="kw">_</span>| {
                 <span class="kw">let </span>private_key =
@@ -339,7 +339,7 @@
                 <span class="kw">let </span>pub_key = BLSPubKey::from_private(<span class="kw-2">&amp;</span>private_key);
                 <span class="kw">let </span>state_key_pair = StateKeyPair::generate();
 
-                PeerConfig::&lt;BLSPubKey&gt; {
+                PeerConfig::&lt;SeqTypes&gt; {
                     stake_table_entry: pub_key.stake_table_entry(U256::from(NODE_STAKE)),
                     state_ver_key: state_key_pair.ver_key(),
                 }

@@ -1444,19 +1444,19 @@
     <span class="doccomment">/// The nodes eligible for leadership.
     /// NOTE: This is currently a hack because the DA leader needs to be the quorum
     /// leader but without voting rights.
-    </span>eligible_leaders: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+    </span>eligible_leaders: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
 
     <span class="doccomment">/// Keys for nodes participating in the network
-    </span>stake_table: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+    </span>stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
 
     <span class="doccomment">/// Keys for DA members
-    </span>da_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+    </span>da_members: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
 
     <span class="doccomment">/// Stake entries indexed by public key, for efficient lookup.
-    </span>indexed_stake_table: HashMap&lt;PubKey, PeerConfig&lt;PubKey&gt;&gt;,
+    </span>indexed_stake_table: HashMap&lt;PubKey, PeerConfig&lt;SeqTypes&gt;&gt;,
 
     <span class="doccomment">/// DA entries indexed by public key, for efficient lookup.
-    </span>indexed_da_members: HashMap&lt;PubKey, PeerConfig&lt;PubKey&gt;&gt;,
+    </span>indexed_da_members: HashMap&lt;PubKey, PeerConfig&lt;SeqTypes&gt;&gt;,
 }
 
 <span class="doccomment">/// Holds Stake table and da stake
@@ -1465,9 +1465,9 @@
     <span class="doccomment">/// The nodes eligible for leadership.
     /// NOTE: This is currently a hack because the DA leader needs to be the quorum
     /// leader but without voting rights.
-    </span>eligible_leaders: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+    </span>eligible_leaders: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
     <span class="doccomment">/// Keys for nodes participating in the network
-    </span>stake_table: IndexMap&lt;PubKey, PeerConfig&lt;PubKey&gt;&gt;,
+    </span>stake_table: IndexMap&lt;PubKey, PeerConfig&lt;SeqTypes&gt;&gt;,
     validators: IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;,
     address_mapping: HashMap&lt;BLSPubKey, Address&gt;,
 }
@@ -1555,8 +1555,8 @@
     </span><span class="kw">pub fn </span>new_stake(
         <span class="comment">// TODO remove `new` from trait and rename this to `new`.
         // https://github.com/EspressoSystems/HotShot/commit/fcb7d54a4443e29d643b3bbc53761856aef4de8b
-        </span>committee_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
-        da_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        </span>committee_members: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+        da_members: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
         l1_client: L1Client,
         contract_address: <span class="prelude-ty">Option</span>&lt;Address&gt;,
         peers: Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;,
@@ -1645,7 +1645,7 @@
             first_epoch: Epoch::genesis(),
         }
     }
-    <span class="kw">fn </span>get_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;PeerConfig&lt;PubKey&gt;&gt;&gt; {
+    <span class="kw">fn </span>get_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(epoch) = epoch {
             <span class="self">self</span>.state
                 .get(epoch)
@@ -1699,18 +1699,18 @@
     </span><span class="kw">fn </span>new(
         <span class="comment">// TODO remove `new` from trait and remove this fn as well.
         // https://github.com/EspressoSystems/HotShot/commit/fcb7d54a4443e29d643b3bbc53761856aef4de8b
-        </span>_committee_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
-        _da_members: Vec&lt;PeerConfig&lt;PubKey&gt;&gt;,
+        </span>_committee_members: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+        _da_members: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="macro">panic!</span>(<span class="string">"This function has been replaced with new_stake()"</span>);
     }
 
     <span class="doccomment">/// Get the stake table for the current view
-    </span><span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;PubKey&gt;&gt; {
+    </span><span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="self">self</span>.get_stake_table(<span class="kw-2">&amp;</span>epoch).unwrap_or_default()
     }
     <span class="doccomment">/// Get the stake table for the current view
-    </span><span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;PubKey&gt;&gt; {
+    </span><span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="self">self</span>.non_epoch_committee.da_members.clone()
     }
 
@@ -1741,7 +1741,7 @@
     }
 
     <span class="doccomment">/// Get the stake table entry for a public key
-    </span><span class="kw">fn </span>stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;PubKey&gt;&gt; {
+    </span><span class="kw">fn </span>stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="comment">// Only return the stake if it is above zero
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(epoch) = epoch {
             <span class="self">self</span>.state
@@ -1757,7 +1757,7 @@
     }
 
     <span class="doccomment">/// Get the DA stake table entry for a public key
-    </span><span class="kw">fn </span>da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;PubKey&gt;&gt; {
+    </span><span class="kw">fn </span>da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>PubKey, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
         <span class="comment">// Only return the stake if it is above zero
         </span><span class="self">self</span>.non_epoch_committee
             .indexed_da_members
@@ -1955,7 +1955,7 @@
         [..n]
             .iter()
             .map(|<span class="kw">_</span>| PeerConfig::default())
-            .collect::&lt;Vec&lt;PeerConfig&lt;PubKey&gt;&gt;&gt;()
+            .collect::&lt;Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;&gt;()
             .into()
     }
 }
@@ -1967,7 +1967,7 @@
         [..n]
             .iter()
             .map(|<span class="kw">_</span>| PeerConfig::default())
-            .collect::&lt;Vec&lt;PeerConfig&lt;PubKey&gt;&gt;&gt;()
+            .collect::&lt;Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;&gt;()
             .into()
     }
 }

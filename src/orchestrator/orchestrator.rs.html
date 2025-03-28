@@ -148,7 +148,7 @@
 
 <span class="kw">use </span>clap::Parser;
 <span class="kw">use </span>derive_more::From;
-<span class="kw">use </span>espresso_types::{parse_duration, PubKey, Ratio};
+<span class="kw">use </span>espresso_types::{parse_duration, Ratio, SeqTypes};
 <span class="kw">use </span>ethers::utils::hex::{<span class="self">self</span>, FromHexError};
 <span class="kw">use </span>hotshot_orchestrator::run_orchestrator;
 <span class="kw">use </span>hotshot_types::network::{Libp2pConfig, NetworkConfig};
@@ -263,7 +263,7 @@
     <span class="kw">let </span>args = Args::parse();
     args.logging.init();
 
-    <span class="kw">let </span><span class="kw-2">mut </span>config = NetworkConfig::&lt;PubKey&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>config = NetworkConfig::&lt;SeqTypes&gt; {
         manual_start_password: args.manual_start_password,
         indexed_da: <span class="bool-val">false</span>,
         ..Default::default()

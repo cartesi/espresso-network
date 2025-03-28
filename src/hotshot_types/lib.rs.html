@@ -250,7 +250,14 @@
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
 <a href="#251" id="251">251</a>
-<a href="#252" id="252">252</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -261,10 +268,12 @@
 
 <span class="kw">use </span>bincode::Options;
 <span class="kw">use </span>displaydoc::Display;
-<span class="kw">use </span>light_client::StateVerKey;
 <span class="kw">use </span>primitive_types::U256;
 <span class="kw">use </span>tracing::error;
-<span class="kw">use </span>traits::{node_implementation::NodeType, signature_key::SignatureKey};
+<span class="kw">use </span>traits::{
+    node_implementation::NodeType,
+    signature_key::{SignatureKey, StateSignatureKey},
+};
 <span class="kw">use </span>url::Url;
 <span class="kw">use </span>vec1::Vec1;
 
@@ -320,20 +329,22 @@
 
 <span class="attr">#[derive(Clone, Debug, Display)]
 </span><span class="doccomment">/// config for validator, including public key, private key, stake value
-</span><span class="kw">pub struct </span>ValidatorConfig&lt;KEY: SignatureKey&gt; {
+</span><span class="kw">pub struct </span>ValidatorConfig&lt;TYPES: NodeType&gt; {
     <span class="doccomment">/// The validator's public key and stake value
-    </span><span class="kw">pub </span>public_key: KEY,
+    </span><span class="kw">pub </span>public_key: TYPES::SignatureKey,
     <span class="doccomment">/// The validator's private key, should be in the mempool, not public
-    </span><span class="kw">pub </span>private_key: KEY::PrivateKey,
+    </span><span class="kw">pub </span>private_key: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PrivateKey,
     <span class="doccomment">/// The validator's stake
     </span><span class="kw">pub </span>stake_value: u64,
-    <span class="doccomment">/// the validator's key pairs for state signing/verification
-    </span><span class="kw">pub </span>state_key_pair: light_client::StateKeyPair,
+    <span class="doccomment">/// the validator's key pairs for state verification
+    </span><span class="kw">pub </span>state_public_key: TYPES::StateSignatureKey,
+    <span class="doccomment">/// the validator's key pairs for state verification
+    </span><span class="kw">pub </span>state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
     <span class="doccomment">/// Whether or not this validator is DA
     </span><span class="kw">pub </span>is_da: bool,
 }
 
-<span class="kw">impl</span>&lt;KEY: SignatureKey&gt; ValidatorConfig&lt;KEY&gt; {
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; ValidatorConfig&lt;TYPES&gt; {
     <span class="doccomment">/// generate validator config from input seed, index, stake value, and whether it's DA
     </span><span class="attr">#[must_use]
     </span><span class="kw">pub fn </span>generated_from_seed_indexed(
@@ -342,29 +353,32 @@
         stake_value: u64,
         is_da: bool,
     ) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>(public_key, private_key) = KEY::generated_from_seed_indexed(seed, index);
-        <span class="kw">let </span>state_key_pairs = light_client::StateKeyPair::generate_from_seed_indexed(seed, index);
+        <span class="kw">let </span>(public_key, private_key) =
+            TYPES::SignatureKey::generated_from_seed_indexed(seed, index);
+        <span class="kw">let </span>(state_public_key, state_private_key) =
+            TYPES::StateSignatureKey::generated_from_seed_indexed(seed, index);
         <span class="self">Self </span>{
             public_key,
             private_key,
             stake_value,
-            state_key_pair: state_key_pairs,
+            state_public_key,
+            state_private_key,
             is_da,
         }
     }
 
     <span class="doccomment">/// get the public config of the validator
-    </span><span class="kw">pub fn </span>public_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PeerConfig&lt;KEY&gt; {
+    </span><span class="kw">pub fn </span>public_config(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PeerConfig&lt;TYPES&gt; {
         PeerConfig {
             stake_table_entry: <span class="self">self
                 </span>.public_key
                 .stake_table_entry(U256::from(<span class="self">self</span>.stake_value)),
-            state_ver_key: <span class="self">self</span>.state_key_pair.<span class="number">0</span>.ver_key(),
+            state_ver_key: <span class="self">self</span>.state_public_key.clone(),
         }
     }
 }
 
-<span class="kw">impl</span>&lt;KEY: SignatureKey&gt; Default <span class="kw">for </span>ValidatorConfig&lt;KEY&gt; {
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; Default <span class="kw">for </span>ValidatorConfig&lt;TYPES&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::generated_from_seed_indexed([<span class="number">0u8</span>; <span class="number">32</span>], <span class="number">0</span>, <span class="number">1</span>, <span class="bool-val">true</span>)
     }
@@ -373,16 +387,16 @@
 <span class="attr">#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Display, PartialEq, Eq, Hash)]
 #[serde(bound(deserialize = <span class="string">""</span>))]
 </span><span class="doccomment">/// structure of peers' config, including public key, stake value, and state key.
-</span><span class="kw">pub struct </span>PeerConfig&lt;KEY: SignatureKey&gt; {
+</span><span class="kw">pub struct </span>PeerConfig&lt;TYPES: NodeType&gt; {
     <span class="comment">////The peer's public key and stake value. The key is the BLS Public Key used to
     </span><span class="doccomment">/// verify Stake Holder in the application layer.
-    </span><span class="kw">pub </span>stake_table_entry: KEY::StakeTableEntry,
+    </span><span class="kw">pub </span>stake_table_entry: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::StakeTableEntry,
     <span class="comment">//// The peer's state public key. This is the Schnorr Public Key used to
     </span><span class="doccomment">/// verify HotShot state in the state-prover.
-    </span><span class="kw">pub </span>state_ver_key: StateVerKey,
+    </span><span class="kw">pub </span>state_ver_key: TYPES::StateSignatureKey,
 }
 
-<span class="kw">impl</span>&lt;KEY: SignatureKey&gt; PeerConfig&lt;KEY&gt; {
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; PeerConfig&lt;TYPES&gt; {
     <span class="doccomment">/// Serialize a peer's config to bytes
     </span><span class="kw">pub fn </span>to_bytes(config: <span class="kw-2">&amp;</span><span class="self">Self</span>) -&gt; Vec&lt;u8&gt; {
         <span class="kw">let </span>x = bincode_opts().serialize(config);
@@ -399,7 +413,7 @@
     /// # Errors
     /// Will return `None` if deserialization fails
     </span><span class="kw">pub fn </span>from_bytes(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>x: <span class="prelude-ty">Result</span>&lt;PeerConfig&lt;KEY&gt;, <span class="kw">_</span>&gt; = bincode_opts().deserialize(bytes);
+        <span class="kw">let </span>x: <span class="prelude-ty">Result</span>&lt;PeerConfig&lt;TYPES&gt;, <span class="kw">_</span>&gt; = bincode_opts().deserialize(bytes);
         <span class="kw">match </span>x {
             <span class="prelude-val">Ok</span>(pub_key) =&gt; <span class="prelude-val">Some</span>(pub_key),
             <span class="prelude-val">Err</span>(e) =&gt; {
@@ -410,9 +424,9 @@
     }
 }
 
-<span class="kw">impl</span>&lt;KEY: SignatureKey&gt; Default <span class="kw">for </span>PeerConfig&lt;KEY&gt; {
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; Default <span class="kw">for </span>PeerConfig&lt;TYPES&gt; {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>default_validator_config = ValidatorConfig::&lt;KEY&gt;::default();
+        <span class="kw">let </span>default_validator_config = ValidatorConfig::&lt;TYPES&gt;::default();
         default_validator_config.public_config()
     }
 }
@@ -421,8 +435,8 @@
     <span class="kw">pub </span>Vec&lt;&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::StakeTableEntry&gt;,
 );
 
-<span class="kw">impl</span>&lt;TYPES: NodeType&gt; From&lt;Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;&gt; <span class="kw">for </span>StakeTableEntries&lt;TYPES&gt; {
-    <span class="kw">fn </span>from(peers: Vec&lt;PeerConfig&lt;TYPES::SignatureKey&gt;&gt;) -&gt; <span class="self">Self </span>{
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; From&lt;Vec&lt;PeerConfig&lt;TYPES&gt;&gt;&gt; <span class="kw">for </span>StakeTableEntries&lt;TYPES&gt; {
+    <span class="kw">fn </span>from(peers: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;) -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(
             peers
                 .into_iter()
@@ -435,7 +449,7 @@
 <span class="doccomment">/// Holds configuration for a `HotShot`
 </span><span class="attr">#[derive(Clone, derive_more::Debug, serde::Serialize, serde::Deserialize)]
 #[serde(bound(deserialize = <span class="string">""</span>))]
-</span><span class="kw">pub struct </span>HotShotConfig&lt;KEY: SignatureKey&gt; {
+</span><span class="kw">pub struct </span>HotShotConfig&lt;TYPES: NodeType&gt; {
     <span class="doccomment">/// The proportion of nodes required before the orchestrator issues the ready signal,
     /// expressed as (numerator, denominator)
     </span><span class="kw">pub </span>start_threshold: (u64, u64),
@@ -443,9 +457,9 @@
     </span><span class="comment">// Earlier it was total_nodes
     </span><span class="kw">pub </span>num_nodes_with_stake: NonZeroUsize,
     <span class="doccomment">/// List of known node's public keys and stake value for certificate aggregation, serving as public parameter
-    </span><span class="kw">pub </span>known_nodes_with_stake: Vec&lt;PeerConfig&lt;KEY&gt;&gt;,
+    </span><span class="kw">pub </span>known_nodes_with_stake: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;,
     <span class="doccomment">/// All public keys known to be DA nodes
-    </span><span class="kw">pub </span>known_da_nodes: Vec&lt;PeerConfig&lt;KEY&gt;&gt;,
+    </span><span class="kw">pub </span>known_da_nodes: Vec&lt;PeerConfig&lt;TYPES&gt;&gt;,
     <span class="doccomment">/// List of DA committee (staking)nodes for static DA committee
     </span><span class="kw">pub </span>da_staked_committee_size: usize,
     <span class="doccomment">/// Number of fixed leaders for GPU VID, normally it will be 0, it's only used when running GPU VID
@@ -489,7 +503,7 @@
     <span class="number">1
 </span>}
 
-<span class="kw">impl</span>&lt;KEY: SignatureKey&gt; HotShotConfig&lt;KEY&gt; {
+<span class="kw">impl</span>&lt;TYPES: NodeType&gt; HotShotConfig&lt;TYPES&gt; {
     <span class="doccomment">/// Update a hotshot config to have a view-based upgrade.
     </span><span class="kw">pub fn </span>set_view_upgrade(<span class="kw-2">&amp;mut </span><span class="self">self</span>, view: u64) {
         <span class="self">self</span>.start_proposing_view = view;

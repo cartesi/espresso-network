@@ -624,8 +624,8 @@
         state: <span class="kw-2">&amp;</span>GenericLightClientState&lt;F&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, CircuitError&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            view_num: circuit.create_public_variable(F::from(state.view_number <span class="kw">as </span>u64))<span class="question-mark">?</span>,
-            block_height: circuit.create_public_variable(F::from(state.block_height <span class="kw">as </span>u64))<span class="question-mark">?</span>,
+            view_num: circuit.create_public_variable(F::from(state.view_number))<span class="question-mark">?</span>,
+            block_height: circuit.create_public_variable(F::from(state.block_height))<span class="question-mark">?</span>,
             block_comm_root: circuit.create_public_variable(state.block_comm_root)<span class="question-mark">?</span>,
         })
     }

@@ -833,7 +833,16 @@
 <a href="#832" id="832">832</a>
 <a href="#833" id="833">833</a>
 <a href="#834" id="834">834</a>
-<a href="#835" id="835">835</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#835" id="835">835</a>
+<a href="#836" id="836">836</a>
+<a href="#837" id="837">837</a>
+<a href="#838" id="838">838</a>
+<a href="#839" id="839">839</a>
+<a href="#840" id="840">840</a>
+<a href="#841" id="841">841</a>
+<a href="#842" id="842">842</a>
+<a href="#843" id="843">843</a>
+<a href="#844" id="844">844</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -861,7 +870,7 @@
     traits::{
         block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
-        signature_key::SignatureKey,
+        signature_key::{SignatureKey, StateSignatureKey},
         storage::Storage,
     },
     utils::{epoch_from_block_number, option_epoch_from_block_number},
@@ -933,6 +942,9 @@
 
     <span class="doccomment">/// Number of blocks in an epoch, zero means there are no epochs
     </span><span class="kw">pub </span>epoch_height: u64,
+
+    <span class="doccomment">/// Signature key for light client state
+    </span><span class="kw">pub </span>state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
 }
 
 <span class="kw">impl</span>&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt; + <span class="lifetime">'static</span>, V: Versions&gt; HandleDepOutput
@@ -1128,6 +1140,7 @@
             vid_share,
             <span class="bool-val">false</span>,
             <span class="self">self</span>.epoch_height,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.state_private_key,
         )
         .<span class="kw">await
         </span>{
@@ -1181,6 +1194,9 @@
 
     <span class="doccomment">/// Number of blocks in an epoch, zero means there are no epochs
     </span><span class="kw">pub </span>epoch_height: u64,
+
+    <span class="doccomment">/// Signature key for light client state
+    </span><span class="kw">pub </span>state_private_key: &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
 
     <span class="doccomment">/// Upgrade certificate to enable epochs, staged until we reach the specified block height
     </span><span class="kw">pub </span>staged_epoch_upgrade_certificate: <span class="prelude-ty">Option</span>&lt;UpgradeCertificate&lt;TYPES&gt;&gt;,
@@ -1292,6 +1308,7 @@
                 id: <span class="self">self</span>.id,
                 epoch_height: <span class="self">self</span>.epoch_height,
                 consensus_metrics: Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus_metrics),
+                state_private_key: <span class="self">self</span>.state_private_key.clone(),
             },
         );
         <span class="self">self</span>.vote_dependencies
@@ -1641,6 +1658,7 @@
             updated_vid,
             is_vote_leaf_extended,
             <span class="self">self</span>.epoch_height,
+            <span class="kw-2">&amp;</span><span class="self">self</span>.state_private_key,
         )
         .<span class="kw">await
         </span>.context(|e| <span class="macro">debug!</span>(<span class="string">"Failed to submit vote; error = {}"</span>, e))
