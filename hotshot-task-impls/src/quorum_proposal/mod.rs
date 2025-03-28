@@ -53,7 +53,7 @@ pub struct QuorumProposalTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>
     pub formed_quorum_certificates: BTreeMap<TYPES::View, QuorumCertificate2<TYPES>>,
 
     /// Formed eQCs
-    pub formed_extended_quorum_certificates:
+    pub formed_next_epoch_quorum_certificates:
         BTreeMap<TYPES::View, NextEpochQuorumCertificate2<TYPES>>,
 
     /// Immutable instance state
@@ -461,7 +461,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     return self.update_high_qc(qc).await;
                 }
                 let Some(next_epoch_qc) =
-                    self.formed_extended_quorum_certificates.get(&view_number)
+                    self.formed_next_epoch_quorum_certificates.get(&view_number)
                 else {
                     return Ok(());
                 };
@@ -484,8 +484,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             },
         };
         // clean up old qcs
-        self.formed_extended_quorum_certificates = self
-            .formed_extended_quorum_certificates
+        self.formed_next_epoch_quorum_certificates = self
+            .formed_next_epoch_quorum_certificates
             .split_off(&view_number);
         self.formed_quorum_certificates = self.formed_quorum_certificates.split_off(&view_number);
 
@@ -686,7 +686,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     debug!("Received a next epoch QC for a view that was not > than our current next epoch high QC")
                 );
 
-                self.formed_extended_quorum_certificates
+                self.formed_next_epoch_quorum_certificates
                     .insert(next_epoch_qc.view_number(), next_epoch_qc.clone());
 
                 self.check_eqc_and_store(
