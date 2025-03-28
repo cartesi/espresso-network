@@ -168,6 +168,11 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
 
         let mut rx = self.receiver.clone();
 
+        tracing::error!(
+            "lrzasik: view_start_time {:?}, wait duration {:?}, we start draining",
+            self.view_start_time,
+            wait_duration
+        );
         // drain any qc off the queue
         while let Ok(event) = rx.try_recv() {
             if let HotShotEvent::HighQcRecv(qc, maybe_next_epoch_qc, _sender) = event.as_ref() {
@@ -200,6 +205,11 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             }
         }
 
+        tracing::error!(
+            "lrzasik: view_start_time {:?}, wait duration {:?}, we drained now we wait and check",
+            self.view_start_time,
+            wait_duration
+        );
         // TODO configure timeout
         while self.view_start_time.elapsed() < wait_duration {
             let time_spent = Instant::now()
@@ -240,6 +250,11 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 }
             }
         }
+        tracing::error!(
+            "lrzasik: view_start_time {:?}, wait duration {:?}, time elapsed",
+            self.view_start_time,
+            wait_duration
+        );
         Ok(transition_qc)
     }
     /// Waits for the configured timeout for nodes to send HighQc messages to us.  We'll
@@ -538,6 +553,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
     type Output = Vec<Vec<Vec<Arc<HotShotEvent<TYPES>>>>>;
 
     #[allow(clippy::no_effect_underscore_binding, clippy::too_many_lines)]
+    #[instrument(skip_all, fields(id = self.id, view_number = *self.view_number, latest_proposed_view = *self.latest_proposed_view))]
     async fn handle_dep_result(self, res: Self::Output) {
         let mut commit_and_metadata: Option<CommitmentAndMetadata<TYPES>> = None;
         let mut timeout_certificate = None;
