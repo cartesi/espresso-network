@@ -77,6 +77,7 @@ cross_tests!(
 
         // node 5 is leader twice when we shut down
         metadata.overall_safety_properties.expected_view_failures = vec![
+            8,
             view_spin_node_down,
             view_spin_node_down + 1,
             view_spin_node_down + 2

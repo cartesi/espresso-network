@@ -743,7 +743,9 @@ pub(crate) async fn validate_epoch_transition_qc<
     let Some(qc_block_number) = proposed_qc.data().block_number else {
         bail!("Justify QC has no block number");
     };
-    if !is_epoch_transition(qc_block_number, validation_info.epoch_height) {
+    if !is_epoch_transition(qc_block_number, validation_info.epoch_height)
+        || qc_block_number % validation_info.epoch_height == 0
+    {
         return Ok(());
     }
     if is_transition_block(qc_block_number, validation_info.epoch_height) {
@@ -818,6 +820,7 @@ pub async fn validate_proposal_safety_and_liveness<
 ) -> Result<()> {
     let view_number = proposal.data.view_number();
 
+    let mut valid_epoch_transition = false;
     if validation_info
         .upgrade_lock
         .version(proposal.data.justify_qc().view_number())
@@ -829,6 +832,7 @@ pub async fn validate_proposal_safety_and_liveness<
         };
         if is_epoch_transition(block_number, validation_info.epoch_height) {
             validate_epoch_transition_qc(&proposal, validation_info).await?;
+            valid_epoch_transition = true;
         }
     }
 
@@ -921,7 +925,8 @@ pub async fn validate_proposal_safety_and_liveness<
         }
 
         // Liveness check.
-        let liveness_check = justify_qc.view_number() > consensus_reader.locked_view();
+        let liveness_check =
+            justify_qc.view_number() > consensus_reader.locked_view() || valid_epoch_transition;
 
         // Safety check.
         // Check if proposal extends from the locked leaf.

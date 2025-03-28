@@ -832,7 +832,12 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     /// Can return an error when the provided high_qc is not newer than the existing entry.
     pub fn update_high_qc(&mut self, high_qc: QuorumCertificate2<TYPES>) -> Result<()> {
         ensure!(
-            high_qc.view_number > self.high_qc.view_number || high_qc == self.high_qc,
+            high_qc.view_number > self.high_qc.view_number
+                || high_qc == self.high_qc
+                || high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_transition_block(bn, self.epoch_height)),
             debug!("High QC with an equal or higher view exists.")
         );
         tracing::debug!("Updating high QC");
@@ -853,7 +858,11 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         if let Some(next_epoch_high_qc) = self.next_epoch_high_qc() {
             ensure!(
                 high_qc.view_number > next_epoch_high_qc.view_number
-                    || high_qc == *next_epoch_high_qc,
+                    || high_qc == *next_epoch_high_qc
+                    || high_qc
+                        .data
+                        .block_number
+                        .is_some_and(|bn| is_transition_block(bn, self.epoch_height)),
                 debug!("Next epoch high QC with an equal or higher view exists.")
             );
         }
