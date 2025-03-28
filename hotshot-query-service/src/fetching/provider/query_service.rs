@@ -134,10 +134,10 @@ where
                         };
 
                         // Compare calculated commitment with requested commitment
-                        if commit != req.0 {
-                            tracing::warn!("commitment type mismatch for AVIDM check");
-                            return None;
-                        }
+                        // if commit != req.0 {
+                        //     tracing::warn!("commitment type mismatch for AVIDM check");
+                        //     return None;
+                        // }
                     },
                 }
 
