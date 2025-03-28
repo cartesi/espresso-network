@@ -712,6 +712,12 @@ pub(super) async fn handle_eqc_formed<
 
     let consensus_reader = task_state.consensus.read().await;
     let current_epoch_qc = consensus_reader.high_qc();
+    if current_epoch_qc.view_number() != cert_view
+        || current_epoch_qc.data.leaf_commit != leaf_commit
+    {
+        tracing::debug!("We haven't yet formed the eQC. Do nothing");
+        return;
+    }
     let Some(next_epoch_qc) = consensus_reader.next_epoch_high_qc() else {
         tracing::debug!("We formed the eQC but we don't have the next epoch eQC at all.");
         return;

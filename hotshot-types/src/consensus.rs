@@ -1082,82 +1082,11 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         Some(())
     }
 
-    /// Return true if the QC takes part in forming an eQC, i.e.
-    /// it is one of the 3-chain certificates but not the eQC itself
-    pub fn is_qc_forming_eqc(&self, qc: &QuorumCertificate2<TYPES>) -> bool {
-        let high_qc_leaf_commit = qc.data.leaf_commit;
-        let is_high_qc_extended = self.is_leaf_extended(high_qc_leaf_commit);
-        if is_high_qc_extended {
-            tracing::debug!("We have formed an eQC!");
-        }
-        self.is_epoch_transition(high_qc_leaf_commit) && !is_high_qc_extended
-    }
-
-    /// Returns true if our high qc is forming an eQC
-    pub fn is_high_qc_forming_eqc(&self) -> bool {
-        self.is_qc_forming_eqc(self.high_qc())
-    }
-
-    /// Return true if the given leaf takes part in forming an eQC, i.e.
-    /// it is one of the 3-chain leaves but not the eQC leaf itself
-    pub fn is_leaf_forming_eqc(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        self.is_epoch_transition(leaf_commit) && !self.is_leaf_extended(leaf_commit)
-    }
-
     /// Returns true if the given leaf can form an extended Quorum Certificate
     /// The Extended Quorum Certificate (eQC) is the third Quorum Certificate formed in three
     /// consecutive views for the last block in the epoch.
     pub fn is_leaf_extended(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        if !self.is_leaf_for_last_block(leaf_commit) {
-            tracing::trace!("The given leaf is not for the last block in the epoch.");
-            return false;
-        }
-
-        let Some(leaf) = self.saved_leaves.get(&leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the leaf commit");
-            return false;
-        };
-        let leaf_view = leaf.view_number();
-        let mut last_leaf_block_number = leaf.height();
-
-        let mut last_visited_view_number = leaf_view;
-
-        let mut is_leaf_extended = true;
-        if let Err(e) = self.visit_leaf_ancestors(
-            leaf_view,
-            Terminator::Inclusive(leaf_view - 2),
-            true,
-            |leaf, _, _| {
-                tracing::trace!(
-                    "last_visited_view_number = {}, leaf.view_number = {}",
-                    *last_visited_view_number,
-                    *leaf.view_number()
-                );
-
-                if leaf.view_number() == leaf_view {
-                    return true;
-                }
-
-                if last_visited_view_number - 1 != leaf.view_number() {
-                    tracing::trace!("The chain is broken. Non consecutive views.");
-                    is_leaf_extended = false;
-                    return false;
-                }
-                if last_leaf_block_number != leaf.height() + 1 {
-                    tracing::trace!("The chain is broken. Block numbers do not match.");
-                    is_leaf_extended = false;
-                    return false;
-                }
-                last_visited_view_number = leaf.view_number();
-                last_leaf_block_number = leaf.height();
-                true
-            },
-        ) {
-            is_leaf_extended = false;
-            tracing::debug!("Leaf ascension failed; error={e}");
-        }
-        tracing::trace!("Can the given leaf form an eQC? {}", is_leaf_extended);
-        is_leaf_extended
+        self.is_leaf_for_last_block(leaf_commit)
     }
 
     /// Returns true if a given leaf is for the epoch transition
