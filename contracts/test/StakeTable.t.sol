@@ -642,6 +642,19 @@ contract StakeTableUpgradeTest is Test {
         assertEq(result, "true");
     }
 
+    function test_storage_layout_is_not_compatible_between_diff_contracts() public {
+        string[] memory cmds = new string[](4);
+        cmds[0] = "node";
+        cmds[1] = "contracts/test/script/compare-storage-layout.js";
+        cmds[2] = "StakeTable";
+        cmds[3] = "LightClient";
+
+        bytes memory output = vm.ffi(cmds);
+        string memory result = string(output);
+
+        assertEq(result, "false");
+    }
+
     function test_reinitialize_succeeds_only_once() public {
         vm.startPrank(stakeTableRegisterTest.admin());
         S proxy = S(stakeTableRegisterTest.proxy());

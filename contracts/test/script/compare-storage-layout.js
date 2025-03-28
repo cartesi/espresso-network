@@ -1,16 +1,18 @@
 const { execSync } = require("child_process");
 
-// Strip AST ID from type string (e.g., t_contract(LightClient)44013 → t_contract(LightClient))
+// Different types of types have different IDs, so we need to strip the ID from the type
+// (e.g., t_contract(LightClient)44013 → t_contract(LightClient))
 function normalizeType(type) {
-    // Remove `_storage`, `_memory`, etc. suffixes with IDs
-    // Remove any digits after a closing parenthesis or struct name
-    return type
-      .replace(/\)\d+(_\w+)?/g, ")")                  // e.g., `)44149_storage` → `)`
-      .replace(/(_\w+)?\)\d+/g, ")")                  // just in case
-      .replace(/\(.*?\)\d+(_\w+)?/g, (match) => match.replace(/\)\d+(_\w+)?/, ")"));
+  const end = type.indexOf(')');
+
+  if (end !== -1) {
+    return type.slice(0, end + 1); 
   }
 
-// Extracts the layout using forge inspect and parses the JSON output
+    return type; 
+}
+
+// Extracts the storage layout using `forge inspect` and parses the JSON output
 function extractLayout(contractName) {
   const output = execSync(`forge inspect ${contractName} storageLayout --json`).toString();
   const layout = JSON.parse(output);
@@ -23,8 +25,9 @@ function extractLayout(contractName) {
 }
 
 // Compare two storage layout arrays
+// expects the first layout to be the old one and the second to be the new one
 function compareLayouts(layoutA, layoutB) {
-  if (layoutA.length > layoutB.length) {
+  if (layoutA.length > layoutB.length) { // the new layout should have same or more variables
     console.log("false");
     return false;
   }
