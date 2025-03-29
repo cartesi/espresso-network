@@ -530,25 +530,18 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         qc: QuorumCertificate2<TYPES>,
         next_epoch_qc: NextEpochQuorumCertificate2<TYPES>,
     ) {
-        if let Some((transition_qc, next_epoch_qc)) = &self.transition_qc {
-            if transition_qc.view_number() == qc.view_number() {
-                if transition_qc.data().leaf_commit != qc.data().leaf_commit {
-                    tracing::error!(
-                        "Transition QC for view {:?} has different leaf commit {:?} to {:?}",
-                        qc.view_number(),
-                        transition_qc.data().leaf_commit,
-                        qc.data().leaf_commit
-                    );
-                }
-                return;
-            }
-            if next_epoch_qc.data.leaf_commit != qc.data().leaf_commit {
-                tracing::error!(
+        if next_epoch_qc.data.leaf_commit != qc.data().leaf_commit {
+            tracing::error!(
                     "Next epoch QC for view {:?} has different leaf commit {:?} to {:?}",
                     qc.view_number(),
                     next_epoch_qc.data.leaf_commit,
                     qc.data().leaf_commit
                 );
+              return;
+        }
+        if let Some((transition_qc, _)) = &self.transition_qc {
+            if transition_qc.view_number() >= qc.view_number() {
+                return;
             }
         }
         self.transition_qc = Some((qc, next_epoch_qc));
