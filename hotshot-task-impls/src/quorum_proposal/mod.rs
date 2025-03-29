@@ -394,12 +394,19 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             .context(error!(
                 "Failed to update high QC in internal consensus state!"
             ))?;
+        let in_transition_epoch = qc.data.block_number.is_some_and(|bn| {
+            !is_transition_block(bn, self.epoch_height)
+                && bn % self.epoch_height != 0
+                && is_epoch_transition(bn, self.epoch_height)
+        });
 
         // Don't update storage if we're in the epoch transition
-        if qc.data.block_number.is_none()
-            || (!is_epoch_transition(qc.data.block_number.unwrap(), self.epoch_height)
-                && !qc.data.block_number.unwrap() % self.epoch_height == 0)
-        {
+        if !in_transition_epoch {
+            tracing::error!(
+                "Updating high QC in storage for view {:?} and height {:?}",
+                qc.view_number(),
+                qc.data.block_number
+            );
             // Then update the high QC in storage
             self.storage
                 .write()
@@ -424,13 +431,20 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             .context(error!(
                 "Failed to update next epoch high QC in internal consensus state!"
             ))?;
+        let in_transition_epoch = qc.data.block_number.is_some_and(|bn| {
+            !is_transition_block(bn, self.epoch_height)
+                && bn % self.epoch_height != 0
+                && is_epoch_transition(bn, self.epoch_height)
+        });
 
+        tracing::error!(
+            "Updating next epoch high QC in storage for view {:?} and height {:?}",
+            qc.view_number(),
+            qc.data.block_number
+        );
         // Then update the next epoch high QC in storage
         // Don't update storage if we're in the epoch transition
-        if qc.data.block_number.is_none()
-            || (!is_epoch_transition(qc.data.block_number.unwrap(), self.epoch_height)
-                && !qc.data.block_number.unwrap() % self.epoch_height == 0)
-        {
+        if !in_transition_epoch {
             self.storage
                 .write()
                 .await

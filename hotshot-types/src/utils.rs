@@ -490,8 +490,11 @@ mod test {
 
     #[test]
     fn test_is_last_block_in_epoch() {
-        assert!(!is_epoch_transition(8, 10));
-        assert!(!is_epoch_transition(9, 10));
+        assert!(!is_epoch_transition(5, 10));
+        assert!(!is_epoch_transition(6, 10));
+        assert!(is_epoch_transition(7, 10));
+        assert!(is_epoch_transition(8, 10));
+        assert!(is_epoch_transition(9, 10));
         assert!(is_epoch_transition(10, 10));
         assert!(!is_epoch_transition(11, 10));
 
@@ -518,9 +521,9 @@ mod test {
         let epoch_height = 10;
         let epoch_root_block_number = root_block_in_epoch(3, epoch_height);
 
-        assert!(is_epoch_root(28, epoch_height));
+        assert!(is_epoch_root(25, epoch_height));
 
-        assert_eq!(epoch_root_block_number, 28);
+        assert_eq!(epoch_root_block_number, 25);
 
         assert_eq!(
             epoch,

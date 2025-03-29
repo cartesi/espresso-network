@@ -676,6 +676,11 @@ pub(crate) async fn update_high_qc<TYPES: NodeType, I: NodeImplementation<TYPES>
     let justify_qc = proposal.data.justify_qc();
     let maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc();
     if !in_transition_epoch {
+        tracing::debug!(
+            "Storing high QC for view {:?} and height {:?}",
+            justify_qc.view_number(),
+            justify_qc.data.block_number
+        );
         if let Err(e) = validation_info
             .storage
             .write()

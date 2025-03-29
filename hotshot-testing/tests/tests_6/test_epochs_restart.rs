@@ -130,7 +130,7 @@ cross_tests!(
       for i in 2..4 {
           down_da_nodes.push(ChangeNode {
               idx: i,
-              updown: NodeAction::RestartDown(20),
+              updown: NodeAction::RestartDown(10),
           });
       }
 
@@ -150,7 +150,7 @@ cross_tests!(
       }
 
       metadata.spinning_properties = SpinningTaskDescription {
-          node_changes: vec![(10, down_da_nodes), (30, down_regular_nodes)],
+          node_changes: vec![(10, down_da_nodes), (20, down_regular_nodes)],
       };
       metadata.view_sync_properties =
           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 50);
@@ -159,14 +159,14 @@ cross_tests!(
       metadata.completion_task_description =
           CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
               TimeBasedCompletionTaskDescription {
-                  duration: Duration::from_secs(240),
+                  duration: Duration::from_secs(140),
               },
           );
       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
-          expected_view_failures: vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-          possible_view_failures: vec![8, 9, 31, 32, 33, 34],
+          expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+          possible_view_failures: vec![8, 9, 10, 21, 22, 23, 24],
           decide_timeout: Duration::from_secs(120),
           ..Default::default()
       };
@@ -188,7 +188,7 @@ cross_tests!(
       for i in 2..4 {
           down_da_nodes.push(ChangeNode {
               idx: i,
-              updown: NodeAction::RestartDown(20),
+              updown: NodeAction::RestartDown(10),
           });
       }
 
@@ -208,7 +208,7 @@ cross_tests!(
       }
 
       metadata.spinning_properties = SpinningTaskDescription {
-          node_changes: vec![(10, down_da_nodes), (30, down_regular_nodes)],
+          node_changes: vec![(10, down_da_nodes), (20, down_regular_nodes)],
       };
       metadata.view_sync_properties =
           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 50);
@@ -223,8 +223,8 @@ cross_tests!(
       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
-          expected_view_failures: vec![10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
-          possible_view_failures: vec![8, 9, 31, 32],
+          expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+          possible_view_failures: vec![8, 9, 10, 21, 22, 23, 24],
           decide_timeout: Duration::from_secs(120),
           ..Default::default()
       };
