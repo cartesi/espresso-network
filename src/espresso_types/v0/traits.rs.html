@@ -1193,9 +1193,10 @@
 <a href="#1192" id="1192">1192</a>
 <a href="#1193" id="1193">1193</a>
 <a href="#1194" id="1194">1194</a>
-<a href="#1195" id="1195">1195</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains all the traits used for building the sequencer types.
 //! It also includes some trait implementations that cannot be implemented in an external crate.
-</span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, num::NonZeroU64, ops::Range, sync::Arc};
+</span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, ops::Range, sync::Arc};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>async_trait::async_trait;
@@ -1228,6 +1229,7 @@
 };
 <span class="kw">use </span>indexmap::IndexMap;
 <span class="kw">use </span>itertools::Itertools;
+<span class="kw">use </span>primitive_types::U256;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
 
 <span class="kw">use super</span>::{
@@ -1250,7 +1252,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
         stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
-        success_threshold: NonZeroU64,
+        success_threshold: U256,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
         <span class="self">self</span>.backoff().retry(
@@ -1437,7 +1439,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
         stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
-        success_threshold: NonZeroU64,
+        success_threshold: U256,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
         (<span class="kw-2">**</span><span class="self">self</span>)
@@ -1571,7 +1573,7 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         height: u64,
         stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
-        success_threshold: NonZeroU64,
+        success_threshold: U256,
         epoch_height: u64,
     ) -&gt; anyhow::Result&lt;Leaf2&gt; {
         (<span class="kw-2">**</span><span class="self">self</span>)

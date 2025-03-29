@@ -1101,10 +1101,19 @@
 <a href="#1100" id="1100">1100</a>
 <a href="#1101" id="1101">1101</a>
 <a href="#1102" id="1102">1102</a>
-<a href="#1103" id="1103">1103</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a>
+<a href="#1108" id="1108">1108</a>
+<a href="#1109" id="1109">1109</a>
+<a href="#1110" id="1110">1110</a>
+<a href="#1111" id="1111">1111</a>
+<a href="#1112" id="1112">1112</a>
+<a href="#1113" id="1113">1113</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    num::NonZeroU64,
     sync::Arc,
 };
 
@@ -1818,33 +1827,44 @@
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
-    </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>quorum_len = <span class="self">self</span>.stake_table(epoch).len();
-        NonZeroU64::new(((quorum_len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+    </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; primitive_types::U256 {
+        <span class="kw">let </span>total_stake = <span class="self">self</span>.total_stake(epoch);
+        <span class="kw">if </span>total_stake &lt; primitive_types::U256::max_value() / <span class="number">2 </span>{
+            ((total_stake * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1
+        </span>} <span class="kw">else </span>{
+            ((total_stake / <span class="number">3</span>) * <span class="number">2</span>) + <span class="number">2
+        </span>}
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
-    </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>da_len = <span class="self">self</span>.da_stake_table(epoch).len();
-        NonZeroU64::new(((da_len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+    </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; primitive_types::U256 {
+        <span class="kw">let </span>total_stake = <span class="self">self</span>.total_da_stake(epoch);
+        <span class="kw">if </span>total_stake &lt; primitive_types::U256::max_value() / <span class="number">2 </span>{
+            ((total_stake * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1
+        </span>} <span class="kw">else </span>{
+            ((total_stake / <span class="number">3</span>) * <span class="number">2</span>) + <span class="number">2
+        </span>}
     }
 
     <span class="doccomment">/// Get the voting failure threshold for the committee
-    </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>quorum_len = <span class="self">self</span>.stake_table(epoch).len();
+    </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; primitive_types::U256 {
+        <span class="kw">let </span>total_stake = <span class="self">self</span>.total_stake(epoch);
 
-        NonZeroU64::new(((quorum_len <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
-    }
+        (total_stake / <span class="number">3</span>) + <span class="number">1
+    </span>}
 
     <span class="doccomment">/// Get the voting upgrade threshold for the committee
-    </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; NonZeroU64 {
-        <span class="kw">let </span>quorum_len = <span class="self">self</span>.total_nodes(epoch);
+    </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; primitive_types::U256 {
+        <span class="kw">let </span>total_stake = <span class="self">self</span>.total_stake(epoch);
 
-        NonZeroU64::new(max(
-            (quorum_len <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>,
-            ((quorum_len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>,
-        ))
-        .unwrap()
+        <span class="kw">let </span>normal_threshold = <span class="self">self</span>.success_threshold(epoch);
+        <span class="kw">let </span>higher_threshold = <span class="kw">if </span>total_stake &lt; primitive_types::U256::max_value() / <span class="number">9 </span>{
+            (total_stake * <span class="number">9</span>) / <span class="number">10
+        </span>} <span class="kw">else </span>{
+            (total_stake / <span class="number">10</span>) * <span class="number">9
+        </span>};
+
+        max(higher_threshold, normal_threshold)
     }
 
     <span class="attr">#[allow(refining_impl_trait)]

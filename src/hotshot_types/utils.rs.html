@@ -507,7 +507,6 @@
 
 </span><span class="kw">use </span>std::{
     hash::{Hash, Hasher},
-    num::NonZeroU64,
     ops::Deref,
     sync::Arc,
 };
@@ -523,6 +522,7 @@
 };
 <span class="kw">use </span>committable::{Commitment, Committable};
 <span class="kw">use </span>digest::OutputSizeUser;
+<span class="kw">use </span>primitive_types::U256;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>sha2::Digest;
 <span class="kw">use </span>tagged_base64::tagged;
@@ -605,7 +605,7 @@
 <span class="kw">pub async fn </span>verify_epoch_root_chain&lt;T: NodeType, V: Versions&gt;(
     leaf_chain: Vec&lt;Leaf2&lt;T&gt;&gt;,
     stake_table: Vec&lt;PeerConfig&lt;T&gt;&gt;,
-    success_threshold: NonZeroU64,
+    success_threshold: U256,
     epoch_height: u64,
     upgrade_lock: <span class="kw-2">&amp;</span><span class="kw">crate</span>::message::UpgradeLock&lt;T, V&gt;,
 ) -&gt; anyhow::Result&lt;Leaf2&lt;T&gt;&gt; {

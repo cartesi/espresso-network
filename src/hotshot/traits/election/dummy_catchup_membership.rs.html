@@ -188,7 +188,8 @@
 <a href="#187" id="187">187</a>
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Ok;
 <span class="kw">use </span>async_lock::RwLock;
@@ -196,6 +197,7 @@
     drb::DrbResult,
     traits::{election::Membership, node_implementation::NodeType},
 };
+<span class="kw">use </span>primitive_types::U256;
 
 <span class="kw">use </span><span class="kw">super</span>::static_committee::StaticCommittee;
 
@@ -314,22 +316,22 @@
         <span class="self">self</span>.inner.da_total_nodes(epoch)
     }
 
-    <span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; std::num::NonZeroU64 {
+    <span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.success_threshold(epoch)
     }
 
-    <span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; std::num::NonZeroU64 {
+    <span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.da_success_threshold(epoch)
     }
 
-    <span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; std::num::NonZeroU64 {
+    <span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.failure_threshold(epoch)
     }
 
-    <span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; std::num::NonZeroU64 {
+    <span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
         <span class="self">self</span>.assert_has_epoch(epoch);
         <span class="self">self</span>.inner.upgrade_threshold(epoch)
     }

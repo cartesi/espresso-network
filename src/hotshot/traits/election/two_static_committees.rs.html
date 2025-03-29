@@ -395,10 +395,7 @@
 <a href="#394" id="394">394</a>
 <a href="#395" id="395">395</a>
 <a href="#396" id="396">396</a>
-<a href="#397" id="397">397</a>
-<a href="#398" id="398">398</a>
-<a href="#399" id="399">399</a>
-<a href="#400" id="400">400</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#397" id="397">397</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -407,7 +404,6 @@
 </span><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet},
-    num::NonZeroU64,
 };
 
 <span class="kw">use </span>hotshot_types::{
@@ -744,50 +740,48 @@
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
-    </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>epoch = epoch.expect(<span class="string">"epochs cannot be disabled with TwoStaticCommittees"</span>);
         <span class="kw">if </span><span class="kw-2">*</span>epoch != <span class="number">0 </span>&amp;&amp; <span class="kw-2">*</span>epoch % <span class="number">2 </span>== <span class="number">0 </span>{
-            NonZeroU64::new(((<span class="self">self</span>.stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+            U256::from(((<span class="self">self</span>.stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>)
         } <span class="kw">else </span>{
-            NonZeroU64::new(((<span class="self">self</span>.stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+            U256::from(((<span class="self">self</span>.stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>)
         }
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
-    </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>epoch = epoch.expect(<span class="string">"epochs cannot be disabled with TwoStaticCommittees"</span>);
         <span class="kw">if </span><span class="kw-2">*</span>epoch != <span class="number">0 </span>&amp;&amp; <span class="kw-2">*</span>epoch % <span class="number">2 </span>== <span class="number">0 </span>{
-            NonZeroU64::new(((<span class="self">self</span>.da_stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+            U256::from(((<span class="self">self</span>.da_stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>)
         } <span class="kw">else </span>{
-            NonZeroU64::new(((<span class="self">self</span>.da_stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+            U256::from(((<span class="self">self</span>.da_stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>)
         }
     }
 
     <span class="doccomment">/// Get the voting failure threshold for the committee
-    </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>epoch = epoch.expect(<span class="string">"epochs cannot be disabled with TwoStaticCommittees"</span>);
         <span class="kw">if </span><span class="kw-2">*</span>epoch != <span class="number">0 </span>&amp;&amp; <span class="kw-2">*</span>epoch % <span class="number">2 </span>== <span class="number">0 </span>{
-            NonZeroU64::new(((<span class="self">self</span>.stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+            U256::from(((<span class="self">self</span>.stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>)
         } <span class="kw">else </span>{
-            NonZeroU64::new(((<span class="self">self</span>.stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+            U256::from(((<span class="self">self</span>.stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>)
         }
     }
 
     <span class="doccomment">/// Get the voting upgrade threshold for the committee
-    </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>epoch = epoch.expect(<span class="string">"epochs cannot be disabled with TwoStaticCommittees"</span>);
         <span class="kw">if </span><span class="kw-2">*</span>epoch != <span class="number">0 </span>&amp;&amp; <span class="kw-2">*</span>epoch % <span class="number">2 </span>== <span class="number">0 </span>{
-            NonZeroU64::new(max(
+            U256::from(max(
                 (<span class="self">self</span>.stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>,
                 ((<span class="self">self</span>.stake_table.<span class="number">0</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>,
             ))
-            .unwrap()
         } <span class="kw">else </span>{
-            NonZeroU64::new(max(
+            U256::from(max(
                 (<span class="self">self</span>.stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>,
                 ((<span class="self">self</span>.stake_table.<span class="number">1</span>.len() <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>,
             ))
-            .unwrap()
         }
     }
     <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: TYPES::Epoch) -&gt; bool {

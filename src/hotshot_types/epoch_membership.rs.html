@@ -421,7 +421,6 @@
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeSet, HashMap},
-    num::NonZeroU64,
     sync::Arc,
 };
 
@@ -431,6 +430,7 @@
     anytrace::{<span class="self">self</span>, Error, Level, <span class="prelude-ty">Result</span>, DEFAULT_LOG_LEVEL},
     ensure, line_info, log, warn,
 };
+<span class="kw">use </span>primitive_types::U256;
 
 <span class="kw">use crate</span>::{
     drb::DrbResult,
@@ -794,7 +794,7 @@
     }
 
     <span class="doccomment">/// Returns the threshold for a specific `Membership` implementation
-    </span><span class="kw">pub async fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonZeroU64 {
+    </span><span class="kw">pub async fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; U256 {
         <span class="self">self</span>.coordinator
             .membership
             .read()
@@ -803,7 +803,7 @@
     }
 
     <span class="doccomment">/// Returns the DA threshold for a specific `Membership` implementation
-    </span><span class="kw">pub async fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonZeroU64 {
+    </span><span class="kw">pub async fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; U256 {
         <span class="self">self</span>.coordinator
             .membership
             .read()
@@ -812,7 +812,7 @@
     }
 
     <span class="doccomment">/// Returns the threshold for a specific `Membership` implementation
-    </span><span class="kw">pub async fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonZeroU64 {
+    </span><span class="kw">pub async fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; U256 {
         <span class="self">self</span>.coordinator
             .membership
             .read()
@@ -821,7 +821,7 @@
     }
 
     <span class="doccomment">/// Returns the threshold required to upgrade the network protocol
-    </span><span class="kw">pub async fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonZeroU64 {
+    </span><span class="kw">pub async fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; U256 {
         <span class="self">self</span>.coordinator
             .membership
             .read()

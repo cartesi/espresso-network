@@ -310,8 +310,7 @@
 <a href="#309" id="309">309</a>
 <a href="#310" id="310">310</a>
 <a href="#311" id="311">311</a>
-<a href="#312" id="312">312</a>
-<a href="#313" id="313">313</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#312" id="312">312</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -323,7 +322,6 @@
     collections::{BTreeMap, HashMap},
     future::Future,
     marker::PhantomData,
-    num::NonZeroU64,
 };
 
 <span class="kw">use </span>bitvec::{bitvec, vec::BitVec};
@@ -391,12 +389,12 @@ The votes all must be over the `Commitment` associated type.
     </span><span class="kw">fn </span>is_valid_cert&lt;V: Versions&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         stake_table: Vec&lt;&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::StakeTableEntry&gt;,
-        threshold: NonZeroU64,
+        threshold: U256,
         upgrade_lock: <span class="kw-2">&amp;</span>UpgradeLock&lt;TYPES, V&gt;,
     ) -&gt; <span class="kw">impl </span>std::future::Future&lt;Output = <span class="prelude-ty">Result</span>&lt;()&gt;&gt;;
     <span class="doccomment">/// Returns the amount of stake needed to create this certificate
     </span><span class="comment">// TODO: Make this a static ratio of the total stake of `Membership`
-    </span><span class="kw">fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; <span class="kw">impl </span>Future&lt;Output = u64&gt; + Send;
+    </span><span class="kw">fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; <span class="kw">impl </span>Future&lt;Output = U256&gt; + Send;
 
     <span class="doccomment">/// Get  Stake Table from Membership implementation.
     </span><span class="kw">fn </span>stake_table(
@@ -527,12 +525,12 @@ The votes all must be over the `Commitment` associated type.
         <span class="kw-2">*</span>total_stake_casted += stake_table_entry.stake_table_entry.stake();
         total_vote_map.insert(key, (vote.signature(), vote_commitment));
 
-        <span class="kw">if </span><span class="kw-2">*</span>total_stake_casted &gt;= threshold.into() {
+        <span class="kw">if </span><span class="kw-2">*</span>total_stake_casted &gt;= threshold {
             <span class="comment">// Assemble QC
             </span><span class="kw">let </span>real_qc_pp: &lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::QcParams =
                 &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(
                     StakeTableEntries::&lt;TYPES&gt;::from(stake_table).<span class="number">0</span>,
-                    U256::from(threshold),
+                    threshold,
                 );
 
             <span class="kw">let </span>real_qc_sig = &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::assemble(

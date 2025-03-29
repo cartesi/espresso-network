@@ -452,8 +452,7 @@
 <a href="#451" id="451">451</a>
 <a href="#452" id="452">452</a>
 <a href="#453" id="453">453</a>
-<a href="#454" id="454">454</a>
-<a href="#455" id="455">455</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#454" id="454">454</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -495,7 +494,6 @@
     vote::{Certificate, HasViewNumber, Vote},
     StakeTableEntries, ValidatorConfig,
 };
-<span class="kw">use </span>primitive_types::U256;
 <span class="kw">use </span>serde::Serialize;
 <span class="kw">use </span>vbs::version::Version;
 
@@ -687,7 +685,7 @@
     <span class="kw">let </span>real_qc_pp: &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::QcParams =
         &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(
             StakeTableEntries::&lt;TYPES&gt;::from(stake_table.clone()).<span class="number">0</span>,
-            U256::from(CERT::threshold(epoch_membership).<span class="kw">await</span>),
+            CERT::threshold(epoch_membership).<span class="kw">await</span>,
         );
 
     <span class="kw">let </span>total_nodes = stake_table.len();

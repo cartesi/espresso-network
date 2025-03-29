@@ -232,7 +232,10 @@
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
-<a href="#234" id="234">234</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -380,7 +383,10 @@
                 <span class="kw">if </span><span class="self">self</span>.consensus.read().<span class="kw">await</span>.cur_view() &gt; proposal.data.view_number()
                     || <span class="self">self</span>.cur_view &gt; proposal.data.view_number()
                 {
-                    <span class="macro">tracing::error!</span>(<span class="string">"Throwing away old proposal"</span>);
+                    <span class="macro">tracing::warn!</span>(
+                        <span class="string">"Throwing away old proposal for view {:?}"</span>,
+                        proposal.data.view_number()
+                    );
                     <span class="kw">return</span>;
                 }
                 <span class="kw">let </span>proposal_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(

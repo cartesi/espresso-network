@@ -777,14 +777,7 @@
 <a href="#776" id="776">776</a>
 <a href="#777" id="777">777</a>
 <a href="#778" id="778">778</a>
-<a href="#779" id="779">779</a>
-<a href="#780" id="780">780</a>
-<a href="#781" id="781">781</a>
-<a href="#782" id="782">782</a>
-<a href="#783" id="783">783</a>
-<a href="#784" id="784">784</a>
-<a href="#785" id="785">785</a>
-<a href="#786" id="786">786</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#779" id="779">779</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -797,7 +790,6 @@
     future::Future,
     hash::Hash,
     marker::PhantomData,
-    num::NonZeroU64,
     sync::Arc,
 };
 
@@ -829,7 +821,7 @@
 <span class="doccomment">/// Trait which allows use to inject different threshold calculations into a Certificate type
 </span><span class="kw">pub trait </span>Threshold&lt;TYPES: NodeType&gt; {
     <span class="doccomment">/// Calculate a threshold based on the membership
-    </span><span class="kw">fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; <span class="kw">impl </span>Future&lt;Output = u64&gt; + Send;
+    </span><span class="kw">fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; <span class="kw">impl </span>Future&lt;Output = U256&gt; + Send;
 }
 
 <span class="doccomment">/// Defines a threshold which is 2f + 1 (Amount needed for Quorum)
@@ -837,9 +829,9 @@
 </span><span class="kw">pub struct </span>SuccessThreshold {}
 
 <span class="kw">impl</span>&lt;TYPES: NodeType&gt; Threshold&lt;TYPES&gt; <span class="kw">for </span>SuccessThreshold {
-    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; u64 {
-        membership.success_threshold().<span class="kw">await</span>.into()
-    }
+    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; U256 {
+        membership.success_threshold().<span class="kw">await
+    </span>}
 }
 
 <span class="doccomment">/// Defines a threshold which is f + 1 (i.e at least one of the stake is honest)
@@ -847,9 +839,9 @@
 </span><span class="kw">pub struct </span>OneHonestThreshold {}
 
 <span class="kw">impl</span>&lt;TYPES: NodeType&gt; Threshold&lt;TYPES&gt; <span class="kw">for </span>OneHonestThreshold {
-    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; u64 {
-        membership.failure_threshold().<span class="kw">await</span>.into()
-    }
+    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; U256 {
+        membership.failure_threshold().<span class="kw">await
+    </span>}
 }
 
 <span class="doccomment">/// Defines a threshold which is 0.9n + 1 (i.e. over 90% of the nodes with stake)
@@ -857,9 +849,9 @@
 </span><span class="kw">pub struct </span>UpgradeThreshold {}
 
 <span class="kw">impl</span>&lt;TYPES: NodeType&gt; Threshold&lt;TYPES&gt; <span class="kw">for </span>UpgradeThreshold {
-    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; u64 {
-        membership.upgrade_threshold().<span class="kw">await</span>.into()
-    }
+    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; U256 {
+        membership.upgrade_threshold().<span class="kw">await
+    </span>}
 }
 
 <span class="doccomment">/// A certificate which can be created by aggregating many simple votes on the commitment.
@@ -944,16 +936,14 @@
     <span class="kw">async fn </span>is_valid_cert&lt;V: Versions&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         stake_table: Vec&lt;&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::StakeTableEntry&gt;,
-        threshold: NonZeroU64,
+        threshold: U256,
         upgrade_lock: <span class="kw-2">&amp;</span>UpgradeLock&lt;TYPES, V&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.view_number == TYPES::View::genesis() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
-        <span class="kw">let </span>real_qc_pp = &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(
-            stake_table,
-            U256::from(u64::from(threshold)),
-        );
+        <span class="kw">let </span>real_qc_pp =
+            &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(stake_table, threshold);
         <span class="kw">let </span>commit = <span class="self">self</span>.data_commitment(upgrade_lock).<span class="kw">await</span><span class="question-mark">?</span>;
 
         &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::check(
@@ -980,9 +970,9 @@
     </span><span class="kw">async fn </span>total_nodes(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; usize {
         membership.da_total_nodes().<span class="kw">await
     </span>}
-    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; u64 {
-        membership.da_success_threshold().<span class="kw">await</span>.into()
-    }
+    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; U256 {
+        membership.da_success_threshold().<span class="kw">await
+    </span>}
     <span class="kw">fn </span>data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Voteable {
         <span class="kw-2">&amp;</span><span class="self">self</span>.data
     }
@@ -1023,16 +1013,14 @@
     <span class="kw">async fn </span>is_valid_cert&lt;V: Versions&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         stake_table: Vec&lt;&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::StakeTableEntry&gt;,
-        threshold: NonZeroU64,
+        threshold: U256,
         upgrade_lock: <span class="kw-2">&amp;</span>UpgradeLock&lt;TYPES, V&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.view_number == TYPES::View::genesis() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
-        <span class="kw">let </span>real_qc_pp = &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(
-            stake_table,
-            U256::from(u64::from(threshold)),
-        );
+        <span class="kw">let </span>real_qc_pp =
+            &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(stake_table, threshold);
         <span class="kw">let </span>commit = <span class="self">self</span>.data_commitment(upgrade_lock).<span class="kw">await</span><span class="question-mark">?</span>;
 
         &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::check(
@@ -1059,9 +1047,9 @@
     </span><span class="kw">async fn </span>total_nodes(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; usize {
         membership.da_total_nodes().<span class="kw">await
     </span>}
-    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; u64 {
-        membership.da_success_threshold().<span class="kw">await</span>.into()
-    }
+    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; U256 {
+        membership.da_success_threshold().<span class="kw">await
+    </span>}
     <span class="kw">fn </span>data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::Voteable {
         <span class="kw-2">&amp;</span><span class="self">self</span>.data
     }
@@ -1105,16 +1093,14 @@
     <span class="kw">async fn </span>is_valid_cert&lt;V: Versions&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         stake_table: Vec&lt;&lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::StakeTableEntry&gt;,
-        threshold: NonZeroU64,
+        threshold: U256,
         upgrade_lock: <span class="kw-2">&amp;</span>UpgradeLock&lt;TYPES, V&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.view_number == TYPES::View::genesis() {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
-        <span class="kw">let </span>real_qc_pp = &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(
-            stake_table,
-            U256::from(u64::from(threshold)),
-        );
+        <span class="kw">let </span>real_qc_pp =
+            &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::public_parameter(stake_table, threshold);
         <span class="kw">let </span>commit = <span class="self">self</span>.data_commitment(upgrade_lock).<span class="kw">await</span><span class="question-mark">?</span>;
 
         &lt;TYPES::SignatureKey <span class="kw">as </span>SignatureKey&gt;::check(
@@ -1125,7 +1111,7 @@
         .wrap()
         .context(|e| <span class="macro">warn!</span>(<span class="string">"Signature check failed: {}"</span>, e))
     }
-    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; u64 {
+    <span class="kw">async fn </span>threshold(membership: <span class="kw-2">&amp;</span>EpochMembership&lt;TYPES&gt;) -&gt; U256 {
         THRESHOLD::threshold(membership).<span class="kw">await
     </span>}
 

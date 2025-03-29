@@ -434,8 +434,7 @@
 <a href="#433" id="433">433</a>
 <a href="#434" id="434">434</a>
 <a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#436" id="436">436</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -444,7 +443,6 @@
     cmp::max,
     collections::{BTreeMap, BTreeSet},
     marker::PhantomData,
-    num::NonZeroU64,
 };
 
 <span class="kw">use </span>hotshot_types::{
@@ -842,27 +840,27 @@
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
-    </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>len = <span class="self">self</span>.total_nodes(epoch);
-        NonZeroU64::new(((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+        U256::from((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3 </span>+ <span class="number">1</span>)
     }
 
     <span class="doccomment">/// Get the voting success threshold for the committee
-    </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>len = <span class="self">self</span>.da_total_nodes(epoch);
-        NonZeroU64::new(((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+        U256::from((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3 </span>+ <span class="number">1</span>)
     }
 
     <span class="doccomment">/// Get the voting failure threshold for the committee
-    </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>len = <span class="self">self</span>.total_nodes(epoch);
-        NonZeroU64::new(((len <span class="kw">as </span>u64) / <span class="number">3</span>) + <span class="number">1</span>).unwrap()
+        U256::from((len <span class="kw">as </span>u64) / <span class="number">3 </span>+ <span class="number">1</span>)
     }
 
     <span class="doccomment">/// Get the voting upgrade threshold for the committee
-    </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; NonZeroU64 {
+    </span><span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch&gt;) -&gt; U256 {
         <span class="kw">let </span>len = <span class="self">self</span>.total_nodes(epoch);
-        NonZeroU64::new(max((len <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>, ((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>)).unwrap()
+        U256::from(max((len <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>, ((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>))
     }
     <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: TYPES::Epoch) -&gt; bool {
         <span class="bool-val">true
