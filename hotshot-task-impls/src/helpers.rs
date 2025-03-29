@@ -34,8 +34,8 @@ use hotshot_types::{
         BlockPayload, ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_first_transition_block,
-        is_transition_block, option_epoch_from_block_number, Terminator, View, ViewInner,
+        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_transition_block,
+        option_epoch_from_block_number, Terminator, View, ViewInner,
     },
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
@@ -1207,7 +1207,7 @@ pub async fn validate_qc_and_next_epoch_qc<TYPES: NodeType, V: Versions>(
     if qc
         .data
         .block_number
-        .is_some_and(|b| is_first_transition_block(b, epoch_height))
+        .is_some_and(|b| is_epoch_transition(b, epoch_height))
     {
         ensure!(
             maybe_next_epoch_qc.is_some(),

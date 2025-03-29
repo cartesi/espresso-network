@@ -97,8 +97,8 @@ async fn validate_node_map<TYPES: NodeType, V: Versions>(
         ensure!(
               child.justify_qc().view_number >= parent.view_number(),
               "The node has provided leaf:\n\n{:?}\n\nbut its quorum certificate points to a view before the most recent leaf:\n\n{:?}",
-              child.view_number(),
-              parent.view_number()
+              child,
+              parent
         );
 
         child
