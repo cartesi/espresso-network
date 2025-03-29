@@ -532,12 +532,12 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     ) {
         if next_epoch_qc.data.leaf_commit != qc.data().leaf_commit {
             tracing::error!(
-                    "Next epoch QC for view {:?} has different leaf commit {:?} to {:?}",
-                    qc.view_number(),
-                    next_epoch_qc.data.leaf_commit,
-                    qc.data().leaf_commit
-                );
-              return;
+                "Next epoch QC for view {:?} has different leaf commit {:?} to {:?}",
+                qc.view_number(),
+                next_epoch_qc.data.leaf_commit,
+                qc.data().leaf_commit
+            );
+            return;
         }
         if let Some((transition_qc, _)) = &self.transition_qc {
             if transition_qc.view_number() >= qc.view_number() {

@@ -753,14 +753,15 @@ pub(crate) async fn validate_epoch_transition_qc<
     {
         return Ok(());
     }
+    let Some(next_epoch_qc) = proposal.data.next_epoch_justify_qc() else {
+        bail!("Next epoch justify QC is not present");
+    };
+    ensure!(
+        next_epoch_qc.data.leaf_commit == proposed_qc.data().leaf_commit,
+        "Next epoch QC has different leaf commit to justify QC"
+    );
+
     if is_transition_block(qc_block_number, validation_info.epoch_height) {
-        let Some(next_epoch_qc) = proposal.data.next_epoch_justify_qc() else {
-            bail!("Next epoch justify QC is not present");
-        };
-        ensure!(
-            next_epoch_qc.data.leaf_commit == proposed_qc.data().leaf_commit,
-            "Next epoch QC has different leaf commit to justify QC"
-        );
         // Height is epoch height - 2
         ensure!(
             transition_qc(validation_info).await.is_none_or(
@@ -768,13 +769,7 @@ pub(crate) async fn validate_epoch_transition_qc<
             ),
             "Proposed transition qc must have view number greater than or equal to previous transition QC"
         );
-        ensure!(
-            is_transition_block(
-                proposed_qc.data.block_number.unwrap(),
-                validation_info.epoch_height
-            ),
-            "Block with height epoch height - 2 must have justify_qc for transition block height"
-        );
+
         validation_info
             .consensus
             .write()
