@@ -31,6 +31,7 @@ use hotshot_libp2p_networking::network::behaviours::dht::store::persistent::DhtN
 use libp2p::Multiaddr;
 use network::libp2p::split_off_peer_id;
 use options::Identity;
+use primitive_types::U256;
 use proposal_fetcher::ProposalFetcherConfig;
 use state_signature::static_stake_table_commitment;
 use tokio::select;

@@ -29,7 +29,7 @@ use hotshot_types::{
         signature_key::{SignatureKey, StateSignatureKey},
         storage::Storage,
     },
-    utils::option_epoch_from_block_number,
+    utils::{is_last_block, option_epoch_from_block_number},
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -262,7 +262,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
             self.epoch_height,
         );
 
-        let is_vote_leaf_extended = self.consensus.read().await.is_leaf_extended(leaf.commit());
+        let is_vote_leaf_extended = is_last_block(leaf.height(), self.epoch_height);
         if current_epoch.is_none() || !is_vote_leaf_extended {
             // We're voting for the proposal that will probably form the eQC. We don't want to change
             // the view here because we will probably change it when we form the eQC.

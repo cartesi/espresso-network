@@ -12,7 +12,7 @@ use hotshot_types::{
     event::{Event, EventType},
     simple_vote::{HasEpoch, QuorumVote2, TimeoutData2, TimeoutVote2},
     traits::node_implementation::{ConsensusTime, NodeImplementation, NodeType},
-    utils::{is_epoch_transition, EpochTransitionIndicator},
+    utils::{is_epoch_transition, is_last_block, EpochTransitionIndicator},
     vote::{HasViewNumber, Vote},
 };
 use hotshot_utils::anytrace::*;
@@ -168,7 +168,10 @@ pub async fn send_high_qc<TYPES: NodeType, V: Versions, I: NodeImplementation<TY
 
     let consensus_reader = task_state.consensus.read().await;
     let high_qc = consensus_reader.high_qc().clone();
-    let is_eqc = consensus_reader.is_leaf_extended(high_qc.data.leaf_commit);
+    let is_eqc = high_qc
+        .data
+        .block_number
+        .is_some_and(|b| is_last_block(b, task_state.epoch_height));
     drop(consensus_reader);
 
     if is_eqc {

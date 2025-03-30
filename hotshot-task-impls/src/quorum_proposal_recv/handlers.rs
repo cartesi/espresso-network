@@ -27,7 +27,8 @@ use hotshot_types::{
         ValidatedState,
     },
     utils::{
-        is_epoch_transition, is_transition_block, option_epoch_from_block_number, View, ViewInner,
+        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        option_epoch_from_block_number, View, ViewInner,
     },
     vote::{Certificate, HasViewNumber},
 };
@@ -175,6 +176,60 @@ async fn validate_epoch_transition_block<
     Ok(())
 }
 
+async fn validate_current_epoch<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+    validation_info: &ValidationInfo<TYPES, I, V>,
+) -> Result<()> {
+    if !validation_info
+        .upgrade_lock
+        .epochs_enabled(proposal.data.view_number())
+        .await
+        || proposal.data.justify_qc().view_number()
+            <= validation_info
+                .upgrade_lock
+                .upgrade_view()
+                .await
+                .unwrap_or(TYPES::View::new(0))
+    {
+        return Ok(());
+    }
+
+    let block_number = proposal.data.block_header().block_number();
+
+    let Some(high_block_number) = validation_info
+        .consensus
+        .read()
+        .await
+        .high_qc()
+        .data
+        .block_number
+    else {
+        bail!("High QC has no block number");
+    };
+
+    ensure!(
+        epoch_from_block_number(block_number, validation_info.epoch_height)
+            >= epoch_from_block_number(high_block_number + 1, validation_info.epoch_height),
+        "Quorum proposal has an inconsistent epoch"
+    );
+
+    Ok(())
+}
+
+/// Validate that the proposal's block height is one greater than the justification QC's block height.
+async fn validate_block_height<TYPES: NodeType>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+) -> Result<()> {
+    let Some(qc_block_number) = proposal.data.justify_qc().data.block_number else {
+        return Ok(());
+    };
+    ensure!(
+        qc_block_number + 1 == proposal.data.block_header().block_number(),
+        "Quorum proposal has an inconsistent block height"
+    );
+    Ok(())
+}
+
 /// Handles the `QuorumProposalRecv` event by first validating the cert itself for the view, and then
 /// updating the states, which runs when the proposal cannot be found in the internal state map.
 ///
@@ -199,11 +254,15 @@ pub(crate) async fn handle_quorum_proposal_recv<
         .data
         .validate_epoch(&validation_info.upgrade_lock, validation_info.epoch_height)
         .await?;
+    // validate the proposal's epoch matches ours
+    validate_current_epoch(proposal, &validation_info).await?;
     let quorum_proposal_sender_key = quorum_proposal_sender_key.clone();
 
     validate_proposal_view_and_certs(proposal, &validation_info)
         .await
         .context(warn!("Failed to validate proposal view or attached certs"))?;
+
+    validate_block_height(proposal).await?;
 
     let view_number = proposal.data.view_number();
 
@@ -297,13 +356,11 @@ pub(crate) async fn handle_quorum_proposal_recv<
             view_number,
             proposal_epoch
         );
-        let highest_block = validation_info.consensus.read().await.highest_block;
-        // update our highest block if it's higher or we're resetting the transition block
-        if highest_block < proposal_block_number
-            || is_transition_block(proposal_block_number, validation_info.epoch_height)
-        {
-            validation_info.consensus.write().await.highest_block = proposal_block_number;
-        }
+        validation_info
+            .consensus
+            .write()
+            .await
+            .update_highest_block(proposal_block_number);
         broadcast_event(
             Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
             event_sender,
@@ -327,9 +384,11 @@ pub(crate) async fn handle_quorum_proposal_recv<
         view_number,
         proposal_epoch
     );
-    let highest_block = validation_info.consensus.read().await.highest_block;
-    if highest_block < proposal_block_number
-        || is_transition_block(proposal_block_number, validation_info.epoch_height)
+    validation_info
+        .consensus
+        .write()
+        .await
+        .update_highest_block(proposal_block_number);
     {
         validation_info.consensus.write().await.highest_block = proposal_block_number;
     }

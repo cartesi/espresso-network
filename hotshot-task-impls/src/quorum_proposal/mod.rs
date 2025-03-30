@@ -570,8 +570,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     self.check_eqc_and_store(qc.view_number(), Either::Left(qc.clone()))
                         .await?;
 
-                    handle_eqc_formed(qc.view_number(), qc.data.leaf_commit, self, &event_sender)
-                        .await;
+                    handle_eqc_formed(
+                        qc.view_number(),
+                        qc.data.leaf_commit,
+                        qc.data.block_number,
+                        self,
+                        &event_sender,
+                    )
+                    .await;
 
                     let view_number = qc.view_number() + 1;
                     self.create_dependency_task_if_new(
@@ -712,6 +718,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 handle_eqc_formed(
                     next_epoch_qc.view_number(),
                     next_epoch_qc.data.leaf_commit,
+                    next_epoch_qc.data.block_number,
                     self,
                     &event_sender,
                 )
