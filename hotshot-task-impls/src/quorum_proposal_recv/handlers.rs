@@ -184,6 +184,12 @@ async fn validate_current_epoch<TYPES: NodeType, I: NodeImplementation<TYPES>, V
         .upgrade_lock
         .epochs_enabled(proposal.data.view_number())
         .await
+        || proposal.data.view_number()
+            <= validation_info
+                .upgrade_lock
+                .upgrade_view()
+                .await
+                .unwrap_or(TYPES::View::new(0))
     {
         return Ok(());
     }
