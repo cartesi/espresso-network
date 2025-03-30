@@ -215,6 +215,21 @@ async fn validate_current_epoch<TYPES: NodeType, I: NodeImplementation<TYPES>, V
 
     Ok(())
 }
+
+/// Validate that the proposal's block height is one greater than the justification QC's block height.
+async fn validate_block_height<TYPES: NodeType>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+) -> Result<()> {
+    let Some(qc_block_number) = proposal.data.justify_qc().data.block_number else {
+        return Ok(());
+    };
+    ensure!(
+        qc_block_number + 1 == proposal.data.block_header().block_number(),
+        "Quorum proposal has an inconsistent block height"
+    );
+    Ok(())
+}
+
 /// Handles the `QuorumProposalRecv` event by first validating the cert itself for the view, and then
 /// updating the states, which runs when the proposal cannot be found in the internal state map.
 ///
@@ -246,6 +261,8 @@ pub(crate) async fn handle_quorum_proposal_recv<
     validate_proposal_view_and_certs(proposal, &validation_info)
         .await
         .context(warn!("Failed to validate proposal view or attached certs"))?;
+
+    validate_block_height(proposal).await?;
 
     let view_number = proposal.data.view_number();
 
