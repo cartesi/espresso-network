@@ -835,13 +835,25 @@ impl<TYPES: NodeType> Consensus<TYPES> {
     /// # Errors
     /// Can return an error when the provided high_qc is not newer than the existing entry.
     pub fn update_high_qc(&mut self, high_qc: QuorumCertificate2<TYPES>) -> Result<()> {
+        if self.high_qc == high_qc {
+            return Ok(());
+        }
+        let same_epoch = high_qc.data.block_number.is_some_and(|new_bn| {
+            let Some(high_bn) = self.high_qc.data.block_number else {
+                return false;
+            };
+            epoch_from_block_number(new_bn + 1, self.epoch_height)
+                == epoch_from_block_number(high_bn + 1, self.epoch_height)
+        });
+        // make sure the we don't update the high QC unless is't a higher view unless it's
+        // the transition block for the same epoch
         ensure!(
             high_qc.view_number > self.high_qc.view_number
-                || high_qc == self.high_qc
-                || high_qc
+                || (high_qc
                     .data
                     .block_number
-                    .is_some_and(|bn| is_transition_block(bn, self.epoch_height)),
+                    .is_some_and(|bn| is_transition_block(bn, self.epoch_height))
+                    && same_epoch),
             debug!("High QC with an equal or higher view exists.")
         );
         tracing::debug!("Updating high QC");
@@ -859,14 +871,27 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         &mut self,
         high_qc: NextEpochQuorumCertificate2<TYPES>,
     ) -> Result<()> {
+        if self.next_epoch_high_qc.as_ref() == Some(&high_qc) {
+            return Ok(());
+        }
+        let same_epoch = high_qc.data.block_number.is_some_and(|bn| {
+            let Some(current_neqc) = self.next_epoch_high_qc() else {
+                return false;
+            };
+            let Some(high_bn) = current_neqc.data.block_number else {
+                return false;
+            };
+            epoch_from_block_number(bn + 1, self.epoch_height)
+                == epoch_from_block_number(high_bn + 1, self.epoch_height)
+        });
         if let Some(next_epoch_high_qc) = self.next_epoch_high_qc() {
             ensure!(
                 high_qc.view_number > next_epoch_high_qc.view_number
-                    || high_qc == *next_epoch_high_qc
                     || high_qc
                         .data
                         .block_number
-                        .is_some_and(|bn| is_transition_block(bn, self.epoch_height)),
+                        .is_some_and(|bn| is_transition_block(bn, self.epoch_height))
+                        && same_epoch,
                 debug!("Next epoch high QC with an equal or higher view exists.")
             );
         }
@@ -1102,14 +1127,6 @@ impl<TYPES: NodeType> Consensus<TYPES> {
 
         Some(())
     }
-
-    /// Returns true if the given leaf can form an extended Quorum Certificate
-    /// The Extended Quorum Certificate (eQC) is the third Quorum Certificate formed in three
-    /// consecutive views for the last block in the epoch.
-    pub fn is_leaf_extended(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        self.is_leaf_for_last_block(leaf_commit)
-    }
-
     /// Returns true if a given leaf is for the epoch transition
     pub fn is_epoch_transition(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
         let Some(leaf) = self.saved_leaves.get(&leaf_commit) else {
@@ -1118,16 +1135,6 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         };
         let block_height = leaf.height();
         is_epoch_transition(block_height, self.epoch_height)
-    }
-
-    /// Returns true if a given leaf is for the last block in the epoch
-    pub fn is_leaf_for_last_block(&self, leaf_commit: LeafCommitment<TYPES>) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the leaf commit");
-            return false;
-        };
-        let block_height = leaf.height();
-        is_last_block(block_height, self.epoch_height)
     }
 
     /// Returns true if our high QC is for the last block in the epoch
@@ -1148,7 +1155,7 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         let new_epoch = epoch_from_block_number(proposed_leaf.height(), self.epoch_height);
         let old_epoch = epoch_from_block_number(parent_leaf.height(), self.epoch_height);
 
-        new_epoch - 1 == old_epoch && self.is_leaf_extended(parent_leaf.commit())
+        new_epoch - 1 == old_epoch && is_last_block(parent_leaf.height(), self.epoch_height)
     }
 
     /// Returns true if our high QC is for the block equal or greater than the root epoch block

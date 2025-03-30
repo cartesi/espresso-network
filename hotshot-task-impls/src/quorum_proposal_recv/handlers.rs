@@ -27,7 +27,8 @@ use hotshot_types::{
         ValidatedState,
     },
     utils::{
-        is_epoch_transition, is_transition_block, option_epoch_from_block_number, View, ViewInner,
+        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        option_epoch_from_block_number, View, ViewInner,
     },
     vote::{Certificate, HasViewNumber},
 };
@@ -175,6 +176,39 @@ async fn validate_epoch_transition_block<
     Ok(())
 }
 
+async fn validate_current_epoch<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>(
+    proposal: &Proposal<TYPES, QuorumProposalWrapper<TYPES>>,
+    validation_info: &ValidationInfo<TYPES, I, V>,
+) -> Result<()> {
+    if !validation_info
+        .upgrade_lock
+        .epochs_enabled(proposal.data.view_number())
+        .await
+    {
+        return Ok(());
+    }
+
+    let block_number = proposal.data.block_header().block_number();
+
+    let Some(high_block_number) = validation_info
+        .consensus
+        .read()
+        .await
+        .high_qc()
+        .data
+        .block_number
+    else {
+        bail!("High QC has no block number");
+    };
+
+    ensure!(
+        epoch_from_block_number(block_number, validation_info.epoch_height)
+            >= epoch_from_block_number(high_block_number + 1, validation_info.epoch_height),
+        "Quorum proposal has an inconsistent epoch"
+    );
+
+    Ok(())
+}
 /// Handles the `QuorumProposalRecv` event by first validating the cert itself for the view, and then
 /// updating the states, which runs when the proposal cannot be found in the internal state map.
 ///
@@ -199,6 +233,8 @@ pub(crate) async fn handle_quorum_proposal_recv<
         .data
         .validate_epoch(&validation_info.upgrade_lock, validation_info.epoch_height)
         .await?;
+    // validate the proposal's epoch matches ours
+    validate_current_epoch(proposal, &validation_info).await?;
     let quorum_proposal_sender_key = quorum_proposal_sender_key.clone();
 
     validate_proposal_view_and_certs(proposal, &validation_info)

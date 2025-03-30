@@ -30,7 +30,7 @@ use hotshot_types::{
         signature_key::SignatureKey,
     },
     utils::{
-        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        epoch_from_block_number, is_epoch_transition, is_last_block, is_transition_block,
         option_epoch_from_block_number, BuilderCommitment,
     },
     vote::HasViewNumber,
@@ -694,6 +694,7 @@ pub(super) async fn handle_eqc_formed<
 >(
     cert_view: TYPES::View,
     leaf_commit: Commitment<Leaf2<TYPES>>,
+    block_number: Option<u64>,
     task_state: &QuorumProposalTaskState<TYPES, I, V>,
     event_sender: &Sender<Arc<HotShotEvent<TYPES>>>,
 ) {
@@ -701,12 +702,7 @@ pub(super) async fn handle_eqc_formed<
         tracing::debug!("QC2 formed but epochs not enabled. Do nothing");
         return;
     }
-    if !task_state
-        .consensus
-        .read()
-        .await
-        .is_leaf_extended(leaf_commit)
-    {
+    if !block_number.is_some_and(|bn| is_last_block(bn, task_state.epoch_height)) {
         tracing::debug!("We formed QC but not eQC. Do nothing");
         return;
     }

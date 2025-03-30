@@ -20,7 +20,7 @@ use hotshot_types::{
         node_implementation::{NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
     },
-    utils::{is_transition_block, option_epoch_from_block_number},
+    utils::{is_last_block, is_transition_block, option_epoch_from_block_number},
     vote::HasViewNumber,
 };
 use hotshot_utils::anytrace::*;
@@ -240,11 +240,10 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                 }
             },
             HotShotEvent::ExtendedQcRecv(high_qc, next_epoch_high_qc, _) => {
-                if !self
-                    .consensus
-                    .read()
-                    .await
-                    .is_leaf_extended(high_qc.data.leaf_commit)
+                if !high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_last_block(bn, self.epoch_height))
                 {
                     tracing::warn!("Received extended QC but we can't verify the leaf is extended");
                     return Ok(());
