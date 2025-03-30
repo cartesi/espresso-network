@@ -524,6 +524,22 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         self.transition_qc.as_ref()
     }
 
+    ///Update the highest block number
+    pub fn update_highest_block(&mut self, block_number: u64) {
+        if block_number > self.highest_block {
+            self.highest_block = block_number;
+            return;
+        }
+
+        if is_epoch_transition(block_number, self.epoch_height) {
+            let new_epoch = epoch_from_block_number(block_number, self.epoch_height);
+            let high_epoch = epoch_from_block_number(self.highest_block, self.epoch_height);
+            if new_epoch >= high_epoch {
+                self.highest_block = block_number;
+            }
+        }
+    }
+
     /// Update the transition QC.
     pub fn update_transition_qc(
         &mut self,
