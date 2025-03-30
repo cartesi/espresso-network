@@ -121,7 +121,7 @@ where
                         let metadata = header.metadata().encode();
 
                         // Calculate AVIDM commitment
-                        let commit = match AvidMScheme::commit(
+                        let _commit = match AvidMScheme::commit(
                             &avidm_param,
                             &bytes,
                             ns_table::parse_ns_table(bytes.len(), &metadata),

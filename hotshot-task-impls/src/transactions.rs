@@ -585,7 +585,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 .validated_state_map()
                 .get(&target_view)
                 .context(info!(
-                    "Missing record for view {?target_view} in validated state"
+                    "Missing record for view {target_view} in validated state"
                 ))?;
 
             match &view_data.view_inner {
