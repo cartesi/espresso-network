@@ -385,7 +385,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 return Ok(());
             };
             if is_epoch_transition(parent_block_number, self.epoch_height)
-                && parent_block_number % self.epoch_height != 0
+                && !is_last_block(parent_block_number, self.epoch_height)
             {
                 ensure!(
                     builder_commitment == BuilderCommitment::from_bytes([]),
@@ -641,7 +641,8 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                     return;
                 };
                 if qc.data.block_number.is_some_and(|bn| {
-                    is_epoch_transition(bn, self.epoch_height) && bn % self.epoch_height != 0
+                    is_epoch_transition(bn, self.epoch_height)
+                        && !is_last_block(bn, self.epoch_height)
                 }) {
                     tracing::error!("High is in transition but we need to propose with transition QC, do nothing");
                     return;

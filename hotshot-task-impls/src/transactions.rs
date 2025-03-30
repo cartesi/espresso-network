@@ -27,7 +27,7 @@ use hotshot_types::{
         signature_key::{BuilderSignatureKey, SignatureKey},
         BlockPayload,
     },
-    utils::{is_epoch_transition, ViewInner},
+    utils::{is_epoch_transition, is_last_block, ViewInner},
 };
 use hotshot_utils::anytrace::*;
 use tokio::time::{sleep, timeout};
@@ -206,7 +206,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 || is_epoch_transition(high_qc_block_number, self.epoch_height)
             {
                 // We are proposing a transition block it should be empty
-                if high_qc_block_number % self.epoch_height != 0 {
+                if !is_last_block(high_qc_block_number, self.epoch_height) {
                     tracing::error!(
                         "Sending empty block event. View number: {}. Parent Block number: {}",
                         block_view,

@@ -27,7 +27,7 @@ use hotshot_types::{
         ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        epoch_from_block_number, is_epoch_transition, is_last_block, is_transition_block,
         option_epoch_from_block_number,
     },
     vote::HasViewNumber,
@@ -189,7 +189,10 @@ pub(crate) async fn handle_quorum_proposal_validated<
     } = if version >= V::Epochs::VERSION {
         // Skip the decide rule for the last block of the epoch.  This is so
         // that we do not decide the block with epoch_height -2 before we enter the new epoch
-        if proposal.block_header().block_number() % task_state.epoch_height != 0 {
+        if is_last_block(
+            proposal.block_header().block_number(),
+            task_state.epoch_height,
+        ) {
             decide_from_proposal_2::<TYPES, I, V>(
                 proposal,
                 OuterConsensus::new(Arc::clone(&task_state.consensus.inner_consensus)),
