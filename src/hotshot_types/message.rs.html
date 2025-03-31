@@ -743,7 +743,14 @@
 <a href="#742" id="742">742</a>
 <a href="#743" id="743">743</a>
 <a href="#744" id="744">744</a>
-<a href="#745" id="745">745</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1375,6 +1382,13 @@ where
             decided_upgrade_certificate: Arc::new(RwLock::new(certificate.clone())),
             _pd: PhantomData::&lt;V&gt;,
         }
+    }
+
+    <span class="kw">pub async fn </span>upgrade_view(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;TYPES::View&gt; {
+        <span class="kw">let </span>upgrade_certificate = <span class="self">self</span>.decided_upgrade_certificate.read().<span class="kw">await</span>;
+        upgrade_certificate
+            .as_ref()
+            .map(|cert| cert.data.new_version_first_view)
     }
 
     <span class="doccomment">/// Calculate the version applied in a view, based on the provided upgrade lock.

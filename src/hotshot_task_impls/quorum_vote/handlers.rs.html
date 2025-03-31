@@ -529,7 +529,17 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -557,7 +567,10 @@
         storage::Storage,
         ValidatedState,
     },
-    utils::{epoch_from_block_number, is_last_block_in_epoch, option_epoch_from_block_number},
+    utils::{
+        epoch_from_block_number, is_epoch_transition, is_last_block, is_transition_block,
+        option_epoch_from_block_number,
+    },
     vote::HasViewNumber,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
@@ -604,7 +617,7 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="comment">// Skip if this is not the expected block.
     </span><span class="kw">if </span>task_state.epoch_height == <span class="number">0
-        </span>|| !is_last_block_in_epoch(
+        </span>|| !is_epoch_transition(
             proposal.block_header().block_number(),
             task_state.epoch_height,
         )
@@ -667,8 +680,8 @@
         decided_block_number,
         task_state.epoch_height,
     ));
-    <span class="comment">// Skip storing the received result if this is not the last block.
-    </span><span class="kw">if </span>is_last_block_in_epoch(decided_block_number, task_state.epoch_height) {
+    <span class="comment">// Skip storing the received result if this is not the transition block.
+    </span><span class="kw">if </span>is_transition_block(decided_block_number, task_state.epoch_height) {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(result) = decided_leaf.next_drb_result {
             <span class="comment">// We don't need to check value existence and consistency because it should be
             // impossible to decide on a block with different DRB results.
@@ -715,17 +728,26 @@
         included_txns,
         decided_upgrade_cert,
     } = <span class="kw">if </span>version &gt;= V::Epochs::VERSION {
-        decide_from_proposal_2::&lt;TYPES, I, V&gt;(
-            proposal,
-            OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>task_state.consensus.inner_consensus)),
-            Arc::clone(<span class="kw-2">&amp;</span>task_state.upgrade_lock.decided_upgrade_certificate),
-            <span class="kw-2">&amp;</span>task_state.public_key,
-            version &gt;= V::Epochs::VERSION,
-            task_state.membership.membership(),
-            <span class="kw-2">&amp;</span>task_state.storage,
-        )
-        .<span class="kw">await
-    </span>} <span class="kw">else </span>{
+        <span class="comment">// Skip the decide rule for the last block of the epoch.  This is so
+        // that we do not decide the block with epoch_height -2 before we enter the new epoch
+        </span><span class="kw">if </span>!is_last_block(
+            proposal.block_header().block_number(),
+            task_state.epoch_height,
+        ) {
+            decide_from_proposal_2::&lt;TYPES, I, V&gt;(
+                proposal,
+                OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>task_state.consensus.inner_consensus)),
+                Arc::clone(<span class="kw-2">&amp;</span>task_state.upgrade_lock.decided_upgrade_certificate),
+                <span class="kw-2">&amp;</span>task_state.public_key,
+                version &gt;= V::Epochs::VERSION,
+                task_state.membership.membership(),
+                <span class="kw-2">&amp;</span>task_state.storage,
+            )
+            .<span class="kw">await
+        </span>} <span class="kw">else </span>{
+            LeafChainTraversalOutcome::default()
+        }
+    } <span class="kw">else </span>{
         decide_from_proposal::&lt;TYPES, I, V&gt;(
             proposal,
             OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>task_state.consensus.inner_consensus)),
@@ -832,6 +854,12 @@
         <span class="comment">// We don't need to hold this while we broadcast
         </span>drop(consensus_writer);
 
+        <span class="macro">tracing::debug!</span>(
+            <span class="string">"Successfully sent decide event, leaf views: {:?}, leaf views len: {:?}, qc view: {:?}"</span>,
+            decided_view_number,
+            leaf_views.len(),
+            new_decide_qc.as_ref().unwrap().view_number()
+        );
         <span class="comment">// Send an update to everyone saying that we've reached a decide
         </span>broadcast_event(
             Event {
@@ -846,7 +874,6 @@
             <span class="kw-2">&amp;</span>task_state.output_event_stream,
         )
         .<span class="kw">await</span>;
-        <span class="macro">tracing::debug!</span>(<span class="string">"Successfully sent decide event"</span>);
 
         <span class="kw">if </span>version &gt;= V::Epochs::VERSION {
             <span class="kw">for </span>leaf_view <span class="kw">in </span>leaf_views {
@@ -939,40 +966,33 @@
         );
     };
 
-    <span class="kw">let </span>(<span class="prelude-val">Some</span>(parent_state), maybe_parent_delta) = validated_view.state_and_delta() <span class="kw">else </span>{
+    <span class="kw">let </span>(<span class="prelude-val">Some</span>(parent_state), <span class="kw">_</span>) = validated_view.state_and_delta() <span class="kw">else </span>{
         <span class="macro">bail!</span>(<span class="string">"Parent state not found! Consensus internally inconsistent"</span>);
     };
 
-    <span class="kw">let </span>(state, delta) = <span class="kw">if </span>is_last_block_in_epoch(proposed_leaf.height(), epoch_height)
-        &amp;&amp; proposed_leaf.height() == parent.height()
-    {
-        <span class="comment">// This is an epoch transition. We do not want to call `validate_and_apply_header` second
-        // time for the same block. Just grab the state and delta from the parent and update the shared
-        // state with those.
-        </span>(parent_state, maybe_parent_delta)
-    } <span class="kw">else </span>{
-        <span class="kw">let </span>version = upgrade_lock.version(view_number).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span>version = upgrade_lock.version(view_number).<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>(validated_state, state_delta) = parent_state
-            .validate_and_apply_header(
-                <span class="kw-2">&amp;</span>instance_state,
-                <span class="kw-2">&amp;</span>parent,
-                <span class="kw-2">&amp;</span>proposed_leaf.block_header().clone(),
-                vid_share.data.payload_byte_len(),
-                version,
-                <span class="kw-2">*</span>view_number,
-            )
-            .<span class="kw">await
-            </span>.wrap()
-            .context(<span class="macro">warn!</span>(<span class="string">"Block header doesn't extend the proposal!"</span>))<span class="question-mark">?</span>;
-
-        (Arc::new(validated_state), <span class="prelude-val">Some</span>(Arc::new(state_delta)))
-    };
+    <span class="kw">let </span>(validated_state, state_delta) = parent_state
+        .validate_and_apply_header(
+            <span class="kw-2">&amp;</span>instance_state,
+            <span class="kw-2">&amp;</span>parent,
+            <span class="kw-2">&amp;</span>proposed_leaf.block_header().clone(),
+            vid_share.data.payload_byte_len(),
+            version,
+            <span class="kw-2">*</span>view_number,
+        )
+        .<span class="kw">await
+        </span>.wrap()
+        .context(<span class="macro">warn!</span>(<span class="string">"Block header doesn't extend the proposal!"</span>))<span class="question-mark">?</span>;
 
     <span class="comment">// Now that we've rounded everyone up, we need to update the shared state
     </span><span class="kw">let </span><span class="kw-2">mut </span>consensus_writer = consensus.write().<span class="kw">await</span>;
 
-    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = consensus_writer.update_leaf(proposed_leaf.clone(), Arc::clone(<span class="kw-2">&amp;</span>state), delta) {
+    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = consensus_writer.update_leaf(
+        proposed_leaf.clone(),
+        Arc::new(validated_state),
+        <span class="prelude-val">Some</span>(Arc::new(state_delta)),
+    ) {
         <span class="macro">tracing::trace!</span>(<span class="string">"{e:?}"</span>);
     }
 
@@ -1002,7 +1022,7 @@
     <span class="comment">// If the proposed leaf is for the last block in the epoch and the node is part of the quorum committee
     // in the next epoch, the node should vote to achieve the double quorum.
     </span><span class="kw">let </span>committee_member_in_next_epoch = leaf.with_epoch
-        &amp;&amp; is_last_block_in_epoch(leaf.height(), epoch_height)
+        &amp;&amp; is_epoch_transition(leaf.height(), epoch_height)
         &amp;&amp; membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await</span>;
 
     <span class="macro">ensure!</span>(
@@ -1043,7 +1063,7 @@
         </span>.wrap()
         .context(<span class="macro">error!</span>(<span class="string">"Failed to store VID share"</span>))<span class="question-mark">?</span>;
 
-    <span class="kw">if </span>extended_vote {
+    <span class="kw">if </span>extended_vote &amp;&amp; upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
         <span class="macro">tracing::debug!</span>(<span class="string">"sending extended vote to everybody"</span>,);
         broadcast_event(
             Arc::new(HotShotEvent::ExtendedQuorumVoteSend(vote)),

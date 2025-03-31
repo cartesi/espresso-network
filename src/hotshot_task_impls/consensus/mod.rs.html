@@ -299,7 +299,24 @@
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
 <a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#301" id="301">301</a>
+<a href="#302" id="302">302</a>
+<a href="#303" id="303">303</a>
+<a href="#304" id="304">304</a>
+<a href="#305" id="305">305</a>
+<a href="#306" id="306">306</a>
+<a href="#307" id="307">307</a>
+<a href="#308" id="308">308</a>
+<a href="#309" id="309">309</a>
+<a href="#310" id="310">310</a>
+<a href="#311" id="311">311</a>
+<a href="#312" id="312">312</a>
+<a href="#313" id="313">313</a>
+<a href="#314" id="314">314</a>
+<a href="#315" id="315">315</a>
+<a href="#316" id="316">316</a>
+<a href="#317" id="317">317</a>
+<a href="#318" id="318">318</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -321,7 +338,7 @@
         node_implementation::{NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
     },
-    utils::option_epoch_from_block_number,
+    utils::{is_last_block, is_transition_block, option_epoch_from_block_number},
     vote::HasViewNumber,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
@@ -462,6 +479,11 @@
                     cert_block_number,
                     <span class="self">self</span>.epoch_height,
                 );
+                <span class="macro">tracing::debug!</span>(
+                    <span class="string">"Formed Extended QC for view {:?} and epoch {:?}."</span>,
+                    cert_view,
+                    cert_epoch
+                );
                 <span class="comment">// Transition to the new epoch by sending ViewChange
                 </span><span class="kw">let </span>next_epoch = cert_epoch.map(|x| x + <span class="number">1</span>);
                 <span class="macro">tracing::info!</span>(<span class="string">"Entering new epoch: {:?}"</span>, next_epoch);
@@ -485,8 +507,21 @@
                     <span class="macro">tracing::error!</span>(<span class="string">"Received invalid high QC: {}"</span>, e);
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 }
-
                 <span class="kw">let </span><span class="kw-2">mut </span>consensus_writer = <span class="self">self</span>.consensus.write().<span class="kw">await</span>;
+
+                <span class="kw">if </span>high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_transition_block(bn, <span class="self">self</span>.epoch_height))
+                {
+                    <span class="kw">let </span><span class="prelude-val">Some</span>(next_epoch_high_qc) = maybe_next_epoch_high_qc <span class="kw">else </span>{
+                        <span class="macro">tracing::error!</span>(<span class="string">"Received transition QC but no next epoch high QC"</span>);
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+                    };
+                    consensus_writer
+                        .update_transition_qc(high_qc.clone(), next_epoch_high_qc.clone());
+                }
+
                 <span class="kw">let </span>high_qc_updated = consensus_writer.update_high_qc(high_qc.clone()).is_ok();
                 <span class="kw">let </span>next_high_qc_updated =
                     <span class="kw">if let </span><span class="prelude-val">Some</span>(next_epoch_high_qc) = maybe_next_epoch_high_qc {
@@ -523,11 +558,10 @@
                 }
             },
             HotShotEvent::ExtendedQcRecv(high_qc, next_epoch_high_qc, <span class="kw">_</span>) =&gt; {
-                <span class="kw">if </span>!<span class="self">self
-                    </span>.consensus
-                    .read()
-                    .<span class="kw">await
-                    </span>.is_leaf_extended(high_qc.data.leaf_commit)
+                <span class="kw">if </span>!high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_last_block(bn, <span class="self">self</span>.epoch_height))
                 {
                     <span class="macro">tracing::warn!</span>(<span class="string">"Received extended QC but we can't verify the leaf is extended"</span>);
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());

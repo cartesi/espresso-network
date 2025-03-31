@@ -458,7 +458,7 @@
         node_implementation::{NodeImplementation, NodeType},
         signature_key::SignatureKey,
     },
-    utils::is_last_block_in_epoch,
+    utils::is_epoch_transition,
     vote::HasViewNumber,
 };
 <span class="kw">use </span>hotshot_utils::anytrace::Result;
@@ -545,7 +545,7 @@
 
                 <span class="comment">// Request VID share only if:
                 // 1. we are part of the current epoch or
-                // 2. we are part of the next epoch and this is a proposal for the last block.
+                // 2. we are part of the next epoch and this is a proposal for in transition.
                 </span><span class="kw">let </span>membership = <span class="self">self
                     </span>.membership_coordinator
                     .membership_for_epoch(prop_epoch)
@@ -556,7 +556,7 @@
                         .<span class="kw">await</span><span class="question-mark">?
                         </span>.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key)
                         .<span class="kw">await
-                        </span>|| !is_last_block_in_epoch(
+                        </span>|| !is_epoch_transition(
                             proposal.data.block_header().block_number(),
                             <span class="self">self</span>.epoch_height,
                         ))

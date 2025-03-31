@@ -1169,7 +1169,40 @@
 <a href="#1168" id="1168">1168</a>
 <a href="#1169" id="1169">1169</a>
 <a href="#1170" id="1170">1170</a>
-<a href="#1171" id="1171">1171</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1171" id="1171">1171</a>
+<a href="#1172" id="1172">1172</a>
+<a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1210,9 +1243,9 @@
         BlockPayload, ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_ge_epoch_root, is_last_block_in_epoch,
-        option_epoch_from_block_number, BuilderCommitment, LeafCommitment, StateAndDelta,
-        Terminator,
+        epoch_from_block_number, is_epoch_transition, is_ge_epoch_root, is_last_block,
+        is_transition_block, option_epoch_from_block_number, BuilderCommitment, LeafCommitment,
+        StateAndDelta, Terminator,
     },
     vote::{Certificate, HasViewNumber},
 };
@@ -1506,6 +1539,14 @@
     <span class="doccomment">/// Tables for the DRB seeds and results.
     </span><span class="kw">pub </span>drb_results: DrbResults&lt;TYPES&gt;,
 
+    <span class="doccomment">/// The transition QC for the current epoch
+    </span>transition_qc: <span class="prelude-ty">Option</span>&lt;(
+        QuorumCertificate2&lt;TYPES&gt;,
+        NextEpochQuorumCertificate2&lt;TYPES&gt;,
+    )&gt;,
+
+    <span class="doccomment">/// The highest block number that we have seen
+    </span><span class="kw">pub </span>highest_block: u64,
     <span class="doccomment">/// The light client state update certificate
     </span><span class="kw">pub </span>state_cert: LightClientStateUpdateCertificate&lt;TYPES&gt;,
 }
@@ -1611,6 +1652,24 @@
         epoch_height: u64,
         state_cert: LightClientStateUpdateCertificate&lt;TYPES&gt;,
     ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>transition_qc = <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>next_epoch_high_qc) = next_epoch_high_qc {
+            <span class="kw">if </span>high_qc
+                .data
+                .block_number
+                .is_some_and(|bn| is_transition_block(bn, epoch_height))
+            {
+                <span class="kw">if </span>high_qc.data.leaf_commit == next_epoch_high_qc.data.leaf_commit {
+                    <span class="prelude-val">Some</span>((high_qc.clone(), next_epoch_high_qc.clone()))
+                } <span class="kw">else </span>{
+                    <span class="macro">tracing::error!</span>(<span class="string">"Next epoch high QC has different leaf commit to high QC"</span>);
+                    <span class="prelude-val">None
+                </span>}
+            } <span class="kw">else </span>{
+                <span class="prelude-val">None
+            </span>}
+        } <span class="kw">else </span>{
+            <span class="prelude-val">None
+        </span>};
         Consensus {
             validated_state_map,
             vid_shares: vid_shares.unwrap_or_default(),
@@ -1628,6 +1687,8 @@
             metrics,
             epoch_height,
             drb_results: DrbResults::new(),
+            transition_qc,
+            highest_block: <span class="number">0</span>,
             state_cert,
         }
     }
@@ -1657,6 +1718,54 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>.high_qc
     }
 
+    <span class="doccomment">/// Get the transition QC.
+    </span><span class="kw">pub fn </span>transition_qc(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>(
+        QuorumCertificate2&lt;TYPES&gt;,
+        NextEpochQuorumCertificate2&lt;TYPES&gt;,
+    )&gt; {
+        <span class="self">self</span>.transition_qc.as_ref()
+    }
+
+    <span class="doccomment">///Update the highest block number
+    </span><span class="kw">pub fn </span>update_highest_block(<span class="kw-2">&amp;mut </span><span class="self">self</span>, block_number: u64) {
+        <span class="kw">if </span>block_number &gt; <span class="self">self</span>.highest_block {
+            <span class="self">self</span>.highest_block = block_number;
+            <span class="kw">return</span>;
+        }
+
+        <span class="kw">if </span>is_epoch_transition(block_number, <span class="self">self</span>.epoch_height) {
+            <span class="kw">let </span>new_epoch = epoch_from_block_number(block_number, <span class="self">self</span>.epoch_height);
+            <span class="kw">let </span>high_epoch = epoch_from_block_number(<span class="self">self</span>.highest_block, <span class="self">self</span>.epoch_height);
+            <span class="kw">if </span>new_epoch &gt;= high_epoch {
+                <span class="self">self</span>.highest_block = block_number;
+            }
+        }
+    }
+
+    <span class="doccomment">/// Update the transition QC.
+    </span><span class="kw">pub fn </span>update_transition_qc(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        qc: QuorumCertificate2&lt;TYPES&gt;,
+        next_epoch_qc: NextEpochQuorumCertificate2&lt;TYPES&gt;,
+    ) {
+        <span class="kw">if </span>next_epoch_qc.data.leaf_commit != qc.data().leaf_commit {
+            <span class="macro">tracing::error!</span>(
+                <span class="string">"Next epoch QC for view {:?} has different leaf commit {:?} to {:?}"</span>,
+                qc.view_number(),
+                next_epoch_qc.data.leaf_commit,
+                qc.data().leaf_commit
+            );
+            <span class="kw">return</span>;
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>((transition_qc, <span class="kw">_</span>)) = <span class="kw-2">&amp;</span><span class="self">self</span>.transition_qc {
+            <span class="kw">if </span>transition_qc.view_number() &gt;= qc.view_number() {
+                <span class="kw">return</span>;
+            }
+        }
+        <span class="self">self</span>.transition_qc = <span class="prelude-val">Some</span>((qc, next_epoch_qc));
+    }
     <span class="doccomment">/// Get the light client state certificate
     </span><span class="kw">pub fn </span>state_cert(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>LightClientStateUpdateCertificate&lt;TYPES&gt; {
         <span class="kw-2">&amp;</span><span class="self">self</span>.state_cert
@@ -1946,8 +2055,25 @@
     /// # Errors
     /// Can return an error when the provided high_qc is not newer than the existing entry.
     </span><span class="kw">pub fn </span>update_high_qc(<span class="kw-2">&amp;mut </span><span class="self">self</span>, high_qc: QuorumCertificate2&lt;TYPES&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="macro">ensure!</span>(
-            high_qc.view_number &gt; <span class="self">self</span>.high_qc.view_number || high_qc == <span class="self">self</span>.high_qc,
+        <span class="kw">if </span><span class="self">self</span>.high_qc == high_qc {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+        <span class="kw">let </span>same_epoch = high_qc.data.block_number.is_some_and(|new_bn| {
+            <span class="kw">let </span><span class="prelude-val">Some</span>(high_bn) = <span class="self">self</span>.high_qc.data.block_number <span class="kw">else </span>{
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            };
+            epoch_from_block_number(new_bn + <span class="number">1</span>, <span class="self">self</span>.epoch_height)
+                == epoch_from_block_number(high_bn + <span class="number">1</span>, <span class="self">self</span>.epoch_height)
+        });
+        <span class="comment">// make sure the we don't update the high QC unless is't a higher view unless it's
+        // the transition block for the same epoch
+        </span><span class="macro">ensure!</span>(
+            high_qc.view_number &gt; <span class="self">self</span>.high_qc.view_number
+                || (high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_transition_block(bn, <span class="self">self</span>.epoch_height))
+                    &amp;&amp; same_epoch),
             <span class="macro">debug!</span>(<span class="string">"High QC with an equal or higher view exists."</span>)
         );
         <span class="macro">tracing::debug!</span>(<span class="string">"Updating high QC"</span>);
@@ -1965,10 +2091,27 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         high_qc: NextEpochQuorumCertificate2&lt;TYPES&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.next_epoch_high_qc.as_ref() == <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>high_qc) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+        <span class="kw">let </span>same_epoch = high_qc.data.block_number.is_some_and(|bn| {
+            <span class="kw">let </span><span class="prelude-val">Some</span>(current_neqc) = <span class="self">self</span>.next_epoch_high_qc() <span class="kw">else </span>{
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            };
+            <span class="kw">let </span><span class="prelude-val">Some</span>(high_bn) = current_neqc.data.block_number <span class="kw">else </span>{
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            };
+            epoch_from_block_number(bn + <span class="number">1</span>, <span class="self">self</span>.epoch_height)
+                == epoch_from_block_number(high_bn + <span class="number">1</span>, <span class="self">self</span>.epoch_height)
+        });
         <span class="kw">if let </span><span class="prelude-val">Some</span>(next_epoch_high_qc) = <span class="self">self</span>.next_epoch_high_qc() {
             <span class="macro">ensure!</span>(
                 high_qc.view_number &gt; next_epoch_high_qc.view_number
-                    || high_qc == <span class="kw-2">*</span>next_epoch_high_qc,
+                    || high_qc
+                        .data
+                        .block_number
+                        .is_some_and(|bn| is_transition_block(bn, <span class="self">self</span>.epoch_height))
+                        &amp;&amp; same_epoch,
                 <span class="macro">debug!</span>(<span class="string">"Next epoch high QC with an equal or higher view exists."</span>)
             );
         }
@@ -2204,91 +2347,14 @@
 
         <span class="prelude-val">Some</span>(())
     }
-
-    <span class="doccomment">/// Return true if the QC takes part in forming an eQC, i.e.
-    /// it is one of the 3-chain certificates but not the eQC itself
-    </span><span class="kw">pub fn </span>is_qc_forming_eqc(<span class="kw-2">&amp;</span><span class="self">self</span>, qc: <span class="kw-2">&amp;</span>QuorumCertificate2&lt;TYPES&gt;) -&gt; bool {
-        <span class="kw">let </span>high_qc_leaf_commit = qc.data.leaf_commit;
-        <span class="kw">let </span>is_high_qc_extended = <span class="self">self</span>.is_leaf_extended(high_qc_leaf_commit);
-        <span class="kw">if </span>is_high_qc_extended {
-            <span class="macro">tracing::debug!</span>(<span class="string">"We have formed an eQC!"</span>);
-        }
-        <span class="self">self</span>.is_leaf_for_last_block(high_qc_leaf_commit) &amp;&amp; !is_high_qc_extended
-    }
-
-    <span class="doccomment">/// Returns true if our high qc is forming an eQC
-    </span><span class="kw">pub fn </span>is_high_qc_forming_eqc(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.is_qc_forming_eqc(<span class="self">self</span>.high_qc())
-    }
-
-    <span class="doccomment">/// Return true if the given leaf takes part in forming an eQC, i.e.
-    /// it is one of the 3-chain leaves but not the eQC leaf itself
-    </span><span class="kw">pub fn </span>is_leaf_forming_eqc(<span class="kw-2">&amp;</span><span class="self">self</span>, leaf_commit: LeafCommitment&lt;TYPES&gt;) -&gt; bool {
-        <span class="self">self</span>.is_leaf_for_last_block(leaf_commit) &amp;&amp; !<span class="self">self</span>.is_leaf_extended(leaf_commit)
-    }
-
-    <span class="doccomment">/// Returns true if the given leaf can form an extended Quorum Certificate
-    /// The Extended Quorum Certificate (eQC) is the third Quorum Certificate formed in three
-    /// consecutive views for the last block in the epoch.
-    </span><span class="kw">pub fn </span>is_leaf_extended(<span class="kw-2">&amp;</span><span class="self">self</span>, leaf_commit: LeafCommitment&lt;TYPES&gt;) -&gt; bool {
-        <span class="kw">if </span>!<span class="self">self</span>.is_leaf_for_last_block(leaf_commit) {
-            <span class="macro">tracing::trace!</span>(<span class="string">"The given leaf is not for the last block in the epoch."</span>);
-            <span class="kw">return </span><span class="bool-val">false</span>;
-        }
-
-        <span class="kw">let </span><span class="prelude-val">Some</span>(leaf) = <span class="self">self</span>.saved_leaves.get(<span class="kw-2">&amp;</span>leaf_commit) <span class="kw">else </span>{
-            <span class="macro">tracing::trace!</span>(<span class="string">"We don't have a leaf corresponding to the leaf commit"</span>);
-            <span class="kw">return </span><span class="bool-val">false</span>;
-        };
-        <span class="kw">let </span>leaf_view = leaf.view_number();
-        <span class="kw">let </span>leaf_block_number = leaf.height();
-
-        <span class="kw">let </span><span class="kw-2">mut </span>last_visited_view_number = leaf_view;
-        <span class="kw">let </span><span class="kw-2">mut </span>is_leaf_extended = <span class="bool-val">true</span>;
-        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = <span class="self">self</span>.visit_leaf_ancestors(
-            leaf_view,
-            Terminator::Inclusive(leaf_view - <span class="number">2</span>),
-            <span class="bool-val">true</span>,
-            |leaf, <span class="kw">_</span>, <span class="kw">_</span>| {
-                <span class="macro">tracing::trace!</span>(
-                    <span class="string">"last_visited_view_number = {}, leaf.view_number = {}"</span>,
-                    <span class="kw-2">*</span>last_visited_view_number,
-                    <span class="kw-2">*</span>leaf.view_number()
-                );
-
-                <span class="kw">if </span>leaf.view_number() == leaf_view {
-                    <span class="kw">return </span><span class="bool-val">true</span>;
-                }
-
-                <span class="kw">if </span>last_visited_view_number - <span class="number">1 </span>!= leaf.view_number() {
-                    <span class="macro">tracing::trace!</span>(<span class="string">"The chain is broken. Non consecutive views."</span>);
-                    is_leaf_extended = <span class="bool-val">false</span>;
-                    <span class="kw">return </span><span class="bool-val">false</span>;
-                }
-                <span class="kw">if </span>leaf_block_number != leaf.height() {
-                    <span class="macro">tracing::trace!</span>(<span class="string">"The chain is broken. Block numbers do not match."</span>);
-                    is_leaf_extended = <span class="bool-val">false</span>;
-                    <span class="kw">return </span><span class="bool-val">false</span>;
-                }
-                last_visited_view_number = leaf.view_number();
-                <span class="bool-val">true
-            </span>},
-        ) {
-            is_leaf_extended = <span class="bool-val">false</span>;
-            <span class="macro">tracing::debug!</span>(<span class="string">"Leaf ascension failed; error={e}"</span>);
-        }
-        <span class="macro">tracing::trace!</span>(<span class="string">"Can the given leaf form an eQC? {}"</span>, is_leaf_extended);
-        is_leaf_extended
-    }
-
-    <span class="doccomment">/// Returns true if a given leaf is for the last block in the epoch
-    </span><span class="kw">pub fn </span>is_leaf_for_last_block(<span class="kw-2">&amp;</span><span class="self">self</span>, leaf_commit: LeafCommitment&lt;TYPES&gt;) -&gt; bool {
+    <span class="doccomment">/// Returns true if a given leaf is for the epoch transition
+    </span><span class="kw">pub fn </span>is_epoch_transition(<span class="kw-2">&amp;</span><span class="self">self</span>, leaf_commit: LeafCommitment&lt;TYPES&gt;) -&gt; bool {
         <span class="kw">let </span><span class="prelude-val">Some</span>(leaf) = <span class="self">self</span>.saved_leaves.get(<span class="kw-2">&amp;</span>leaf_commit) <span class="kw">else </span>{
             <span class="macro">tracing::trace!</span>(<span class="string">"We don't have a leaf corresponding to the leaf commit"</span>);
             <span class="kw">return </span><span class="bool-val">false</span>;
         };
         <span class="kw">let </span>block_height = leaf.height();
-        is_last_block_in_epoch(block_height, <span class="self">self</span>.epoch_height)
+        is_epoch_transition(block_height, <span class="self">self</span>.epoch_height)
     }
 
     <span class="doccomment">/// Returns true if our high QC is for the last block in the epoch
@@ -2298,7 +2364,7 @@
             <span class="kw">return </span><span class="bool-val">false</span>;
         };
         <span class="kw">let </span>block_height = leaf.height();
-        is_last_block_in_epoch(block_height, <span class="self">self</span>.epoch_height)
+        is_epoch_transition(block_height, <span class="self">self</span>.epoch_height)
     }
 
     <span class="doccomment">/// Returns true if the `parent_leaf` formed an eQC for the previous epoch to the `proposed_leaf`
@@ -2309,7 +2375,7 @@
         <span class="kw">let </span>new_epoch = epoch_from_block_number(proposed_leaf.height(), <span class="self">self</span>.epoch_height);
         <span class="kw">let </span>old_epoch = epoch_from_block_number(parent_leaf.height(), <span class="self">self</span>.epoch_height);
 
-        new_epoch - <span class="number">1 </span>== old_epoch &amp;&amp; <span class="self">self</span>.is_leaf_extended(parent_leaf.commit())
+        new_epoch - <span class="number">1 </span>== old_epoch &amp;&amp; is_last_block(parent_leaf.height(), <span class="self">self</span>.epoch_height)
     }
 
     <span class="doccomment">/// Returns true if our high QC is for the block equal or greater than the root epoch block

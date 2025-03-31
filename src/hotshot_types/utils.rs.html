@@ -497,7 +497,56 @@
 <a href="#496" id="496">496</a>
 <a href="#497" id="497">497</a>
 <a href="#498" id="498">498</a>
-<a href="#499" id="499">499</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#499" id="499">499</a>
+<a href="#500" id="500">500</a>
+<a href="#501" id="501">501</a>
+<a href="#502" id="502">502</a>
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a>
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a>
+<a href="#518" id="518">518</a>
+<a href="#519" id="519">519</a>
+<a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -849,7 +898,7 @@
     <span class="kw">if </span>epoch_height == <span class="number">0 </span>|| epoch &lt; <span class="number">1 </span>{
         <span class="number">0
     </span>} <span class="kw">else </span>{
-        epoch_height * epoch - <span class="number">2
+        epoch_height * epoch - <span class="number">5
     </span>}
 }
 
@@ -899,13 +948,56 @@
     </span>NotInTransition,
 }
 
-<span class="doccomment">/// Returns true if the given block number is the last in the epoch based on the given epoch height.
+<span class="doccomment">/// Return true if the given block number is the final full block, the "transition block"
 </span><span class="attr">#[must_use]
-</span><span class="kw">pub fn </span>is_last_block_in_epoch(block_number: u64, epoch_height: u64) -&gt; bool {
+</span><span class="kw">pub fn </span>is_transition_block(block_number: u64, epoch_height: u64) -&gt; bool {
+    <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
+        <span class="bool-val">false
+    </span>} <span class="kw">else </span>{
+        (block_number + <span class="number">3</span>) % epoch_height == <span class="number">0
+    </span>}
+}
+<span class="doccomment">/// returns true if it's the first transition block (epoch height - 2)
+</span><span class="attr">#[must_use]
+</span><span class="kw">pub fn </span>is_first_transition_block(block_number: u64, epoch_height: u64) -&gt; bool {
+    <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
+        <span class="bool-val">false
+    </span>} <span class="kw">else </span>{
+        block_number % epoch_height == epoch_height - <span class="number">2
+    </span>}
+}
+<span class="doccomment">/// Returns true if the block is part of the epoch transition (including the last non null block)  
+</span><span class="attr">#[must_use]
+</span><span class="kw">pub fn </span>is_epoch_transition(block_number: u64, epoch_height: u64) -&gt; bool {
+    <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
+        <span class="bool-val">false
+    </span>} <span class="kw">else </span>{
+        block_number % epoch_height &gt;= epoch_height - <span class="number">3 </span>|| block_number % epoch_height == <span class="number">0
+    </span>}
+}
+
+<span class="doccomment">/// Returns true if the block is the last block in the epoch
+</span><span class="attr">#[must_use]
+</span><span class="kw">pub fn </span>is_last_block(block_number: u64, epoch_height: u64) -&gt; bool {
     <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
         <span class="bool-val">false
     </span>} <span class="kw">else </span>{
         block_number % epoch_height == <span class="number">0
+    </span>}
+}
+
+<span class="doccomment">/// Returns true if the block number is in trasntion but not the transition block
+/// or the last block in the epoch.  
+///
+/// This function is useful for determining if a proposal extending this QC must follow
+/// the special rules for transition blocks.
+</span><span class="attr">#[must_use]
+</span><span class="kw">pub fn </span>is_middle_transition_block(block_number: u64, epoch_height: u64) -&gt; bool {
+    <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
+        <span class="bool-val">false
+    </span>} <span class="kw">else </span>{
+        <span class="kw">let </span>blocks_left = epoch_height - (block_number % epoch_height);
+        blocks_left == <span class="number">1 </span>|| blocks_left == <span class="number">2
     </span>}
 }
 
@@ -916,7 +1008,7 @@
     <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
         <span class="bool-val">false
     </span>} <span class="kw">else </span>{
-        (block_number + <span class="number">2</span>) % epoch_height == <span class="number">0
+        (block_number + <span class="number">5</span>) % epoch_height == <span class="number">0
     </span>}
 }
 
@@ -926,7 +1018,7 @@
     <span class="kw">if </span>block_number == <span class="number">0 </span>|| epoch_height == <span class="number">0 </span>{
         <span class="bool-val">false
     </span>} <span class="kw">else </span>{
-        block_number % epoch_height &gt;= epoch_height - <span class="number">2
+        block_number % epoch_height &gt;= epoch_height - <span class="number">5
     </span>}
 }
 
@@ -961,22 +1053,28 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_is_last_block_in_epoch() {
-        <span class="macro">assert!</span>(!is_last_block_in_epoch(<span class="number">8</span>, <span class="number">10</span>));
-        <span class="macro">assert!</span>(!is_last_block_in_epoch(<span class="number">9</span>, <span class="number">10</span>));
-        <span class="macro">assert!</span>(is_last_block_in_epoch(<span class="number">10</span>, <span class="number">10</span>));
-        <span class="macro">assert!</span>(!is_last_block_in_epoch(<span class="number">11</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(!is_epoch_transition(<span class="number">5</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(!is_epoch_transition(<span class="number">6</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(is_epoch_transition(<span class="number">7</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(is_epoch_transition(<span class="number">8</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(is_epoch_transition(<span class="number">9</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(is_epoch_transition(<span class="number">10</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(!is_epoch_transition(<span class="number">11</span>, <span class="number">10</span>));
 
-        <span class="macro">assert!</span>(!is_last_block_in_epoch(<span class="number">10</span>, <span class="number">0</span>));
+        <span class="macro">assert!</span>(!is_epoch_transition(<span class="number">10</span>, <span class="number">0</span>));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>test_is_epoch_root() {
-        <span class="macro">assert!</span>(is_epoch_root(<span class="number">8</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(is_epoch_root(<span class="number">5</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(!is_epoch_root(<span class="number">6</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(!is_epoch_root(<span class="number">7</span>, <span class="number">10</span>));
+        <span class="macro">assert!</span>(!is_epoch_root(<span class="number">8</span>, <span class="number">10</span>));
         <span class="macro">assert!</span>(!is_epoch_root(<span class="number">9</span>, <span class="number">10</span>));
         <span class="macro">assert!</span>(!is_epoch_root(<span class="number">10</span>, <span class="number">10</span>));
         <span class="macro">assert!</span>(!is_epoch_root(<span class="number">11</span>, <span class="number">10</span>));
 
-        <span class="macro">assert!</span>(!is_last_block_in_epoch(<span class="number">10</span>, <span class="number">0</span>));
+        <span class="macro">assert!</span>(!is_epoch_transition(<span class="number">10</span>, <span class="number">0</span>));
     }
 
     <span class="attr">#[test]
@@ -986,9 +1084,9 @@
         <span class="kw">let </span>epoch_height = <span class="number">10</span>;
         <span class="kw">let </span>epoch_root_block_number = root_block_in_epoch(<span class="number">3</span>, epoch_height);
 
-        <span class="macro">assert!</span>(is_epoch_root(<span class="number">28</span>, epoch_height));
+        <span class="macro">assert!</span>(is_epoch_root(<span class="number">25</span>, epoch_height));
 
-        <span class="macro">assert_eq!</span>(epoch_root_block_number, <span class="number">28</span>);
+        <span class="macro">assert_eq!</span>(epoch_root_block_number, <span class="number">25</span>);
 
         <span class="macro">assert_eq!</span>(
             epoch,

@@ -464,7 +464,20 @@
 <a href="#463" id="463">463</a>
 <a href="#464" id="464">464</a>
 <a href="#465" id="465">465</a>
-<a href="#466" id="466">466</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#466" id="466">466</a>
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -478,7 +491,7 @@
     event::{Event, EventType},
     simple_vote::{HasEpoch, QuorumVote2, TimeoutData2, TimeoutVote2},
     traits::node_implementation::{ConsensusTime, NodeImplementation, NodeType},
-    utils::{is_last_block_in_epoch, EpochTransitionIndicator},
+    utils::{is_epoch_transition, is_last_block, EpochTransitionIndicator},
     vote::{HasViewNumber, Vote},
 };
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
@@ -634,7 +647,10 @@
 
     <span class="kw">let </span>consensus_reader = task_state.consensus.read().<span class="kw">await</span>;
     <span class="kw">let </span>high_qc = consensus_reader.high_qc().clone();
-    <span class="kw">let </span>is_eqc = consensus_reader.is_leaf_extended(high_qc.data.leaf_commit);
+    <span class="kw">let </span>is_eqc = high_qc
+        .data
+        .block_number
+        .is_some_and(|b| is_last_block(b, task_state.epoch_height));
     drop(consensus_reader);
 
     <span class="kw">if </span>is_eqc {
@@ -671,25 +687,30 @@
             .<span class="kw">await</span><span class="question-mark">?
             </span>.leader(new_view_number)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>maybe_next_epoch_qc = <span class="kw">if </span>high_qc
+
+        <span class="kw">let </span>(high_qc, maybe_next_epoch_qc) = <span class="kw">if </span>high_qc
             .data
             .block_number
-            .is_some_and(|b| is_last_block_in_epoch(b, task_state.epoch_height))
+            .is_some_and(|b| is_epoch_transition(b, task_state.epoch_height))
         {
-            <span class="prelude-val">Some</span>(
-                task_state
-                    .consensus
-                    .read()
-                    .<span class="kw">await
-                    </span>.next_epoch_high_qc()
-                    .ok_or(<span class="macro">warn!</span>(
-                        <span class="string">"High QC is for the last block but we don't have next epoch QC."
-                    </span>))<span class="question-mark">?
-                    </span>.clone(),
+            <span class="kw">let </span><span class="prelude-val">Some</span>((qc, next_epoch_qc)) =
+                task_state.consensus.read().<span class="kw">await</span>.transition_qc().cloned()
+            <span class="kw">else </span>{
+                <span class="macro">bail!</span>(<span class="string">"We don't have a transition QC"</span>);
+            };
+            validate_qc_and_next_epoch_qc(
+                <span class="kw-2">&amp;</span>high_qc,
+                <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>next_epoch_qc),
+                <span class="kw-2">&amp;</span>task_state.consensus,
+                <span class="kw-2">&amp;</span>task_state.membership_coordinator,
+                <span class="kw-2">&amp;</span>task_state.upgrade_lock,
+                task_state.epoch_height,
             )
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+            (qc, <span class="prelude-val">Some</span>(next_epoch_qc))
         } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>};
+            (high_qc, <span class="prelude-val">None</span>)
+        };
         validate_qc_and_next_epoch_qc(
             <span class="kw-2">&amp;</span>high_qc,
             maybe_next_epoch_qc.as_ref(),
@@ -699,6 +720,11 @@
             task_state.epoch_height,
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="macro">tracing::trace!</span>(
+            <span class="string">"Sending high QC for view {:?}, height {:?}"</span>,
+            high_qc.view_number(),
+            high_qc.data.block_number
+        );
         broadcast_event(
             Arc::new(HotShotEvent::HighQcSend(
                 high_qc,

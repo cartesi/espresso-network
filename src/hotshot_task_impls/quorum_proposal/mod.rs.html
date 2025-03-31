@@ -718,7 +718,50 @@
 <a href="#717" id="717">717</a>
 <a href="#718" id="718">718</a>
 <a href="#719" id="719">719</a>
-<a href="#720" id="720">720</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -745,7 +788,10 @@
         signature_key::SignatureKey,
         storage::Storage,
     },
-    utils::{is_last_block_in_epoch, EpochTransitionIndicator},
+    utils::{
+        is_epoch_transition, is_middle_transition_block, is_transition_block,
+        EpochTransitionIndicator,
+    },
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -772,8 +818,8 @@
     <span class="doccomment">/// Formed QCs
     </span><span class="kw">pub </span>formed_quorum_certificates: BTreeMap&lt;TYPES::View, QuorumCertificate2&lt;TYPES&gt;&gt;,
 
-    <span class="doccomment">/// Formed eQCs
-    </span><span class="kw">pub </span>formed_extended_quorum_certificates:
+    <span class="doccomment">/// Formed QCs for the next epoch
+    </span><span class="kw">pub </span>formed_next_epoch_quorum_certificates:
         BTreeMap&lt;TYPES::View, NextEpochQuorumCertificate2&lt;TYPES&gt;&gt;,
 
     <span class="doccomment">/// Immutable instance state
@@ -1114,15 +1160,28 @@
             .context(<span class="macro">error!</span>(
                 <span class="string">"Failed to update high QC in internal consensus state!"
             </span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>in_epoch_transition = qc
+            .data
+            .block_number
+            .is_some_and(|bn| is_middle_transition_block(bn, <span class="self">self</span>.epoch_height));
 
-        <span class="comment">// Then update the high QC in storage
-        </span><span class="self">self</span>.storage
-            .write()
-            .<span class="kw">await
-            </span>.update_high_qc2(qc)
-            .<span class="kw">await
-            </span>.wrap()
-            .context(<span class="macro">error!</span>(<span class="string">"Failed to update high QC in storage!"</span>))
+        <span class="comment">// Don't update storage if we're in the epoch transition
+        </span><span class="kw">if </span>!in_epoch_transition {
+            <span class="macro">tracing::error!</span>(
+                <span class="string">"Updating high QC in storage for view {:?} and height {:?}"</span>,
+                qc.view_number(),
+                qc.data.block_number
+            );
+            <span class="comment">// Then update the high QC in storage
+            </span><span class="self">self</span>.storage
+                .write()
+                .<span class="kw">await
+                </span>.update_high_qc2(qc)
+                .<span class="kw">await
+                </span>.wrap()
+                .context(<span class="macro">error!</span>(<span class="string">"Failed to update high QC in storage!"</span>))<span class="question-mark">?</span>;
+        }
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="kw">async fn </span>update_next_epoch_high_qc(
@@ -1137,15 +1196,28 @@
             .context(<span class="macro">error!</span>(
                 <span class="string">"Failed to update next epoch high QC in internal consensus state!"
             </span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>in_epoch_transition = qc
+            .data
+            .block_number
+            .is_some_and(|bn| is_middle_transition_block(bn, <span class="self">self</span>.epoch_height));
 
         <span class="comment">// Then update the next epoch high QC in storage
-        </span><span class="self">self</span>.storage
-            .write()
-            .<span class="kw">await
-            </span>.update_next_epoch_high_qc2(qc)
-            .<span class="kw">await
-            </span>.wrap()
-            .context(<span class="macro">error!</span>(<span class="string">"Failed to update next epoch high QC in storage!"</span>))
+        // Don't update storage if we're in the epoch transition
+        </span><span class="kw">if </span>!in_epoch_transition {
+            <span class="macro">tracing::debug!</span>(
+                <span class="string">"Updating next epoch high QC in storage for view {:?} and height {:?}"</span>,
+                qc.view_number(),
+                qc.data.block_number
+            );
+            <span class="self">self</span>.storage
+                .write()
+                .<span class="kw">await
+                </span>.update_next_epoch_high_qc2(qc)
+                .<span class="kw">await
+                </span>.wrap()
+                .context(<span class="macro">error!</span>(<span class="string">"Failed to update next epoch high QC in storage!"</span>))<span class="question-mark">?</span>;
+        }
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Hanldles checking that both certificates for an eqc exist and stores if they do.  Also handles storing the QC for cases
@@ -1162,12 +1234,12 @@
                 };
 
                 <span class="kw">if </span>!<span class="self">self</span>.upgrade_lock.epochs_enabled(view_number).<span class="kw">await
-                    </span>|| !is_last_block_in_epoch(block_number, <span class="self">self</span>.epoch_height)
+                    </span>|| !is_epoch_transition(block_number, <span class="self">self</span>.epoch_height)
                 {
                     <span class="kw">return </span><span class="self">self</span>.update_high_qc(qc).<span class="kw">await</span>;
                 }
                 <span class="kw">let </span><span class="prelude-val">Some</span>(next_epoch_qc) =
-                    <span class="self">self</span>.formed_extended_quorum_certificates.get(<span class="kw-2">&amp;</span>view_number)
+                    <span class="self">self</span>.formed_next_epoch_quorum_certificates.get(<span class="kw-2">&amp;</span>view_number)
                 <span class="kw">else </span>{
                     <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                 };
@@ -1190,10 +1262,17 @@
             },
         };
         <span class="comment">// clean up old qcs
-        </span><span class="self">self</span>.formed_extended_quorum_certificates = <span class="self">self
-            </span>.formed_extended_quorum_certificates
+        </span><span class="self">self</span>.formed_next_epoch_quorum_certificates = <span class="self">self
+            </span>.formed_next_epoch_quorum_certificates
             .split_off(<span class="kw-2">&amp;</span>view_number);
         <span class="self">self</span>.formed_quorum_certificates = <span class="self">self</span>.formed_quorum_certificates.split_off(<span class="kw-2">&amp;</span>view_number);
+
+        <span class="kw">if </span>is_transition_block(qc.data.block_number.unwrap(), <span class="self">self</span>.epoch_height) {
+            <span class="self">self</span>.consensus
+                .write()
+                .<span class="kw">await
+                </span>.update_transition_qc(qc.clone(), next_epoch_qc.clone());
+        }
         <span class="comment">// Store the new eqc
         </span><span class="self">self</span>.update_high_qc(qc).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="self">self</span>.update_next_epoch_high_qc(next_epoch_qc).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1255,8 +1334,14 @@
                     <span class="self">self</span>.check_eqc_and_store(qc.view_number(), Either::Left(qc.clone()))
                         .<span class="kw">await</span><span class="question-mark">?</span>;
 
-                    handle_eqc_formed(qc.view_number(), qc.data.leaf_commit, <span class="self">self</span>, <span class="kw-2">&amp;</span>event_sender)
-                        .<span class="kw">await</span>;
+                    handle_eqc_formed(
+                        qc.view_number(),
+                        qc.data.leaf_commit,
+                        qc.data.block_number,
+                        <span class="self">self</span>,
+                        <span class="kw-2">&amp;</span>event_sender,
+                    )
+                    .<span class="kw">await</span>;
 
                     <span class="kw">let </span>view_number = qc.view_number() + <span class="number">1</span>;
                     <span class="self">self</span>.create_dependency_task_if_new(
@@ -1385,7 +1470,7 @@
                     <span class="macro">debug!</span>(<span class="string">"Received a next epoch QC for a view that was not &gt; than our current next epoch high QC"</span>)
                 );
 
-                <span class="self">self</span>.formed_extended_quorum_certificates
+                <span class="self">self</span>.formed_next_epoch_quorum_certificates
                     .insert(next_epoch_qc.view_number(), next_epoch_qc.clone());
 
                 <span class="self">self</span>.check_eqc_and_store(
@@ -1397,6 +1482,7 @@
                 handle_eqc_formed(
                     next_epoch_qc.view_number(),
                     next_epoch_qc.data.leaf_commit,
+                    next_epoch_qc.data.block_number,
                     <span class="self">self</span>,
                     <span class="kw-2">&amp;</span>event_sender,
                 )

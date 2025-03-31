@@ -1078,7 +1078,165 @@
 <a href="#1077" id="1077">1077</a>
 <a href="#1078" id="1078">1078</a>
 <a href="#1079" id="1079">1079</a>
-<a href="#1080" id="1080">1080</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1080" id="1080">1080</a>
+<a href="#1081" id="1081">1081</a>
+<a href="#1082" id="1082">1082</a>
+<a href="#1083" id="1083">1083</a>
+<a href="#1084" id="1084">1084</a>
+<a href="#1085" id="1085">1085</a>
+<a href="#1086" id="1086">1086</a>
+<a href="#1087" id="1087">1087</a>
+<a href="#1088" id="1088">1088</a>
+<a href="#1089" id="1089">1089</a>
+<a href="#1090" id="1090">1090</a>
+<a href="#1091" id="1091">1091</a>
+<a href="#1092" id="1092">1092</a>
+<a href="#1093" id="1093">1093</a>
+<a href="#1094" id="1094">1094</a>
+<a href="#1095" id="1095">1095</a>
+<a href="#1096" id="1096">1096</a>
+<a href="#1097" id="1097">1097</a>
+<a href="#1098" id="1098">1098</a>
+<a href="#1099" id="1099">1099</a>
+<a href="#1100" id="1100">1100</a>
+<a href="#1101" id="1101">1101</a>
+<a href="#1102" id="1102">1102</a>
+<a href="#1103" id="1103">1103</a>
+<a href="#1104" id="1104">1104</a>
+<a href="#1105" id="1105">1105</a>
+<a href="#1106" id="1106">1106</a>
+<a href="#1107" id="1107">1107</a>
+<a href="#1108" id="1108">1108</a>
+<a href="#1109" id="1109">1109</a>
+<a href="#1110" id="1110">1110</a>
+<a href="#1111" id="1111">1111</a>
+<a href="#1112" id="1112">1112</a>
+<a href="#1113" id="1113">1113</a>
+<a href="#1114" id="1114">1114</a>
+<a href="#1115" id="1115">1115</a>
+<a href="#1116" id="1116">1116</a>
+<a href="#1117" id="1117">1117</a>
+<a href="#1118" id="1118">1118</a>
+<a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a>
+<a href="#1138" id="1138">1138</a>
+<a href="#1139" id="1139">1139</a>
+<a href="#1140" id="1140">1140</a>
+<a href="#1141" id="1141">1141</a>
+<a href="#1142" id="1142">1142</a>
+<a href="#1143" id="1143">1143</a>
+<a href="#1144" id="1144">1144</a>
+<a href="#1145" id="1145">1145</a>
+<a href="#1146" id="1146">1146</a>
+<a href="#1147" id="1147">1147</a>
+<a href="#1148" id="1148">1148</a>
+<a href="#1149" id="1149">1149</a>
+<a href="#1150" id="1150">1150</a>
+<a href="#1151" id="1151">1151</a>
+<a href="#1152" id="1152">1152</a>
+<a href="#1153" id="1153">1153</a>
+<a href="#1154" id="1154">1154</a>
+<a href="#1155" id="1155">1155</a>
+<a href="#1156" id="1156">1156</a>
+<a href="#1157" id="1157">1157</a>
+<a href="#1158" id="1158">1158</a>
+<a href="#1159" id="1159">1159</a>
+<a href="#1160" id="1160">1160</a>
+<a href="#1161" id="1161">1161</a>
+<a href="#1162" id="1162">1162</a>
+<a href="#1163" id="1163">1163</a>
+<a href="#1164" id="1164">1164</a>
+<a href="#1165" id="1165">1165</a>
+<a href="#1166" id="1166">1166</a>
+<a href="#1167" id="1167">1167</a>
+<a href="#1168" id="1168">1168</a>
+<a href="#1169" id="1169">1169</a>
+<a href="#1170" id="1170">1170</a>
+<a href="#1171" id="1171">1171</a>
+<a href="#1172" id="1172">1172</a>
+<a href="#1173" id="1173">1173</a>
+<a href="#1174" id="1174">1174</a>
+<a href="#1175" id="1175">1175</a>
+<a href="#1176" id="1176">1176</a>
+<a href="#1177" id="1177">1177</a>
+<a href="#1178" id="1178">1178</a>
+<a href="#1179" id="1179">1179</a>
+<a href="#1180" id="1180">1180</a>
+<a href="#1181" id="1181">1181</a>
+<a href="#1182" id="1182">1182</a>
+<a href="#1183" id="1183">1183</a>
+<a href="#1184" id="1184">1184</a>
+<a href="#1185" id="1185">1185</a>
+<a href="#1186" id="1186">1186</a>
+<a href="#1187" id="1187">1187</a>
+<a href="#1188" id="1188">1188</a>
+<a href="#1189" id="1189">1189</a>
+<a href="#1190" id="1190">1190</a>
+<a href="#1191" id="1191">1191</a>
+<a href="#1192" id="1192">1192</a>
+<a href="#1193" id="1193">1193</a>
+<a href="#1194" id="1194">1194</a>
+<a href="#1195" id="1195">1195</a>
+<a href="#1196" id="1196">1196</a>
+<a href="#1197" id="1197">1197</a>
+<a href="#1198" id="1198">1198</a>
+<a href="#1199" id="1199">1199</a>
+<a href="#1200" id="1200">1200</a>
+<a href="#1201" id="1201">1201</a>
+<a href="#1202" id="1202">1202</a>
+<a href="#1203" id="1203">1203</a>
+<a href="#1204" id="1204">1204</a>
+<a href="#1205" id="1205">1205</a>
+<a href="#1206" id="1206">1206</a>
+<a href="#1207" id="1207">1207</a>
+<a href="#1208" id="1208">1208</a>
+<a href="#1209" id="1209">1209</a>
+<a href="#1210" id="1210">1210</a>
+<a href="#1211" id="1211">1211</a>
+<a href="#1212" id="1212">1212</a>
+<a href="#1213" id="1213">1213</a>
+<a href="#1214" id="1214">1214</a>
+<a href="#1215" id="1215">1215</a>
+<a href="#1216" id="1216">1216</a>
+<a href="#1217" id="1217">1217</a>
+<a href="#1218" id="1218">1218</a>
+<a href="#1219" id="1219">1219</a>
+<a href="#1220" id="1220">1220</a>
+<a href="#1221" id="1221">1221</a>
+<a href="#1222" id="1222">1222</a>
+<a href="#1223" id="1223">1223</a>
+<a href="#1224" id="1224">1224</a>
+<a href="#1225" id="1225">1225</a>
+<a href="#1226" id="1226">1226</a>
+<a href="#1227" id="1227">1227</a>
+<a href="#1228" id="1228">1228</a>
+<a href="#1229" id="1229">1229</a>
+<a href="#1230" id="1230">1230</a>
+<a href="#1231" id="1231">1231</a>
+<a href="#1232" id="1232">1232</a>
+<a href="#1233" id="1233">1233</a>
+<a href="#1234" id="1234">1234</a>
+<a href="#1235" id="1235">1235</a>
+<a href="#1236" id="1236">1236</a>
+<a href="#1237" id="1237">1237</a>
+<a href="#1238" id="1238">1238</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1114,7 +1272,7 @@
         BlockPayload, ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_epoch_root, is_last_block_in_epoch,
+        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_transition_block,
         option_epoch_from_block_number, Terminator, View, ViewInner,
     },
     vote::{Certificate, HasViewNumber},
@@ -1123,6 +1281,7 @@
 <span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <span class="kw">use </span>tokio::time::timeout;
 <span class="kw">use </span>tracing::instrument;
+<span class="kw">use </span>vbs::version::StaticVersionType;
 
 <span class="kw">use crate</span>::{events::HotShotEvent, quorum_proposal_recv::ValidationInfo, request::REQUEST_TIMEOUT};
 
@@ -1738,6 +1897,146 @@
     <span class="prelude-val">Ok</span>((leaf.clone(), Arc::clone(state)))
 }
 
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>update_high_qc&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt;(
+    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
+    validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;TYPES, I, V&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>in_transition_epoch = proposal
+        .data
+        .justify_qc()
+        .data
+        .block_number
+        .is_some_and(|bn| {
+            !is_transition_block(bn, validation_info.epoch_height)
+                &amp;&amp; bn % validation_info.epoch_height != <span class="number">0
+                </span>&amp;&amp; is_epoch_transition(bn, validation_info.epoch_height)
+        });
+    <span class="kw">let </span>justify_qc = proposal.data.justify_qc();
+    <span class="kw">let </span>maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc();
+    <span class="kw">if </span>!in_transition_epoch {
+        <span class="macro">tracing::debug!</span>(
+            <span class="string">"Storing high QC for view {:?} and height {:?}"</span>,
+            justify_qc.view_number(),
+            justify_qc.data.block_number
+        );
+        <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = validation_info
+            .storage
+            .write()
+            .<span class="kw">await
+            </span>.update_high_qc2(justify_qc.clone())
+            .<span class="kw">await
+        </span>{
+            <span class="macro">bail!</span>(<span class="string">"Failed to store High QC, not voting; error = {:?}"</span>, e);
+        }
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = validation_info
+                .storage
+                .write()
+                .<span class="kw">await
+                </span>.update_next_epoch_high_qc2(next_epoch_justify_qc.clone())
+                .<span class="kw">await
+            </span>{
+                <span class="macro">bail!</span>(
+                    <span class="string">"Failed to store next epoch High QC, not voting; error = {:?}"</span>,
+                    e
+                );
+            }
+        }
+    }
+    <span class="kw">let </span><span class="kw-2">mut </span>consensus_writer = validation_info.consensus.write().<span class="kw">await</span>;
+    consensus_writer.update_high_qc(justify_qc.clone())<span class="question-mark">?</span>;
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">ref </span>next_epoch_justify_qc) = maybe_next_epoch_justify_qc {
+        consensus_writer.update_next_epoch_high_qc(next_epoch_justify_qc.clone())<span class="question-mark">?</span>;
+        <span class="kw">if </span>justify_qc
+            .data
+            .block_number
+            .is_some_and(|bn| is_transition_block(bn, validation_info.epoch_height))
+        {
+            consensus_writer
+                .update_transition_qc(justify_qc.clone(), next_epoch_justify_qc.clone());
+        }
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">async fn </span>transition_qc&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt;(
+    validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;TYPES, I, V&gt;,
+) -&gt; <span class="prelude-ty">Option</span>&lt;(
+    QuorumCertificate2&lt;TYPES&gt;,
+    NextEpochQuorumCertificate2&lt;TYPES&gt;,
+)&gt; {
+    validation_info
+        .consensus
+        .read()
+        .<span class="kw">await
+        </span>.transition_qc()
+        .cloned()
+}
+
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>validate_epoch_transition_qc&lt;
+    TYPES: NodeType,
+    I: NodeImplementation&lt;TYPES&gt;,
+    V: Versions,
+&gt;(
+    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
+    validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;TYPES, I, V&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">let </span>proposed_qc = proposal.data.justify_qc();
+    <span class="kw">let </span><span class="prelude-val">Some</span>(qc_block_number) = proposed_qc.data().block_number <span class="kw">else </span>{
+        <span class="macro">bail!</span>(<span class="string">"Justify QC has no block number"</span>);
+    };
+    <span class="kw">if </span>!is_epoch_transition(qc_block_number, validation_info.epoch_height)
+        || qc_block_number % validation_info.epoch_height == <span class="number">0
+    </span>{
+        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+    }
+    <span class="kw">let </span><span class="prelude-val">Some</span>(next_epoch_qc) = proposal.data.next_epoch_justify_qc() <span class="kw">else </span>{
+        <span class="macro">bail!</span>(<span class="string">"Next epoch justify QC is not present"</span>);
+    };
+    <span class="macro">ensure!</span>(
+        next_epoch_qc.data.leaf_commit == proposed_qc.data().leaf_commit,
+        <span class="string">"Next epoch QC has different leaf commit to justify QC"
+    </span>);
+
+    <span class="kw">if </span>is_transition_block(qc_block_number, validation_info.epoch_height) {
+        <span class="comment">// Height is epoch height - 2
+        </span><span class="macro">ensure!</span>(
+            transition_qc(validation_info).<span class="kw">await</span>.is_none_or(
+                |(qc, <span class="kw">_</span>)| qc.view_number() &lt;= proposed_qc.view_number()
+            ),
+            <span class="string">"Proposed transition qc must have view number greater than or equal to previous transition QC"
+        </span>);
+
+        validation_info
+            .consensus
+            .write()
+            .<span class="kw">await
+            </span>.update_transition_qc(proposed_qc.clone(), next_epoch_qc.clone());
+        <span class="comment">// reset the high qc to the transition qc
+        </span>update_high_qc(proposal, validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
+    } <span class="kw">else </span>{
+        <span class="comment">// Height is either epoch height - 1 or epoch height
+        </span><span class="macro">ensure!</span>(
+            transition_qc(validation_info)
+                .<span class="kw">await
+                </span>.is_none_or(|(qc, <span class="kw">_</span>)| qc.view_number() &lt; proposed_qc.view_number()),
+            <span class="string">"Transition block must have view number greater than previous transition QC"
+        </span>);
+        <span class="macro">ensure!</span>(
+            proposal.data.view_change_evidence().is_none(),
+            <span class="string">"Second to last block and last block of epoch must directly extend previous block, Qc Block number: {qc_block_number}, Proposal Block number: {}"</span>,
+            proposal.data.block_header().block_number()
+        );
+        <span class="macro">ensure!</span>(
+            proposed_qc.view_number() + <span class="number">1 </span>== proposal.data.view_number()
+            || transition_qc(validation_info).<span class="kw">await</span>.is_some_and(|(qc, <span class="kw">_</span>)| <span class="kw-2">&amp;</span>qc == proposed_qc),
+            <span class="string">"Transition proposals must extend the previous view directly, or extend the previous transition block"
+        </span>);
+    }
+    <span class="prelude-val">Ok</span>(())
+}
+
 <span class="doccomment">/// Validate the state and safety and liveness of a proposal then emit
 /// a `QuorumProposalValidated` event.
 ///
@@ -1758,6 +2057,22 @@
     sender: TYPES::SignatureKey,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">let </span>view_number = proposal.data.view_number();
+
+    <span class="kw">let </span><span class="kw-2">mut </span>valid_epoch_transition = <span class="bool-val">false</span>;
+    <span class="kw">if </span>validation_info
+        .upgrade_lock
+        .version(proposal.data.justify_qc().view_number())
+        .<span class="kw">await
+        </span>.is_ok_and(|v| v &gt;= V::Epochs::VERSION)
+    {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(block_number) = proposal.data.justify_qc().data.block_number <span class="kw">else </span>{
+            <span class="macro">bail!</span>(<span class="string">"Quorum Proposal has no block number but it's after the epoch upgrade"</span>);
+        };
+        <span class="kw">if </span>is_epoch_transition(block_number, validation_info.epoch_height) {
+            validate_epoch_transition_qc(<span class="kw-2">&amp;</span>proposal, validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
+            valid_epoch_transition = <span class="bool-val">true</span>;
+        }
+    }
 
     <span class="kw">let </span>proposed_leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>proposal.data);
     <span class="macro">ensure!</span>(
@@ -1837,7 +2152,7 @@
         );
 
         <span class="comment">// Make sure that the epoch transition proposal includes the next epoch QC
-        </span><span class="kw">if </span>is_last_block_in_epoch(parent_leaf.height(), validation_info.epoch_height)
+        </span><span class="kw">if </span>is_epoch_transition(parent_leaf.height(), validation_info.epoch_height)
             &amp;&amp; validation_info
                 .upgrade_lock
                 .epochs_enabled(view_number)
@@ -1848,7 +2163,8 @@
         }
 
         <span class="comment">// Liveness check.
-        </span><span class="kw">let </span>liveness_check = justify_qc.view_number() &gt; consensus_reader.locked_view();
+        </span><span class="kw">let </span>liveness_check =
+            justify_qc.view_number() &gt; consensus_reader.locked_view() || valid_epoch_transition;
 
         <span class="comment">// Safety check.
         // Check if proposal extends from the locked leaf.
@@ -2129,11 +2445,11 @@
     <span class="kw">if </span>qc
         .data
         .block_number
-        .is_some_and(|b| is_last_block_in_epoch(b, epoch_height))
+        .is_some_and(|b| is_epoch_transition(b, epoch_height))
     {
         <span class="macro">ensure!</span>(
             maybe_next_epoch_qc.is_some(),
-            <span class="macro">error!</span>(<span class="string">"Received High QC for the last block but not the next epoch QC"</span>)
+            <span class="macro">error!</span>(<span class="string">"Received High QC for the transition block but not the next epoch QC"</span>)
         );
     }
 

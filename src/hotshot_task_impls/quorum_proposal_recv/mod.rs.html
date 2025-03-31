@@ -235,7 +235,8 @@
 <a href="#234" id="234">234</a>
 <a href="#235" id="235">235</a>
 <a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -380,7 +381,8 @@
     ) {
         <span class="kw">match </span>event.as_ref() {
             HotShotEvent::QuorumProposalRecv(proposal, sender) =&gt; {
-                <span class="kw">if </span><span class="self">self</span>.consensus.read().<span class="kw">await</span>.cur_view() &gt; proposal.data.view_number()
+                <span class="comment">// tracing::error!("Quorum proposal recv for view {:?}", proposal.data.view_number());
+                </span><span class="kw">if </span><span class="self">self</span>.consensus.read().<span class="kw">await</span>.cur_view() &gt; proposal.data.view_number()
                     || <span class="self">self</span>.cur_view &gt; proposal.data.view_number()
                 {
                     <span class="macro">tracing::warn!</span>(
