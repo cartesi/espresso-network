@@ -379,7 +379,6 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                     .await
                     .unwrap_or(TYPES::View::new(0))
         {
-            tracing::info!("Reached end of epoch.");
             let Some(parent_block_number) = parent_qc.data.block_number else {
                 tracing::error!("Parent QC does not have a block number. Do not propose.");
                 return Ok(());
@@ -387,6 +386,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             if is_epoch_transition(parent_block_number, self.epoch_height)
                 && !is_last_block(parent_block_number, self.epoch_height)
             {
+                tracing::info!("Reached end of epoch.");
                 ensure!(
                     builder_commitment == BuilderCommitment::from_bytes([]),
                     "We're trying to propose non empty block in the epoch transition. Do not propose. View number: {}. Parent Block number: {}",
