@@ -438,6 +438,21 @@ pub fn is_last_block(block_number: u64, epoch_height: u64) -> bool {
     }
 }
 
+/// Returns true if the block number is in trasntion but not the transition block
+/// or the last block in the epoch.  
+///
+/// This function is useful for determining if a proposal extending this QC must follow
+/// the special rules for transition blocks.
+#[must_use]
+pub fn is_middle_transition_block(block_number: u64, epoch_height: u64) -> bool {
+    if block_number == 0 || epoch_height == 0 {
+        false
+    } else {
+        let blocks_left = epoch_height - (block_number % epoch_height);
+        blocks_left == 1 || blocks_left == 2
+    }
+}
+
 /// Returns true if the given block number is the third from the last in the epoch based on the
 /// given epoch height.
 #[must_use]

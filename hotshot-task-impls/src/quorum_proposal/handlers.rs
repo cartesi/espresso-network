@@ -380,16 +380,16 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                     .await
                     .unwrap_or(TYPES::View::new(0))
         {
-            tracing::info!("Reached end of epoch.");
             let Some(parent_block_number) = parent_qc.data.block_number else {
                 tracing::error!("Parent QC does not have a block number. Do not propose.");
                 return Ok(());
             };
             if is_epoch_transition(parent_block_number, self.epoch_height)
-                && parent_block_number % self.epoch_height != 0
+                && !is_last_block(parent_block_number, self.epoch_height)
             {
                 let (empty_payload, empty_metadata) = <TYPES as NodeType>::BlockPayload::empty();
 
+                tracing::info!("Reached end of epoch.");
                 ensure!(
                     builder_commitment == empty_payload.builder_commitment(&metadata)
                         && metadata == empty_metadata,
@@ -645,7 +645,8 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                     return;
                 };
                 if qc.data.block_number.is_some_and(|bn| {
-                    is_epoch_transition(bn, self.epoch_height) && bn % self.epoch_height != 0
+                    is_epoch_transition(bn, self.epoch_height)
+                        && !is_last_block(bn, self.epoch_height)
                 }) {
                     tracing::error!("High is in transition but we need to propose with transition QC, do nothing");
                     return;
