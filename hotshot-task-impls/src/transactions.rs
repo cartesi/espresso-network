@@ -207,7 +207,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             {
                 // We are proposing a transition block it should be empty
                 if !is_last_block(high_qc_block_number, self.epoch_height) {
-                    tracing::error!(
+                    tracing::info!(
                         "Sending empty block event. View number: {}. Parent Block number: {}",
                         block_view,
                         high_qc_block_number
