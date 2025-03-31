@@ -189,7 +189,7 @@ pub(crate) async fn handle_quorum_proposal_validated<
     } = if version >= V::Epochs::VERSION {
         // Skip the decide rule for the last block of the epoch.  This is so
         // that we do not decide the block with epoch_height -2 before we enter the new epoch
-        if is_last_block(
+        if !is_last_block(
             proposal.block_header().block_number(),
             task_state.epoch_height,
         ) {
