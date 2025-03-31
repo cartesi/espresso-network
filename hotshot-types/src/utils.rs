@@ -179,7 +179,10 @@ pub async fn verify_leaf_chain<T: NodeType, V: Versions>(
         }
         last_leaf = leaf;
     }
-    Err(anyhow!("Epoch Root was not found in the decided chain"))
+    Err(anyhow!(
+        "Leaf at height {} not found in the decided chain",
+        expected_height
+    ))
 }
 
 impl<TYPES: NodeType> ViewInner<TYPES> {
