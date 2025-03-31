@@ -816,13 +816,13 @@ impl Membership<SeqTypes> for EpochCommittees {
                 block_height,
                 stake_table.clone(),
                 success_threshold,
-                epoch_height,
+                block_height,
             )
             .await?;
         //DRB height is decided in the next epoch's last block
-        let drb_height = block_height + epoch_height + 3;
+        let drb_height = block_height + epoch_height + 5;
         let drb_leaf = peers
-            .fetch_leaf(drb_height, stake_table, success_threshold, epoch_height)
+            .fetch_leaf(drb_height, stake_table, success_threshold, drb_height)
             .await?;
 
         let Some(drb) = drb_leaf.next_drb_result else {
