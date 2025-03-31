@@ -517,7 +517,10 @@ impl<T: StateCatchup> StateCatchup for Vec<T> {
             }
         }
 
-        bail!("could not fetch leaves from any provider");
+        bail!(
+            "could not fetch leaves for height: {} from any provider",
+            height
+        );
     }
     #[tracing::instrument(skip(self, instance))]
     async fn try_fetch_accounts(
