@@ -412,6 +412,7 @@ impl EpochCommittees {
         );
         self.randomized_committees
             .insert(epoch, randomized_committee);
+
         self.state.insert(
             epoch,
             EpochCommittee {
@@ -855,7 +856,7 @@ impl Membership<SeqTypes> for EpochCommittees {
     }
 
     fn set_first_epoch(&mut self, epoch: Epoch, initial_drb_result: DrbResult) {
-        self.first_epoch = epoch;
+        self.first_epoch = EpochNumber::new(1);
 
         let epoch_committee = self.state.get(&Epoch::genesis()).unwrap().clone();
         self.state.insert(epoch, epoch_committee.clone());
