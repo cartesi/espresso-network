@@ -1041,7 +1041,7 @@ impl HotShotState<SeqTypes> for ValidatedState {
                 version,
             )
             .await
-            .unwrap();
+            .map_err(|e| BlockError::FailedHeaderApply(e.to_string()))?;
 
         // Validate the proposal.
         let validated_state = ValidatedTransition::new(
