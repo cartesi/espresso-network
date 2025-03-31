@@ -2013,9 +2013,7 @@
 <a href="#2012" id="2012">2012</a>
 <a href="#2013" id="2013">2013</a>
 <a href="#2014" id="2014">2014</a>
-<a href="#2015" id="2015">2015</a>
-<a href="#2016" id="2016">2016</a>
-<a href="#2017" id="2017">2017</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
+<a href="#2015" id="2015">2015</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Add;
 
 <span class="kw">use </span>anyhow::{bail, Context};
 <span class="kw">use </span>committable::{Commitment, Committable};
@@ -3027,9 +3025,7 @@
         version: Version,
         view_number: u64,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(<span class="self">Self</span>, <span class="self">Self</span>::Delta), <span class="self">Self</span>::Error&gt; {
-        <span class="comment">// Unwrapping here is okay as we retry in a loop
-        //so we should either get a validated state or until hotshot cancels the task
-        </span><span class="kw">let </span>(validated_state, delta) = <span class="self">self
+        <span class="kw">let </span>(validated_state, delta) = <span class="self">self
             </span><span class="comment">// TODO We can add this logic to `ValidatedTransition` or do something similar to that here.
             </span>.apply_header(
                 instance,
@@ -3039,7 +3035,7 @@
                 version,
             )
             .<span class="kw">await
-            </span>.unwrap();
+            </span>.map_err(|e| BlockError::FailedHeaderApply(e.to_string()))<span class="question-mark">?</span>;
 
         <span class="comment">// Validate the proposal.
         </span><span class="kw">let </span>validated_state = ValidatedTransition::new(

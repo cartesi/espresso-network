@@ -1928,7 +1928,11 @@
 <a href="#1927" id="1927">1927</a>
 <a href="#1928" id="1928">1928</a>
 <a href="#1929" id="1929">1929</a>
-<a href="#1930" id="1930">1930</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#1930" id="1930">1930</a>
+<a href="#1931" id="1931">1931</a>
+<a href="#1932" id="1932">1932</a>
+<a href="#1933" id="1933">1933</a>
+<a href="#1934" id="1934">1934</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -2927,6 +2931,10 @@
     <span class="doccomment">/// The payload commitment does not match the block header's payload commitment
     </span><span class="attr">#[error(<span class="string">"Inconsistent payload commitment"</span>)]
     </span>InconsistentPayloadCommitment,
+
+    <span class="doccomment">/// The block header apply failed
+    </span><span class="attr">#[error(<span class="string">"Failed to apply block header: {0}"</span>)]
+    </span>FailedHeaderApply(String),
 }
 
 <span class="doccomment">/// Additional functions required to use a [`Leaf`] with hotshot-testing.
