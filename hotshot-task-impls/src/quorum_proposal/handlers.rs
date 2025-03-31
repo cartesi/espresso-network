@@ -519,7 +519,7 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             signature,
             _pd: PhantomData,
         };
-        tracing::error!(
+        tracing::debug!(
             "Sending proposal for view {:?}, height {:?}, justify_qc view: {:?}",
             proposed_leaf.view_number(),
             proposed_leaf.height(),
