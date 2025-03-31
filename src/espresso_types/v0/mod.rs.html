@@ -196,7 +196,8 @@
 <a href="#195" id="195">195</a>
 <a href="#196" id="196">196</a>
 <a href="#197" id="197">197</a>
-<a href="#198" id="198">198</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::marker::PhantomData;
 
 <span class="kw">use </span>hotshot_types::{
     data::{EpochNumber, ViewNumber},
@@ -211,6 +212,7 @@
 <span class="kw">pub mod </span>config;
 <span class="kw">mod </span>header;
 <span class="kw">mod </span>impls;
+<span class="kw">mod </span>nsproof;
 <span class="kw">pub mod </span>traits;
 <span class="kw">mod </span>utils;
 <span class="kw">pub use </span>header::Header;
@@ -220,6 +222,7 @@
     get_l1_deposits, retain_accounts, BuilderValidationError, EpochCommittees, FeeError,
     ProposalValidationError, StateValidationError,
 };
+<span class="kw">pub use </span>nsproof::NsProof;
 <span class="kw">pub use </span>utils::<span class="kw-2">*</span>;
 <span class="kw">use </span>vbs::version::{StaticVersion, StaticVersionType};
 
@@ -295,7 +298,6 @@
     NsPayloadByteLen,
     NsPayloadOwned,
     NsPayloadRange,
-    NsProof,
     NsTable,
     NsTableBuilder,
     NsTableValidationError,

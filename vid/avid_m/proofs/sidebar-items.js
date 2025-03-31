@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["MalEncodingProof"]};
+window.SIDEBAR_ITEMS = {"struct":["MalEncodingProof","NsProof"]};

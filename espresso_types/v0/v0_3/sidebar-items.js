@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["VERSION"],"mod":["chain_config","header","stake_table"],"struct":["ChainConfig","CombinedStakeTable","DAMembers","Delegator","Header","PermissionedStakeTableEntry","ResolvableChainConfig","StakeTable","Validator"],"type":["IndexedStake"]};
+window.SIDEBAR_ITEMS = {"constant":["VERSION"],"mod":["chain_config","header","nsproof","stake_table"],"struct":["AvidMNsProof","ChainConfig","CombinedStakeTable","DAMembers","Delegator","Header","PermissionedStakeTableEntry","ResolvableChainConfig","StakeTable","Validator"],"type":["IndexedStake"]};

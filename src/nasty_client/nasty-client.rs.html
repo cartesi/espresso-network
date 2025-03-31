@@ -1458,11 +1458,10 @@
     stream::{Peekable, StreamExt},
 };
 <span class="kw">use </span>hotshot_query_service::{
-    availability::{<span class="self">self</span>, BlockQueryData, LeafQueryData, PayloadQueryData, VidCommonQueryData},
+    availability::{<span class="self">self</span>, ADVZCommonQueryData, BlockQueryData, LeafQueryData, PayloadQueryData},
     metrics::PrometheusMetrics,
     node::TimeWindowQueryData,
     types::HeightIndexed,
-    VidCommon,
 };
 <span class="kw">use </span>hotshot_types::traits::{
     block_contents::BlockHeader,
@@ -1472,7 +1471,7 @@
     ForgetableMerkleTreeScheme, MerkleCommitment, MerkleTreeScheme, UniversalMerkleTreeScheme,
 };
 <span class="kw">use </span>rand::{seq::SliceRandom, RngCore};
-<span class="kw">use </span>sequencer::{api::endpoints::NamespaceProofQueryData, SequencerApiVersion};
+<span class="kw">use </span>sequencer::{api::endpoints::ADVZNamespaceProofQueryData, SequencerApiVersion};
 <span class="kw">use </span>sequencer_utils::logging;
 <span class="kw">use </span>serde::de::DeserializeOwned;
 <span class="kw">use </span>strum::{EnumDiscriminants, VariantArray};
@@ -2556,7 +2555,7 @@
             .unwrap();
         <span class="kw">let </span>ns = header.ns_table().read_ns_id(<span class="kw-2">&amp;</span>ns_index).unwrap();
 
-        <span class="kw">let </span>ns_proof: NamespaceProofQueryData = <span class="self">self
+        <span class="kw">let </span>ns_proof: ADVZNamespaceProofQueryData = <span class="self">self
             </span>.retry(<span class="macro">info_span!</span>(<span class="string">"fetch namespace"</span>, %ns), || <span class="kw">async </span>{
                 <span class="self">self</span>.get(<span class="macro">format!</span>(<span class="string">"availability/block/{block}/namespace/{ns}"</span>))
                     .<span class="kw">await
@@ -2564,7 +2563,7 @@
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// Verify proof.
-        </span><span class="kw">let </span>vid_common: VidCommonQueryData&lt;SeqTypes&gt; = <span class="self">self
+        </span><span class="kw">let </span>vid_common: ADVZCommonQueryData&lt;SeqTypes&gt; = <span class="self">self
             </span>.retry(<span class="macro">info_span!</span>(<span class="string">"fetch VID common"</span>), || <span class="kw">async </span>{
                 <span class="self">self</span>.get(<span class="macro">format!</span>(<span class="string">"availability/vid/common/{block}"</span>)).<span class="kw">await
             </span>})
@@ -2573,14 +2572,15 @@
             ns_proof.proof.is_some(),
             <span class="macro">format!</span>(<span class="string">"missing namespace proof for {block}:{ns}"</span>)
         );
-        <span class="kw">let </span>VidCommon::V0(common) = <span class="kw-2">&amp;</span>vid_common.common().clone() <span class="kw">else </span>{
-            <span class="macro">panic!</span>(<span class="string">"Failed to get vid V0 for namespace"</span>);
-        };
         <span class="macro">ensure!</span>(
             ns_proof
                 .proof
                 .unwrap()
-                .verify(header.ns_table(), <span class="kw-2">&amp;</span>header.payload_commitment(), common,)
+                .verify(
+                    header.ns_table(),
+                    <span class="kw-2">&amp;</span>header.payload_commitment(),
+                    vid_common.common(),
+                )
                 .is_some(),
             <span class="macro">format!</span>(<span class="string">"failure to verify namespace proof for {block}:{ns}"</span>)
         );
