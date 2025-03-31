@@ -514,7 +514,8 @@
 <a href="#513" id="513">513</a>
 <a href="#514" id="514">514</a>
 <a href="#515" id="515">515</a>
-<a href="#516" id="516">516</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, str::FromStr};
+<a href="#516" id="516">516</a>
+<a href="#517" id="517">517</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, str::FromStr};
 
 <span class="kw">use </span>anyhow::{bail, ensure, Context};
 <span class="kw">use </span>ark_serialize::{
@@ -530,6 +531,7 @@
 <span class="kw">use </span>hotshot_types::{
     data::{EpochNumber, ViewNumber},
     traits::{election::Membership, node_implementation::ConsensusTime},
+    utils::epoch_from_block_number,
 };
 <span class="kw">use </span>jf_merkle_tree::{
     ForgetableMerkleTreeScheme, ForgetableUniversalMerkleTreeScheme, LookupResult,
@@ -915,7 +917,7 @@
     <span class="kw">let </span>epoch_height = instance_state
         .epoch_height
         .context(<span class="string">"epoch height not found"</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>epoch = EpochNumber::new(height % epoch_height);
+    <span class="kw">let </span>epoch = EpochNumber::new(epoch_from_block_number(height, epoch_height));
     <span class="kw">let </span>coordinator = instance_state.coordinator.clone();
     <span class="kw">let </span>first_epoch = coordinator.membership().read().<span class="kw">await</span>.first_epoch();
 
@@ -932,7 +934,7 @@
     <span class="kw">let </span>epoch_height = instance_state
         .epoch_height
         .context(<span class="string">"epoch height not found"</span>)<span class="question-mark">?</span>;
-    <span class="kw">let </span>epoch = EpochNumber::new(height % epoch_height);
+    <span class="kw">let </span>epoch = EpochNumber::new(epoch_from_block_number(height, epoch_height));
     <span class="kw">let </span>coordinator = instance_state.coordinator.clone();
 
     <span class="kw">let </span>epoch_membership = coordinator.membership_for_epoch(<span class="prelude-val">Some</span>(epoch)).<span class="kw">await</span><span class="question-mark">?</span>;
