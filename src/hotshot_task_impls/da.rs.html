@@ -473,7 +473,16 @@
 <a href="#472" id="472">472</a>
 <a href="#473" id="473">473</a>
 <a href="#474" id="474">474</a>
-<a href="#475" id="475">475</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -662,7 +671,11 @@
                 <span class="kw">let </span><span class="kw-2">mut </span>next_epoch_total_weight = total_weight;
                 <span class="kw">if </span>epoch_number.is_some() {
                     next_epoch_total_weight = vid_total_weight::&lt;TYPES&gt;(
-                        membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.stake_table().<span class="kw">await</span>,
+                        membership
+                            .next_epoch_stake_table()
+                            .<span class="kw">await</span><span class="question-mark">?
+                            </span>.stake_table()
+                            .<span class="kw">await</span>,
                         epoch_number.map(|epoch| epoch + <span class="number">1</span>),
                     );
                 }
@@ -762,7 +775,12 @@
 
                     <span class="kw">let </span>target_epoch = <span class="kw">if </span>membership.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await </span>{
                         epoch_number
-                    } <span class="kw">else if </span>membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await </span>{
+                    } <span class="kw">else if </span>membership
+                        .next_epoch_stake_table()
+                        .<span class="kw">await</span><span class="question-mark">?
+                        </span>.has_stake(<span class="kw-2">&amp;</span>public_key)
+                        .<span class="kw">await
+                    </span>{
                         next_epoch
                     } <span class="kw">else </span>{
                         <span class="macro">bail!</span>(<span class="string">"Not calculating VID, the node doesn't belong to the current epoch or the next epoch."</span>);

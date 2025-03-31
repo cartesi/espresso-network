@@ -189,7 +189,19 @@
 <a href="#188" id="188">188</a>
 <a href="#189" id="189">189</a>
 <a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{collections::HashSet, sync::Arc, time::Duration};
 
 <span class="kw">use </span>anyhow::Ok;
 <span class="kw">use </span>async_lock::RwLock;
@@ -209,16 +221,23 @@
 }
 
 <span class="kw">impl</span>&lt;TYPES: NodeType&gt; DummyCatchupCommittee&lt;TYPES&gt; {
-    <span class="kw">fn </span>assert_has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) {
+    <span class="kw">fn </span>assert_has_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) {
         <span class="kw">let </span><span class="prelude-val">Some</span>(epoch) = epoch <span class="kw">else </span>{
             <span class="kw">return</span>;
         };
-        <span class="kw">let </span>pass = <span class="self">self</span>.epochs.contains(<span class="kw-2">&amp;</span>epoch);
-        <span class="comment">//&amp;&amp; self.drbs.contains(&amp;epoch);
-        </span><span class="kw">if </span>!pass {
-            <span class="macro">tracing::error!</span>(<span class="string">"FAILED EPOCH CHECK {epoch}"</span>);
-        }
-        <span class="macro">assert!</span>(pass);
+        <span class="macro">assert!</span>(
+            <span class="self">self</span>.epochs.contains(<span class="kw-2">&amp;</span>epoch),
+            <span class="string">"Failed epoch check for epoch {epoch}"
+        </span>);
+    }
+    <span class="kw">fn </span>assert_has_randomized_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(epoch) = epoch <span class="kw">else </span>{
+            <span class="kw">return</span>;
+        };
+        <span class="macro">assert!</span>(
+            <span class="self">self</span>.drbs.contains(<span class="kw-2">&amp;</span>epoch),
+            <span class="string">"Failed epoch check for epoch {epoch}"
+        </span>);
     }
 }
 
@@ -242,12 +261,12 @@
     }
 
     <span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; Vec&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.stake_table(epoch)
     }
 
     <span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; Vec&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.da_stake_table(epoch)
     }
 
@@ -256,7 +275,7 @@
         view_number: TYPES::View,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
     ) -&gt; std::collections::BTreeSet&lt;TYPES::SignatureKey&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.committee_members(view_number, epoch)
     }
 
@@ -265,7 +284,7 @@
         view_number: TYPES::View,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
     ) -&gt; std::collections::BTreeSet&lt;TYPES::SignatureKey&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.da_committee_members(view_number, epoch)
     }
 
@@ -274,7 +293,7 @@
         pub_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.stake(pub_key, epoch)
     }
 
@@ -283,17 +302,17 @@
         pub_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
     ) -&gt; <span class="prelude-ty">Option</span>&lt;hotshot_types::PeerConfig&lt;TYPES&gt;&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.da_stake(pub_key, epoch)
     }
 
     <span class="kw">fn </span>has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; bool {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.has_stake(pub_key, epoch)
     }
 
     <span class="kw">fn </span>has_da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, pub_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; bool {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.has_da_stake(pub_key, epoch)
     }
 
@@ -302,43 +321,48 @@
         view: TYPES::View,
         epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
     ) -&gt; std::result::Result&lt;TYPES::SignatureKey, <span class="self">Self</span>::Error&gt; {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_randomized_stake_table(epoch);
         <span class="self">self</span>.inner.lookup_leader(view, epoch)
     }
 
     <span class="kw">fn </span>total_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; usize {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.total_nodes(epoch)
     }
 
     <span class="kw">fn </span>da_total_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; usize {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.da_total_nodes(epoch)
     }
 
     <span class="kw">fn </span>success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.success_threshold(epoch)
     }
 
     <span class="kw">fn </span>da_success_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.da_success_threshold(epoch)
     }
 
     <span class="kw">fn </span>failure_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.failure_threshold(epoch)
     }
 
     <span class="kw">fn </span>upgrade_threshold(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
-        <span class="self">self</span>.assert_has_epoch(epoch);
+        <span class="self">self</span>.assert_has_stake_table(epoch);
         <span class="self">self</span>.inner.upgrade_threshold(epoch)
     }
 
-    <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch) -&gt; bool {
-        <span class="self">self</span>.assert_has_epoch(<span class="prelude-val">Some</span>(epoch));
+    <span class="kw">fn </span>has_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch) -&gt; bool {
+        <span class="self">self</span>.assert_has_stake_table(<span class="prelude-val">Some</span>(epoch));
         <span class="self">self</span>.epochs.contains(<span class="kw-2">&amp;</span>epoch)
+    }
+
+    <span class="kw">fn </span>has_randomized_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch) -&gt; bool {
+        <span class="self">self</span>.assert_has_randomized_stake_table(<span class="prelude-val">Some</span>(epoch));
+        <span class="self">self</span>.drbs.contains(<span class="kw-2">&amp;</span>epoch)
     }
 
     <span class="kw">async fn </span>get_epoch_root_and_drb(

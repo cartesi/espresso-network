@@ -434,7 +434,10 @@
 <a href="#433" id="433">433</a>
 <a href="#434" id="434">434</a>
 <a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -862,7 +865,10 @@
         <span class="kw">let </span>len = <span class="self">self</span>.total_nodes(epoch);
         U256::from(max((len <span class="kw">as </span>u64 * <span class="number">9</span>) / <span class="number">10</span>, ((len <span class="kw">as </span>u64 * <span class="number">2</span>) / <span class="number">3</span>) + <span class="number">1</span>))
     }
-    <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: TYPES::Epoch) -&gt; bool {
+    <span class="kw">fn </span>has_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: TYPES::Epoch) -&gt; bool {
+        <span class="bool-val">true
+    </span>}
+    <span class="kw">fn </span>has_randomized_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: TYPES::Epoch) -&gt; bool {
         <span class="bool-val">true
     </span>}
 

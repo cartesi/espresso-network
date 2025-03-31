@@ -1111,7 +1111,21 @@
 <a href="#1110" id="1110">1110</a>
 <a href="#1111" id="1111">1111</a>
 <a href="#1112" id="1112">1112</a>
-<a href="#1113" id="1113">1113</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1113" id="1113">1113</a>
+<a href="#1114" id="1114">1114</a>
+<a href="#1115" id="1115">1115</a>
+<a href="#1116" id="1116">1116</a>
+<a href="#1117" id="1117">1117</a>
+<a href="#1118" id="1118">1118</a>
+<a href="#1119" id="1119">1119</a>
+<a href="#1120" id="1120">1120</a>
+<a href="#1121" id="1121">1121</a>
+<a href="#1122" id="1122">1122</a>
+<a href="#1123" id="1123">1123</a>
+<a href="#1124" id="1124">1124</a>
+<a href="#1125" id="1125">1125</a>
+<a href="#1126" id="1126">1126</a>
+<a href="#1127" id="1127">1127</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
@@ -1444,7 +1458,8 @@
     <span class="doccomment">/// Methods for stake table persistence.
     </span><span class="attr">#[debug(skip)]
     </span>persistence: Arc&lt;<span class="kw">dyn </span>MembershipPersistence&gt;,
-    first_epoch: Epoch,
+
+    first_epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;,
 }
 
 <span class="doccomment">/// Holds Stake table and da stake
@@ -1482,7 +1497,7 @@
 }
 
 <span class="kw">impl </span>EpochCommittees {
-    <span class="kw">pub fn </span>first_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Epoch {
+    <span class="kw">pub fn </span>first_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;Epoch&gt; {
         <span class="self">self</span>.first_epoch
     }
 
@@ -1651,7 +1666,7 @@
             randomized_committees: BTreeMap::new(),
             peers,
             persistence: Arc::new(persistence),
-            first_epoch: Epoch::genesis(),
+            first_epoch: <span class="prelude-val">None</span>,
         }
     }
     <span class="kw">fn </span>get_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; <span class="prelude-ty">Option</span>&lt;Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;&gt; {
@@ -1899,8 +1914,21 @@
         }))
     }
 
-    <span class="kw">fn </span>has_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: Epoch) -&gt; bool {
+    <span class="kw">fn </span>has_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: Epoch) -&gt; bool {
         <span class="self">self</span>.state.contains_key(<span class="kw-2">&amp;</span>epoch)
+    }
+
+    <span class="kw">fn </span>has_randomized_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: Epoch) -&gt; bool {
+        <span class="kw">match </span><span class="self">self</span>.first_epoch {
+            <span class="prelude-val">None </span>=&gt; <span class="bool-val">true</span>,
+            <span class="prelude-val">Some</span>(first_epoch) =&gt; {
+                <span class="kw">if </span>epoch &lt; first_epoch {
+                    <span class="self">self</span>.state.contains_key(<span class="kw-2">&amp;</span>epoch)
+                } <span class="kw">else </span>{
+                    <span class="self">self</span>.randomized_committees.contains_key(<span class="kw-2">&amp;</span>epoch)
+                }
+            },
+        }
     }
 
     <span class="kw">async fn </span>get_epoch_root_and_drb(
@@ -1958,7 +1986,7 @@
     }
 
     <span class="kw">fn </span>set_first_epoch(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: Epoch, initial_drb_result: DrbResult) {
-        <span class="self">self</span>.first_epoch = epoch;
+        <span class="self">self</span>.first_epoch = <span class="prelude-val">Some</span>(epoch);
 
         <span class="kw">let </span>epoch_committee = <span class="self">self</span>.state.get(<span class="kw-2">&amp;</span>Epoch::genesis()).unwrap().clone();
         <span class="self">self</span>.state.insert(epoch, epoch_committee.clone());
