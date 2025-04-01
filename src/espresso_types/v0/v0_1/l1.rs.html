@@ -446,14 +446,14 @@
 /// This is cloneable and returns a reference to the same underlying data.
 </span><span class="attr">#[derive(Debug, Clone)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>SingleTransport {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) generation: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) client: Http&lt;Client&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) status: Arc&lt;RwLock&lt;SingleTransportStatus&gt;&gt;,
 }
 
 <span class="doccomment">/// The status of a single transport
-</span><span class="attr">#[derive(Debug)]
+</span><span class="attr">#[derive(Debug, Default)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>SingleTransportStatus {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) url_index: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) last_failure: <span class="prelude-ty">Option</span>&lt;Instant&gt;,
     <span class="kw">pub</span>(<span class="kw">crate</span>) consecutive_failures: usize,
     <span class="kw">pub</span>(<span class="kw">crate</span>) rate_limited_until: <span class="prelude-ty">Option</span>&lt;Instant&gt;,

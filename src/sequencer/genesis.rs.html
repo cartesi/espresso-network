@@ -1268,7 +1268,53 @@
 <a href="#1267" id="1267">1267</a>
 <a href="#1268" id="1268">1268</a>
 <a href="#1269" id="1269">1269</a>
-<a href="#1270" id="1270">1270</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1270" id="1270">1270</a>
+<a href="#1271" id="1271">1271</a>
+<a href="#1272" id="1272">1272</a>
+<a href="#1273" id="1273">1273</a>
+<a href="#1274" id="1274">1274</a>
+<a href="#1275" id="1275">1275</a>
+<a href="#1276" id="1276">1276</a>
+<a href="#1277" id="1277">1277</a>
+<a href="#1278" id="1278">1278</a>
+<a href="#1279" id="1279">1279</a>
+<a href="#1280" id="1280">1280</a>
+<a href="#1281" id="1281">1281</a>
+<a href="#1282" id="1282">1282</a>
+<a href="#1283" id="1283">1283</a>
+<a href="#1284" id="1284">1284</a>
+<a href="#1285" id="1285">1285</a>
+<a href="#1286" id="1286">1286</a>
+<a href="#1287" id="1287">1287</a>
+<a href="#1288" id="1288">1288</a>
+<a href="#1289" id="1289">1289</a>
+<a href="#1290" id="1290">1290</a>
+<a href="#1291" id="1291">1291</a>
+<a href="#1292" id="1292">1292</a>
+<a href="#1293" id="1293">1293</a>
+<a href="#1294" id="1294">1294</a>
+<a href="#1295" id="1295">1295</a>
+<a href="#1296" id="1296">1296</a>
+<a href="#1297" id="1297">1297</a>
+<a href="#1298" id="1298">1298</a>
+<a href="#1299" id="1299">1299</a>
+<a href="#1300" id="1300">1300</a>
+<a href="#1301" id="1301">1301</a>
+<a href="#1302" id="1302">1302</a>
+<a href="#1303" id="1303">1303</a>
+<a href="#1304" id="1304">1304</a>
+<a href="#1305" id="1305">1305</a>
+<a href="#1306" id="1306">1306</a>
+<a href="#1307" id="1307">1307</a>
+<a href="#1308" id="1308">1308</a>
+<a href="#1309" id="1309">1309</a>
+<a href="#1310" id="1310">1310</a>
+<a href="#1311" id="1311">1311</a>
+<a href="#1312" id="1312">1312</a>
+<a href="#1313" id="1313">1313</a>
+<a href="#1314" id="1314">1314</a>
+<a href="#1315" id="1315">1315</a>
+<a href="#1316" id="1316">1316</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeMap, HashMap},
     path::Path,
 };
@@ -1281,7 +1327,6 @@
 <span class="kw">use </span>ethers::types::H160;
 <span class="kw">use </span>ethers_conv::ToAlloy;
 <span class="kw">use </span>serde::{Deserialize, Serialize};
-<span class="kw">use </span>url::Url;
 <span class="kw">use </span>vbs::version::Version;
 
 <span class="doccomment">/// Initial configuration of an Espresso stake table.
@@ -1354,14 +1399,12 @@
 }
 
 <span class="kw">impl </span>Genesis {
-    <span class="kw">pub async fn </span>validate_fee_contract(<span class="kw-2">&amp;</span><span class="self">self</span>, l1_rpc_url: Url) -&gt; anyhow::Result&lt;()&gt; {
-        <span class="kw">let </span>l1 = L1Client::new(<span class="macro">vec!</span>[l1_rpc_url]).with_context(|| <span class="string">"failed to create L1 client"</span>)<span class="question-mark">?</span>;
-
+    <span class="kw">pub async fn </span>validate_fee_contract(<span class="kw-2">&amp;</span><span class="self">self</span>, l1: <span class="kw-2">&amp;</span>L1Client) -&gt; anyhow::Result&lt;()&gt; {
         <span class="kw">if let </span><span class="prelude-val">Some</span>(fee_contract_address) = <span class="self">self</span>.chain_config.fee_contract {
             <span class="macro">tracing::info!</span>(<span class="string">"validating fee contract at {fee_contract_address:x}"</span>);
 
             <span class="kw">if </span>!l1
-                .is_proxy_contract(fee_contract_address.to_alloy())
+                .retry_on_all_providers(|| l1.is_proxy_contract(fee_contract_address.to_alloy()))
                 .<span class="kw">await
                 </span>.context(<span class="string">"checking if fee contract is a proxy"</span>)<span class="question-mark">?
             </span>{
@@ -1383,7 +1426,9 @@
                 <span class="kw">if </span>fee_contract_address == H160::zero() {
                     <span class="macro">anyhow::bail!</span>(<span class="string">"Fee contract cannot use the zero address"</span>);
                 } <span class="kw">else if </span>!l1
-                    .is_proxy_contract(fee_contract_address.to_alloy())
+                    .retry_on_all_providers(|| {
+                        l1.is_proxy_contract(fee_contract_address.to_alloy())
+                    })
                     .<span class="kw">await
                     </span>.context(<span class="macro">format!</span>(
                         <span class="string">"checking if fee contract is a proxy in upgrade {version}"</span>,
@@ -1871,7 +1916,7 @@
 
         <span class="comment">// validate the fee_contract address
         </span><span class="kw">let </span>result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(<span class="kw-2">&amp;</span>L1Client::anvil(<span class="kw-2">&amp;</span>anvil).unwrap())
             .<span class="kw">await</span>;
 
         <span class="comment">// check if the result from the validation is an error
@@ -1919,7 +1964,7 @@
 
         <span class="comment">// Call the validation logic for the fee_contract address
         </span><span class="kw">let </span>result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(<span class="kw-2">&amp;</span>L1Client::anvil(<span class="kw-2">&amp;</span>anvil).unwrap())
             .<span class="kw">await</span>;
 
         <span class="macro">assert!</span>(
@@ -1993,7 +2038,7 @@
 
         <span class="comment">// Call the validation logic for the fee_contract address
         </span><span class="kw">let </span>result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(<span class="kw-2">&amp;</span>L1Client::anvil(<span class="kw-2">&amp;</span>anvil).unwrap())
             .<span class="kw">await</span>;
 
         <span class="macro">assert!</span>(
@@ -2067,7 +2112,7 @@
 
         <span class="comment">// Call the validation logic for the fee_contract address
         </span><span class="kw">let </span>result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(<span class="kw-2">&amp;</span>L1Client::anvil(<span class="kw-2">&amp;</span>anvil).unwrap())
             .<span class="kw">await</span>;
 
         <span class="comment">// check if the result from the validation is an error
@@ -2137,7 +2182,7 @@
 
         <span class="comment">// validate the fee_contract address
         </span><span class="kw">let </span>result = genesis
-            .validate_fee_contract(rpc_url.parse().unwrap())
+            .validate_fee_contract(<span class="kw-2">&amp;</span>L1Client::new(<span class="macro">vec!</span>[rpc_url.parse().unwrap()]).unwrap())
             .<span class="kw">await</span>;
 
         <span class="comment">// check if the result from the validation is an error
@@ -2192,7 +2237,7 @@
 
         <span class="comment">// validate the fee_contract address
         </span><span class="kw">let </span>result = genesis
-            .validate_fee_contract(rpc_url.parse().unwrap())
+            .validate_fee_contract(<span class="kw-2">&amp;</span>L1Client::new(<span class="macro">vec!</span>[rpc_url.parse().unwrap()]).unwrap())
             .<span class="kw">await</span>;
 
         <span class="comment">// check if the result from the validation is an error
@@ -2204,6 +2249,53 @@
         } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">"Expected the fee contract to complain about the zero address but the validation succeeded"</span>);
         }
+    }
+
+    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+    </span><span class="kw">async fn </span>test_genesis_fee_contract_l1_failover() -&gt; anyhow::Result&lt;()&gt; {
+        setup_test();
+
+        <span class="kw">let </span>anvil = Anvil::new().spawn();
+        <span class="kw">let </span>(_wallet, proxy_contract) = deploy_fee_contract_as_proxy_for_test(<span class="kw-2">&amp;</span>anvil).<span class="kw">await</span><span class="question-mark">?</span>;
+
+        <span class="kw">let </span>toml = <span class="macro">format!</span>(
+            <span class="string">r#"
+            base_version = "0.1"
+            upgrade_version = "0.2"
+
+            [stake_table]
+            capacity = 10
+
+            [chain_config]
+            chain_id = 12345
+            max_block_size = 30000
+            base_fee = 1
+            fee_recipient = "0x0000000000000000000000000000000000000000"
+            fee_contract = "{:?}"
+
+            [header]
+            timestamp = 123456
+
+            [l1_finalized]
+            number = 42
+        "#</span>,
+            proxy_contract.address()
+        )
+        .to_string();
+
+        <span class="kw">let </span>genesis: Genesis = toml::from_str(<span class="kw-2">&amp;</span>toml).unwrap_or_else(|err| <span class="macro">panic!</span>(<span class="string">"{err:#}"</span>));
+        genesis
+            .validate_fee_contract(
+                <span class="kw-2">&amp;</span>L1Client::new(<span class="macro">vec!</span>[
+                    <span class="string">"http://notareall1provider"</span>.parse().unwrap(),
+                    anvil.endpoint().parse().unwrap(),
+                ])
+                .unwrap(),
+            )
+            .<span class="kw">await
+            </span>.unwrap();
+
+        <span class="prelude-val">Ok</span>(())
     }
 
     <span class="attr">#[test]
