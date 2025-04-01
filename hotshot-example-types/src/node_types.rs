@@ -11,8 +11,8 @@ pub use hotshot::traits::election::helpers::{
 };
 use hotshot::traits::{
     election::{
-        helpers::QuorumFilterConfig, randomized_committee::Committee,
-        randomized_committee_members::RandomizedCommitteeMembers,
+        dummy_catchup_membership::DummyCatchupCommittee, helpers::QuorumFilterConfig,
+        randomized_committee::Committee, randomized_committee_members::RandomizedCommitteeMembers,
         static_committee::StaticCommittee,
         static_committee_leader_two_views::StaticCommitteeLeaderForTwoViews,
         two_static_committees::TwoStaticCommittees,
@@ -23,7 +23,7 @@ use hotshot::traits::{
 use hotshot_types::{
     constants::TEST_UPGRADE_CONSTANTS,
     data::{EpochNumber, ViewNumber},
-    signature_key::{BLSPubKey, BuilderKey},
+    signature_key::{BLSPubKey, BuilderKey, SchnorrPubKey},
     traits::node_implementation::{NodeType, Versions},
     upgrade_config::UpgradeConstants,
 };
@@ -67,6 +67,7 @@ impl NodeType for TestTypes {
     type InstanceState = TestInstanceState;
     type Membership = StaticCommittee<TestTypes>;
     type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
 }
 
 #[derive(
@@ -99,6 +100,38 @@ impl NodeType for TestTypesRandomizedLeader {
     type InstanceState = TestInstanceState;
     type Membership = Committee<TestTypesRandomizedLeader>;
     type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
+}
+
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub struct TestTypesEpochCatchupTypes;
+impl NodeType for TestTypesEpochCatchupTypes {
+    const UPGRADE_CONSTANTS: UpgradeConstants = TEST_UPGRADE_CONSTANTS;
+
+    type AuctionResult = TestAuctionResult;
+    type View = ViewNumber;
+    type Epoch = EpochNumber;
+    type BlockHeader = TestBlockHeader;
+    type BlockPayload = TestBlockPayload;
+    type SignatureKey = BLSPubKey;
+    type Transaction = TestTransaction;
+    type ValidatedState = TestValidatedState;
+    type InstanceState = TestInstanceState;
+    type Membership = DummyCatchupCommittee<TestTypesEpochCatchupTypes>;
+    type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
 }
 
 #[derive(
@@ -135,6 +168,7 @@ impl<CONFIG: QuorumFilterConfig> NodeType for TestTypesRandomizedCommitteeMember
     type Membership =
         RandomizedCommitteeMembers<TestTypesRandomizedCommitteeMembers<CONFIG>, CONFIG>;
     type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
 }
 
 #[derive(
@@ -167,6 +201,7 @@ impl NodeType for TestConsecutiveLeaderTypes {
     type InstanceState = TestInstanceState;
     type Membership = StaticCommitteeLeaderForTwoViews<TestConsecutiveLeaderTypes>;
     type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
 }
 
 #[derive(
@@ -199,6 +234,7 @@ impl NodeType for TestTwoStakeTablesTypes {
     type InstanceState = TestInstanceState;
     type Membership = TwoStaticCommittees<TestTwoStakeTablesTypes>;
     type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
 }
 
 /// The Push CDN implementation
@@ -300,8 +336,8 @@ impl Versions for MarketplaceTestVersions {
 pub struct EpochsTestVersions {}
 
 impl Versions for EpochsTestVersions {
-    type Base = StaticVersion<0, 4>;
-    type Upgrade = StaticVersion<0, 4>;
+    type Base = StaticVersion<0, 3>;
+    type Upgrade = StaticVersion<0, 3>;
     const UPGRADE_HASH: [u8; 32] = [
         1, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
         0, 0,
@@ -309,7 +345,7 @@ impl Versions for EpochsTestVersions {
 
     type Marketplace = StaticVersion<0, 5>;
 
-    type Epochs = StaticVersion<0, 4>;
+    type Epochs = StaticVersion<0, 3>;
 }
 
 #[derive(Clone, Debug, Copy)]

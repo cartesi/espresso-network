@@ -16,6 +16,8 @@
 //! consensus network with two nodes and connects a query service to each node. It runs each query
 //! server on local host. The program continues until it is manually killed.
 
+use std::{num::NonZeroUsize, str::FromStr, sync::Arc, time::Duration};
+
 use async_lock::RwLock;
 use clap::Parser;
 use futures::future::{join_all, try_join_all};
@@ -42,12 +44,13 @@ use hotshot_query_service::{
 use hotshot_testing::block_builder::{SimpleBuilderImplementation, TestBuilderImplementation};
 use hotshot_types::{
     consensus::ConsensusMetricsValue,
+    epoch_membership::EpochMembershipCoordinator,
     light_client::StateKeyPair,
     signature_key::BLSPubKey,
     traits::{election::Membership, network::Topic},
     HotShotConfig, PeerConfig,
 };
-use std::{num::NonZeroUsize, str::FromStr, sync::Arc, time::Duration};
+use primitive_types::U256;
 use tracing_subscriber::EnvFilter;
 use url::Url;
 use vbs::version::StaticVersionType;
@@ -161,8 +164,8 @@ async fn init_consensus(
     let known_nodes_with_stake = pub_keys
         .iter()
         .zip(&state_key_pairs)
-        .map(|(pub_key, state_key_pair)| PeerConfig::<BLSPubKey> {
-            stake_table_entry: pub_key.stake_table_entry(1u64),
+        .map(|(pub_key, state_key_pair)| PeerConfig::<MockTypes> {
+            stake_table_entry: pub_key.stake_table_entry(U256::from(1)),
             state_ver_key: state_key_pair.ver_key(),
         })
         .collect::<Vec<_>>();
@@ -225,6 +228,10 @@ async fn init_consensus(
             let pub_keys = pub_keys.clone();
             let config = config.clone();
             let master_map = master_map.clone();
+            let state_private_keys = state_key_pairs
+                .iter()
+                .map(|kp| kp.sign_key())
+                .collect::<Vec<_>>();
 
             let membership = membership.clone();
             async move {
@@ -236,13 +243,18 @@ async fn init_consensus(
                 ));
 
                 let storage: TestStorage<MockTypes> = TestStorage::default();
+                let coordinator = EpochMembershipCoordinator::new(
+                    Arc::new(RwLock::new(membership)),
+                    config.epoch_height,
+                );
 
                 SystemContext::init(
                     pub_keys[node_id],
                     priv_key,
+                    state_private_keys[node_id].clone(),
                     node_id as u64,
                     config,
-                    Arc::new(RwLock::new(membership)),
+                    coordinator,
                     network,
                     HotShotInitializer::from_genesis::<MockVersions>(
                         TestInstanceState::default(),

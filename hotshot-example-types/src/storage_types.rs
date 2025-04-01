@@ -13,20 +13,22 @@ use anyhow::{bail, Result};
 use async_lock::RwLock;
 use async_trait::async_trait;
 use hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
-        DaProposal, DaProposal2, Leaf, Leaf2, QuorumProposal, QuorumProposal2,
-        QuorumProposalWrapper, VidCommitment,
+        DaProposal, DaProposal2, QuorumProposal, QuorumProposal2, QuorumProposalWrapper,
+        VidCommitment,
     },
+    drb::DrbResult,
     event::HotShotAction,
-    message::Proposal,
-    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, UpgradeCertificate},
+    message::{convert_proposal, Proposal},
+    simple_certificate::{
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate2,
+        UpgradeCertificate,
+    },
     traits::{
         node_implementation::{ConsensusTime, NodeType},
         storage::Storage,
     },
-    utils::View,
     vote::HasViewNumber,
 };
 
@@ -56,6 +58,9 @@ pub struct TestStorageState<TYPES: NodeType> {
         Option<hotshot_types::simple_certificate::NextEpochQuorumCertificate2<TYPES>>,
     action: TYPES::View,
     epoch: Option<TYPES::Epoch>,
+    state_cert: Option<hotshot_types::simple_certificate::LightClientStateUpdateCertificate<TYPES>>,
+    drb_results: BTreeMap<TYPES::Epoch, DrbResult>,
+    epoch_roots: BTreeMap<TYPES::Epoch, TYPES::BlockHeader>,
 }
 
 impl<TYPES: NodeType> Default for TestStorageState<TYPES> {
@@ -73,6 +78,9 @@ impl<TYPES: NodeType> Default for TestStorageState<TYPES> {
             high_qc2: None,
             action: TYPES::View::genesis(),
             epoch: None,
+            state_cert: None,
+            drb_results: BTreeMap::new(),
+            epoch_roots: BTreeMap::new(),
         }
     }
 }
@@ -135,6 +143,10 @@ impl<TYPES: NodeType> TestStorage<TYPES> {
     }
     pub async fn vids_cloned(&self) -> VidShares2<TYPES> {
         self.inner.read().await.vid2.clone()
+    }
+
+    pub async fn state_cert_cloned(&self) -> Option<LightClientStateUpdateCertificate<TYPES>> {
+        self.inner.read().await.state_cert.clone()
     }
 }
 
@@ -308,6 +320,25 @@ impl<TYPES: NodeType> Storage<TYPES> for TestStorage<TYPES> {
         Ok(())
     }
 
+    async fn update_state_cert(
+        &self,
+        state_cert: hotshot_types::simple_certificate::LightClientStateUpdateCertificate<TYPES>,
+    ) -> Result<()> {
+        if self.should_return_err {
+            bail!("Failed to update state_cert to storage");
+        }
+        Self::run_delay_settings_from_config(&self.delay_config).await;
+        let mut inner = self.inner.write().await;
+        if let Some(ref current_state_cert) = inner.state_cert {
+            if state_cert.epoch > current_state_cert.epoch {
+                inner.state_cert = Some(state_cert);
+            }
+        } else {
+            inner.state_cert = Some(state_cert);
+        }
+        Ok(())
+    }
+
     async fn update_next_epoch_high_qc2(
         &self,
         new_next_epoch_high_qc: hotshot_types::simple_certificate::NextEpochQuorumCertificate2<
@@ -329,30 +360,6 @@ impl<TYPES: NodeType> Storage<TYPES> for TestStorage<TYPES> {
         Ok(())
     }
 
-    async fn update_undecided_state(
-        &self,
-        _leaves: CommitmentMap<Leaf<TYPES>>,
-        _state: BTreeMap<TYPES::View, View<TYPES>>,
-    ) -> Result<()> {
-        if self.should_return_err {
-            bail!("Failed to update high qc to storage");
-        }
-        Self::run_delay_settings_from_config(&self.delay_config).await;
-        Ok(())
-    }
-
-    async fn update_undecided_state2(
-        &self,
-        _leaves: CommitmentMap<Leaf2<TYPES>>,
-        _state: BTreeMap<TYPES::View, View<TYPES>>,
-    ) -> Result<()> {
-        if self.should_return_err {
-            bail!("Failed to update high qc to storage");
-        }
-        Self::run_delay_settings_from_config(&self.delay_config).await;
-        Ok(())
-    }
-
     async fn update_decided_upgrade_certificate(
         &self,
         decided_upgrade_certificate: Option<UpgradeCertificate<TYPES>>,
@@ -362,13 +369,7 @@ impl<TYPES: NodeType> Storage<TYPES> for TestStorage<TYPES> {
         Ok(())
     }
 
-    async fn migrate_consensus(
-        &self,
-        _convert_leaf: fn(Leaf<TYPES>) -> Leaf2<TYPES>,
-        convert_proposal: fn(
-            Proposal<TYPES, QuorumProposal<TYPES>>,
-        ) -> Proposal<TYPES, QuorumProposal2<TYPES>>,
-    ) -> Result<()> {
+    async fn migrate_consensus(&self) -> Result<()> {
         let mut storage_writer = self.inner.write().await;
 
         for (view, proposal) in storage_writer.proposals.clone().iter() {
@@ -376,6 +377,26 @@ impl<TYPES: NodeType> Storage<TYPES> for TestStorage<TYPES> {
                 .proposals2
                 .insert(*view, convert_proposal(proposal.clone()));
         }
+
+        Ok(())
+    }
+
+    async fn add_drb_result(&self, epoch: TYPES::Epoch, drb_result: DrbResult) -> Result<()> {
+        let mut inner = self.inner.write().await;
+
+        inner.drb_results.insert(epoch, drb_result);
+
+        Ok(())
+    }
+
+    async fn add_epoch_root(
+        &self,
+        epoch: TYPES::Epoch,
+        block_header: TYPES::BlockHeader,
+    ) -> Result<()> {
+        let mut inner = self.inner.write().await;
+
+        inner.epoch_roots.insert(epoch, block_header);
 
         Ok(())
     }

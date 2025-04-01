@@ -44,15 +44,15 @@ fn sanitize_node_map<TYPES: NodeType>(
         reduced.dedup();
 
         match reduced.len() {
-            0 => {}
+            0 => {},
             1 => {
                 result.insert(*view, reduced[0].clone());
-            }
+            },
             _ => {
                 bail!(
                     "We have received inconsistent leaves for view {view:?}. Leaves:\n\n{leaves:?}"
                 );
-            }
+            },
         }
     }
 
@@ -96,7 +96,9 @@ async fn validate_node_map<TYPES: NodeType, V: Versions>(
     for (parent, child) in leaf_pairs {
         ensure!(
               child.justify_qc().view_number >= parent.view_number(),
-              "The node has provided leaf:\n\n{child:?}\n\nbut its quorum certificate points to a view before the most recent leaf:\n\n{parent:?}"
+              "The node has provided leaf:\n\n{:?}\n\nbut its quorum certificate points to a view before the most recent leaf:\n\n{:?}",
+              child,
+              parent
         );
 
         child
@@ -108,6 +110,13 @@ async fn validate_node_map<TYPES: NodeType, V: Versions>(
                     e
                 )
             })?;
+
+        ensure!(
+          child.height() > parent.height(),
+          "The node has decided leaf\n\n{:?}\n\nextending leaf\n\n{:?}but the block height did not increase.",
+          child,
+          parent
+        );
 
         // We want to make sure the commitment matches,
         // but allow for the possibility that we may have skipped views in between.
@@ -300,12 +309,12 @@ impl<TYPES: NodeType<BlockHeader = TestBlockHeader>, V: Versions> ConsistencyTas
         match result {
             Ok(TestProgress::Finished) => {
                 let _ = self.test_sender.broadcast(TestEvent::Shutdown).await;
-            }
+            },
             Err(e) => {
                 self.add_error(e);
                 let _ = self.test_sender.broadcast(TestEvent::Shutdown).await;
-            }
-            Ok(TestProgress::Incomplete) => {}
+            },
+            Ok(TestProgress::Incomplete) => {},
         }
     }
 

@@ -1,13 +1,7 @@
 #![cfg(test)]
 
-use super::*;
-use crate::{
-    api::{self, data_source::testing::TestableSequencerDataSource, options::Query},
-    genesis::{L1Finalized, StakeTableConfig},
-    network::cdn::{TestingDef, WrappedSignatureKey},
-    testing::wait_for_decide_on_handle,
-    SequencerApiVersion,
-};
+use std::{collections::HashSet, path::Path, time::Duration};
+
 use anyhow::bail;
 use cdn_broker::{
     reexports::{crypto::signature::KeyPair, def::hook::NoMessageHook},
@@ -31,10 +25,10 @@ use hotshot_testing::{
     block_builder::{SimpleBuilderImplementation, TestBuilderImplementation},
     test_builder::BuilderChange,
 };
-use hotshot_types::network::{Libp2pConfig, NetworkConfig};
 use hotshot_types::{
     event::{Event, EventType},
     light_client::StateKeyPair,
+    network::{Libp2pConfig, NetworkConfig},
     traits::{node_implementation::ConsensusTime, signature_key::SignatureKey},
 };
 use itertools::Itertools;
@@ -42,16 +36,23 @@ use options::Modules;
 use portpicker::pick_unused_port;
 use run::init_with_storage;
 use sequencer_utils::test_utils::setup_test;
-use std::{collections::HashSet, path::Path, time::Duration};
 use surf_disco::{error::ClientError, Url};
 use tempfile::TempDir;
-use tokio::time::timeout;
 use tokio::{
     task::{spawn, JoinHandle},
-    time::sleep,
+    time::{sleep, timeout},
 };
 use vbs::version::Version;
 use vec1::vec1;
+
+use super::*;
+use crate::{
+    api::{self, data_source::testing::TestableSequencerDataSource, options::Query},
+    genesis::{L1Finalized, StakeTableConfig},
+    network::cdn::{TestingDef, WrappedSignatureKey},
+    testing::wait_for_decide_on_handle,
+    SequencerApiVersion,
+};
 
 async fn test_restart_helper(network: (usize, usize), restart: (usize, usize), cdn: bool) {
     setup_test();
@@ -358,7 +359,7 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
                         sleep(delay).await;
                         delay *= 2;
                         retries -= 1;
-                    }
+                    },
                 }
             };
 
@@ -543,6 +544,7 @@ impl TestNetwork {
             upgrades: Default::default(),
             base_version: Version { major: 0, minor: 1 },
             upgrade_version: Version { major: 0, minor: 2 },
+            epoch_height: None,
 
             // Start with a funded account, so we can test catchup after restart.
             accounts: [(builder_account(), 1000000000.into())]
@@ -827,7 +829,7 @@ fn start_orchestrator(port: u16, nodes: &[NodeParams], builder_port: u16) -> Joi
         })
         .collect();
 
-    let mut config = NetworkConfig::<PubKey> {
+    let mut config = NetworkConfig::<SeqTypes> {
         indexed_da: false,
         libp2p_config: Some(Libp2pConfig { bootstrap_nodes }),
         ..Default::default()

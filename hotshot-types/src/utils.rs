@@ -12,6 +12,7 @@ use std::{
     sync::Arc,
 };
 
+use anyhow::{anyhow, ensure};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bincode::{
     config::{
@@ -20,8 +21,9 @@ use bincode::{
     },
     DefaultOptions, Options,
 };
-use committable::Commitment;
+use committable::{Commitment, Committable};
 use digest::OutputSizeUser;
+use primitive_types::U256;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tagged_base64::tagged;
@@ -34,6 +36,8 @@ use crate::{
         node_implementation::{ConsensusTime, NodeType, Versions},
         ValidatedState,
     },
+    vote::{Certificate, HasViewNumber},
+    PeerConfig, StakeTableEntries,
 };
 
 /// A view's state
@@ -98,6 +102,85 @@ pub type StateAndDelta<TYPES> = (
     Option<Arc<<TYPES as NodeType>::ValidatedState>>,
     Option<Arc<<<TYPES as NodeType>::ValidatedState as ValidatedState<TYPES>>::Delta>>,
 );
+
+pub async fn verify_leaf_chain<T: NodeType, V: Versions>(
+    leaf_chain: Vec<Leaf2<T>>,
+    stake_table: Vec<PeerConfig<T>>,
+    success_threshold: U256,
+    expected_height: u64,
+    upgrade_lock: &crate::message::UpgradeLock<T, V>,
+) -> anyhow::Result<Leaf2<T>> {
+    // Check we actually have a chain long enough for deciding
+    if leaf_chain.len() < 3 {
+        return Err(anyhow!("Leaf chain is not long enough for a decide"));
+    }
+
+    let newest_leaf = leaf_chain.first().unwrap();
+    let parent = &leaf_chain[1];
+    let grand_parent = &leaf_chain[2];
+
+    // Check if the leaves form a decide
+    if newest_leaf.justify_qc().view_number() != parent.view_number()
+        || parent.justify_qc().view_number() != grand_parent.view_number()
+    {
+        return Err(anyhow!("Leaf views do not chain"));
+    }
+    if newest_leaf.justify_qc().data.leaf_commit != parent.commit()
+        || parent.justify_qc().data().leaf_commit != grand_parent.commit()
+    {
+        return Err(anyhow!("Leaf commits do not chain"));
+    }
+    if parent.view_number() != grand_parent.view_number() + 1 {
+        return Err(anyhow::anyhow!(
+            "Decide rule failed, parent does not directly extend grandparent"
+        ));
+    }
+
+    // verify all QCs are valid
+    newest_leaf
+        .justify_qc()
+        .is_valid_cert(
+            StakeTableEntries::<T>::from(stake_table.clone()).0,
+            success_threshold,
+            upgrade_lock,
+        )
+        .await?;
+    parent
+        .justify_qc()
+        .is_valid_cert(
+            StakeTableEntries::<T>::from(stake_table.clone()).0,
+            success_threshold,
+            upgrade_lock,
+        )
+        .await?;
+    grand_parent
+        .justify_qc()
+        .is_valid_cert(
+            StakeTableEntries::<T>::from(stake_table.clone()).0,
+            success_threshold,
+            upgrade_lock,
+        )
+        .await?;
+
+    // Verify the root is in the chain of decided leaves
+    let mut last_leaf = parent;
+    for leaf in leaf_chain.iter().skip(2) {
+        ensure!(last_leaf.justify_qc().view_number() == leaf.view_number());
+        ensure!(last_leaf.justify_qc().data().leaf_commit == leaf.commit());
+        leaf.justify_qc()
+            .is_valid_cert(
+                StakeTableEntries::<T>::from(stake_table.clone()).0,
+                success_threshold,
+                upgrade_lock,
+            )
+            .await?;
+        if leaf.height() == expected_height {
+            return Ok(leaf.clone());
+        }
+        last_leaf = leaf;
+    }
+    Err(anyhow!("Epoch Root was not found in the decided chain"))
+}
 
 impl<TYPES: NodeType> ViewInner<TYPES> {
     /// Return the underlying undecide leaf commitment and validated state if they exist.
@@ -199,7 +282,7 @@ pub enum Terminator<T> {
 type Sha256Digest = [u8; <sha2::Sha256 as OutputSizeUser>::OutputSize::USIZE];
 
 #[tagged("BUILDER_COMMITMENT")]
-#[derive(Clone, Debug, Hash, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq, CanonicalSerialize, CanonicalDeserialize)]
 /// Commitment that builders use to sign block options.
 /// A thin wrapper around a Sha256 digest.
 pub struct BuilderCommitment(Sha256Digest);
@@ -249,6 +332,8 @@ pub fn bincode_opts() -> WithOtherTrailing<
 pub fn epoch_from_block_number(block_number: u64, epoch_height: u64) -> u64 {
     if epoch_height == 0 {
         0
+    } else if block_number == 0 {
+        1
     } else if block_number % epoch_height == 0 {
         block_number / epoch_height
     } else {
@@ -265,7 +350,17 @@ pub fn root_block_in_epoch(epoch: u64, epoch_height: u64) -> u64 {
     if epoch_height == 0 || epoch < 1 {
         0
     } else {
-        epoch_height * epoch - 2
+        epoch_height * epoch - 5
+    }
+}
+
+/// Get the block height of the transition block for the given epoch
+#[must_use]
+pub fn transition_block_for_epoch(epoch: u64, epoch_height: u64) -> u64 {
+    if epoch_height == 0 || epoch < 1 {
+        0
+    } else {
+        epoch_height * epoch - 3
     }
 }
 
@@ -307,7 +402,7 @@ pub fn mnemonic<H: Hash>(bytes: H) -> String {
 
 /// A helper enum to indicate whether a node is in the epoch transition
 /// A node is in epoch transition when its high QC is for the last block in an epoch
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum EpochTransitionIndicator {
     /// A node is currently in the epoch transition
     InTransition,
@@ -315,13 +410,56 @@ pub enum EpochTransitionIndicator {
     NotInTransition,
 }
 
-/// Returns true if the given block number is the last in the epoch based on the given epoch height.
+/// Return true if the given block number is the final full block, the "transition block"
 #[must_use]
-pub fn is_last_block_in_epoch(block_number: u64, epoch_height: u64) -> bool {
+pub fn is_transition_block(block_number: u64, epoch_height: u64) -> bool {
+    if block_number == 0 || epoch_height == 0 {
+        false
+    } else {
+        (block_number + 3) % epoch_height == 0
+    }
+}
+/// returns true if it's the first transition block (epoch height - 2)
+#[must_use]
+pub fn is_first_transition_block(block_number: u64, epoch_height: u64) -> bool {
+    if block_number == 0 || epoch_height == 0 {
+        false
+    } else {
+        block_number % epoch_height == epoch_height - 2
+    }
+}
+/// Returns true if the block is part of the epoch transition (including the last non null block)  
+#[must_use]
+pub fn is_epoch_transition(block_number: u64, epoch_height: u64) -> bool {
+    if block_number == 0 || epoch_height == 0 {
+        false
+    } else {
+        block_number % epoch_height >= epoch_height - 3 || block_number % epoch_height == 0
+    }
+}
+
+/// Returns true if the block is the last block in the epoch
+#[must_use]
+pub fn is_last_block(block_number: u64, epoch_height: u64) -> bool {
     if block_number == 0 || epoch_height == 0 {
         false
     } else {
         block_number % epoch_height == 0
+    }
+}
+
+/// Returns true if the block number is in trasntion but not the transition block
+/// or the last block in the epoch.  
+///
+/// This function is useful for determining if a proposal extending this QC must follow
+/// the special rules for transition blocks.
+#[must_use]
+pub fn is_middle_transition_block(block_number: u64, epoch_height: u64) -> bool {
+    if block_number == 0 || epoch_height == 0 {
+        false
+    } else {
+        let blocks_left = epoch_height - (block_number % epoch_height);
+        blocks_left == 1 || blocks_left == 2
     }
 }
 
@@ -332,7 +470,17 @@ pub fn is_epoch_root(block_number: u64, epoch_height: u64) -> bool {
     if block_number == 0 || epoch_height == 0 {
         false
     } else {
-        (block_number + 2) % epoch_height == 0
+        (block_number + 5) % epoch_height == 0
+    }
+}
+
+/// Returns true if the given block number is equal or greater than the epoch root block
+#[must_use]
+pub fn is_ge_epoch_root(block_number: u64, epoch_height: u64) -> bool {
+    if block_number == 0 || epoch_height == 0 {
+        false
+    } else {
+        block_number % epoch_height >= epoch_height - 5
     }
 }
 
@@ -342,9 +490,9 @@ mod test {
 
     #[test]
     fn test_epoch_from_block_number() {
-        // block 0 is always epoch 0
+        // block 0 is always epoch 1
         let epoch = epoch_from_block_number(0, 10);
-        assert_eq!(0, epoch);
+        assert_eq!(1, epoch);
 
         let epoch = epoch_from_block_number(1, 10);
         assert_eq!(1, epoch);
@@ -367,22 +515,28 @@ mod test {
 
     #[test]
     fn test_is_last_block_in_epoch() {
-        assert!(!is_last_block_in_epoch(8, 10));
-        assert!(!is_last_block_in_epoch(9, 10));
-        assert!(is_last_block_in_epoch(10, 10));
-        assert!(!is_last_block_in_epoch(11, 10));
+        assert!(!is_epoch_transition(5, 10));
+        assert!(!is_epoch_transition(6, 10));
+        assert!(is_epoch_transition(7, 10));
+        assert!(is_epoch_transition(8, 10));
+        assert!(is_epoch_transition(9, 10));
+        assert!(is_epoch_transition(10, 10));
+        assert!(!is_epoch_transition(11, 10));
 
-        assert!(!is_last_block_in_epoch(10, 0));
+        assert!(!is_epoch_transition(10, 0));
     }
 
     #[test]
     fn test_is_epoch_root() {
-        assert!(is_epoch_root(8, 10));
+        assert!(is_epoch_root(5, 10));
+        assert!(!is_epoch_root(6, 10));
+        assert!(!is_epoch_root(7, 10));
+        assert!(!is_epoch_root(8, 10));
         assert!(!is_epoch_root(9, 10));
         assert!(!is_epoch_root(10, 10));
         assert!(!is_epoch_root(11, 10));
 
-        assert!(!is_last_block_in_epoch(10, 0));
+        assert!(!is_epoch_transition(10, 0));
     }
 
     #[test]
@@ -392,9 +546,9 @@ mod test {
         let epoch_height = 10;
         let epoch_root_block_number = root_block_in_epoch(3, epoch_height);
 
-        assert!(is_epoch_root(28, epoch_height));
+        assert!(is_epoch_root(25, epoch_height));
 
-        assert_eq!(epoch_root_block_number, 28);
+        assert_eq!(epoch_root_block_number, 25);
 
         assert_eq!(
             epoch,

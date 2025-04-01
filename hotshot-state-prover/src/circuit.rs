@@ -79,8 +79,8 @@ impl LightClientStateVar {
         state: &GenericLightClientState<F>,
     ) -> Result<Self, CircuitError> {
         Ok(Self {
-            view_num: circuit.create_public_variable(F::from(state.view_number as u64))?,
-            block_height: circuit.create_public_variable(F::from(state.block_height as u64))?,
+            view_num: circuit.create_public_variable(F::from(state.view_number))?,
+            block_height: circuit.create_public_variable(F::from(state.block_height))?,
             block_comm_root: circuit.create_public_variable(state.block_comm_root)?,
         })
     }
@@ -331,8 +331,10 @@ where
 #[cfg(test)]
 mod tests {
     use ark_ed_on_bn254::EdwardsConfig as Config;
-    use hotshot_types::light_client::LightClientState;
-    use hotshot_types::traits::stake_table::{SnapshotVersion, StakeTableScheme};
+    use hotshot_types::{
+        light_client::LightClientState,
+        traits::stake_table::{SnapshotVersion, StakeTableScheme},
+    };
     use jf_crhf::CRHF;
     use jf_relation::Circuit;
     use jf_rescue::crhf::VariableLengthRescueCRHF;

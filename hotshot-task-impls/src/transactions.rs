@@ -10,26 +10,24 @@ use std::{
 };
 
 use async_broadcast::{Receiver, Sender};
-use async_lock::RwLock;
 use async_trait::async_trait;
 use futures::{future::join_all, stream::FuturesUnordered, StreamExt};
 use hotshot_builder_api::v0_1::block_info::AvailableBlockInfo;
 use hotshot_task::task::TaskState;
 use hotshot_types::{
     consensus::OuterConsensus,
-    data::VidCommitment,
-    data::{null_block, PackedBundle},
+    data::{null_block, PackedBundle, VidCommitment},
+    epoch_membership::EpochMembershipCoordinator,
     event::{Event, EventType},
     message::UpgradeLock,
     traits::{
         auction_results_provider::AuctionResultsProvider,
         block_contents::{BuilderFee, EncodeBytes},
-        election::Membership,
         node_implementation::{ConsensusTime, HasUrls, NodeImplementation, NodeType, Versions},
         signature_key::{BuilderSignatureKey, SignatureKey},
         BlockPayload,
     },
-    utils::ViewInner,
+    utils::{is_epoch_transition, is_last_block, ViewInner},
 };
 use hotshot_utils::anytrace::*;
 use tokio::time::{sleep, timeout};
@@ -92,7 +90,7 @@ pub struct TransactionTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>, V
     pub consensus: OuterConsensus<TYPES>,
 
     /// Membership for the quorum
-    pub membership: Arc<RwLock<TYPES::Membership>>,
+    pub membership_coordinator: EpochMembershipCoordinator<TYPES>,
 
     /// Builder 0.1 API clients
     pub builder_clients: Vec<BuilderClientBase<TYPES>>,
@@ -135,7 +133,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             Err(e) => {
                 tracing::error!("Failed to calculate version: {:?}", e);
                 return None;
-            }
+            },
         };
 
         if version < V::Marketplace::VERSION {
@@ -160,8 +158,66 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             Err(err) => {
                 tracing::error!("Upgrade certificate requires unsupported version, refusing to request blocks: {}", err);
                 return None;
-            }
+            },
         };
+
+        // Short circuit if we are in epochs and we are likely proposing a transition block
+        // If it's the first view of the upgrade, we don't need to check for transition blocks
+        if version >= V::Epochs::VERSION {
+            let Some(epoch) = block_epoch else {
+                tracing::error!("Epoch is required for epoch-based view change");
+                return None;
+            };
+            let high_qc = self.consensus.read().await.high_qc().clone();
+            let mut high_qc_block_number = if let Some(bn) = high_qc.data.block_number {
+                bn
+            } else {
+                // If it's the first view after the upgrade the high QC won't have a block number
+                // So just use the highest_block number we've stored
+                if block_view
+                    > self
+                        .upgrade_lock
+                        .upgrade_view()
+                        .await
+                        .unwrap_or(TYPES::View::new(0))
+                        + 1
+                {
+                    tracing::error!("High QC in epoch version and not the first QC after upgrade");
+                    return None;
+                }
+                // 0 here so we use the highest block number in the calculation below
+                0
+            };
+            high_qc_block_number = std::cmp::max(
+                high_qc_block_number,
+                self.consensus.read().await.highest_block,
+            );
+            if self
+                .consensus
+                .read()
+                .await
+                .transition_qc()
+                .is_some_and(|qc| {
+                    let Some(e) = qc.0.data.epoch else {
+                        return false;
+                    };
+                    e == epoch
+                })
+                || is_epoch_transition(high_qc_block_number, self.epoch_height)
+            {
+                // We are proposing a transition block it should be empty
+                if !is_last_block(high_qc_block_number, self.epoch_height) {
+                    tracing::info!(
+                        "Sending empty block event. View number: {}. Parent Block number: {}",
+                        block_view,
+                        high_qc_block_number
+                    );
+                    self.send_empty_block(event_stream, block_view, block_epoch, version)
+                        .await;
+                    return None;
+                }
+            }
+        }
 
         // Request a block from the builder unless we are between versions.
         let block = {
@@ -198,44 +254,56 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             )
             .await;
         } else {
-            // If we couldn't get a block, send an empty block
-            tracing::info!(
-                "Failed to get a block for view {:?}, proposing empty block",
-                block_view
-            );
-
-            // Increment the metric for number of empty blocks proposed
-            self.consensus
-                .write()
-                .await
-                .metrics
-                .number_of_empty_blocks_proposed
-                .add(1);
-
-            let Some(null_fee) = null_block::builder_fee::<TYPES, V>(version, *block_view) else {
-                tracing::error!("Failed to get null fee");
-                return None;
-            };
-
-            // Create an empty block payload and metadata
-            let (_, metadata) = <TYPES as NodeType>::BlockPayload::empty();
-
-            // Broadcast the empty block
-            broadcast_event(
-                Arc::new(HotShotEvent::BlockRecv(PackedBundle::new(
-                    vec![].into(),
-                    metadata,
-                    block_view,
-                    block_epoch,
-                    vec1::vec1![null_fee],
-                    None,
-                ))),
-                event_stream,
-            )
-            .await;
+            self.send_empty_block(event_stream, block_view, block_epoch, version)
+                .await;
         };
 
         return None;
+    }
+
+    /// Send the event to the event stream that we are proposing an empty block
+    async fn send_empty_block(
+        &self,
+        event_stream: &Sender<Arc<HotShotEvent<TYPES>>>,
+        block_view: TYPES::View,
+        block_epoch: Option<TYPES::Epoch>,
+        version: Version,
+    ) {
+        // If we couldn't get a block, send an empty block
+        tracing::info!(
+            "Failed to get a block for view {:?}, proposing empty block",
+            block_view
+        );
+
+        // Increment the metric for number of empty blocks proposed
+        self.consensus
+            .write()
+            .await
+            .metrics
+            .number_of_empty_blocks_proposed
+            .add(1);
+
+        let Some(null_fee) = null_block::builder_fee::<TYPES, V>(version, *block_view) else {
+            tracing::error!("Failed to get null fee");
+            return;
+        };
+
+        // Create an empty block payload and metadata
+        let (_, metadata) = <TYPES as NodeType>::BlockPayload::empty();
+
+        // Broadcast the empty block
+        broadcast_event(
+            Arc::new(HotShotEvent::BlockRecv(PackedBundle::new(
+                vec![].into(),
+                metadata,
+                block_view,
+                block_epoch,
+                vec1::vec1![null_fee],
+                None,
+            ))),
+            event_stream,
+        )
+        .await;
     }
 
     /// Produce a block by fetching auction results from the solver and bundles from builders.
@@ -304,11 +372,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 Ok(Err(e)) => {
                     tracing::debug!("Failed to retrieve bundle: {e}");
                     continue;
-                }
+                },
                 Err(e) => {
                     tracing::debug!("Failed to retrieve bundle: {e}");
                     continue;
-                }
+                },
             }
         }
 
@@ -385,7 +453,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             Err(err) => {
                 tracing::error!("Upgrade certificate requires unsupported version, refusing to request blocks: {}", err);
                 return None;
-            }
+            },
         };
 
         let packed_bundle = match self
@@ -411,7 +479,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     .add(1);
 
                 null_block
-            }
+            },
         };
 
         broadcast_event(
@@ -421,23 +489,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
         .await;
 
         None
-    }
-
-    /// epochs view change handler
-    #[instrument(skip_all, fields(id = self.id, view_number = *self.cur_view))]
-    pub async fn handle_view_change_epochs(
-        &mut self,
-        event_stream: &Sender<Arc<HotShotEvent<TYPES>>>,
-        block_view: TYPES::View,
-        block_epoch: Option<TYPES::Epoch>,
-    ) -> Option<HotShotTaskCompleted> {
-        if self.consensus.read().await.is_high_qc_forming_eqc() {
-            tracing::info!("Reached end of epoch. Not getting a new block until we form an eQC.");
-            None
-        } else {
-            self.handle_view_change_marketplace(event_stream, block_view, block_epoch)
-                .await
-        }
     }
 
     /// main task event handler
@@ -459,7 +510,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     &self.output_event_stream,
                 )
                 .await;
-            }
+            },
             HotShotEvent::ViewChange(view, epoch) => {
                 let view = TYPES::View::new(std::cmp::max(1, **view));
                 let epoch = if self.upgrade_lock.epochs_enabled(view).await {
@@ -482,13 +533,18 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 self.cur_view = view;
                 self.cur_epoch = epoch;
 
-                let leader = self.membership.read().await.leader(view, epoch)?;
+                let leader = self
+                    .membership_coordinator
+                    .membership_for_epoch(epoch)
+                    .await?
+                    .leader(view)
+                    .await?;
                 if leader == self.public_key {
                     self.handle_view_change(&event_stream, view, epoch).await;
                     return Ok(());
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
         Ok(())
     }
@@ -509,7 +565,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     // We still have time, will re-try in a bit
                     sleep(RETRY_DELAY).await;
                     continue;
-                }
+                },
             }
         }
     }
@@ -529,7 +585,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 .validated_state_map()
                 .get(&target_view)
                 .context(info!(
-                    "Missing record for view {?target_view} in validated state"
+                    "Missing record for view {} in validated state",
+                    target_view
                 ))?;
 
             match &view_data.view_inner {
@@ -540,16 +597,21 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     leaf: leaf_commitment,
                     ..
                 } => {
-                    let leaf = consensus_reader.saved_leaves().get(leaf_commitment).context
-                        (info!("Missing leaf with commitment {leaf_commitment} for view {target_view} in saved_leaves"))?;
+                    let leaf = consensus_reader
+                        .saved_leaves()
+                        .get(leaf_commitment)
+                        .context(info!(
+                            "Missing leaf with commitment {} for view {} in saved_leaves",
+                            leaf_commitment, target_view,
+                        ))?;
                     return Ok((target_view, leaf.payload_commitment()));
-                }
+                },
                 ViewInner::Failed => {
                     // For failed views, backtrack
                     target_view =
                         TYPES::View::new(target_view.checked_sub(1).context(warn!("Reached genesis. Something is wrong -- have we not decided any blocks since genesis?"))?);
                     continue;
-                }
+                },
             }
         }
     }
@@ -567,7 +629,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             Err(e) => {
                 tracing::warn!("Failed to find last vid commitment in time: {e}");
                 return None;
-            }
+            },
         };
 
         let parent_comm_sig = match <<TYPES as NodeType>::SignatureKey as SignatureKey>::sign(
@@ -578,7 +640,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             Err(err) => {
                 tracing::error!(%err, "Failed to sign block hash");
                 return None;
-            }
+            },
         };
 
         while task_start_time.elapsed() < self.builder_timeout {
@@ -592,7 +654,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 // We got a block
                 Ok(Ok(block)) => {
                     return Some(block);
-                }
+                },
 
                 // We failed to get a block
                 Ok(Err(err)) => {
@@ -600,13 +662,13 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     // pause a bit
                     sleep(RETRY_DELAY).await;
                     continue;
-                }
+                },
 
                 // We timed out while getting available blocks
                 Err(err) => {
                     tracing::info!(%err, "Timeout while getting available blocks");
                     return None;
-                }
+                },
             }
         }
 
@@ -671,7 +733,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 Err(err) => {
                     tracing::warn!(%err,"Error getting available blocks");
                     None
-                }
+                },
             })
             .flatten()
             .collect::<Vec<_>>()
@@ -731,7 +793,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 Err(err) => {
                     tracing::error!(%err, "Failed to sign block hash");
                     continue;
-                }
+                },
             };
 
             let response = {
@@ -747,7 +809,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     Err(err) => {
                         tracing::warn!(%err, "Error claiming block data");
                         continue;
-                    }
+                    },
                 };
 
                 let header_input = match header_input {
@@ -755,7 +817,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     Err(err) => {
                         tracing::warn!(%err, "Error claiming header input");
                         continue;
-                    }
+                    },
                 };
 
                 // verify the signature over the message

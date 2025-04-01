@@ -12,8 +12,17 @@
 
 #![cfg(any(test, feature = "testing"))]
 
+use std::{ops::RangeBounds, sync::Arc};
+
+use async_lock::Mutex;
+use async_trait::async_trait;
+use futures::future::Future;
+use hotshot_types::{data::VidShare, traits::node_implementation::NodeType};
+use vec1::Vec1;
+
 use super::{
     pruning::{PruneStorage, PrunedHeightStorage, PrunerCfg, PrunerConfig},
+    sql::MigrateTypes,
     Aggregate, AggregatesStorage, AvailabilityStorage, NodeStorage, UpdateAggregatesStorage,
     UpdateAvailabilityStorage,
 };
@@ -29,14 +38,8 @@ use crate::{
     metrics::PrometheusMetrics,
     node::{SyncStatus, TimeWindowQueryData, WindowStart},
     status::HasMetrics,
-    Header, Payload, QueryError, QueryResult, VidShare,
+    Header, Payload, QueryError, QueryResult,
 };
-use async_lock::Mutex;
-use async_trait::async_trait;
-use futures::future::Future;
-use hotshot_types::traits::node_implementation::NodeType;
-use std::ops::RangeBounds;
-use std::sync::Arc;
 
 /// A specific action that can be targeted to inject an error.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -45,6 +48,7 @@ pub enum FailableAction {
     // can always add more variants for other actions.
     GetHeader,
     GetLeaf,
+    GetLeaves,
     GetBlock,
     GetPayload,
     GetPayloadMetadata,
@@ -86,8 +90,8 @@ impl FailureMode {
         match self {
             Self::Once(fail_action) if fail_action.matches(action) => {
                 *self = Self::Never;
-            }
-            Self::Always(fail_action) if fail_action.matches(action) => {}
+            },
+            Self::Always(fail_action) if fail_action.matches(action) => {},
             _ => return Ok(()),
         }
 
@@ -254,6 +258,16 @@ where
 }
 
 #[async_trait]
+impl<S, Types: NodeType> MigrateTypes<Types> for FailStorage<S>
+where
+    S: MigrateTypes<Types> + Sync,
+{
+    async fn migrate_types(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
+
+#[async_trait]
 impl<S> PruneStorage for FailStorage<S>
 where
     S: PruneStorage + Sync,
@@ -322,6 +336,11 @@ where
     async fn get_leaf(&mut self, id: LeafId<Types>) -> QueryResult<LeafQueryData<Types>> {
         self.maybe_fail_read(FailableAction::GetLeaf).await?;
         self.inner.get_leaf(id).await
+    }
+
+    async fn get_leaves(&mut self, height: u64) -> QueryResult<Vec1<LeafQueryData<Types>>> {
+        self.maybe_fail_read(FailableAction::GetLeaves).await?;
+        self.inner.get_leaves(height).await
     }
 
     async fn get_block(&mut self, id: BlockId<Types>) -> QueryResult<BlockQueryData<Types>> {

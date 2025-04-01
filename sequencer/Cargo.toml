@@ -53,11 +53,13 @@ async-once-cell = { workspace = true }
 async-trait = { workspace = true }
 bincode = { workspace = true }
 byteorder = "1"
+staking-cli = { workspace = true }
 
 # CDN imports
 cdn-broker = { git = "https://github.com/EspressoSystems/Push-CDN", tag = "0.5.1-upgrade", package = "cdn-broker", features = ["global-permits"] }
 cdn-marshal = { git = "https://github.com/EspressoSystems/Push-CDN", tag = "0.5.1-upgrade", package = "cdn-marshal" }
 
+alloy = { workspace = true }
 clap = { workspace = true }
 client = { path = "../client" }
 committable = "0.2"
@@ -70,6 +72,7 @@ espresso-types = { path = "../types" }
 ethers = { workspace = true }
 ethers-conv = { workspace = true }
 futures = { workspace = true }
+indexmap = { workspace = true }
 
 hotshot = { workspace = true }
 hotshot-contract-adapter = { workspace = true }
@@ -103,6 +106,7 @@ rand = { workspace = true }
 rand_chacha = { workspace = true }
 rand_distr = { workspace = true }
 request-response = { path = "../request-response" }
+semver = { workspace = true }
 sequencer-utils = { path = "../utils" }
 serde = { workspace = true }
 serde_json = { workspace = true }

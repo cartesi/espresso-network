@@ -1,45 +1,49 @@
+use std::{
+    collections::{BTreeMap, HashSet},
+    fs::{self, File, OpenOptions},
+    io::{Read, Seek, SeekFrom, Write},
+    ops::RangeInclusive,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use anyhow::{anyhow, Context};
 use async_lock::RwLock;
 use async_trait::async_trait;
 use clap::Parser;
 use espresso_types::{
+    traits::MembershipPersistence,
     v0::traits::{EventConsumer, PersistenceOptions, SequencerPersistence},
+    v0_3::{IndexedStake, Validator},
     Leaf, Leaf2, NetworkConfig, Payload, SeqTypes,
 };
+use hotshot::{types::BLSPubKey, InitializerEpochInfo};
 use hotshot_libp2p_networking::network::behaviours::dht::store::persistent::{
     DhtPersistentStorage, SerializableRecord,
 };
-use hotshot_query_service::VidCommitment;
 use hotshot_types::{
-    consensus::CommitmentMap,
     data::{
         vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
-        DaProposal, EpochNumber, QuorumProposal, QuorumProposal2, QuorumProposalWrapper,
+        DaProposal, DaProposal2, EpochNumber, QuorumProposal, QuorumProposal2,
+        QuorumProposalWrapper, VidCommitment, VidDisperseShare,
     },
+    drb::DrbResult,
     event::{Event, EventType, HotShotAction, LeafInfo},
     message::{convert_proposal, Proposal},
     simple_certificate::{
-        NextEpochQuorumCertificate2, QuorumCertificate, QuorumCertificate2, UpgradeCertificate,
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
+        QuorumCertificate2, UpgradeCertificate,
     },
     traits::{
         block_contents::{BlockHeader, BlockPayload},
-        node_implementation::ConsensusTime,
+        node_implementation::{ConsensusTime, NodeType},
     },
-    utils::View,
     vote::HasViewNumber,
 };
-use std::sync::Arc;
-use std::{
-    collections::BTreeMap,
-    fs::{self, File, OpenOptions},
-    io::{Read, Seek, SeekFrom, Write},
-    ops::RangeInclusive,
-    path::{Path, PathBuf},
-};
+use indexmap::IndexMap;
+use itertools::Itertools;
 
 use crate::ViewNumber;
-
-use espresso_types::{downgrade_commitment_map, downgrade_leaf, upgrade_commitment_map};
 
 /// Options for file system backed persistence.
 #[derive(Parser, Clone, Debug)]
@@ -47,9 +51,6 @@ pub struct Options {
     /// Storage path for persistent data.
     #[clap(long, env = "ESPRESSO_SEQUENCER_STORAGE_PATH")]
     path: PathBuf,
-
-    #[clap(long, env = "ESPRESSO_SEQUENCER_STORE_UNDECIDED_STATE", hide = true)]
-    store_undecided_state: bool,
 
     /// Number of views to retain in consensus storage before data that hasn't been archived is
     /// garbage collected.
@@ -80,7 +81,6 @@ impl Options {
     pub fn new(path: PathBuf) -> Self {
         Self {
             path,
-            store_undecided_state: false,
             consensus_view_retention: 130000,
         }
     }
@@ -100,13 +100,21 @@ impl PersistenceOptions for Options {
 
     async fn create(&mut self) -> anyhow::Result<Self::Persistence> {
         let path = self.path.clone();
-        let store_undecided_state = self.store_undecided_state;
         let view_retention = self.consensus_view_retention;
 
+        let migration_path = path.join("migration");
+        let migrated = if migration_path.is_file() {
+            let bytes = fs::read(&path)
+                .context(format!("unable to read migration from {}", path.display()))?;
+            bincode::deserialize(&bytes).context("malformed migration file")?
+        } else {
+            HashSet::new()
+        };
+
         Ok(Persistence {
-            store_undecided_state,
             inner: Arc::new(RwLock::new(Inner {
                 path,
+                migrated,
                 view_retention,
             })),
         })
@@ -120,8 +128,6 @@ impl PersistenceOptions for Options {
 /// File system backed persistence.
 #[derive(Clone, Debug)]
 pub struct Persistence {
-    store_undecided_state: bool,
-
     // We enforce mutual exclusion on access to the data source, as the current file system
     // implementation does not support transaction isolation for concurrent reads and writes. We can
     // improve this in the future by switching to a SQLite-based file system implementation.
@@ -132,11 +138,16 @@ pub struct Persistence {
 struct Inner {
     path: PathBuf,
     view_retention: u64,
+    migrated: HashSet<String>,
 }
 
 impl Inner {
     fn config_path(&self) -> PathBuf {
         self.path.join("hotshot.cfg")
+    }
+
+    fn migration(&self) -> PathBuf {
+        self.path.join("migration")
     }
 
     fn voted_view_path(&self) -> PathBuf {
@@ -148,6 +159,10 @@ impl Inner {
         self.path.join("decided_leaves")
     }
 
+    fn decided_leaf2_path(&self) -> PathBuf {
+        self.path.join("decided_leaves2")
+    }
+
     /// The path from previous versions where there was only a single file for anchor leaves.
     fn legacy_anchor_leaf_path(&self) -> PathBuf {
         self.path.join("anchor_leaf")
@@ -157,20 +172,32 @@ impl Inner {
         self.path.join("vid")
     }
 
+    fn vid2_dir_path(&self) -> PathBuf {
+        self.path.join("vid2")
+    }
+
     fn da_dir_path(&self) -> PathBuf {
         self.path.join("da")
     }
 
-    fn undecided_state_path(&self) -> PathBuf {
-        self.path.join("undecided_state")
+    fn da2_dir_path(&self) -> PathBuf {
+        self.path.join("da2")
     }
 
     fn quorum_proposals_dir_path(&self) -> PathBuf {
         self.path.join("quorum_proposals")
     }
 
+    fn quorum_proposals2_dir_path(&self) -> PathBuf {
+        self.path.join("quorum_proposals2")
+    }
+
     fn upgrade_certificate_dir_path(&self) -> PathBuf {
         self.path.join("upgrade_certificate")
+    }
+
+    fn stake_table_dir_path(&self) -> PathBuf {
+        self.path.join("stake_table")
     }
 
     fn next_epoch_qc(&self) -> PathBuf {
@@ -179,6 +206,31 @@ impl Inner {
 
     fn libp2p_dht_path(&self) -> PathBuf {
         self.path.join("libp2p_dht")
+    }
+    fn epoch_drb_result_dir_path(&self) -> PathBuf {
+        self.path.join("epoch_drb_result")
+    }
+
+    fn epoch_root_block_header_dir_path(&self) -> PathBuf {
+        self.path.join("epoch_root_block_header")
+    }
+
+    fn light_client_state_update_certificate_dir_path(&self) -> PathBuf {
+        self.path.join("state_cert")
+    }
+
+    fn update_migration(&mut self) -> anyhow::Result<()> {
+        let path = self.migration();
+        let bytes = bincode::serialize(&self.migrated)?;
+
+        self.replace(
+            &path,
+            |_| Ok(true),
+            |mut file| {
+                file.write_all(&bytes)?;
+                Ok(())
+            },
+        )
     }
 
     /// Overwrite a file if a condition is met.
@@ -232,10 +284,10 @@ impl Inner {
     ) -> anyhow::Result<()> {
         let prune_view = ViewNumber::new(decided_view.saturating_sub(self.view_retention));
 
-        self.prune_files(self.da_dir_path(), prune_view, None, prune_intervals)?;
-        self.prune_files(self.vid_dir_path(), prune_view, None, prune_intervals)?;
+        self.prune_files(self.da2_dir_path(), prune_view, None, prune_intervals)?;
+        self.prune_files(self.vid2_dir_path(), prune_view, None, prune_intervals)?;
         self.prune_files(
-            self.quorum_proposals_dir_path(),
+            self.quorum_proposals2_dir_path(),
             prune_view,
             None,
             prune_intervals,
@@ -243,7 +295,7 @@ impl Inner {
 
         // Save the most recent leaf as it will be our anchor point if the node restarts.
         self.prune_files(
-            self.decided_leaf_path(),
+            self.decided_leaf2_path(),
             prune_view,
             Some(decided_view),
             prune_intervals,
@@ -294,7 +346,7 @@ impl Inner {
         // separate event for each leaf because it is possible we have non-consecutive leaves in our
         // storage, which would not be valid as a single decide with a single leaf chain.
         let mut leaves = BTreeMap::new();
-        for (v, path) in view_files(self.decided_leaf_path())? {
+        for (v, path) in view_files(self.decided_leaf2_path())? {
             if v > view {
                 continue;
             }
@@ -302,7 +354,7 @@ impl Inner {
             let bytes =
                 fs::read(&path).context(format!("reading decided leaf {}", path.display()))?;
             let (mut leaf, qc) =
-                bincode::deserialize::<(Leaf, QuorumCertificate<SeqTypes>)>(&bytes)
+                bincode::deserialize::<(Leaf2, QuorumCertificate2<SeqTypes>)>(&bytes)
                     .context(format!("parsing decided leaf {}", path.display()))?;
 
             // Include the VID share if available.
@@ -323,9 +375,8 @@ impl Inner {
             }
 
             let info = LeafInfo {
-                leaf: leaf.into(),
-                vid_share: vid_share.map(Into::into),
-
+                leaf,
+                vid_share,
                 // Note: the following fields are not used in Decide event processing, and should be
                 // removed. For now, we just default them.
                 state: Default::default(),
@@ -354,7 +405,7 @@ impl Inner {
                 .handle_event(&Event {
                     view_number: view,
                     event: EventType::Decide {
-                        qc: Arc::new(qc.to_qc2()),
+                        qc: Arc::new(qc),
                         leaf_chain: Arc::new(vec![leaf]),
                         block_size: None,
                     },
@@ -386,8 +437,8 @@ impl Inner {
     fn load_da_proposal(
         &self,
         view: ViewNumber,
-    ) -> anyhow::Result<Option<Proposal<SeqTypes, DaProposal<SeqTypes>>>> {
-        let dir_path = self.da_dir_path();
+    ) -> anyhow::Result<Option<Proposal<SeqTypes, DaProposal2<SeqTypes>>>> {
+        let dir_path = self.da2_dir_path();
 
         let file_path = dir_path.join(view.u64().to_string()).with_extension("txt");
 
@@ -397,7 +448,7 @@ impl Inner {
 
         let da_bytes = fs::read(file_path)?;
 
-        let da_proposal: Proposal<SeqTypes, DaProposal<SeqTypes>> =
+        let da_proposal: Proposal<SeqTypes, DaProposal2<SeqTypes>> =
             bincode::deserialize(&da_bytes)?;
         Ok(Some(da_proposal))
     }
@@ -405,8 +456,8 @@ impl Inner {
     fn load_vid_share(
         &self,
         view: ViewNumber,
-    ) -> anyhow::Result<Option<Proposal<SeqTypes, ADVZDisperseShare<SeqTypes>>>> {
-        let dir_path = self.vid_dir_path();
+    ) -> anyhow::Result<Option<Proposal<SeqTypes, VidDisperseShare<SeqTypes>>>> {
+        let dir_path = self.vid2_dir_path();
 
         let file_path = dir_path.join(view.u64().to_string()).with_extension("txt");
 
@@ -415,31 +466,27 @@ impl Inner {
         }
 
         let vid_share_bytes = fs::read(file_path)?;
-        let vid_share: Proposal<SeqTypes, ADVZDisperseShare<SeqTypes>> =
+        let vid_share: Proposal<SeqTypes, VidDisperseShare<SeqTypes>> =
             bincode::deserialize(&vid_share_bytes)?;
         Ok(Some(vid_share))
     }
 
     fn load_anchor_leaf(&self) -> anyhow::Result<Option<(Leaf2, QuorumCertificate2<SeqTypes>)>> {
-        if self.decided_leaf_path().is_dir() {
+        if self.decided_leaf2_path().is_dir() {
             let mut anchor: Option<(Leaf2, QuorumCertificate2<SeqTypes>)> = None;
 
             // Return the latest decided leaf.
-            for (_, path) in view_files(self.decided_leaf_path())? {
+            for (_, path) in view_files(self.decided_leaf2_path())? {
                 let bytes =
                     fs::read(&path).context(format!("reading decided leaf {}", path.display()))?;
-                let (leaf, qc) =
-                    bincode::deserialize::<(Leaf, QuorumCertificate<SeqTypes>)>(&bytes)
+                let (leaf2, qc2) =
+                    bincode::deserialize::<(Leaf2, QuorumCertificate2<SeqTypes>)>(&bytes)
                         .context(format!("parsing decided leaf {}", path.display()))?;
                 if let Some((anchor_leaf, _)) = &anchor {
-                    if leaf.view_number() > anchor_leaf.view_number() {
-                        let leaf2 = leaf.into();
-                        let qc2 = qc.to_qc2();
+                    if leaf2.view_number() > anchor_leaf.view_number() {
                         anchor = Some((leaf2, qc2));
                     }
                 } else {
-                    let leaf2 = leaf.into();
-                    let qc2 = qc.to_qc2();
                     anchor = Some((leaf2, qc2));
                 }
             }
@@ -510,7 +557,7 @@ impl SequencerPersistence for Persistence {
         consumer: &impl EventConsumer,
     ) -> anyhow::Result<()> {
         let mut inner = self.inner.write().await;
-        let path = inner.decided_leaf_path();
+        let path = inner.decided_leaf2_path();
 
         // Ensure the anchor leaf directory exists.
         fs::create_dir_all(&path).context("creating anchor leaf directory")?;
@@ -546,9 +593,7 @@ impl SequencerPersistence for Persistence {
                     Ok(false)
                 },
                 |mut file| {
-                    let leaf = downgrade_leaf(info.leaf.clone());
-                    let qc = qc2.to_qc();
-                    let bytes = bincode::serialize(&(&leaf, qc))?;
+                    let bytes = bincode::serialize(&(&info.leaf.clone(), qc2))?;
                     file.write_all(&bytes)?;
                     Ok(())
                 },
@@ -561,7 +606,7 @@ impl SequencerPersistence for Persistence {
                 // managed to persist the decided leaves successfully, and the event processing will
                 // just run again at the next decide.
                 tracing::warn!(?view, "event processing failed: {err:#}");
-            }
+            },
             Ok(intervals) => {
                 if let Err(err) = inner.collect_garbage(view, &intervals) {
                     // Similarly, garbage collection is not an error. We have done everything we
@@ -569,7 +614,7 @@ impl SequencerPersistence for Persistence {
                     // error but do not return it.
                     tracing::warn!(?view, "GC failed: {err:#}");
                 }
-            }
+            },
         }
 
         Ok(())
@@ -581,31 +626,17 @@ impl SequencerPersistence for Persistence {
         self.inner.read().await.load_anchor_leaf()
     }
 
-    async fn load_undecided_state(
-        &self,
-    ) -> anyhow::Result<Option<(CommitmentMap<Leaf2>, BTreeMap<ViewNumber, View<SeqTypes>>)>> {
-        let inner = self.inner.read().await;
-        let path = inner.undecided_state_path();
-        if !path.is_file() {
-            return Ok(None);
-        }
-        let bytes = fs::read(&path).context("read")?;
-        let value: (CommitmentMap<Leaf>, _) =
-            bincode::deserialize(&bytes).context("deserialize")?;
-        Ok(Some((upgrade_commitment_map(value.0), value.1)))
-    }
-
     async fn load_da_proposal(
         &self,
         view: ViewNumber,
-    ) -> anyhow::Result<Option<Proposal<SeqTypes, DaProposal<SeqTypes>>>> {
+    ) -> anyhow::Result<Option<Proposal<SeqTypes, DaProposal2<SeqTypes>>>> {
         self.inner.read().await.load_da_proposal(view)
     }
 
     async fn load_vid_share(
         &self,
         view: ViewNumber,
-    ) -> anyhow::Result<Option<Proposal<SeqTypes, ADVZDisperseShare<SeqTypes>>>> {
+    ) -> anyhow::Result<Option<Proposal<SeqTypes, VidDisperseShare<SeqTypes>>>> {
         self.inner.read().await.load_vid_share(view)
     }
 
@@ -641,11 +672,13 @@ impl SequencerPersistence for Persistence {
     ) -> anyhow::Result<()> {
         let mut inner = self.inner.write().await;
         let view_number = proposal.data.view_number().u64();
-        let dir_path = inner.vid_dir_path();
+
+        let dir_path = inner.vid2_dir_path();
 
         fs::create_dir_all(dir_path.clone()).context("failed to create vid dir")?;
 
         let file_path = dir_path.join(view_number.to_string()).with_extension("txt");
+
         inner.replace(
             &file_path,
             |_| {
@@ -655,6 +688,8 @@ impl SequencerPersistence for Persistence {
                 Ok(false)
             },
             |mut file| {
+                let proposal: Proposal<SeqTypes, VidDisperseShare<SeqTypes>> =
+                    convert_proposal(proposal.clone());
                 let proposal_bytes = bincode::serialize(&proposal).context("serialize proposal")?;
                 file.write_all(&proposal_bytes)?;
                 Ok(())
@@ -719,42 +754,14 @@ impl SequencerPersistence for Persistence {
             },
         )
     }
-    async fn update_undecided_state(
-        &self,
-        leaves: CommitmentMap<Leaf2>,
-        state: BTreeMap<ViewNumber, View<SeqTypes>>,
-    ) -> anyhow::Result<()> {
-        let leaves = downgrade_commitment_map(leaves);
 
-        if !self.store_undecided_state {
-            return Ok(());
-        }
-
-        let mut inner = self.inner.write().await;
-        let path = &inner.undecided_state_path();
-        inner.replace(
-            path,
-            |_| {
-                // Always overwrite the previous file.
-                Ok(true)
-            },
-            |mut file| {
-                let bytes =
-                    bincode::serialize(&(leaves, state)).context("serializing undecided state")?;
-                file.write_all(&bytes)?;
-                Ok(())
-            },
-        )
-    }
-    async fn append_quorum_proposal(
+    async fn append_quorum_proposal2(
         &self,
         proposal: &Proposal<SeqTypes, QuorumProposalWrapper<SeqTypes>>,
     ) -> anyhow::Result<()> {
-        let proposal: Proposal<SeqTypes, QuorumProposal<SeqTypes>> =
-            convert_proposal(proposal.clone());
         let mut inner = self.inner.write().await;
         let view_number = proposal.data.view_number().u64();
-        let dir_path = inner.quorum_proposals_dir_path();
+        let dir_path = inner.quorum_proposals2_dir_path();
 
         fs::create_dir_all(dir_path.clone()).context("failed to create proposals dir")?;
 
@@ -780,7 +787,7 @@ impl SequencerPersistence for Persistence {
         let inner = self.inner.read().await;
 
         // First, get the proposal directory.
-        let dir_path = inner.quorum_proposals_dir_path();
+        let dir_path = inner.quorum_proposals2_dir_path();
         if !dir_path.is_dir() {
             return Ok(Default::default());
         }
@@ -789,7 +796,7 @@ impl SequencerPersistence for Persistence {
         let mut map = BTreeMap::new();
         for (view, path) in view_files(&dir_path)? {
             let proposal_bytes = fs::read(path)?;
-            let proposal: Proposal<SeqTypes, QuorumProposal<SeqTypes>> =
+            let proposal: Proposal<SeqTypes, QuorumProposal2<SeqTypes>> =
                 match bincode::deserialize(&proposal_bytes) {
                     Ok(proposal) => proposal,
                     Err(err) => {
@@ -801,7 +808,7 @@ impl SequencerPersistence for Persistence {
                         // some unintended file whose name happened to match the naming convention.
                         tracing::warn!(?view, "ignoring malformed quorum proposal file: {err:#}");
                         continue;
-                    }
+                    },
                 };
             let proposal2 = convert_proposal(proposal);
 
@@ -817,13 +824,12 @@ impl SequencerPersistence for Persistence {
         view: ViewNumber,
     ) -> anyhow::Result<Proposal<SeqTypes, QuorumProposalWrapper<SeqTypes>>> {
         let inner = self.inner.read().await;
-        let dir_path = inner.quorum_proposals_dir_path();
+        let dir_path = inner.quorum_proposals2_dir_path();
         let file_path = dir_path.join(view.to_string()).with_extension("txt");
         let bytes = fs::read(file_path)?;
-        let proposal: Proposal<SeqTypes, QuorumProposal<SeqTypes>> = bincode::deserialize(&bytes)?;
-        // TODO: rather than converting, we should store the value of QuorumProposalWrapper::with_epoch
-        let proposal_wrapper = convert_proposal(proposal);
-        Ok(proposal_wrapper)
+        let proposal = bincode::deserialize(&bytes)?;
+
+        Ok(proposal)
     }
 
     async fn load_upgrade_certificate(
@@ -900,15 +906,505 @@ impl SequencerPersistence for Persistence {
         ))
     }
 
-    async fn migrate_consensus(
+    async fn append_da2(
         &self,
-        _migrate_leaf: fn(Leaf) -> Leaf2,
-        _migrate_proposal: fn(
-            Proposal<SeqTypes, QuorumProposal<SeqTypes>>,
-        ) -> Proposal<SeqTypes, QuorumProposal2<SeqTypes>>,
+        proposal: &Proposal<SeqTypes, DaProposal2<SeqTypes>>,
+        _vid_commit: VidCommitment,
     ) -> anyhow::Result<()> {
-        // TODO: https://github.com/EspressoSystems/espresso-sequencer/issues/2357
+        let mut inner = self.inner.write().await;
+        let view_number = proposal.data.view_number().u64();
+        let dir_path = inner.da2_dir_path();
+
+        fs::create_dir_all(dir_path.clone()).context("failed to create da dir")?;
+
+        let file_path = dir_path.join(view_number.to_string()).with_extension("txt");
+        inner.replace(
+            &file_path,
+            |_| {
+                // Don't overwrite an existing proposal, but warn about it as this is likely not
+                // intended behavior from HotShot.
+                tracing::warn!(view_number, "duplicate DA proposal");
+                Ok(false)
+            },
+            |mut file| {
+                let proposal_bytes = bincode::serialize(&proposal).context("serialize proposal")?;
+                file.write_all(&proposal_bytes)?;
+                Ok(())
+            },
+        )
+    }
+
+    async fn append_proposal2(
+        &self,
+        proposal: &Proposal<SeqTypes, QuorumProposalWrapper<SeqTypes>>,
+    ) -> anyhow::Result<()> {
+        self.append_quorum_proposal2(proposal).await
+    }
+
+    async fn migrate_anchor_leaf(&self) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+
+        if inner.migrated.contains("anchor_leaf") {
+            tracing::info!("decided leaves already migrated");
+            return Ok(());
+        }
+
+        let new_leaf_dir = inner.decided_leaf2_path();
+
+        fs::create_dir_all(new_leaf_dir.clone()).context("failed to create anchor leaf 2  dir")?;
+
+        let old_leaf_dir = inner.decided_leaf_path();
+        if !old_leaf_dir.is_dir() {
+            return Ok(());
+        }
+
+        tracing::warn!("migrating decided leaves..");
+        for entry in fs::read_dir(old_leaf_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            let Some(file) = path.file_stem().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let Ok(view) = file.parse::<u64>() else {
+                continue;
+            };
+
+            let bytes =
+                fs::read(&path).context(format!("reading decided leaf {}", path.display()))?;
+            let (leaf, qc) = bincode::deserialize::<(Leaf, QuorumCertificate<SeqTypes>)>(&bytes)
+                .context(format!("parsing decided leaf {}", path.display()))?;
+
+            let leaf2: Leaf2 = leaf.into();
+            let qc2 = qc.to_qc2();
+
+            let new_leaf_path = new_leaf_dir.join(view.to_string()).with_extension("txt");
+
+            inner.replace(
+                &new_leaf_path,
+                |_| {
+                    tracing::warn!(view, "duplicate decided leaf");
+                    Ok(false)
+                },
+                |mut file| {
+                    let bytes = bincode::serialize(&(&leaf2.clone(), qc2))?;
+                    file.write_all(&bytes)?;
+                    Ok(())
+                },
+            )?;
+
+            if view % 100 == 0 {
+                tracing::info!(view, "decided leaves migration progress");
+            }
+        }
+
+        inner.migrated.insert("anchor_leaf".to_string());
+        inner.update_migration()?;
+        tracing::warn!("successfully migrated decided leaves");
         Ok(())
+    }
+    async fn migrate_da_proposals(&self) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+
+        if inner.migrated.contains("da_proposal") {
+            tracing::info!("da proposals already migrated");
+            return Ok(());
+        }
+
+        let new_da_dir = inner.da2_dir_path();
+
+        fs::create_dir_all(new_da_dir.clone()).context("failed to create da proposals 2 dir")?;
+
+        let old_da_dir = inner.da_dir_path();
+        if !old_da_dir.is_dir() {
+            return Ok(());
+        }
+
+        tracing::warn!("migrating da proposals..");
+
+        for entry in fs::read_dir(old_da_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            let Some(file) = path.file_stem().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let Ok(view) = file.parse::<u64>() else {
+                continue;
+            };
+
+            let bytes =
+                fs::read(&path).context(format!("reading da proposal {}", path.display()))?;
+            let proposal = bincode::deserialize::<Proposal<SeqTypes, DaProposal<SeqTypes>>>(&bytes)
+                .context(format!("parsing da proposal {}", path.display()))?;
+
+            let new_da_path = new_da_dir.join(view.to_string()).with_extension("txt");
+
+            let proposal2: Proposal<SeqTypes, DaProposal2<SeqTypes>> = convert_proposal(proposal);
+
+            inner.replace(
+                &new_da_path,
+                |_| {
+                    tracing::warn!(view, "duplicate DA proposal 2");
+                    Ok(false)
+                },
+                |mut file| {
+                    let bytes = bincode::serialize(&proposal2)?;
+                    file.write_all(&bytes)?;
+                    Ok(())
+                },
+            )?;
+
+            if view % 100 == 0 {
+                tracing::info!(view, "DA proposals migration progress");
+            }
+        }
+
+        inner.migrated.insert("da_proposal".to_string());
+        inner.update_migration()?;
+        tracing::warn!("successfully migrated da proposals");
+        Ok(())
+    }
+    async fn migrate_vid_shares(&self) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+
+        if inner.migrated.contains("vid_share") {
+            tracing::info!("vid shares already migrated");
+            return Ok(());
+        }
+
+        let new_vid_dir = inner.vid2_dir_path();
+
+        fs::create_dir_all(new_vid_dir.clone()).context("failed to create vid shares 2 dir")?;
+
+        let old_vid_dir = inner.vid_dir_path();
+        if !old_vid_dir.is_dir() {
+            return Ok(());
+        }
+
+        tracing::warn!("migrating vid shares..");
+
+        for entry in fs::read_dir(old_vid_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            let Some(file) = path.file_stem().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let Ok(view) = file.parse::<u64>() else {
+                continue;
+            };
+
+            let bytes = fs::read(&path).context(format!("reading vid share {}", path.display()))?;
+            let proposal =
+                bincode::deserialize::<Proposal<SeqTypes, ADVZDisperseShare<SeqTypes>>>(&bytes)
+                    .context(format!("parsing vid share {}", path.display()))?;
+
+            let new_vid_path = new_vid_dir.join(view.to_string()).with_extension("txt");
+
+            let proposal2: Proposal<SeqTypes, VidDisperseShare<SeqTypes>> =
+                convert_proposal(proposal);
+
+            inner.replace(
+                &new_vid_path,
+                |_| {
+                    tracing::warn!(view, "duplicate VID share ");
+                    Ok(false)
+                },
+                |mut file| {
+                    let bytes = bincode::serialize(&proposal2)?;
+                    file.write_all(&bytes)?;
+                    Ok(())
+                },
+            )?;
+
+            if view % 100 == 0 {
+                tracing::info!(view, "VID shares migration progress");
+            }
+        }
+
+        inner.migrated.insert("vid_share".to_string());
+        inner.update_migration()?;
+        tracing::warn!("successfully migrated vid shares");
+        Ok(())
+    }
+
+    async fn migrate_quorum_proposals(&self) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+
+        if inner.migrated.contains("quorum_proposals") {
+            tracing::info!("quorum proposals already migrated");
+            return Ok(());
+        }
+
+        let new_quorum_proposals_dir = inner.quorum_proposals2_dir_path();
+
+        fs::create_dir_all(new_quorum_proposals_dir.clone())
+            .context("failed to create quorum proposals 2 dir")?;
+
+        let old_quorum_proposals_dir = inner.quorum_proposals_dir_path();
+        if !old_quorum_proposals_dir.is_dir() {
+            tracing::info!("no existing quorum proposals found for migration");
+            return Ok(());
+        }
+
+        tracing::warn!("migrating quorum proposals..");
+        for entry in fs::read_dir(old_quorum_proposals_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            let Some(file) = path.file_stem().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            let Ok(view) = file.parse::<u64>() else {
+                continue;
+            };
+
+            let bytes =
+                fs::read(&path).context(format!("reading quorum proposal {}", path.display()))?;
+            let proposal =
+                bincode::deserialize::<Proposal<SeqTypes, QuorumProposal<SeqTypes>>>(&bytes)
+                    .context(format!("parsing quorum proposal {}", path.display()))?;
+
+            let new_file_path = new_quorum_proposals_dir
+                .join(view.to_string())
+                .with_extension("txt");
+
+            let proposal2: Proposal<SeqTypes, QuorumProposalWrapper<SeqTypes>> =
+                convert_proposal(proposal);
+
+            inner.replace(
+                &new_file_path,
+                |_| {
+                    tracing::warn!(view, "duplicate Quorum proposal2 ");
+                    Ok(false)
+                },
+                |mut file| {
+                    let bytes = bincode::serialize(&proposal2)?;
+                    file.write_all(&bytes)?;
+                    Ok(())
+                },
+            )?;
+
+            if view % 100 == 0 {
+                tracing::info!(view, "Quorum proposals migration progress");
+            }
+        }
+
+        inner.migrated.insert("quorum_proposals".to_string());
+        inner.update_migration()?;
+        tracing::warn!("successfully migrated quorum proposals");
+        Ok(())
+    }
+    async fn migrate_quorum_certificates(&self) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn add_drb_result(
+        &self,
+        epoch: EpochNumber,
+        drb_result: DrbResult,
+    ) -> anyhow::Result<()> {
+        let inner = self.inner.write().await;
+        let dir_path = inner.epoch_drb_result_dir_path();
+
+        fs::create_dir_all(dir_path.clone()).context("failed to create epoch drb result dir")?;
+
+        let drb_result_bytes = bincode::serialize(&drb_result).context("serialize drb result")?;
+
+        let file_path = dir_path.join(epoch.to_string()).with_extension("txt");
+        fs::write(file_path, drb_result_bytes)
+            .context(format!("writing epoch drb result file for epoch {epoch:?}"))?;
+
+        Ok(())
+    }
+
+    async fn add_epoch_root(
+        &self,
+        epoch: EpochNumber,
+        block_header: <SeqTypes as NodeType>::BlockHeader,
+    ) -> anyhow::Result<()> {
+        let inner = self.inner.write().await;
+        let dir_path = inner.epoch_root_block_header_dir_path();
+
+        fs::create_dir_all(dir_path.clone())
+            .context("failed to create epoch root block header dir")?;
+
+        let block_header_bytes =
+            bincode::serialize(&block_header).context("serialize block header")?;
+
+        let file_path = dir_path.join(epoch.to_string()).with_extension("txt");
+        fs::write(file_path, block_header_bytes).context(format!(
+            "writing epoch root block header file for epoch {epoch:?}"
+        ))?;
+
+        Ok(())
+    }
+
+    async fn add_state_cert(
+        &self,
+        state_cert: LightClientStateUpdateCertificate<SeqTypes>,
+    ) -> anyhow::Result<()> {
+        let inner = self.inner.write().await;
+        let epoch = state_cert.epoch;
+        let dir_path = inner.light_client_state_update_certificate_dir_path();
+
+        fs::create_dir_all(dir_path.clone())
+            .context("failed to create light client state update certificate dir")?;
+
+        let bytes = bincode::serialize(&state_cert)
+            .context("serialize light client state update certificate")?;
+
+        let file_path = dir_path.join(epoch.to_string()).with_extension("txt");
+        fs::write(file_path, bytes).context(format!(
+            "writing light client state update certificate file for epoch {epoch:?}"
+        ))?;
+
+        Ok(())
+    }
+
+    async fn load_start_epoch_info(&self) -> anyhow::Result<Vec<InitializerEpochInfo<SeqTypes>>> {
+        let inner = self.inner.read().await;
+        let drb_dir_path = inner.epoch_drb_result_dir_path();
+        let block_header_dir_path = inner.epoch_root_block_header_dir_path();
+
+        let mut result = Vec::new();
+
+        if drb_dir_path.is_dir() {
+            for (epoch, path) in epoch_files(drb_dir_path)? {
+                let bytes = fs::read(&path)
+                    .context(format!("reading epoch drb result {}", path.display()))?;
+                let drb_result = bincode::deserialize::<DrbResult>(&bytes)
+                    .context(format!("parsing epoch drb result {}", path.display()))?;
+
+                let block_header_path = block_header_dir_path
+                    .join(epoch.to_string())
+                    .with_extension("txt");
+                let block_header = if block_header_path.is_file() {
+                    let bytes = fs::read(&block_header_path).context(format!(
+                        "reading epoch root block header {}",
+                        block_header_path.display()
+                    ))?;
+                    Some(
+                        bincode::deserialize::<<SeqTypes as NodeType>::BlockHeader>(&bytes)
+                            .context(format!(
+                                "parsing epoch root block header {}",
+                                block_header_path.display()
+                            ))?,
+                    )
+                } else {
+                    None
+                };
+
+                result.push(InitializerEpochInfo::<SeqTypes> {
+                    epoch,
+                    drb_result,
+                    block_header,
+                });
+            }
+        }
+
+        result.sort_by(|a, b| a.epoch.cmp(&b.epoch));
+
+        Ok(result)
+    }
+
+    async fn load_state_cert(
+        &self,
+    ) -> anyhow::Result<Option<LightClientStateUpdateCertificate<SeqTypes>>> {
+        let inner = self.inner.read().await;
+        let dir_path = inner.light_client_state_update_certificate_dir_path();
+
+        let mut result = None;
+
+        if !dir_path.is_dir() {
+            return Ok(result);
+        }
+        for (epoch, path) in epoch_files(dir_path)? {
+            if result.as_ref().is_some_and(|cert| epoch <= cert.epoch) {
+                continue;
+            }
+            let bytes = fs::read(&path).context(format!(
+                "reading light client state update certificate {}",
+                path.display()
+            ))?;
+            result = Some(
+                bincode::deserialize::<LightClientStateUpdateCertificate<SeqTypes>>(&bytes)
+                    .context(format!(
+                        "parsing light client state update certificate {}",
+                        path.display()
+                    ))?,
+            );
+        }
+
+        Ok(result)
+    }
+}
+
+#[async_trait]
+impl MembershipPersistence for Persistence {
+    async fn load_stake(
+        &self,
+        epoch: EpochNumber,
+    ) -> anyhow::Result<Option<IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>>> {
+        let inner = self.inner.read().await;
+        let path = &inner.stake_table_dir_path();
+        let file_path = path.join(epoch.to_string()).with_extension("txt");
+        let bytes = fs::read(&file_path).context("read")?;
+        Ok(Some(
+            bincode::deserialize(&bytes).context("deserialize combined stake table")?,
+        ))
+    }
+
+    async fn load_latest_stake(&self, limit: u64) -> anyhow::Result<Option<Vec<IndexedStake>>> {
+        let limit = limit as usize;
+        let inner = self.inner.read().await;
+        let path = &inner.stake_table_dir_path();
+        let sorted: Vec<_> = epoch_files(path)?
+            .sorted_unstable_by_key(|t| t.0)
+            .collect::<Vec<_>>();
+
+        let len = sorted.len();
+        let mut slice = &sorted[..];
+        if len > limit {
+            slice = &sorted[len - limit..len - 1]
+        };
+        slice
+            .iter()
+            .map(|(epoch, path)| -> anyhow::Result<Option<IndexedStake>> {
+                let bytes = fs::read(path).context("read")?;
+                let st =
+                    bincode::deserialize(&bytes).context("deserialize combined stake table")?;
+                Ok(Some((*epoch, st)))
+            })
+            .collect()
+    }
+
+    async fn store_stake(
+        &self,
+        epoch: EpochNumber,
+        stake: IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>,
+    ) -> anyhow::Result<()> {
+        let mut inner = self.inner.write().await;
+        let dir_path = &inner.stake_table_dir_path();
+
+        fs::create_dir_all(dir_path.clone()).context("failed to create proposals dir")?;
+
+        let file_path = dir_path.join(epoch.to_string()).with_extension("txt");
+
+        inner.replace(
+            &file_path,
+            |_| {
+                // Always overwrite the previous file.
+                Ok(true)
+            },
+            |mut file| {
+                let bytes =
+                    bincode::serialize(&stake).context("serializing combined stake table")?;
+                file.write_all(&bytes)?;
+                Ok(())
+            },
+        )
     }
 }
 
@@ -1055,6 +1551,32 @@ fn view_files(
     }))
 }
 
+/// Get all paths under `dir` whose name is of the form <epoch number>.txt.
+/// Should probably be made generic and merged with view_files.
+fn epoch_files(
+    dir: impl AsRef<Path>,
+) -> anyhow::Result<impl Iterator<Item = (EpochNumber, PathBuf)>> {
+    Ok(fs::read_dir(dir.as_ref())?.filter_map(move |entry| {
+        let dir = dir.as_ref().display();
+        let entry = entry.ok()?;
+        if !entry.file_type().ok()?.is_file() {
+            tracing::debug!(%dir, ?entry, "ignoring non-file in data directory");
+            return None;
+        }
+        let path = entry.path();
+        if path.extension()? != "txt" {
+            tracing::debug!(%dir, ?entry, "ignoring non-text file in data directory");
+            return None;
+        }
+        let file_name = path.file_stem()?;
+        let Ok(epoch_number) = file_name.to_string_lossy().parse::<u64>() else {
+            tracing::debug!(%dir, ?file_name, "ignoring extraneous file in data directory");
+            return None;
+        };
+        Some((EpochNumber::new(epoch_number), entry.path().to_owned()))
+    }))
+}
+
 #[cfg(test)]
 mod testing {
     use tempfile::TempDir;
@@ -1087,15 +1609,27 @@ mod generic_tests {
 
 #[cfg(test)]
 mod test {
-    use espresso_types::{NodeState, PubKey};
+    use std::marker::PhantomData;
+
+    use committable::{Commitment, CommitmentBoundsArkless, Committable};
+    use espresso_types::{Header, Leaf, NodeState, PubKey, ValidatedState};
     use hotshot::types::SignatureKey;
     use hotshot_example_types::node_types::TestVersions;
     use hotshot_query_service::testing::mocks::MockVersions;
+    use hotshot_types::{
+        data::{vid_commitment, QuorumProposal2},
+        simple_certificate::QuorumCertificate,
+        simple_vote::QuorumData,
+        traits::{node_implementation::Versions, EncodeBytes},
+        vid::advz::advz_scheme,
+    };
+    use jf_vid::VidScheme;
     use sequencer_utils::test_utils::setup_test;
     use serde_json::json;
+    use vbs::version::StaticVersionType;
 
     use super::*;
-    use crate::persistence::testing::TestablePersistence;
+    use crate::{persistence::testing::TestablePersistence, BLSPubKey};
 
     #[test]
     fn test_config_migrations_add_builder_urls() {
@@ -1196,6 +1730,244 @@ mod test {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    pub async fn test_consensus_migration() {
+        setup_test();
+        let rows = 300;
+        let tmp = Persistence::tmp_storage().await;
+        let mut opt = Persistence::options(&tmp);
+        let storage = opt.create().await.unwrap();
+
+        let inner = storage.inner.read().await;
+
+        let decided_leaves_path = inner.decided_leaf_path();
+        fs::create_dir_all(decided_leaves_path.clone()).expect("failed to create proposals dir");
+
+        let qp_dir_path = inner.quorum_proposals_dir_path();
+        fs::create_dir_all(qp_dir_path.clone()).expect("failed to create proposals dir");
+
+        let state_cert_dir_path = inner.light_client_state_update_certificate_dir_path();
+        fs::create_dir_all(state_cert_dir_path.clone()).expect("failed to create state cert dir");
+        drop(inner);
+
+        assert!(storage.load_state_cert().await.unwrap().is_none());
+
+        for i in 0..rows {
+            let view = ViewNumber::new(i);
+            let validated_state = ValidatedState::default();
+            let instance_state = NodeState::default();
+
+            let (pubkey, privkey) = BLSPubKey::generated_from_seed_indexed([0; 32], i);
+            let (payload, metadata) =
+                Payload::from_transactions([], &validated_state, &instance_state)
+                    .await
+                    .unwrap();
+            let builder_commitment = payload.builder_commitment(&metadata);
+            let payload_bytes = payload.encode();
+
+            let payload_commitment = vid_commitment::<TestVersions>(
+                &payload_bytes,
+                &metadata.encode(),
+                4,
+                <TestVersions as Versions>::Base::VERSION,
+            );
+
+            let block_header = Header::genesis(
+                &instance_state,
+                payload_commitment,
+                builder_commitment,
+                metadata,
+            );
+
+            let state_cert = LightClientStateUpdateCertificate::<SeqTypes> {
+                epoch: EpochNumber::new(i),
+                light_client_state: Default::default(), // filling arbitrary value
+                signatures: vec![],                     // filling arbitrary value
+            };
+            assert!(storage.add_state_cert(state_cert).await.is_ok());
+
+            let null_quorum_data = QuorumData {
+                leaf_commit: Commitment::<Leaf>::default_commitment_no_preimage(),
+            };
+
+            let justify_qc = QuorumCertificate::new(
+                null_quorum_data.clone(),
+                null_quorum_data.commit(),
+                view,
+                None,
+                PhantomData,
+            );
+
+            let quorum_proposal = QuorumProposal {
+                block_header,
+                view_number: view,
+                justify_qc: justify_qc.clone(),
+                upgrade_certificate: None,
+                proposal_certificate: None,
+            };
+
+            let quorum_proposal_signature =
+                BLSPubKey::sign(&privkey, &bincode::serialize(&quorum_proposal).unwrap())
+                    .expect("Failed to sign quorum proposal");
+
+            let proposal = Proposal {
+                data: quorum_proposal.clone(),
+                signature: quorum_proposal_signature,
+                _pd: PhantomData,
+            };
+
+            let mut leaf = Leaf::from_quorum_proposal(&quorum_proposal);
+            leaf.fill_block_payload::<TestVersions>(
+                payload,
+                4,
+                <TestVersions as Versions>::Base::VERSION,
+            )
+            .unwrap();
+
+            let mut inner = storage.inner.write().await;
+
+            tracing::debug!("inserting decided leaves");
+            let file_path = decided_leaves_path
+                .join(view.to_string())
+                .with_extension("txt");
+
+            tracing::debug!("inserting decided leaves");
+
+            inner
+                .replace(
+                    &file_path,
+                    |_| Ok(true),
+                    |mut file| {
+                        let bytes = bincode::serialize(&(&leaf.clone(), justify_qc))?;
+                        file.write_all(&bytes)?;
+                        Ok(())
+                    },
+                )
+                .expect("replace decided leaves");
+
+            let file_path = qp_dir_path.join(view.to_string()).with_extension("txt");
+
+            tracing::debug!("inserting qc for {view}");
+
+            inner
+                .replace(
+                    &file_path,
+                    |_| Ok(true),
+                    |mut file| {
+                        let proposal_bytes =
+                            bincode::serialize(&proposal).context("serialize proposal")?;
+
+                        file.write_all(&proposal_bytes)?;
+                        Ok(())
+                    },
+                )
+                .unwrap();
+
+            drop(inner);
+            let disperse = advz_scheme(4).disperse(payload_bytes.clone()).unwrap();
+
+            let vid = ADVZDisperseShare::<SeqTypes> {
+                view_number: ViewNumber::new(i),
+                payload_commitment: Default::default(),
+                share: disperse.shares[0].clone(),
+                common: disperse.common,
+                recipient_key: pubkey,
+            };
+
+            let (payload, metadata) =
+                Payload::from_transactions([], &ValidatedState::default(), &NodeState::default())
+                    .await
+                    .unwrap();
+
+            let da = DaProposal::<SeqTypes> {
+                encoded_transactions: payload.encode(),
+                metadata,
+                view_number: ViewNumber::new(i),
+            };
+
+            let block_payload_signature =
+                BLSPubKey::sign(&privkey, &payload_bytes).expect("Failed to sign block payload");
+
+            let da_proposal = Proposal {
+                data: da,
+                signature: block_payload_signature,
+                _pd: Default::default(),
+            };
+
+            tracing::debug!("inserting vid for {view}");
+            storage
+                .append_vid(&vid.to_proposal(&privkey).unwrap())
+                .await
+                .unwrap();
+
+            tracing::debug!("inserting da for {view}");
+            storage
+                .append_da(&da_proposal, VidCommitment::V0(disperse.commit))
+                .await
+                .unwrap();
+        }
+
+        storage.migrate_consensus().await.unwrap();
+        let inner = storage.inner.read().await;
+        let decided_leaves = fs::read_dir(inner.decided_leaf2_path()).unwrap();
+        let decided_leaves_count = decided_leaves
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
+        assert_eq!(
+            decided_leaves_count, rows as usize,
+            "decided leaves count does not match",
+        );
+
+        let da_proposals = fs::read_dir(inner.da2_dir_path()).unwrap();
+        let da_proposals_count = da_proposals
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
+        assert_eq!(
+            da_proposals_count, rows as usize,
+            "da proposals does not match",
+        );
+
+        let vids = fs::read_dir(inner.vid2_dir_path()).unwrap();
+        let vids_count = vids
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
+        assert_eq!(vids_count, rows as usize, "vid shares count does not match",);
+
+        let qps = fs::read_dir(inner.quorum_proposals2_dir_path()).unwrap();
+        let qps_count = qps
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
+        assert_eq!(
+            qps_count, rows as usize,
+            "quorum proposals count does not match",
+        );
+
+        let state_certs =
+            fs::read_dir(inner.light_client_state_update_certificate_dir_path()).unwrap();
+        let state_cert_count = state_certs
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+            .count();
+        assert_eq!(
+            state_cert_count, rows as usize,
+            "light client state update certificate count does not match",
+        );
+
+        assert_eq!(
+            storage.load_state_cert().await.unwrap().unwrap(),
+            LightClientStateUpdateCertificate::<SeqTypes> {
+                epoch: EpochNumber::new(rows - 1),
+                light_client_state: Default::default(),
+                signatures: vec![]
+            },
+            "Wrong light client state update certificate in the storage",
+        )
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_load_quorum_proposals_invalid_extension() {
         setup_test();
 
@@ -1203,9 +1975,7 @@ mod test {
         let storage = Persistence::connect(&tmp).await;
 
         // Generate a couple of valid quorum proposals.
-        let leaf: Leaf2 = Leaf::genesis::<MockVersions>(&Default::default(), &NodeState::mock())
-            .await
-            .into();
+        let leaf = Leaf2::genesis::<MockVersions>(&Default::default(), &NodeState::mock()).await;
         let privkey = PubKey::generated_from_seed_indexed([0; 32], 1).1;
         let signature = PubKey::sign(&privkey, &[]).unwrap();
         let mut quorum_proposal = Proposal {
@@ -1214,12 +1984,11 @@ mod test {
                     epoch: None,
                     block_header: leaf.block_header().clone(),
                     view_number: ViewNumber::genesis(),
-                    justify_qc: QuorumCertificate::genesis::<TestVersions>(
+                    justify_qc: QuorumCertificate2::genesis::<TestVersions>(
                         &Default::default(),
                         &NodeState::mock(),
                     )
-                    .await
-                    .to_qc2(),
+                    .await,
                     upgrade_certificate: None,
                     view_change_evidence: None,
                     next_drb_result: None,
@@ -1233,21 +2002,21 @@ mod test {
         // Store quorum proposals.
         let quorum_proposal1 = quorum_proposal.clone();
         storage
-            .append_quorum_proposal(&quorum_proposal1)
+            .append_quorum_proposal2(&quorum_proposal1)
             .await
             .unwrap();
         quorum_proposal.data.proposal.view_number = ViewNumber::new(1);
         let quorum_proposal2 = quorum_proposal.clone();
         storage
-            .append_quorum_proposal(&quorum_proposal2)
+            .append_quorum_proposal2(&quorum_proposal2)
             .await
             .unwrap();
 
         // Change one of the file extensions. It can happen that we end up with files with the wrong
         // extension if, for example, the node is killed before cleaning up a swap file.
         fs::rename(
-            tmp.path().join("quorum_proposals/1.txt"),
-            tmp.path().join("quorum_proposals/1.swp"),
+            tmp.path().join("quorum_proposals2/1.txt"),
+            tmp.path().join("quorum_proposals2/1.swp"),
         )
         .unwrap();
 
@@ -1279,12 +2048,11 @@ mod test {
                     epoch: None,
                     block_header: leaf.block_header().clone(),
                     view_number: ViewNumber::new(1),
-                    justify_qc: QuorumCertificate::genesis::<TestVersions>(
+                    justify_qc: QuorumCertificate2::genesis::<TestVersions>(
                         &Default::default(),
                         &NodeState::mock(),
                     )
-                    .await
-                    .to_qc2(),
+                    .await,
                     upgrade_certificate: None,
                     view_change_evidence: None,
                     next_drb_result: None,
@@ -1296,16 +2064,16 @@ mod test {
         };
 
         // First store an invalid quorum proposal.
-        fs::create_dir_all(tmp.path().join("quorum_proposals")).unwrap();
+        fs::create_dir_all(tmp.path().join("quorum_proposals2")).unwrap();
         fs::write(
-            tmp.path().join("quorum_proposals/0.txt"),
+            tmp.path().join("quorum_proposals2/0.txt"),
             "invalid data".as_bytes(),
         )
         .unwrap();
 
         // Store valid quorum proposal.
         storage
-            .append_quorum_proposal(&quorum_proposal)
+            .append_quorum_proposal2(&quorum_proposal)
             .await
             .unwrap();
 
@@ -1316,5 +2084,40 @@ mod test {
                 .into_iter()
                 .collect::<BTreeMap<_, _>>()
         );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_membership_persistence() -> anyhow::Result<()> {
+        setup_test();
+
+        let tmp = Persistence::tmp_storage().await;
+        let mut opt = Persistence::options(&tmp);
+
+        let storage = opt.create().await.unwrap();
+
+        let validator = Validator::mock();
+        let mut st = IndexMap::new();
+        st.insert(validator.account, validator);
+        storage
+            .store_stake(EpochNumber::new(10), st.clone())
+            .await?;
+
+        let table = storage.load_stake(EpochNumber::new(10)).await?.unwrap();
+        assert_eq!(st, table);
+
+        let val2 = Validator::mock();
+        let mut st2 = IndexMap::new();
+        st2.insert(val2.account, val2);
+        storage
+            .store_stake(EpochNumber::new(11), st2.clone())
+            .await?;
+
+        let tables = storage.load_latest_stake(4).await?.unwrap();
+        let mut iter = tables.iter();
+        assert_eq!(Some(&(EpochNumber::new(10), st)), iter.next());
+        assert_eq!(Some(&(EpochNumber::new(11), st2)), iter.next());
+        assert_eq!(None, iter.next());
+
+        Ok(())
     }
 }

@@ -1,22 +1,23 @@
-use std::{arch::global_asm, collections::HashSet, num::NonZeroUsize, time::Duration};
+use std::{arch::global_asm, collections::HashSet, num::NonZeroUsize, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use async_broadcast::{
     broadcast, Receiver as BroadcastReceiver, RecvError, Sender as BroadcastSender, TryRecvError,
 };
-
 use async_lock::RwLock;
 use espresso_types::{
     eth_signature_key::EthKeyPair,
+    v0_1::NoStorage,
     v0_99::{ChainConfig, RollupRegistration},
-    FeeAmount, L1Client, MarketplaceVersion, MockSequencerVersions, NamespaceId, NodeState,
-    Payload, SeqTypes, SequencerVersions, ValidatedState, V0_1,
+    EpochCommittees, FeeAmount, L1Client, MarketplaceVersion, MockSequencerVersions, NamespaceId,
+    NodeState, Payload, SeqTypes, SequencerVersions, ValidatedState, V0_1,
 };
 use ethers::{
     core::k256::ecdsa::SigningKey,
     signers::{coins_bip39::English, MnemonicBuilder, Signer as _, Wallet},
     types::{Address, U256},
 };
+use ethers_conv::ToAlloy;
 use futures::FutureExt;
 use hotshot::traits::BlockPayload;
 use hotshot_builder_api::v0_99::builder::{
@@ -28,6 +29,7 @@ use hotshot_events_service::{
 };
 use hotshot_types::{
     data::{fake_commitment, Leaf, ViewNumber},
+    epoch_membership::EpochMembershipCoordinator,
     traits::{
         block_contents::{Transaction as _, GENESIS_VID_NUM_STORAGE_NODES},
         metrics::NoMetrics,
@@ -43,7 +45,6 @@ use marketplace_builder_core::{
 use marketplace_builder_shared::block::ParentBlockReferences;
 use marketplace_solver::SolverError;
 use sequencer::{catchup::StatePeers, L1Params, NetworkParams, SequencerApiVersion};
-use std::sync::Arc;
 use surf::http::headers::ACCEPT;
 use surf_disco::Client;
 use tide_disco::{app, method::ReadState, App, Url};
@@ -73,16 +74,29 @@ pub fn build_instance_state<V: Versions>(
         .connect(l1_params.urls)
         .expect("failed to create L1 client");
 
+    let peers = Arc::new(StatePeers::<SequencerApiVersion>::from_urls(
+        state_peers,
+        Default::default(),
+        &NoMetrics,
+    ));
+
     NodeState::new(
         u64::MAX, // dummy node ID, only used for debugging
         chain_config,
-        l1_client,
-        Arc::new(StatePeers::<SequencerApiVersion>::from_urls(
-            state_peers,
-            Default::default(),
-            &NoMetrics,
-        )),
+        l1_client.clone(),
+        peers.clone(),
         V::Base::version(),
+        EpochMembershipCoordinator::new(
+            Arc::new(RwLock::new(EpochCommittees::new_stake(
+                vec![],
+                vec![],
+                l1_client,
+                chain_config.stake_table_contract.map(|a| a.to_alloy()),
+                peers,
+                NoStorage,
+            ))),
+            10,
+        ),
     )
 }
 
@@ -209,8 +223,7 @@ mod test {
 
     use anyhow::Error;
     use async_lock::RwLock;
-    use committable::Commitment;
-    use committable::Committable;
+    use committable::{Commitment, Committable};
     use espresso_types::{
         mock::MockStateCatchup,
         v0_99::{RollupRegistration, RollupRegistrationBody},
@@ -220,20 +233,23 @@ mod test {
     use ethers::{core::k256::elliptic_curve::rand_core::block, utils::Anvil};
     use futures::{Stream, StreamExt};
     use hooks::connect_to_solver;
-    use hotshot::helpers::initialize_logging;
-    use hotshot::types::{
-        BLSPrivKey,
-        EventType::{Decide, *},
+    use hotshot::{
+        helpers::initialize_logging,
+        rand,
+        types::{
+            BLSPrivKey, EventType,
+            EventType::{Decide, *},
+        },
     };
-    use hotshot::{rand, types::EventType};
     use hotshot_builder_api::v0_99::builder::BuildError;
     use hotshot_events_service::{
         events::{Error as EventStreamApiError, Options as EventStreamingApiOptions},
         events_source::{EventConsumer, EventsStreamer},
     };
-    use hotshot_query_service::{availability::LeafQueryData, VidCommitment};
+    use hotshot_query_service::availability::LeafQueryData;
     use hotshot_types::{
         bundle::Bundle,
+        data::VidCommitment,
         event::LeafInfo,
         light_client::StateKeyPair,
         signature_key::BLSPubKey,
@@ -247,14 +263,16 @@ mod test {
     use marketplace_solver::{testing::MockSolver, SolverError};
     use portpicker::pick_unused_port;
     use sequencer::{
-        api::test_helpers::TestNetworkConfigBuilder,
+        api::{
+            fs::DataSource,
+            options::HotshotEvents,
+            test_helpers::{TestNetwork, TestNetworkConfigBuilder},
+            Options,
+        },
+        persistence,
         persistence::no_storage::{self, NoStorage},
         testing::TestConfigBuilder,
         SequencerApiVersion,
-    };
-    use sequencer::{
-        api::{fs::DataSource, options::HotshotEvents, test_helpers::TestNetwork, Options},
-        persistence,
     };
     use sequencer_utils::test_utils::setup_test;
     use surf_disco::{
@@ -607,7 +625,7 @@ mod test {
                     get_bundle(builder_client, parent_view_number, parent_commitment).await,
                     parent_view_number,
                 )
-            }
+            },
             Mempool::Private => {
                 submit_and_get_bundle_with_private_mempool(
                     builder_client,
@@ -615,7 +633,7 @@ mod test {
                     urls,
                 )
                 .await
-            }
+            },
         };
 
         assert_eq!(bundle.transactions, vec![registered_transaction.clone()]);
@@ -727,7 +745,7 @@ mod test {
                     get_bundle(builder_client, parent_view_number, parent_commitment).await,
                     parent_view_number,
                 )
-            }
+            },
             Mempool::Private => {
                 submit_and_get_bundle_with_private_mempool(
                     builder_client,
@@ -735,7 +753,7 @@ mod test {
                     urls,
                 )
                 .await
-            }
+            },
         };
 
         assert_eq!(bundle.transactions, vec![unregistered_transaction.clone()]);

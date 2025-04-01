@@ -28,7 +28,9 @@ processes:
     command:
       unset ESPRESSO_SEQUENCER_PERMISSIONED_STAKE_TABLE_ADDRESS
       ESPRESSO_SEQUENCER_FEE_CONTRACT_PROXY_ADDRESS
-      && deploy --only fee-contract,permissioned-stake-table
+      ESPRESSO_SEQUENCER_ESP_TOKEN_PROXY_ADDRESS
+      ESPRESSO_SEQUENCER_STAKE_TABLE_PROXY_ADDRESS
+      && deploy --only fee-contract,permissioned-stake-table,esp-token,stake-table
     namespace: setup
     depends_on:
       demo-l1-network:
@@ -62,6 +64,21 @@ processes:
       - ACCOUNT_INDEX=$ESPRESSO_BUILDER_ETH_ACCOUNT_INDEX
       - AMOUNT=1000000000000000000
       - CONFIRMATIONS=1
+    depends_on:
+      deploy-sequencer-contracts:
+        condition: process_completed
+      sequencer1:
+        condition: process_healthy
+
+  stake:
+    command: staking-cli stake-for-demo
+    namespace: setup
+    environment:
+      - L1_PROVIDER=http://localhost:$ESPRESSO_SEQUENCER_L1_PORT
+      - MNEMONIC=$ESPRESSO_SEQUENCER_ETH_MNEMONIC
+      - ACCOUNT_INDEX=$ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ACCOUNT_INDEX
+      - ESP_TOKEN_ADDRESS=$ESPRESSO_SEQUENCER_ESP_TOKEN_PROXY_ADDRESS
+      - STAKE_TABLE_ADDRESS=$ESPRESSO_SEQUENCER_STAKE_TABLE_PROXY_ADDRESS
     depends_on:
       deploy-sequencer-contracts:
         condition: process_completed

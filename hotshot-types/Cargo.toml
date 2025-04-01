@@ -14,6 +14,7 @@ ark-ff = { workspace = true }
 ark-serialize = { workspace = true }
 ark-srs = { version = "0.3.1" }
 ark-std = { workspace = true }
+async-broadcast = { workspace = true }
 async-lock = { workspace = true }
 async-trait = { workspace = true }
 bincode = { workspace = true }
@@ -28,7 +29,9 @@ dyn-clone = "1.0.17"
 either = { workspace = true }
 futures = { workspace = true, features = ["alloc"] }
 hotshot-utils = { workspace = true }
+jf-crhf = { workspace = true }
 jf-pcs = { workspace = true }
+jf-rescue = { workspace = true }
 jf-signature = { workspace = true, features = ["bls", "schnorr"] }
 jf-utils = { workspace = true }
 jf-vid = { workspace = true }

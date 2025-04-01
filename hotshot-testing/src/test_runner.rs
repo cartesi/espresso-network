@@ -5,14 +5,19 @@
 // along with the HotShot repository. If not, see <https://mit-license.org/>.
 
 #![allow(clippy::panic)]
+use std::{
+    collections::{BTreeMap, HashMap, HashSet},
+    marker::PhantomData,
+    sync::Arc,
+};
+
 use async_broadcast::{broadcast, Receiver, Sender};
 use async_lock::RwLock;
 use futures::future::join_all;
-use hotshot::InitializerEpochInfo;
 use hotshot::{
     traits::TestableNodeImplementation,
     types::{Event, SystemContextHandle},
-    HotShotInitializer, MarketplaceConfig, SystemContext,
+    HotShotInitializer, InitializerEpochInfo, MarketplaceConfig, SystemContext,
 };
 use hotshot_example_types::{
     auction_results_provider_types::TestAuctionResultsProvider,
@@ -22,23 +27,19 @@ use hotshot_example_types::{
 };
 use hotshot_fakeapi::fake_solver::FakeSolverState;
 use hotshot_task_impls::events::HotShotEvent;
-use hotshot_types::drb::INITIAL_DRB_RESULT;
 use hotshot_types::{
     consensus::ConsensusMetricsValue,
     constants::EVENT_CHANNEL_SIZE,
     data::Leaf2,
-    simple_certificate::QuorumCertificate2,
+    drb::INITIAL_DRB_RESULT,
+    epoch_membership::EpochMembershipCoordinator,
+    simple_certificate::{LightClientStateUpdateCertificate, QuorumCertificate2},
     traits::{
         election::Membership,
         network::ConnectedNetwork,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
     },
     HotShotConfig, ValidatorConfig,
-};
-use std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    marker::PhantomData,
-    sync::Arc,
 };
 use tide_disco::Url;
 use tokio::{spawn, task::JoinHandle};
@@ -198,6 +199,7 @@ where
             async_delay_config: launcher.metadata.async_delay_config,
             restart_contexts: HashMap::new(),
             channel_generator: launcher.resource_generators.channel_generator,
+            state_cert: LightClientStateUpdateCertificate::<TYPES>::genesis(),
         };
         let spinning_task = TestTask::<SpinningTask<TYPES, N, I, V>>::new(
             spinning_task_state,
@@ -280,12 +282,12 @@ where
                 Ok(res) => match res {
                     TestResult::Pass => {
                         info!("Task shut down successfully");
-                    }
+                    },
                     TestResult::Fail(e) => error_list.push(e),
                 },
                 Err(e) => {
                     tracing::error!("Error Joining the test task {:?}", e);
-                }
+                },
             }
         }
 
@@ -559,14 +561,14 @@ where
                     if let Some(task) = builder_tasks.pop() {
                         task.start(Box::new(handle.event_stream()))
                     }
-                }
+                },
                 std::cmp::Ordering::Equal => {
                     // If we have more builder tasks than DA nodes, pin them all on the last node.
                     while let Some(task) = builder_tasks.pop() {
                         task.start(Box::new(handle.event_stream()))
                     }
-                }
-                std::cmp::Ordering::Greater => {}
+                },
+                std::cmp::Ordering::Greater => {},
             }
 
             self.nodes.push(Node {
@@ -588,21 +590,24 @@ where
         network: Network<TYPES, I>,
         memberships: TYPES::Membership,
         initializer: HotShotInitializer<TYPES>,
-        config: HotShotConfig<TYPES::SignatureKey>,
-        validator_config: ValidatorConfig<TYPES::SignatureKey>,
+        config: HotShotConfig<TYPES>,
+        validator_config: ValidatorConfig<TYPES>,
         storage: I::Storage,
         marketplace_config: MarketplaceConfig<TYPES, I>,
     ) -> Arc<SystemContext<TYPES, I, V>> {
         // Get key pair for certificate aggregation
         let private_key = validator_config.private_key.clone();
         let public_key = validator_config.public_key.clone();
+        let state_private_key = validator_config.state_private_key.clone();
+        let epoch_height = config.epoch_height;
 
         SystemContext::new(
             public_key,
             private_key,
+            state_private_key,
             node_id,
             config,
-            Arc::new(RwLock::new(memberships)),
+            EpochMembershipCoordinator::new(Arc::new(RwLock::new(memberships)), epoch_height),
             network,
             initializer,
             ConsensusMetricsValue::default(),
@@ -621,8 +626,8 @@ where
         network: Network<TYPES, I>,
         memberships: Arc<RwLock<TYPES::Membership>>,
         initializer: HotShotInitializer<TYPES>,
-        config: HotShotConfig<TYPES::SignatureKey>,
-        validator_config: ValidatorConfig<TYPES::SignatureKey>,
+        config: HotShotConfig<TYPES>,
+        validator_config: ValidatorConfig<TYPES>,
         storage: I::Storage,
         marketplace_config: MarketplaceConfig<TYPES, I>,
         internal_channel: (
@@ -634,13 +639,16 @@ where
         // Get key pair for certificate aggregation
         let private_key = validator_config.private_key.clone();
         let public_key = validator_config.public_key.clone();
+        let state_private_key = validator_config.state_private_key.clone();
+        let epoch_height = config.epoch_height;
 
         SystemContext::new_from_channels(
             public_key,
             private_key,
+            state_private_key,
             node_id,
             config,
-            memberships,
+            EpochMembershipCoordinator::new(memberships, epoch_height),
             network,
             initializer,
             ConsensusMetricsValue::default(),
@@ -673,7 +681,7 @@ pub struct LateNodeContextParameters<TYPES: NodeType, I: TestableNodeImplementat
     pub memberships: TYPES::Membership,
 
     /// The config associated with this node.
-    pub config: HotShotConfig<TYPES::SignatureKey>,
+    pub config: HotShotConfig<TYPES>,
 
     /// The marketplace config for this node.
     pub marketplace_config: MarketplaceConfig<TYPES, I>,

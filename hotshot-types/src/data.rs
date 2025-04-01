@@ -31,6 +31,7 @@ use vid_disperse::{ADVZDisperse, ADVZDisperseShare, AvidMDisperse, VidDisperseSh
 
 use crate::{
     drb::DrbResult,
+    epoch_membership::EpochMembershipCoordinator,
     impl_has_epoch, impl_has_none_epoch,
     message::{convert_proposal, Proposal, UpgradeLock},
     simple_certificate::{
@@ -48,7 +49,10 @@ use crate::{
         states::TestableState,
         BlockPayload,
     },
-    utils::{bincode_opts, genesis_epoch_from_version, option_epoch_from_block_number},
+    utils::{
+        bincode_opts, genesis_epoch_from_version, option_epoch_from_block_number,
+        EpochTransitionIndicator,
+    },
     vid::{
         advz::{advz_scheme, ADVZCommitment, ADVZShare},
         avidm::{init_avidm_param, AvidMCommitment, AvidMScheme, AvidMShare},
@@ -170,6 +174,9 @@ pub struct DaProposal2<TYPES: NodeType> {
     pub view_number: TYPES::View,
     /// Epoch this proposal applies to
     pub epoch: Option<TYPES::Epoch>,
+    /// Indicates whether we are in epoch transition
+    /// In epoch transition the next epoch payload commit should be calculated additionally
+    pub epoch_transition_indicator: EpochTransitionIndicator,
 }
 
 impl<TYPES: NodeType> From<DaProposal<TYPES>> for DaProposal2<TYPES> {
@@ -179,6 +186,7 @@ impl<TYPES: NodeType> From<DaProposal<TYPES>> for DaProposal2<TYPES> {
             metadata: da_proposal.metadata,
             view_number: da_proposal.view_number,
             epoch: None,
+            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
         }
     }
 }
@@ -333,14 +341,14 @@ impl VidCommitment {
 pub fn vid_commitment<V: Versions>(
     encoded_transactions: &[u8],
     metadata: &[u8],
-    num_storage_nodes: usize,
+    total_weight: usize,
     version: Version,
 ) -> VidCommitment {
     if version < V::Epochs::VERSION {
         let encoded_tx_len = encoded_transactions.len();
-        advz_scheme(num_storage_nodes).commit_only(encoded_transactions).map(VidCommitment::V0).unwrap_or_else(|err| panic!("VidScheme::commit_only failure:(num_storage_nodes,payload_byte_len)=({num_storage_nodes},{encoded_tx_len}) error: {err}"))
+        advz_scheme(total_weight).commit_only(encoded_transactions).map(VidCommitment::V0).unwrap_or_else(|err| panic!("VidScheme::commit_only failure:(total_weight,payload_byte_len)=({total_weight},{encoded_tx_len}) error: {err}"))
     } else {
-        let param = init_avidm_param(num_storage_nodes).unwrap();
+        let param = init_avidm_param(total_weight).unwrap();
         let encoded_tx_len = encoded_transactions.len();
         AvidMScheme::commit(
             &param,
@@ -372,7 +380,7 @@ impl From<AvidMShare> for VidShare {
     }
 }
 
-mod ns_table;
+pub mod ns_table;
 pub mod vid_disperse;
 
 /// VID dispersal data
@@ -428,7 +436,7 @@ impl<TYPES: NodeType> VidDisperse<TYPES> {
     #[allow(clippy::panic)]
     pub async fn calculate_vid_disperse<V: Versions>(
         payload: &TYPES::BlockPayload,
-        membership: &Arc<RwLock<TYPES::Membership>>,
+        membership: &EpochMembershipCoordinator<TYPES>,
         view: TYPES::View,
         target_epoch: Option<TYPES::Epoch>,
         data_epoch: Option<TYPES::Epoch>,
@@ -504,13 +512,13 @@ impl<TYPES: NodeType> VidDisperseShare<TYPES> {
                     .into_iter()
                     .map(|share| Self::V0(share))
                     .collect()
-            }
+            },
             VidDisperse::V1(vid_disperse) => {
                 VidDisperseShare2::<TYPES>::from_vid_disperse(vid_disperse)
                     .into_iter()
                     .map(|share| Self::V1(share))
                     .collect()
-            }
+            },
         }
     }
 
@@ -671,10 +679,10 @@ impl<TYPES: NodeType> ViewChangeEvidence<TYPES> {
         match self {
             ViewChangeEvidence::Timeout(timeout_cert) => {
                 ViewChangeEvidence2::Timeout(timeout_cert.to_tc2())
-            }
+            },
             ViewChangeEvidence::ViewSync(view_sync_cert) => {
                 ViewChangeEvidence2::ViewSync(view_sync_cert.to_vsc2())
-            }
+            },
         }
     }
 }
@@ -704,10 +712,10 @@ impl<TYPES: NodeType> ViewChangeEvidence2<TYPES> {
         match self {
             ViewChangeEvidence2::Timeout(timeout_cert) => {
                 ViewChangeEvidence::Timeout(timeout_cert.to_tc())
-            }
+            },
             ViewChangeEvidence2::ViewSync(view_sync_cert) => {
                 ViewChangeEvidence::ViewSync(view_sync_cert.to_vsc())
-            }
+            },
         }
     }
 }
@@ -989,6 +997,10 @@ pub enum BlockError {
     /// The payload commitment does not match the block header's payload commitment
     #[error("Inconsistent payload commitment")]
     InconsistentPayloadCommitment,
+
+    /// The block header apply failed
+    #[error("Failed to apply block header: {0}")]
+    FailedHeaderApply(String),
 }
 
 /// Additional functions required to use a [`Leaf`] with hotshot-testing.
@@ -1113,9 +1125,16 @@ impl<TYPES: NodeType> Leaf2<TYPES> {
             metadata,
         );
 
+        let block_number = if V::Base::VERSION < V::Epochs::VERSION {
+            None
+        } else {
+            Some(0u64)
+        };
+
         let null_quorum_data = QuorumData2 {
             leaf_commit: Commitment::<Leaf2<TYPES>>::default_commitment_no_preimage(),
             epoch,
+            block_number,
         };
 
         let justify_qc = QuorumCertificate2::new(
@@ -1241,7 +1260,7 @@ impl<TYPES: NodeType> Leaf2<TYPES> {
             // Easiest cases are:
             //   - no upgrade certificate on either: this is the most common case, and is always fine.
             //   - if the parent didn't have a certificate, but we see one now, it just means that we have begun an upgrade: again, this is always fine.
-            (None | Some(_), None) => {}
+            (None | Some(_), None) => {},
             // If we no longer see a cert, we have to make sure that we either:
             //    - no longer care because we have passed new_version_first_view, or
             //    - no longer care because we have passed `decide_by` without deciding the certificate.
@@ -1251,13 +1270,13 @@ impl<TYPES: NodeType> Leaf2<TYPES> {
                     || (self.view_number() > parent_cert.data.decide_by && decided_upgrade_certificate_read.is_none()),
                        "The new leaf is missing an upgrade certificate that was present in its parent, and should still be live."
                 );
-            }
+            },
             // If we both have a certificate, they should be identical.
             // Technically, this prevents us from initiating a new upgrade in the view immediately following an upgrade.
             // I think this is a fairly lax restriction.
             (Some(cert), Some(parent_cert)) => {
                 ensure!(cert == parent_cert, "The new leaf does not extend the parent leaf, because it has attached a different upgrade certificate.");
-            }
+            },
         }
 
         // This check should be added once we sort out the genesis leaf/justify_qc issue.
@@ -1445,11 +1464,16 @@ impl<TYPES: NodeType> QuorumCertificate2<TYPES> {
 
         let genesis_view = <TYPES::View as ConsensusTime>::genesis();
 
+        let genesis_leaf = Leaf2::genesis::<V>(validated_state, instance_state).await;
+        let block_number = if upgrade_lock.epochs_enabled(genesis_view).await {
+            Some(genesis_leaf.height())
+        } else {
+            None
+        };
         let data = QuorumData2 {
-            leaf_commit: Leaf2::genesis::<V>(validated_state, instance_state)
-                .await
-                .commit(),
+            leaf_commit: genesis_leaf.commit(),
             epoch: genesis_epoch_from_version::<V, TYPES>(), // #3967 make sure this is enough of a gate for epochs
+            block_number,
         };
 
         let versioned_data =
@@ -1620,7 +1644,7 @@ impl<TYPES: NodeType> Leaf<TYPES> {
             // Easiest cases are:
             //   - no upgrade certificate on either: this is the most common case, and is always fine.
             //   - if the parent didn't have a certificate, but we see one now, it just means that we have begun an upgrade: again, this is always fine.
-            (None | Some(_), None) => {}
+            (None | Some(_), None) => {},
             // If we no longer see a cert, we have to make sure that we either:
             //    - no longer care because we have passed new_version_first_view, or
             //    - no longer care because we have passed `decide_by` without deciding the certificate.
@@ -1630,13 +1654,13 @@ impl<TYPES: NodeType> Leaf<TYPES> {
                     || (self.view_number() > parent_cert.data.decide_by && decided_upgrade_certificate_read.is_none()),
                        "The new leaf is missing an upgrade certificate that was present in its parent, and should still be live."
                 );
-            }
+            },
             // If we both have a certificate, they should be identical.
             // Technically, this prevents us from initiating a new upgrade in the view immediately following an upgrade.
             // I think this is a fairly lax restriction.
             (Some(cert), Some(parent_cert)) => {
                 ensure!(cert == parent_cert, "The new leaf does not extend the parent leaf, because it has attached a different upgrade certificate.");
-            }
+            },
         }
 
         // This check should be added once we sort out the genesis leaf/justify_qc issue.

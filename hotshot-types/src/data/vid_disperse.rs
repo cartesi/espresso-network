@@ -6,30 +6,33 @@
 
 //! This module provides types for VID disperse related data structures.
 
-use std::{collections::BTreeMap, fmt::Debug, hash::Hash, marker::PhantomData, sync::Arc};
+use std::{collections::BTreeMap, fmt::Debug, hash::Hash, marker::PhantomData};
 
-use async_lock::RwLock;
 use hotshot_utils::anytrace::*;
 use jf_vid::{VidDisperse as JfVidDisperse, VidScheme};
+use primitive_types::U256;
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
 
+use super::ns_table::parse_ns_table;
 use crate::{
+    epoch_membership::{EpochMembership, EpochMembershipCoordinator},
     impl_has_epoch,
     message::Proposal,
     simple_vote::HasEpoch,
     traits::{
-        block_contents::EncodeBytes, election::Membership, node_implementation::NodeType,
-        signature_key::SignatureKey, BlockPayload,
+        block_contents::EncodeBytes,
+        node_implementation::NodeType,
+        signature_key::{SignatureKey, StakeTableEntryType},
+        BlockPayload,
     },
     vid::{
         advz::{advz_scheme, ADVZCommitment, ADVZCommon, ADVZScheme, ADVZShare},
-        avidm::{init_avidm_param, AvidMCommitment, AvidMScheme, AvidMShare},
+        avidm::{init_avidm_param, AvidMCommitment, AvidMCommon, AvidMScheme, AvidMShare},
     },
     vote::HasViewNumber,
+    PeerConfig,
 };
-
-use super::ns_table::parse_ns_table;
 
 impl_has_epoch!(
     ADVZDisperse<TYPES>,
@@ -67,15 +70,18 @@ impl<TYPES: NodeType> ADVZDisperse<TYPES> {
     async fn from_membership(
         view_number: TYPES::View,
         mut vid_disperse: JfVidDisperse<ADVZScheme>,
-        membership: &Arc<RwLock<TYPES::Membership>>,
+        membership: &EpochMembershipCoordinator<TYPES>,
         target_epoch: Option<TYPES::Epoch>,
         data_epoch: Option<TYPES::Epoch>,
     ) -> Self {
         let shares = membership
-            .read()
+            .membership_for_epoch(target_epoch)
             .await
-            .committee_members(view_number, target_epoch)
+            .unwrap()
+            .stake_table()
+            .await
             .iter()
+            .map(|entry| entry.stake_table_entry.public_key())
             .map(|node| (node.clone(), vid_disperse.shares.remove(0)))
             .collect();
 
@@ -97,12 +103,17 @@ impl<TYPES: NodeType> ADVZDisperse<TYPES> {
     #[allow(clippy::panic)]
     pub async fn calculate_vid_disperse(
         payload: &TYPES::BlockPayload,
-        membership: &Arc<RwLock<TYPES::Membership>>,
+        membership: &EpochMembershipCoordinator<TYPES>,
         view: TYPES::View,
         target_epoch: Option<TYPES::Epoch>,
         data_epoch: Option<TYPES::Epoch>,
     ) -> Result<Self> {
-        let num_nodes = membership.read().await.total_nodes(target_epoch);
+        let num_nodes = membership
+            .membership_for_epoch(target_epoch)
+            .await?
+            .total_nodes()
+            .await;
+
         let txns = payload.encode();
 
         let vid_disperse = spawn_blocking(move || advz_scheme(num_nodes).disperse(&txns))
@@ -231,8 +242,8 @@ impl<TYPES: NodeType> ADVZDisperseShare<TYPES> {
     /// # Errors
     /// Verification fail
     #[allow(clippy::result_unit_err)]
-    pub fn verify_share(&self, total_nodes: usize) -> std::result::Result<(), ()> {
-        advz_scheme(total_nodes)
+    pub fn verify_share(&self, total_weight: usize) -> std::result::Result<(), ()> {
+        advz_scheme(total_weight)
             .verify_share(&self.share, &self.common, &self.payload_commitment)
             .unwrap_or(Err(()))
     }
@@ -258,11 +269,87 @@ pub struct AvidMDisperse<TYPES: NodeType> {
     pub shares: BTreeMap<TYPES::SignatureKey, AvidMShare>,
     /// Length of payload in bytes
     pub payload_byte_len: usize,
+    /// VID common data sent to all storage nodes
+    pub common: AvidMCommon,
 }
 
 impl<TYPES: NodeType> HasViewNumber<TYPES> for AvidMDisperse<TYPES> {
     fn view_number(&self) -> TYPES::View {
         self.view_number
+    }
+}
+
+/// The target total stake to scale to for VID.
+pub const VID_TARGET_TOTAL_STAKE: u32 = 1000;
+
+/// The weights and total weight used in VID calculations
+struct Weights {
+    // weights, in stake table order
+    weights: Vec<u32>,
+
+    // total weight
+    total_weight: usize,
+}
+
+pub fn vid_total_weight<TYPES: NodeType>(
+    stake_table: Vec<PeerConfig<TYPES>>,
+    epoch: Option<TYPES::Epoch>,
+) -> usize {
+    if epoch.is_none() {
+        stake_table
+            .iter()
+            .fold(U256::zero(), |acc, entry| {
+                acc + entry.stake_table_entry.stake()
+            })
+            .as_usize()
+    } else {
+        approximate_weights(stake_table).total_weight
+    }
+}
+
+fn approximate_weights<TYPES: NodeType>(stake_table: Vec<PeerConfig<TYPES>>) -> Weights {
+    let total_stake = stake_table.iter().fold(U256::zero(), |acc, entry| {
+        acc + entry.stake_table_entry.stake()
+    });
+
+    let mut total_weight: usize = 0;
+
+    // don't attempt to scale if the total stake is small enough
+    if total_stake <= U256::from(VID_TARGET_TOTAL_STAKE) {
+        let weights = stake_table
+            .iter()
+            .map(|entry| entry.stake_table_entry.stake().as_u32())
+            .collect();
+
+        // Note: this panics if `total_stake` exceeds `usize::MAX`, but this shouldn't happen.
+        total_weight = total_stake.as_usize();
+
+        Weights {
+            weights,
+            total_weight,
+        }
+    } else {
+        let weights = stake_table
+            .iter()
+            .map(|entry| {
+                let weight: U256 = ((entry.stake_table_entry.stake()
+                    * U256::from(VID_TARGET_TOTAL_STAKE))
+                    / total_stake)
+                    + 1;
+
+                // Note: this panics if `weight` exceeds `usize::MAX`, but this shouldn't happen.
+                total_weight += weight.as_usize();
+
+                // Note: this panics if `weight` exceeds `u32::MAX`, but this shouldn't happen
+                // and would likely cause a stack overflow in the VID calculation anyway
+                weight.as_u32()
+            })
+            .collect();
+
+        Weights {
+            weights,
+            total_weight,
+        }
     }
 }
 
@@ -274,16 +361,21 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
         view_number: TYPES::View,
         commit: AvidMCommitment,
         shares: &[AvidMShare],
-        membership: &Arc<RwLock<TYPES::Membership>>,
+        common: AvidMCommon,
+        membership: &EpochMembership<TYPES>,
         target_epoch: Option<TYPES::Epoch>,
         data_epoch: Option<TYPES::Epoch>,
     ) -> Self {
         let payload_byte_len = shares[0].payload_byte_len();
         let shares = membership
-            .read()
+            .coordinator
+            .membership_for_epoch(target_epoch)
             .await
-            .committee_members(view_number, target_epoch)
+            .unwrap()
+            .stake_table()
+            .await
             .iter()
+            .map(|entry| entry.stake_table_entry.public_key())
             .zip(shares)
             .map(|(node, share)| (node.clone(), share.clone()))
             .collect();
@@ -295,6 +387,7 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
             epoch: data_epoch,
             target_epoch,
             payload_byte_len,
+            common,
         }
     }
 
@@ -307,24 +400,31 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
     #[allow(clippy::single_range_in_vec_init)]
     pub async fn calculate_vid_disperse(
         payload: &TYPES::BlockPayload,
-        membership: &Arc<RwLock<TYPES::Membership>>,
+        membership: &EpochMembershipCoordinator<TYPES>,
         view: TYPES::View,
         target_epoch: Option<TYPES::Epoch>,
         data_epoch: Option<TYPES::Epoch>,
         metadata: &<TYPES::BlockPayload as BlockPayload<TYPES>>::Metadata,
     ) -> Result<Self> {
-        let num_nodes = membership.read().await.total_nodes(target_epoch);
+        let target_mem = membership.membership_for_epoch(target_epoch).await?;
+        let stake_table = target_mem.stake_table().await;
+        let approximate_weights = approximate_weights(stake_table);
 
         let txns = payload.encode();
         let num_txns = txns.len();
 
-        let avidm_param = init_avidm_param(num_nodes)?;
-        // TODO: get weight distribution
-        let weights = vec![1u32; num_nodes];
+        let avidm_param = init_avidm_param(approximate_weights.total_weight)?;
+        let common = avidm_param.clone();
+
         let ns_table = parse_ns_table(num_txns, &metadata.encode());
         let ns_table_clone = ns_table.clone();
         let (commit, shares) = spawn_blocking(move || {
-            AvidMScheme::ns_disperse(&avidm_param, &weights, &txns, ns_table_clone)
+            AvidMScheme::ns_disperse(
+                &avidm_param,
+                &approximate_weights.weights,
+                &txns,
+                ns_table_clone,
+            )
         })
         .await
         .wrap()
@@ -332,10 +432,16 @@ impl<TYPES: NodeType> AvidMDisperse<TYPES> {
         .wrap()
         .context(|err| error!("Failed to calculate VID disperse. Error: {}", err))?;
 
-        Ok(
-            Self::from_membership(view, commit, &shares, membership, target_epoch, data_epoch)
-                .await,
+        Ok(Self::from_membership(
+            view,
+            commit,
+            &shares,
+            common,
+            &target_mem,
+            target_epoch,
+            data_epoch,
         )
+        .await)
     }
 
     /// Returns the payload length in bytes.
@@ -359,6 +465,8 @@ pub struct VidDisperseShare2<TYPES: NodeType> {
     pub share: AvidMShare,
     /// a public key of the share recipient
     pub recipient_key: TYPES::SignatureKey,
+    /// VID common data sent to all storage nodes
+    pub common: AvidMCommon,
 }
 
 impl<TYPES: NodeType> HasViewNumber<TYPES> for VidDisperseShare2<TYPES> {
@@ -380,6 +488,7 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
                 payload_commitment: vid_disperse.payload_commitment,
                 epoch: vid_disperse.epoch,
                 target_epoch: vid_disperse.target_epoch,
+                common: vid_disperse.common.clone(),
             })
             .collect()
     }
@@ -421,6 +530,7 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
             payload_commitment: first_vid_disperse_share.payload_commitment,
             shares: share_map,
             payload_byte_len,
+            common: first_vid_disperse_share.common,
         };
         let _ = it.map(|vid_disperse_share| {
             vid_disperse.shares.insert(
@@ -452,6 +562,7 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
                     payload_commitment: vid_disperse.payload_commitment,
                     epoch: vid_disperse.epoch,
                     target_epoch: vid_disperse.target_epoch,
+                    common: vid_disperse.common.clone(),
                 },
                 signature: signature.clone(),
                 _pd: PhantomData,
@@ -463,8 +574,8 @@ impl<TYPES: NodeType> VidDisperseShare2<TYPES> {
     ///
     /// # Errors
     #[allow(clippy::result_unit_err)]
-    pub fn verify_share(&self, total_nodes: usize) -> std::result::Result<(), ()> {
-        let avidm_param = init_avidm_param(total_nodes).map_err(|_| ())?;
+    pub fn verify_share(&self, total_weight: usize) -> std::result::Result<(), ()> {
+        let avidm_param = init_avidm_param(total_weight).map_err(|_| ())?;
         AvidMScheme::verify_share(&avidm_param, &self.payload_commitment, &self.share)
             .unwrap_or(Err(()))
     }

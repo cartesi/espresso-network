@@ -1,7 +1,7 @@
 use std::{fs::File, io::stdout, path::PathBuf, time::Duration};
 
 use clap::Parser;
-use espresso_types::parse_duration;
+use espresso_types::{parse_duration, SeqTypes};
 use ethers::types::Address;
 use futures::FutureExt;
 use hotshot_stake_table::config::STAKE_TABLE_CAPACITY;
@@ -138,6 +138,21 @@ struct Options {
     #[clap(long, env = "ESPRESSO_SEQUENCER_INITIAL_PERMISSIONED_STAKE_TABLE_PATH")]
     initial_stake_table_path: Option<PathBuf>,
 
+    /// Exit escrow period for the stake table contract.
+    ///
+    /// This is the period for which stake table contract will retain funds after withdrawals have
+    /// been requested. It should be set to a value that is at least 3 hotshot epochs plus ample
+    /// time to allow for submission of slashing evidence. Initially it will probably be around one
+    /// week.
+    #[clap(long, env = "ESPRESSO_SEQUENCER_STAKE_TABLE_EXIT_ESCROW_PERIOD", value_parser = parse_duration)]
+    exit_escrow_period: Option<Duration>,
+
+    /// The address that the tokens will be minted to.
+    ///
+    /// If unset the tokens will be minted to the deployer account.
+    #[clap(long, env = "ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ADDRESS")]
+    initial_token_grant_recipient: Option<Address>,
+
     #[clap(flatten)]
     logging: logging::Config,
 }
@@ -155,7 +170,7 @@ async fn main() -> anyhow::Result<()> {
 
     let initial_stake_table = if let Some(path) = opt.initial_stake_table_path {
         tracing::info!("Loading initial stake table from {:?}", path);
-        Some(PermissionedStakeTableConfig::from_toml_file(&path)?.into())
+        Some(PermissionedStakeTableConfig::<SeqTypes>::from_toml_file(&path)?.into())
     } else {
         None
     };
@@ -172,6 +187,8 @@ async fn main() -> anyhow::Result<()> {
         opt.permissioned_prover,
         contracts,
         initial_stake_table,
+        opt.exit_escrow_period,
+        opt.initial_token_grant_recipient,
     )
     .await?;
 

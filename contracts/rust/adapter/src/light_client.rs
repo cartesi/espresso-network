@@ -4,9 +4,7 @@ use ark_ff::PrimeField;
 use ark_std::str::FromStr;
 use diff_test_bn254::{field_to_u256, u256_to_field};
 use ethers::{
-    abi::AbiDecode,
-    abi::Token,
-    abi::Tokenize,
+    abi::{AbiDecode, Token, Tokenize},
     prelude::{AbiError, EthAbiCodec, EthAbiType},
     types::U256,
 };
@@ -56,8 +54,8 @@ impl From<contract_bindings_ethers::light_client::LightClientState> for ParsedLi
 impl<F: PrimeField> From<ParsedLightClientState> for GenericLightClientState<F> {
     fn from(v: ParsedLightClientState) -> Self {
         Self {
-            view_number: v.view_num as usize,
-            block_height: v.block_height as usize,
+            view_number: v.view_num,
+            block_height: v.block_height,
             block_comm_root: u256_to_field(v.block_comm_root),
         }
     }
@@ -66,8 +64,8 @@ impl<F: PrimeField> From<ParsedLightClientState> for GenericLightClientState<F> 
 impl<F: PrimeField> From<GenericLightClientState<F>> for ParsedLightClientState {
     fn from(v: GenericLightClientState<F>) -> Self {
         Self {
-            view_num: v.view_number as u64,
-            block_height: v.block_height as u64,
+            view_num: v.view_number,
+            block_height: v.block_height,
             block_comm_root: field_to_u256(v.block_comm_root),
         }
     }

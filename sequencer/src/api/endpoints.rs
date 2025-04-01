@@ -7,17 +7,20 @@ use std::{
 
 use anyhow::Result;
 use committable::Committable;
-use espresso_types::{FeeAccount, FeeMerkleTree, NamespaceId, NsProof, PubKey, Transaction};
+use espresso_types::{
+    v0_1::{ADVZNsProof, RewardAccount},
+    FeeAccount, FeeMerkleTree, NamespaceId, NsProof, PubKey, Transaction,
+};
 use futures::{try_join, FutureExt};
 use hotshot_query_service::{
     availability::{self, AvailabilityDataSource, CustomSnafu, FetchBlockSnafu},
     explorer::{self, ExplorerDataSource},
     merklized_state::{
-        self, MerklizedState, MerklizedStateDataSource, MerklizedStateHeightPersistence,
+        self, MerklizedState, MerklizedStateDataSource, MerklizedStateHeightPersistence, Snapshot,
     },
-    node, ApiState, Error,
+    node::{self, NodeDataSource},
+    ApiState, Error, VidCommon,
 };
-use hotshot_query_service::{merklized_state::Snapshot, node::NodeDataSource};
 use hotshot_types::{
     data::{EpochNumber, ViewNumber},
     traits::{
@@ -28,7 +31,6 @@ use hotshot_types::{
 use jf_merkle_tree::MerkleTreeScheme;
 use serde::{de::Error as _, Deserialize, Serialize};
 use snafu::OptionExt;
-
 use tagged_base64::TaggedBase64;
 use tide_disco::{method::ReadState, Api, Error as _, StatusCode};
 use vbs::version::{StaticVersion, StaticVersionType};
@@ -45,6 +47,12 @@ use crate::{SeqTypes, SequencerApiVersion, SequencerPersistence};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NamespaceProofQueryData {
     pub proof: Option<NsProof>,
+    pub transactions: Vec<Transaction>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ADVZNamespaceProofQueryData {
+    pub proof: Option<ADVZNsProof>,
     pub transactions: Vec<Transaction>,
 }
 
@@ -91,6 +99,7 @@ type AvailabilityApi<N, P, D, V, ApiVer> = Api<AvailState<N, P, D, V>, availabil
 // Snafu has been replaced by `this_error` everywhere.
 // However, the query service still uses snafu
 pub(super) fn availability<N, P, D, V: Versions>(
+    api_ver: semver::Version,
 ) -> Result<AvailabilityApi<N, P, D, V, SequencerApiVersion>>
 where
     N: ConnectedNetwork<PubKey>,
@@ -105,59 +114,117 @@ where
     let mut api = availability::define_api::<AvailState<N, P, D, _>, SeqTypes, _>(
         &options,
         SequencerApiVersion::instance(),
+        api_ver.clone(),
     )?;
 
-    api.get("getnamespaceproof", move |req, state| {
-        async move {
-            let height: usize = req.integer_param("height")?;
-            let ns_id = NamespaceId::from(req.integer_param::<_, u32>("namespace")?);
-            let (block, common) = try_join!(
-                async move {
-                    state
-                        .get_block(height)
-                        .await
-                        .with_timeout(timeout)
-                        .await
-                        .context(FetchBlockSnafu {
-                            resource: height.to_string(),
-                        })
-                },
-                async move {
-                    state
-                        .get_vid_common(height)
-                        .await
-                        .with_timeout(timeout)
-                        .await
-                        .context(FetchBlockSnafu {
-                            resource: height.to_string(),
-                        })
-                }
-            )?;
-            let common = &common.common().clone().context(CustomSnafu {
-                message: format!("failed to make proof for namespace {ns_id}"),
-                status: StatusCode::NOT_FOUND,
-            })?;
-            if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
-                let proof =
-                    NsProof::new(block.payload(), &ns_index, common).context(CustomSnafu {
-                        message: format!("failed to make proof for namespace {ns_id}"),
-                        status: StatusCode::NOT_FOUND,
-                    })?;
+    if api_ver.major == 1 {
+        api.get("getnamespaceproof", move |req, state| {
+            async move {
+                let height: usize = req.integer_param("height")?;
+                let ns_id = NamespaceId::from(req.integer_param::<_, u32>("namespace")?);
+                let (block, common) = try_join!(
+                    async move {
+                        state
+                            .get_block(height)
+                            .await
+                            .with_timeout(timeout)
+                            .await
+                            .context(FetchBlockSnafu {
+                                resource: height.to_string(),
+                            })
+                    },
+                    async move {
+                        state
+                            .get_vid_common(height)
+                            .await
+                            .with_timeout(timeout)
+                            .await
+                            .context(FetchBlockSnafu {
+                                resource: height.to_string(),
+                            })
+                    }
+                )?;
 
-                Ok(NamespaceProofQueryData {
-                    transactions: proof.export_all_txs(&ns_id),
-                    proof: Some(proof),
-                })
-            } else {
-                // ns_id not found in ns_table
-                Ok(NamespaceProofQueryData {
-                    proof: None,
-                    transactions: Vec::new(),
-                })
+                if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
+                    let proof = NsProof::new(block.payload(), &ns_index, common.common()).context(
+                        CustomSnafu {
+                            message: format!("failed to make proof for namespace {ns_id}"),
+                            status: StatusCode::NOT_FOUND,
+                        },
+                    )?;
+
+                    Ok(NamespaceProofQueryData {
+                        transactions: proof.export_all_txs(&ns_id),
+                        proof: Some(proof),
+                    })
+                } else {
+                    // ns_id not found in ns_table
+                    Ok(NamespaceProofQueryData {
+                        proof: None,
+                        transactions: Vec::new(),
+                    })
+                }
             }
-        }
-        .boxed()
-    })?;
+            .boxed()
+        })?;
+    } else {
+        api.get("getnamespaceproof", move |req, state| {
+            async move {
+                let height: usize = req.integer_param("height")?;
+                let ns_id = NamespaceId::from(req.integer_param::<_, u32>("namespace")?);
+                let (block, common) = try_join!(
+                    async move {
+                        state
+                            .get_block(height)
+                            .await
+                            .with_timeout(timeout)
+                            .await
+                            .context(FetchBlockSnafu {
+                                resource: height.to_string(),
+                            })
+                    },
+                    async move {
+                        state
+                            .get_vid_common(height)
+                            .await
+                            .with_timeout(timeout)
+                            .await
+                            .context(FetchBlockSnafu {
+                                resource: height.to_string(),
+                            })
+                    }
+                )?;
+
+                if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
+                    let VidCommon::V0(common) = &common.common().clone() else {
+                        return Err(availability::Error::Custom {
+                            message: "Unsupported VID version, use new API version instead."
+                                .to_string(),
+                            status: StatusCode::NOT_FOUND,
+                        });
+                    };
+                    let proof = ADVZNsProof::new(block.payload(), &ns_index, common).context(
+                        CustomSnafu {
+                            message: format!("failed to make proof for namespace {ns_id}"),
+                            status: StatusCode::NOT_FOUND,
+                        },
+                    )?;
+
+                    Ok(ADVZNamespaceProofQueryData {
+                        transactions: proof.export_all_txs(&ns_id),
+                        proof: Some(proof),
+                    })
+                } else {
+                    // ns_id not found in ns_table
+                    Ok(ADVZNamespaceProofQueryData {
+                        proof: None,
+                        transactions: Vec::new(),
+                    })
+                }
+            }
+            .boxed()
+        })?;
+    }
 
     Ok(api)
 }
@@ -353,6 +420,69 @@ where
         }
         .boxed()
     })?
+    .get("reward_account", |req, state| {
+        async move {
+            let height = req
+                .integer_param("height")
+                .map_err(Error::from_request_error)?;
+            let view = req
+                .integer_param("view")
+                .map_err(Error::from_request_error)?;
+            let account = req
+                .string_param("address")
+                .map_err(Error::from_request_error)?;
+            let account = account.parse().map_err(|err| {
+                Error::catch_all(
+                    StatusCode::BAD_REQUEST,
+                    format!("malformed account {account}: {err}"),
+                )
+            })?;
+
+            state
+                .get_reward_account(
+                    state.node_state().await,
+                    height,
+                    ViewNumber::new(view),
+                    account,
+                )
+                .await
+                .map_err(|err| Error::catch_all(StatusCode::NOT_FOUND, format!("{err:#}")))
+        }
+        .boxed()
+    })?
+    .at("reward_accounts", |req, state| {
+        async move {
+            let height = req
+                .integer_param("height")
+                .map_err(Error::from_request_error)?;
+            let view = req
+                .integer_param("view")
+                .map_err(Error::from_request_error)?;
+            let accounts = req
+                .body_auto::<Vec<RewardAccount>, ApiVer>(ApiVer::instance())
+                .map_err(Error::from_request_error)?;
+
+            state
+                .read(|state| {
+                    async move {
+                        state
+                            .get_reward_accounts(
+                                state.node_state().await,
+                                height,
+                                ViewNumber::new(view),
+                                &accounts,
+                            )
+                            .await
+                            .map_err(|err| {
+                                Error::catch_all(StatusCode::NOT_FOUND, format!("{err:#}"))
+                            })
+                    }
+                    .boxed()
+                })
+                .await
+        }
+        .boxed()
+    })?
     .get("blocks", |req, state| {
         async move {
             let height = req
@@ -377,6 +507,18 @@ where
 
             state
                 .get_chain_config(commitment)
+                .await
+                .map_err(|err| Error::catch_all(StatusCode::NOT_FOUND, format!("{err:#}")))
+        }
+        .boxed()
+    })?
+    .get("leafchain", |req, state| {
+        async move {
+            let height = req
+                .integer_param("height")
+                .map_err(Error::from_request_error)?;
+            state
+                .get_leaf_chain(height)
                 .await
                 .map_err(|err| Error::catch_all(StatusCode::NOT_FOUND, format!("{err:#}")))
         }

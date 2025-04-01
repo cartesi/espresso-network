@@ -11,7 +11,6 @@ use espresso_types::{
 use ethers::types::H160;
 use ethers_conv::ToAlloy;
 use serde::{Deserialize, Serialize};
-use url::Url;
 use vbs::version::Version;
 
 /// Initial configuration of an Espresso stake table.
@@ -53,6 +52,7 @@ pub struct Genesis {
     pub base_version: Version,
     #[serde(with = "version_ser")]
     pub upgrade_version: Version,
+    pub epoch_height: Option<u64>,
     pub chain_config: ChainConfig,
     pub stake_table: StakeTableConfig,
     #[serde(default)]
@@ -83,14 +83,12 @@ impl Genesis {
 }
 
 impl Genesis {
-    pub async fn validate_fee_contract(&self, l1_rpc_url: Url) -> anyhow::Result<()> {
-        let l1 = L1Client::new(vec![l1_rpc_url]).with_context(|| "failed to create L1 client")?;
-
+    pub async fn validate_fee_contract(&self, l1: &L1Client) -> anyhow::Result<()> {
         if let Some(fee_contract_address) = self.chain_config.fee_contract {
             tracing::info!("validating fee contract at {fee_contract_address:x}");
 
             if !l1
-                .is_proxy_contract(fee_contract_address.to_alloy())
+                .retry_on_all_providers(|| l1.is_proxy_contract(fee_contract_address.to_alloy()))
                 .await
                 .context("checking if fee contract is a proxy")?
             {
@@ -112,7 +110,9 @@ impl Genesis {
                 if fee_contract_address == H160::zero() {
                     anyhow::bail!("Fee contract cannot use the zero address");
                 } else if !l1
-                    .is_proxy_contract(fee_contract_address.to_alloy())
+                    .retry_on_all_providers(|| {
+                        l1.is_proxy_contract(fee_contract_address.to_alloy())
+                    })
                     .await
                     .context(format!(
                         "checking if fee contract is a proxy in upgrade {version}",
@@ -132,9 +132,8 @@ impl Genesis {
 
 mod version_ser {
 
-    use vbs::version::Version;
-
     use serde::{de, Deserialize, Deserializer, Serializer};
+    use vbs::version::Version;
 
     pub fn serialize<S>(ver: &Version, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -254,12 +253,12 @@ mod upgrade_ser {
                             return Err(de::Error::custom(
                                 "both view and time mode parameters are set",
                             ))
-                        }
+                        },
                         (None, None) => {
                             return Err(de::Error::custom(
                                 "no view or time mode parameters provided",
                             ))
-                        }
+                        },
                         (None, Some(v)) => {
                             if v.start_proposing_view > v.stop_proposing_view {
                                 return Err(de::Error::custom(
@@ -274,7 +273,7 @@ mod upgrade_ser {
                                     upgrade_type: fields.upgrade_type,
                                 },
                             );
-                        }
+                        },
                         (Some(t), None) => {
                             if t.start_proposing_time.unix_timestamp()
                                 > t.stop_proposing_time.unix_timestamp()
@@ -291,7 +290,7 @@ mod upgrade_ser {
                                     upgrade_type: fields.upgrade_type.clone(),
                                 },
                             );
-                        }
+                        },
                     }
                 }
 
@@ -321,25 +320,25 @@ impl Genesis {
 
 #[cfg(test)]
 mod test {
-    use ethers::middleware::Middleware;
-    use ethers::prelude::*;
-    use ethers::signers::Signer;
-    use ethers::utils::{Anvil, AnvilInstance};
-    use sequencer_utils::deployer::test_helpers::{
-        deploy_fee_contract, deploy_fee_contract_as_proxy,
-    };
     use std::sync::Arc;
 
     use anyhow::Result;
-
     use contract_bindings_ethers::fee_contract::FeeContract;
     use espresso_types::{
         L1BlockInfo, TimeBasedUpgrade, Timestamp, UpgradeMode, UpgradeType, ViewBasedUpgrade,
     };
-
-    use sequencer_utils::deployer;
-    use sequencer_utils::ser::FromStringOrInteger;
-    use sequencer_utils::test_utils::setup_test;
+    use ethers::{
+        middleware::Middleware,
+        prelude::*,
+        signers::Signer,
+        utils::{Anvil, AnvilInstance},
+    };
+    use sequencer_utils::{
+        deployer,
+        deployer::test_helpers::{deploy_fee_contract, deploy_fee_contract_as_proxy},
+        ser::FromStringOrInteger,
+        test_utils::setup_test,
+    };
     use toml::toml;
 
     use super::*;
@@ -601,7 +600,7 @@ mod test {
 
         // validate the fee_contract address
         let result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(&L1Client::anvil(&anvil).unwrap())
             .await;
 
         // check if the result from the validation is an error
@@ -649,7 +648,7 @@ mod test {
 
         // Call the validation logic for the fee_contract address
         let result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(&L1Client::anvil(&anvil).unwrap())
             .await;
 
         assert!(
@@ -723,7 +722,7 @@ mod test {
 
         // Call the validation logic for the fee_contract address
         let result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(&L1Client::anvil(&anvil).unwrap())
             .await;
 
         assert!(
@@ -797,7 +796,7 @@ mod test {
 
         // Call the validation logic for the fee_contract address
         let result = genesis
-            .validate_fee_contract(anvil.endpoint().parse().unwrap())
+            .validate_fee_contract(&L1Client::anvil(&anvil).unwrap())
             .await;
 
         // check if the result from the validation is an error
@@ -867,7 +866,7 @@ mod test {
 
         // validate the fee_contract address
         let result = genesis
-            .validate_fee_contract(rpc_url.parse().unwrap())
+            .validate_fee_contract(&L1Client::new(vec![rpc_url.parse().unwrap()]).unwrap())
             .await;
 
         // check if the result from the validation is an error
@@ -922,7 +921,7 @@ mod test {
 
         // validate the fee_contract address
         let result = genesis
-            .validate_fee_contract(rpc_url.parse().unwrap())
+            .validate_fee_contract(&L1Client::new(vec![rpc_url.parse().unwrap()]).unwrap())
             .await;
 
         // check if the result from the validation is an error
@@ -934,6 +933,53 @@ mod test {
         } else {
             panic!("Expected the fee contract to complain about the zero address but the validation succeeded");
         }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_genesis_fee_contract_l1_failover() -> anyhow::Result<()> {
+        setup_test();
+
+        let anvil = Anvil::new().spawn();
+        let (_wallet, proxy_contract) = deploy_fee_contract_as_proxy_for_test(&anvil).await?;
+
+        let toml = format!(
+            r#"
+            base_version = "0.1"
+            upgrade_version = "0.2"
+
+            [stake_table]
+            capacity = 10
+
+            [chain_config]
+            chain_id = 12345
+            max_block_size = 30000
+            base_fee = 1
+            fee_recipient = "0x0000000000000000000000000000000000000000"
+            fee_contract = "{:?}"
+
+            [header]
+            timestamp = 123456
+
+            [l1_finalized]
+            number = 42
+        "#,
+            proxy_contract.address()
+        )
+        .to_string();
+
+        let genesis: Genesis = toml::from_str(&toml).unwrap_or_else(|err| panic!("{err:#}"));
+        genesis
+            .validate_fee_contract(
+                &L1Client::new(vec![
+                    "http://notareall1provider".parse().unwrap(),
+                    anvil.endpoint().parse().unwrap(),
+                ])
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        Ok(())
     }
 
     #[test]

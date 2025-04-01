@@ -29,7 +29,9 @@ use hotshot_types::{
     data::Leaf2,
     event::Event,
     message::convert_proposal,
-    simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2},
+    simple_certificate::{
+        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate2,
+    },
     traits::{
         network::{AsyncGenerator, ConnectedNetwork},
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
@@ -82,6 +84,8 @@ pub struct SpinningTask<
     pub(crate) restart_contexts: HashMap<usize, RestartContext<TYPES, N, I, V>>,
     /// Generate network channel for restart nodes
     pub(crate) channel_generator: AsyncGenerator<Network<TYPES, I>>,
+    /// The light client state update certificate
+    pub(crate) state_cert: LightClientStateUpdateCertificate<TYPES>,
 }
 
 #[async_trait]
@@ -177,6 +181,7 @@ where
                                             BTreeMap::new(),
                                             BTreeMap::new(),
                                             None,
+                                            self.state_cert.clone(),
                                         );
                                         // We assign node's public key and stake value rather than read from config file since it's a test
                                         let validator_config =
@@ -199,10 +204,10 @@ where
                                             marketplace_config,
                                         )
                                         .await
-                                    }
+                                    },
                                     LateNodeContext::Restart => {
                                         panic!("Cannot spin up a node with Restart context")
-                                    }
+                                    },
                                 };
 
                                 let handle = context.run_tasks().await;
@@ -219,13 +224,13 @@ where
 
                                 self.handles.write().await.push(node);
                             }
-                        }
+                        },
                         NodeAction::Down => {
                             if let Some(node) = self.handles.write().await.get_mut(idx) {
                                 tracing::error!("Node {} shutting down", idx);
                                 node.handle.shut_down().await;
                             }
-                        }
+                        },
                         NodeAction::RestartDown(delay_views) => {
                             let node_id = idx.try_into().unwrap();
                             if let Some(node) = self.handles.write().await.get_mut(idx) {
@@ -243,7 +248,7 @@ where
                                 };
 
                                 let storage = node.handle.storage().clone();
-                                let memberships = Arc::clone(&node.handle.memberships);
+                                let memberships = node.handle.membership_coordinator.clone();
                                 let config = node.handle.hotshot.config.clone();
                                 let marketplace_config =
                                     node.handle.hotshot.marketplace_config.clone();
@@ -260,6 +265,10 @@ where
                                     )
                                     .await,
                                 );
+                                let state_cert = read_storage
+                                    .state_cert_cloned()
+                                    .await
+                                    .unwrap_or(LightClientStateUpdateCertificate::genesis());
                                 let saved_proposals = read_storage.proposals_cloned().await;
                                 let mut vid_shares = BTreeMap::new();
                                 for (view, hash_map) in read_storage.vids_cloned().await {
@@ -283,6 +292,7 @@ where
                                     saved_proposals,
                                     vid_shares,
                                     decided_upgrade_certificate,
+                                    state_cert,
                                 );
                                 // We assign node's public key and stake value rather than read from config file since it's a test
                                 let validator_config = ValidatorConfig::generated_from_seed_indexed(
@@ -297,7 +307,7 @@ where
                                     TestRunner::<TYPES, I, V, N>::add_node_with_config_and_channels(
                                         node_id,
                                         generated_network.clone(),
-                                        memberships,
+                                        Arc::clone(memberships.membership()),
                                         initializer,
                                         config,
                                         validator_config,
@@ -327,25 +337,25 @@ where
                                     self.restart_contexts.insert(idx, new_ctx);
                                 }
                             }
-                        }
+                        },
                         NodeAction::RestartUp => {
                             if let Some(ctx) = self.restart_contexts.remove(&idx) {
                                 new_nodes.push((ctx.context, idx));
                                 new_networks.push(ctx.network.clone());
                             }
-                        }
+                        },
                         NodeAction::NetworkUp => {
                             if let Some(handle) = self.handles.write().await.get(idx) {
                                 tracing::error!("Node {} networks resuming", idx);
                                 handle.network.resume();
                             }
-                        }
+                        },
                         NodeAction::NetworkDown => {
                             if let Some(handle) = self.handles.write().await.get(idx) {
                                 tracing::error!("Node {} networks pausing", idx);
                                 handle.network.pause();
                             }
-                        }
+                        },
                     }
                 }
             }

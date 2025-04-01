@@ -7,22 +7,21 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use async_broadcast::{Receiver, Sender};
-use async_lock::RwLock;
 use async_trait::async_trait;
 use hotshot_task::task::TaskState;
 use hotshot_types::{
     consensus::OuterConsensus,
     data::{PackedBundle, VidDisperse, VidDisperseShare},
+    epoch_membership::EpochMembershipCoordinator,
     message::{Proposal, UpgradeLock},
     simple_vote::HasEpoch,
     traits::{
         block_contents::BlockHeader,
-        election::Membership,
         node_implementation::{NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
         BlockPayload,
     },
-    utils::option_epoch_from_block_number,
+    utils::{is_epoch_transition, option_epoch_from_block_number},
 };
 use hotshot_utils::anytrace::Result;
 use tracing::{debug, error, info, instrument};
@@ -47,7 +46,7 @@ pub struct VidTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versio
     pub network: Arc<I::Network>,
 
     /// Membership for the quorum
-    pub membership: Arc<RwLock<TYPES::Membership>>,
+    pub membership_coordinator: EpochMembershipCoordinator<TYPES>,
 
     /// This Nodes Public Key
     pub public_key: TYPES::SignatureKey,
@@ -88,10 +87,12 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> VidTaskState<TY
                 let builder_commitment = payload.builder_commitment(metadata);
                 let epoch = self.cur_epoch;
                 if self
-                    .membership
-                    .read()
+                    .membership_coordinator
+                    .membership_for_epoch(epoch)
                     .await
-                    .leader(*view_number, epoch)
+                    .ok()?
+                    .leader(*view_number)
+                    .await
                     .ok()?
                     != self.public_key
                 {
@@ -102,7 +103,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> VidTaskState<TY
                 }
                 let vid_disperse = VidDisperse::calculate_vid_disperse::<V>(
                     &payload,
-                    &Arc::clone(&self.membership),
+                    &self.membership_coordinator,
                     *view_number,
                     epoch,
                     epoch,
@@ -159,7 +160,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> VidTaskState<TY
                     &event_stream,
                 )
                 .await;
-            }
+            },
 
             HotShotEvent::ViewChange(view, epoch) => {
                 if *epoch > self.cur_epoch {
@@ -177,11 +178,12 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> VidTaskState<TY
                 self.cur_view = view;
 
                 return None;
-            }
+            },
 
             HotShotEvent::QuorumProposalSend(proposal, _) => {
                 let proposed_block_number = proposal.data.block_header().block_number();
-                if proposal.data.epoch().is_none() || proposed_block_number % self.epoch_height != 0
+                if proposal.data.epoch().is_none()
+                    || !is_epoch_transition(proposed_block_number, self.epoch_height)
                 {
                     // This is not the last block in the epoch, do nothing.
                     return None;
@@ -210,7 +212,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> VidTaskState<TY
 
                 let next_epoch_vid_disperse = VidDisperse::calculate_vid_disperse::<V>(
                     &payload.payload,
-                    &Arc::clone(&self.membership),
+                    &self.membership_coordinator,
                     proposal_view_number,
                     target_epoch,
                     sender_epoch,
@@ -242,11 +244,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> VidTaskState<TY
                     &event_stream,
                 )
                 .await;
-            }
+            },
             HotShotEvent::Shutdown => {
                 return Some(HotShotTaskCompleted);
-            }
-            _ => {}
+            },
+            _ => {},
         }
         None
     }

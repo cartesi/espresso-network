@@ -13,46 +13,48 @@ mod restart_tests;
 
 mod message_compat_tests;
 
+use std::sync::Arc;
+
 use anyhow::Context;
+use async_lock::RwLock;
 use catchup::StatePeers;
 use context::SequencerContext;
-use espresso_types::EpochCommittees;
 use espresso_types::{
-    traits::EventConsumer, BackoffParams, L1ClientOptions, NodeState, PubKey, SeqTypes,
+    traits::{EventConsumer, MembershipPersistence},
+    BackoffParams, EpochCommittees, L1ClientOptions, NodeState, PubKey, SeqTypes,
     SolverAuctionResultsProvider, ValidatedState,
 };
 use ethers_conv::ToAlloy;
 use genesis::L1Finalized;
-use proposal_fetcher::ProposalFetcherConfig;
-use std::sync::Arc;
-use tokio::select;
 // Should move `STAKE_TABLE_CAPACITY` in the sequencer repo when we have variate stake table support
 use libp2p::Multiaddr;
 use network::libp2p::split_off_peer_id;
 use options::Identity;
+use proposal_fetcher::ProposalFetcherConfig;
 use state_signature::static_stake_table_commitment;
+use tokio::select;
 use tracing::info;
 use url::Url;
 pub mod persistence;
 pub mod state;
+use std::{fmt::Debug, marker::PhantomData, time::Duration};
+
 use derivative::Derivative;
 use espresso_types::v0::traits::SequencerPersistence;
 pub use genesis::Genesis;
-use hotshot::traits::implementations::{
-    derive_libp2p_multiaddr, CombinedNetworks, GossipConfig, Libp2pNetwork, RequestResponseConfig,
-};
 use hotshot::{
     traits::implementations::{
-        derive_libp2p_peer_id, CdnMetricsValue, CdnTopic, KeyPair, MemoryNetwork, PushCdnNetwork,
-        WrappedSignatureKey,
+        derive_libp2p_multiaddr, derive_libp2p_peer_id, CdnMetricsValue, CdnTopic,
+        CombinedNetworks, GossipConfig, KeyPair, Libp2pNetwork, MemoryNetwork, PushCdnNetwork,
+        RequestResponseConfig, WrappedSignatureKey,
     },
     types::SignatureKey,
     MarketplaceConfig,
 };
-use hotshot_orchestrator::client::get_complete_config;
-use hotshot_orchestrator::client::OrchestratorClient;
+use hotshot_orchestrator::client::{get_complete_config, OrchestratorClient};
 use hotshot_types::{
     data::ViewNumber,
+    epoch_membership::EpochMembershipCoordinator,
     light_client::{StateKeyPair, StateSignKey},
     signature_key::{BLSPrivKey, BLSPubKey},
     traits::{
@@ -65,8 +67,6 @@ use hotshot_types::{
 };
 pub use options::Options;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
-use std::{fmt::Debug, marker::PhantomData};
 use vbs::version::{StaticVersion, StaticVersionType};
 pub mod network;
 
@@ -191,7 +191,7 @@ pub struct L1Params {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn init_node<P: SequencerPersistence, V: Versions>(
+pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versions>(
     genesis: Genesis,
     network_params: NetworkParams,
     metrics: &dyn Metrics,
@@ -291,7 +291,8 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
         public_key: pub_key,
         private_key: network_params.private_staking_key,
         stake_value: 1,
-        state_key_pair,
+        state_public_key: state_key_pair.ver_key(),
+        state_private_key: state_key_pair.sign_key(),
         is_da,
     };
 
@@ -311,7 +312,7 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
         (Some(config), _) => {
             tracing::info!("loaded network config from storage, rejoining existing network");
             (config, false)
-        }
+        },
         // If we were told to fetch the config from an already-started peer, do so.
         (None, Some(peers)) => {
             tracing::info!(?peers, "loading network config from peers");
@@ -329,7 +330,7 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
             );
             persistence.save_config(&config).await?;
             (config, false)
-        }
+        },
         // Otherwise, this is a fresh network; load from the orchestrator.
         (None, None) => {
             tracing::info!("loading network config from orchestrator");
@@ -355,12 +356,16 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
             persistence.save_config(&config).await?;
             tracing::error!("all nodes connected");
             (config, true)
-        }
+        },
     };
 
     if let Some(upgrade) = genesis.upgrades.get(&V::Upgrade::VERSION) {
         upgrade.set_hotshot_config_parameters(&mut network_config.config);
     }
+
+    let epoch_height = genesis.epoch_height.unwrap_or_default();
+    tracing::info!("setting epoch height={epoch_height:?}");
+    network_config.config.epoch_height = epoch_height;
 
     // If the `Libp2p` bootstrap nodes were supplied via the command line, override those
     // present in the config file.
@@ -439,6 +444,7 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
         .with_metrics(metrics)
         .connect(l1_params.urls)
         .with_context(|| "failed to create L1 client")?;
+    genesis.validate_fee_contract(&l1_client).await?;
 
     l1_client.spawn_tasks().await;
     let l1_genesis = match genesis.l1_finalized {
@@ -450,7 +456,7 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
                     ethers::types::U256::from(timestamp.unix_timestamp()).to_alloy(),
                 )
                 .await
-        }
+        },
     };
 
     let mut genesis_state = ValidatedState {
@@ -462,41 +468,52 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
         genesis_state.prefund_account(address, amount);
     }
 
+    let peers = catchup::local_and_remote(
+        persistence.clone(),
+        StatePeers::<SequencerApiVersion>::from_urls(
+            network_params.state_peers,
+            network_params.catchup_backoff,
+            metrics,
+        ),
+    )
+    .await;
+    // Create the HotShot membership
+    let membership = EpochCommittees::new_stake(
+        network_config.config.known_nodes_with_stake.clone(),
+        network_config.config.known_da_nodes.clone(),
+        l1_client.clone(),
+        genesis
+            .chain_config
+            .stake_table_contract
+            .map(|a| a.to_alloy()),
+        peers.clone(),
+        persistence.clone(),
+    );
+
+    let membership: Arc<RwLock<EpochCommittees>> = Arc::new(RwLock::new(membership));
+    let coordinator =
+        EpochMembershipCoordinator::new(membership, network_config.config.epoch_height);
+
     let instance_state = NodeState {
         chain_config: genesis.chain_config,
         l1_client,
         genesis_header: genesis.header,
         genesis_state,
         l1_genesis: Some(l1_genesis),
-        peers: catchup::local_and_remote(
-            persistence.clone(),
-            StatePeers::<SequencerApiVersion>::from_urls(
-                network_params.state_peers,
-                network_params.catchup_backoff,
-                metrics,
-            ),
-        )
-        .await,
         node_id: node_index,
         upgrades: genesis.upgrades,
         current_version: V::Base::VERSION,
-        epoch_height: None,
+        epoch_height: Some(epoch_height),
+        peers,
+        coordinator: coordinator.clone(),
     };
-
-    // Create the HotShot membership
-    let membership = EpochCommittees::new_stake(
-        network_config.config.known_nodes_with_stake.clone(),
-        network_config.config.known_da_nodes.clone(),
-        &instance_state,
-        network_config.config.epoch_height,
-    );
 
     // Initialize the Libp2p network
     let network = {
         let p2p_network = Libp2pNetwork::from_config(
             network_config.clone(),
             persistence.clone(),
-            Arc::new(async_lock::RwLock::new(membership.clone())),
+            coordinator.membership().clone(),
             gossip_config,
             request_response_config,
             libp2p_bind_address,
@@ -535,7 +552,7 @@ pub async fn init_node<P: SequencerPersistence, V: Versions>(
     let mut ctx = SequencerContext::init(
         network_config,
         validator_config,
-        membership,
+        coordinator,
         instance_state,
         persistence,
         network,
@@ -565,6 +582,7 @@ pub mod testing {
         time::Duration,
     };
 
+    use async_lock::RwLock;
     use catchup::NullStateCatchup;
     use committable::Committable;
     use espresso_types::{
@@ -589,20 +607,22 @@ pub mod testing {
     use hotshot_testing::block_builder::{
         BuilderTask, SimpleBuilderImplementation, TestBuilderImplementation,
     };
-    use hotshot_types::traits::network::Topic;
-    use hotshot_types::traits::signature_key::StakeTableEntryType;
     use hotshot_types::{
         event::LeafInfo,
         light_client::{CircuitField, StateKeyPair, StateVerKey},
-        traits::signature_key::BuilderSignatureKey,
-        traits::{block_contents::BlockHeader, metrics::NoMetrics, stake_table::StakeTableScheme},
+        traits::{
+            block_contents::BlockHeader,
+            metrics::NoMetrics,
+            network::Topic,
+            signature_key::{BuilderSignatureKey, StakeTableEntryType},
+            stake_table::StakeTableScheme,
+        },
         HotShotConfig, PeerConfig,
     };
     use marketplace_builder_core::{
         hooks::NoHooks,
         service::{BuilderConfig, GlobalState},
     };
-
     use portpicker::pick_unused_port;
     use tokio::spawn;
     use vbs::version::Version;
@@ -705,7 +725,7 @@ pub mod testing {
     }
 
     pub struct TestConfigBuilder<const NUM_NODES: usize> {
-        config: HotShotConfig<PubKey>,
+        config: HotShotConfig<SeqTypes>,
         priv_keys: Vec<BLSPrivKey>,
         state_key_pairs: Vec<StateKeyPair>,
         master_map: Arc<MasterMap<PubKey>>,
@@ -744,6 +764,11 @@ pub mod testing {
             self
         }
 
+        pub fn epoch_height(mut self, epoch_height: u64) -> Self {
+            self.config.epoch_height = epoch_height;
+            self
+        }
+
         pub fn build(self) -> TestConfig<NUM_NODES> {
             TestConfig {
                 config: self.config,
@@ -774,15 +799,15 @@ pub mod testing {
             let known_nodes_with_stake = pub_keys
                 .iter()
                 .zip(&state_key_pairs)
-                .map(|(pub_key, state_key_pair)| PeerConfig::<PubKey> {
-                    stake_table_entry: pub_key.stake_table_entry(1),
+                .map(|(pub_key, state_key_pair)| PeerConfig::<SeqTypes> {
+                    stake_table_entry: pub_key.stake_table_entry(U256::from(1)),
                     state_ver_key: state_key_pair.ver_key(),
                 })
                 .collect::<Vec<_>>();
 
             let master_map = MasterMap::new();
 
-            let config: HotShotConfig<PubKey> = HotShotConfig {
+            let config: HotShotConfig<SeqTypes> = HotShotConfig {
                 fixed_leader_for_gpuvid: 0,
                 num_nodes_with_stake: num_nodes.try_into().unwrap(),
                 known_da_nodes: known_nodes_with_stake.clone(),
@@ -810,7 +835,7 @@ pub mod testing {
                 start_voting_time: 0,
                 stop_proposing_time: 0,
                 stop_voting_time: 0,
-                epoch_height: 0,
+                epoch_height: 300,
                 epoch_start_block: 0,
             };
 
@@ -830,7 +855,7 @@ pub mod testing {
 
     #[derive(Clone)]
     pub struct TestConfig<const NUM_NODES: usize> {
-        config: HotShotConfig<PubKey>,
+        config: HotShotConfig<SeqTypes>,
         priv_keys: Vec<BLSPrivKey>,
         state_key_pairs: Vec<StateKeyPair>,
         master_map: Arc<MasterMap<PubKey>>,
@@ -846,7 +871,7 @@ pub mod testing {
             self.priv_keys.len()
         }
 
-        pub fn hotshot_config(&self) -> &HotShotConfig<PubKey> {
+        pub fn hotshot_config(&self) -> &HotShotConfig<SeqTypes> {
             &self.config
         }
 
@@ -939,7 +964,8 @@ pub mod testing {
                 public_key: my_peer_config.stake_table_entry.stake_key,
                 private_key: self.priv_keys[i].clone(),
                 stake_value: my_peer_config.stake_table_entry.stake_amount.as_u64(),
-                state_key_pair: self.state_key_pairs[i].clone(),
+                state_public_key: self.state_key_pairs[i].ver_key(),
+                state_private_key: self.state_key_pairs[i].sign_key(),
                 is_da,
             };
 
@@ -962,25 +988,36 @@ pub mod testing {
             state.prefund_account(builder_account, U256::max_value().into());
 
             let persistence = persistence_opt.create().await.unwrap();
+
+            let chain_config = state.chain_config.resolve().unwrap_or_default();
+            let l1_client =
+                L1Client::new(vec![self.l1_url.clone()]).expect("failed to create L1 client");
+            let peers = catchup::local_and_remote(persistence.clone(), catchup).await;
+            // Create the HotShot membership
+            let membership = EpochCommittees::new_stake(
+                config.known_nodes_with_stake.clone(),
+                config.known_da_nodes.clone(),
+                l1_client.clone(),
+                chain_config.stake_table_contract.map(|a| a.to_alloy()),
+                peers.clone(),
+                persistence.clone(),
+            );
+            let membership = Arc::new(RwLock::new(membership));
+
+            let coordinator = EpochMembershipCoordinator::new(membership, 100);
+
             let node_state = NodeState::new(
                 i as u64,
-                state.chain_config.resolve().unwrap_or_default(),
-                L1Client::new(vec![self.l1_url.clone()]).expect("failed to create L1 client"),
-                catchup::local_and_remote(persistence.clone(), catchup).await,
+                chain_config,
+                l1_client,
+                peers,
                 V::Base::VERSION,
+                coordinator.clone(),
             )
             .with_current_version(V::Base::version())
             .with_genesis(state)
             .with_epoch_height(config.epoch_height)
             .with_upgrades(upgrades);
-
-            // Create the HotShot membership
-            let membership = EpochCommittees::new_stake(
-                config.known_nodes_with_stake.clone(),
-                config.known_da_nodes.clone(),
-                &node_state,
-                100,
-            );
 
             tracing::info!(
                 i,
@@ -998,7 +1035,7 @@ pub mod testing {
                     ..Default::default()
                 },
                 validator_config,
-                membership,
+                coordinator,
                 node_state,
                 persistence,
                 network,

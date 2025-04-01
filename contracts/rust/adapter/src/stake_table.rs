@@ -1,4 +1,5 @@
-use crate::jellyfish::u256_to_field;
+use std::str::FromStr;
+
 use ark_ec::{
     short_weierstrass,
     twisted_edwards::{self, Affine, TECurveConfig},
@@ -13,7 +14,7 @@ use contract_bindings_alloy::permissionedstaketable::{
     PermissionedStakeTable::NodeInfo as NodeInfoAlloy, BN254::G2Point as G2PointAlloy,
 };
 use contract_bindings_ethers::permissioned_stake_table::{self, EdOnBN254Point, NodeInfo};
-use diff_test_bn254::ParsedG2Point;
+pub use diff_test_bn254::ParsedG2Point;
 use ethers::{
     abi::AbiDecode,
     prelude::{AbiError, EthAbiCodec, EthAbiType},
@@ -25,11 +26,12 @@ use hotshot_types::{
     network::PeerConfigKeys,
     signature_key::BLSPubKey,
     stake_table::StakeTableEntry,
-    traits::signature_key::SignatureKey as _,
+    traits::{node_implementation::NodeType, signature_key::SignatureKey as _},
     PeerConfig,
 };
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+
+use crate::jellyfish::u256_to_field;
 
 // TODO: (alex) maybe move these commonly shared util to a crate
 /// convert a field element to U256, panic if field size is larger than 256 bit
@@ -217,7 +219,10 @@ impl From<NodeInfoJf> for StakeTableEntry<BLSPubKey> {
     }
 }
 
-impl From<NodeInfoJf> for PeerConfig<BLSPubKey> {
+impl<TYPES> From<NodeInfoJf> for PeerConfig<TYPES>
+where
+    TYPES: NodeType<SignatureKey = BLSPubKey, StateSignatureKey = StateVerKey>,
+{
     fn from(value: NodeInfoJf) -> Self {
         Self {
             stake_table_entry: StakeTableEntry {
@@ -248,6 +253,17 @@ impl From<NodeInfo> for NodeInfoJf {
             da: is_da,
         }
     }
+}
+
+pub fn edward_bn254point_to_state_ver(
+    schnorr_vk: contract_bindings_alloy::staketable::EdOnBN254::EdOnBN254Point,
+) -> StateVerKey {
+    let g1_point: ParsedEdOnBN254Point = ParsedEdOnBN254Point {
+        x: schnorr_vk.x.to_ethers(),
+        y: schnorr_vk.y.to_ethers(),
+    };
+    let state_sk_affine = twisted_edwards::Affine::<EdwardsConfig>::from(g1_point);
+    StateVerKey::from(state_sk_affine)
 }
 
 impl From<NodeInfoAlloy> for NodeInfoJf {
@@ -289,8 +305,11 @@ impl From<NodeInfoAlloy> for NodeInfoJf {
     }
 }
 
-impl From<PeerConfigKeys<BLSPubKey>> for NodeInfoJf {
-    fn from(value: PeerConfigKeys<BLSPubKey>) -> Self {
+impl<TYPES> From<PeerConfigKeys<TYPES>> for NodeInfoJf
+where
+    TYPES: NodeType<SignatureKey = BLSPubKey, StateSignatureKey = StateVerKey>,
+{
+    fn from(value: PeerConfigKeys<TYPES>) -> Self {
         let PeerConfigKeys {
             stake_table_key,
             state_ver_key,
@@ -339,7 +358,8 @@ pub fn bls_sol_to_jf(bls_vk: permissioned_stake_table::G2Point) -> BLSPubKey {
     bls_conv_helper(g2)
 }
 
-pub fn bls_alloy_to_jf(bls_vk: G2PointAlloy) -> BLSPubKey {
+//TODO(abdul): rename it to bls_alloy_to_jf after permissioned stake table contract is removed
+pub fn bls_alloy_to_jf2(bls_vk: contract_bindings_alloy::staketable::BN254::G2Point) -> BLSPubKey {
     let g2 = diff_test_bn254::ParsedG2Point {
         x0: bls_vk.x0.to_ethers(),
         x1: bls_vk.x1.to_ethers(),
@@ -352,6 +372,18 @@ pub fn bls_alloy_to_jf(bls_vk: G2PointAlloy) -> BLSPubKey {
 pub fn bls_jf_to_alloy(bls_vk: BLSPubKey) -> G2PointAlloy {
     let ParsedG2Point { x0, x1, y0, y1 } = bls_vk.to_affine().into();
     G2PointAlloy {
+        x0: x0.to_alloy(),
+        x1: x1.to_alloy(),
+        y0: y0.to_alloy(),
+        y1: y1.to_alloy(),
+    }
+}
+
+//TODO(abdul): rename it to bls_jf_to_alloy after permissioned stake table contract is removed
+
+pub fn bls_jf_to_alloy2(bls_vk: BLSPubKey) -> contract_bindings_alloy::staketable::BN254::G2Point {
+    let ParsedG2Point { x0, x1, y0, y1 } = bls_vk.to_affine().into();
+    contract_bindings_alloy::staketable::BN254::G2Point {
         x0: x0.to_alloy(),
         x1: x1.to_alloy(),
         y0: y0.to_alloy(),

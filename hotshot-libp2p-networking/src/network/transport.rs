@@ -358,7 +358,7 @@ where
                         local_addr,
                         send_back_addr,
                     }
-                }
+                },
 
                 // We need to re-map the other events because we changed the type of the upgrade
                 TransportEvent::AddressExpired {
@@ -377,7 +377,7 @@ where
                 },
                 TransportEvent::ListenerError { listener_id, error } => {
                     TransportEvent::ListenerError { listener_id, error }
-                }
+                },
                 TransportEvent::NewAddress {
                     listener_id,
                     listen_addr,
@@ -497,6 +497,7 @@ mod test {
         PeerConfig,
     };
     use libp2p::{core::transport::dummy::DummyTransport, quic::Connection};
+    use primitive_types::U256;
     use rand::Rng;
 
     use super::*;
@@ -609,7 +610,7 @@ mod test {
 
         // Create a stake table with the key
         let peer_config = PeerConfig {
-            stake_table_entry: keypair.0.stake_table_entry(1),
+            stake_table_entry: keypair.0.stake_table_entry(U256::from(1)),
             state_ver_key: StateVerKey::default(),
         };
         let membership =
@@ -642,7 +643,7 @@ mod test {
 
         // Create a stake table with the key
         let peer_config = PeerConfig {
-            stake_table_entry: keypair.0.stake_table_entry(1),
+            stake_table_entry: keypair.0.stake_table_entry(U256::from(1)),
             state_ver_key: StateVerKey::default(),
         };
         let membership = Arc::new(RwLock::new(<TestTypes as NodeType>::Membership::new(

@@ -45,9 +45,11 @@ async fn test_message_compat<Ver: StaticVersionType>(_ver: Ver) {
 
     use async_lock::RwLock;
     use espresso_types::{EpochCommittees, Leaf, Payload, SeqTypes, Transaction};
+    use ethers_conv::ToAlloy;
     use hotshot_example_types::node_types::TestVersions;
     use hotshot_types::{
         data::vid_disperse::{ADVZDisperse, ADVZDisperseShare},
+        epoch_membership::EpochMembershipCoordinator,
         simple_certificate::{
             TimeoutCertificate, ViewSyncCommitCertificate, ViewSyncFinalizeCertificate,
             ViewSyncPreCommitCertificate,
@@ -59,15 +61,27 @@ async fn test_message_compat<Ver: StaticVersionType>(_ver: Ver) {
         PeerConfig,
     };
 
+    use crate::persistence::no_storage::NoStorage;
+
     let (sender, priv_key) = PubKey::generated_from_seed_indexed(Default::default(), 0);
     let signature = PubKey::sign(&priv_key, &[]).unwrap();
     let committee = vec![PeerConfig::default()]; /* one committee member, necessary to generate a VID share */
-    let membership = Arc::new(RwLock::new(EpochCommittees::new_stake(
-        committee.clone(),
-        committee,
-        &NodeState::default(),
+
+    let node_state = NodeState::default();
+    let membership = EpochMembershipCoordinator::new(
+        Arc::new(RwLock::new(EpochCommittees::new_stake(
+            committee.clone(),
+            committee,
+            node_state.l1_client,
+            node_state
+                .chain_config
+                .stake_table_contract
+                .map(|a| a.to_alloy()),
+            node_state.peers,
+            NoStorage,
+        ))),
         10,
-    )));
+    );
     let upgrade_data = UpgradeProposalData {
         old_version: Version { major: 0, minor: 1 },
         new_version: Version { major: 1, minor: 0 },

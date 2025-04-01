@@ -4,26 +4,26 @@
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see <https://mit-license.org/>.
 
+use std::{collections::HashMap, num::NonZeroUsize, rc::Rc, sync::Arc, time::Duration};
+
 use async_lock::RwLock;
 use hotshot::{
     tasks::EventTransformerState,
     traits::{NetworkReliability, NodeImplementation, TestableNodeImplementation},
     types::SystemContextHandle,
-    HotShotInitializer, InitializerEpochInfo, MarketplaceConfig, SystemContext, TwinsHandlerState,
+    HotShotInitializer, MarketplaceConfig, SystemContext, TwinsHandlerState,
 };
 use hotshot_example_types::{
     auction_results_provider_types::TestAuctionResultsProvider, node_types::TestTypes,
     state_types::TestInstanceState, storage_types::TestStorage, testable_delay::DelayConfig,
 };
-use hotshot_types::traits::node_implementation::ConsensusTime;
 use hotshot_types::{
     consensus::ConsensusMetricsValue,
-    drb::INITIAL_DRB_RESULT,
+    epoch_membership::EpochMembershipCoordinator,
     traits::node_implementation::{NodeType, Versions},
     HotShotConfig, PeerConfig, ValidatorConfig,
 };
 use hotshot_utils::anytrace::*;
-use std::{collections::HashMap, num::NonZeroUsize, rc::Rc, sync::Arc, time::Duration};
 use tide_disco::Url;
 use vec1::Vec1;
 
@@ -58,12 +58,12 @@ pub struct TimingData {
 }
 
 pub fn default_hotshot_config<TYPES: NodeType>(
-    known_nodes_with_stake: Vec<PeerConfig<TYPES::SignatureKey>>,
-    known_da_nodes: Vec<PeerConfig<TYPES::SignatureKey>>,
+    known_nodes_with_stake: Vec<PeerConfig<TYPES>>,
+    known_da_nodes: Vec<PeerConfig<TYPES>>,
     num_bootstrap_nodes: usize,
     epoch_height: u64,
     epoch_start_block: u64,
-) -> HotShotConfig<TYPES::SignatureKey> {
+) -> HotShotConfig<TYPES> {
     HotShotConfig {
         start_threshold: (1, 1),
         num_nodes_with_stake: NonZeroUsize::new(known_nodes_with_stake.len()).unwrap(),
@@ -95,15 +95,12 @@ pub fn default_hotshot_config<TYPES: NodeType>(
 pub fn gen_node_lists<TYPES: NodeType>(
     num_staked_nodes: u64,
     num_da_nodes: u64,
-) -> (
-    Vec<PeerConfig<TYPES::SignatureKey>>,
-    Vec<PeerConfig<TYPES::SignatureKey>>,
-) {
+) -> (Vec<PeerConfig<TYPES>>, Vec<PeerConfig<TYPES>>) {
     let mut staked_nodes = Vec::new();
     let mut da_nodes = Vec::new();
 
     for n in 0..num_staked_nodes {
-        let validator_config: ValidatorConfig<TYPES::SignatureKey> =
+        let validator_config: ValidatorConfig<TYPES> =
             ValidatorConfig::generated_from_seed_indexed([0u8; 32], n, 1, n < num_da_nodes);
 
         let peer_config = validator_config.public_config();
@@ -124,7 +121,7 @@ pub struct TestDescription<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Ver
     ///
     /// Note: this is not the same as the `HotShotConfig` passed to test nodes for `SystemContext::init`;
     /// those configs are instead provided by the resource generators in the test launcher.
-    pub test_config: HotShotConfig<TYPES::SignatureKey>,
+    pub test_config: HotShotConfig<TYPES>,
     /// Whether to skip initializing nodes that will start late, which will catch up later with
     /// `HotShotInitializer::from_reload` in the spinning task.
     pub skip_late: bool,
@@ -234,7 +231,7 @@ pub async fn create_test_handle<
     node_id: u64,
     network: Network<TYPES, I>,
     memberships: Arc<RwLock<TYPES::Membership>>,
-    config: HotShotConfig<TYPES::SignatureKey>,
+    config: HotShotConfig<TYPES>,
     storage: I::Storage,
     marketplace_config: MarketplaceConfig<TYPES, I>,
 ) -> SystemContextHandle<TYPES, I, V> {
@@ -242,11 +239,7 @@ pub async fn create_test_handle<
         TestInstanceState::new(metadata.async_delay_config),
         metadata.test_config.epoch_height,
         metadata.test_config.epoch_start_block,
-        vec![InitializerEpochInfo::<TYPES> {
-            epoch: TYPES::Epoch::new(1),
-            drb_result: INITIAL_DRB_RESULT,
-            block_header: None,
-        }],
+        vec![],
     )
     .await
     .unwrap();
@@ -254,12 +247,14 @@ pub async fn create_test_handle<
     // See whether or not we should be DA
     let is_da = node_id < config.da_staked_committee_size as u64;
 
-    let validator_config: ValidatorConfig<TYPES::SignatureKey> =
+    let validator_config: ValidatorConfig<TYPES> =
         ValidatorConfig::generated_from_seed_indexed([0u8; 32], node_id, 1, is_da);
 
     // Get key pair for certificate aggregation
     let private_key = validator_config.private_key.clone();
     let public_key = validator_config.public_key.clone();
+    let state_private_key = validator_config.state_private_key.clone();
+    let membership_coordinator = EpochMembershipCoordinator::new(memberships, config.epoch_height);
 
     let behaviour = (metadata.behaviour)(node_id);
     match behaviour {
@@ -269,9 +264,10 @@ pub async fn create_test_handle<
                 .spawn_twin_handles(
                     public_key,
                     private_key,
+                    state_private_key,
                     node_id,
                     config,
-                    memberships,
+                    membership_coordinator,
                     network,
                     initializer,
                     ConsensusMetricsValue::default(),
@@ -281,16 +277,17 @@ pub async fn create_test_handle<
                 .await;
 
             left_handle
-        }
+        },
         Behaviour::Byzantine(state) => {
             let state = Box::leak(state);
             state
                 .spawn_handle(
                     public_key,
                     private_key,
+                    state_private_key,
                     node_id,
                     config,
-                    memberships,
+                    membership_coordinator,
                     network,
                     initializer,
                     ConsensusMetricsValue::default(),
@@ -298,14 +295,15 @@ pub async fn create_test_handle<
                     marketplace_config,
                 )
                 .await
-        }
+        },
         Behaviour::Standard => {
             let hotshot = SystemContext::<TYPES, I, V>::new(
                 public_key,
                 private_key,
+                state_private_key,
                 node_id,
                 config,
-                memberships,
+                membership_coordinator,
                 network,
                 initializer,
                 ConsensusMetricsValue::default(),
@@ -315,7 +313,7 @@ pub async fn create_test_handle<
             .await;
 
             hotshot.run_tasks().await
-        }
+        },
     }
 }
 
@@ -402,7 +400,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TestDescription
         let num_nodes_with_stake = 20;
         let num_da_nodes = 14;
         let epoch_height = 10;
-        let epoch_start_block = 0;
+        let epoch_start_block = 1;
 
         let (staked_nodes, da_nodes) = gen_node_lists::<TYPES>(num_nodes_with_stake, num_da_nodes);
 
@@ -475,7 +473,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> Default
         let num_nodes_with_stake = 7;
         let num_da_nodes = num_nodes_with_stake;
         let epoch_height = 10;
-        let epoch_start_block = 0;
+        let epoch_start_block = 1;
 
         let (staked_nodes, da_nodes) = gen_node_lists::<TYPES>(num_nodes_with_stake, num_da_nodes);
 
@@ -559,12 +557,12 @@ where
         let da_staked_committee_size = test_config.da_staked_committee_size;
 
         let validator_config = Rc::new(move |node_id| {
-            ValidatorConfig::<TYPES::SignatureKey>::generated_from_seed_indexed(
+            ValidatorConfig::<TYPES>::generated_from_seed_indexed(
                 [0u8; 32],
                 node_id,
                 1,
                 // This is the config for node 0
-                node_id < test_config.da_staked_committee_size.try_into().unwrap(),
+                node_id < test_config.da_staked_committee_size as u64,
             )
         });
 
@@ -577,7 +575,7 @@ where
             view_sync_timeout,
         } = timing_data;
         // TODO this should really be using the timing config struct
-        let mod_hotshot_config = move |hotshot_config: &mut HotShotConfig<TYPES::SignatureKey>| {
+        let mod_hotshot_config = move |hotshot_config: &mut HotShotConfig<TYPES>| {
             hotshot_config.next_view_timeout = next_view_timeout;
             hotshot_config.builder_timeout = builder_timeout;
             hotshot_config.data_request_delay = data_request_delay;

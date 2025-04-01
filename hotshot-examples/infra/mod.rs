@@ -54,6 +54,7 @@ use hotshot_testing::block_builder::{
 use hotshot_types::{
     consensus::ConsensusMetricsValue,
     data::{Leaf, TestableLeaf},
+    epoch_membership::EpochMembershipCoordinator,
     event::{Event, EventType},
     network::{BuilderType, NetworkConfig, NetworkConfigFile, NetworkConfigSource},
     traits::{
@@ -76,7 +77,7 @@ pub struct OrchestratorArgs<TYPES: NodeType> {
     /// The url the orchestrator runs on; this should be in the form of `http://localhost:5555` or `http://0.0.0.0:5555`
     pub url: Url,
     /// The configuration file to be used for this run
-    pub config: NetworkConfig<TYPES::SignatureKey>,
+    pub config: NetworkConfig<TYPES>,
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -102,8 +103,7 @@ impl Default for ConfigArgs {
 /// # Panics
 /// If unable to read the config file from the command line
 #[allow(clippy::too_many_lines)]
-pub fn read_orchestrator_init_config<TYPES: NodeType>() -> (NetworkConfig<TYPES::SignatureKey>, Url)
-{
+pub fn read_orchestrator_init_config<TYPES: NodeType>() -> (NetworkConfig<TYPES>, Url) {
     // assign default setting
     let mut orchestrator_url = Url::parse("http://localhost:4444").unwrap();
     let mut args = ConfigArgs::default();
@@ -207,8 +207,7 @@ pub fn read_orchestrator_init_config<TYPES: NodeType>() -> (NetworkConfig<TYPES:
     } else {
         error!("No config file provided, we'll use the default one.");
     }
-    let mut config: NetworkConfig<TYPES::SignatureKey> =
-        load_config_from_file::<TYPES>(&args.config_file);
+    let mut config: NetworkConfig<TYPES> = load_config_from_file::<TYPES>(&args.config_file);
 
     if let Some(total_nodes_string) = matches.get_one::<String>("total_nodes") {
         config.config.num_nodes_with_stake = total_nodes_string.parse::<NonZeroUsize>().unwrap();
@@ -262,16 +261,14 @@ pub fn read_orchestrator_init_config<TYPES: NodeType>() -> (NetworkConfig<TYPES:
 /// therefore `known_nodes_with_stake` will be an initialized
 /// vector full of the node's own config.
 #[must_use]
-pub fn load_config_from_file<TYPES: NodeType>(
-    config_file: &str,
-) -> NetworkConfig<TYPES::SignatureKey> {
+pub fn load_config_from_file<TYPES: NodeType>(config_file: &str) -> NetworkConfig<TYPES> {
     let config_file_as_string: String = fs::read_to_string(config_file)
         .unwrap_or_else(|_| panic!("Could not read config file located at {config_file}"));
-    let config_toml: NetworkConfigFile<TYPES::SignatureKey> =
-        toml::from_str::<NetworkConfigFile<TYPES::SignatureKey>>(&config_file_as_string)
+    let config_toml: NetworkConfigFile<TYPES> =
+        toml::from_str::<NetworkConfigFile<TYPES>>(&config_file_as_string)
             .expect("Unable to convert config file to TOML");
 
-    let mut config: NetworkConfig<TYPES::SignatureKey> = config_toml.into();
+    let mut config: NetworkConfig<TYPES> = config_toml.into();
 
     // initialize it with size for better assignment of peers' config
     config.config.known_nodes_with_stake =
@@ -285,7 +282,7 @@ pub async fn run_orchestrator<TYPES: NodeType>(
     OrchestratorArgs { url, config }: OrchestratorArgs<TYPES>,
 ) {
     println!("Starting orchestrator",);
-    let _ = hotshot_orchestrator::run_orchestrator::<TYPES::SignatureKey>(config, url).await;
+    let _ = hotshot_orchestrator::run_orchestrator::<TYPES>(config, url).await;
 }
 
 /// Helper function to calculate the number of transactions to send per node per round
@@ -351,8 +348,8 @@ pub trait RunDa<
 {
     /// Initializes networking, returns self
     async fn initialize_networking(
-        config: NetworkConfig<TYPES::SignatureKey>,
-        validator_config: ValidatorConfig<TYPES::SignatureKey>,
+        config: NetworkConfig<TYPES>,
+        validator_config: ValidatorConfig<TYPES>,
         libp2p_advertise_address: Option<String>,
         membership: &Arc<RwLock<<TYPES as NodeType>::Membership>>,
     ) -> Self;
@@ -380,6 +377,7 @@ pub trait RunDa<
         // Get KeyPair for certificate Aggregation
         let pk = validator_config.public_key.clone();
         let sk = validator_config.private_key.clone();
+        let state_sk = validator_config.state_private_key.clone();
 
         let network = self.network();
 
@@ -388,13 +386,15 @@ pub trait RunDa<
             // TODO: we need to pass a valid fallback builder url here somehow
             fallback_builder_url: config.config.builder_urls.first().clone(),
         };
+        let epoch_height = config.config.epoch_height;
 
         SystemContext::init(
             pk,
             sk,
+            state_sk,
             config.node_index,
             config.config,
-            membership,
+            EpochMembershipCoordinator::new(membership, epoch_height),
             Arc::from(network),
             initializer,
             ConsensusMetricsValue::default(),
@@ -439,13 +439,13 @@ pub trait RunDa<
             match event_stream.next().await {
                 None => {
                     panic!("Error! Event stream completed before consensus ended.");
-                }
+                },
                 Some(Event { event, .. }) => {
                     match event {
                         EventType::Error { error } => {
                             error!("Error in consensus: {:?}", error);
                             // TODO what to do here
-                        }
+                        },
                         EventType::Decide {
                             leaf_chain,
                             qc: _,
@@ -512,27 +512,27 @@ pub trait RunDa<
                                 warn!("Leaf chain is greater than 1 with len {}", leaf_chain.len());
                             }
                             // when we make progress, submit new events
-                        }
+                        },
                         EventType::ReplicaViewTimeout { view_number } => {
                             warn!("Timed out as a replicas in view {:?}", view_number);
-                        }
+                        },
                         EventType::ViewTimeout { view_number } => {
                             warn!("Timed out in view {:?}", view_number);
-                        }
-                        _ => {} // mostly DA proposal
+                        },
+                        _ => {}, // mostly DA proposal
                     }
-                }
+                },
             }
         }
+        // Panic if we don't have the genesis epoch, there is no recovery from that
         let num_eligible_leaders = context
             .hotshot
-            .memberships
-            .read()
+            .membership_coordinator
+            .membership_for_epoch(genesis_epoch_from_version::<V, TYPES>())
             .await
-            .committee_leaders(
-                TYPES::View::genesis(),
-                genesis_epoch_from_version::<V, TYPES>(),
-            )
+            .unwrap()
+            .stake_table()
+            .await
             .len();
         let consensus_lock = context.hotshot.consensus();
         let consensus_reader = consensus_lock.read().await;
@@ -582,10 +582,10 @@ pub trait RunDa<
     fn network(&self) -> NETWORK;
 
     /// Returns the config for this run
-    fn config(&self) -> NetworkConfig<TYPES::SignatureKey>;
+    fn config(&self) -> NetworkConfig<TYPES>;
 
     /// Returns the validator config with private signature keys for this run.
-    fn validator_config(&self) -> ValidatorConfig<TYPES::SignatureKey>;
+    fn validator_config(&self) -> ValidatorConfig<TYPES>;
 }
 
 // Push CDN
@@ -593,9 +593,9 @@ pub trait RunDa<
 /// Represents a Push CDN-based run
 pub struct PushCdnDaRun<TYPES: NodeType> {
     /// The underlying configuration
-    config: NetworkConfig<TYPES::SignatureKey>,
+    config: NetworkConfig<TYPES>,
     /// The private validator config
-    validator_config: ValidatorConfig<TYPES::SignatureKey>,
+    validator_config: ValidatorConfig<TYPES>,
     /// The underlying network
     network: PushCdnNetwork<TYPES::SignatureKey>,
 }
@@ -623,8 +623,8 @@ where
     Self: Sync,
 {
     async fn initialize_networking(
-        config: NetworkConfig<TYPES::SignatureKey>,
-        validator_config: ValidatorConfig<TYPES::SignatureKey>,
+        config: NetworkConfig<TYPES>,
+        validator_config: ValidatorConfig<TYPES>,
         _libp2p_advertise_address: Option<String>,
         _membership: &Arc<RwLock<<TYPES as NodeType>::Membership>>,
     ) -> PushCdnDaRun<TYPES> {
@@ -666,11 +666,11 @@ where
         self.network.clone()
     }
 
-    fn config(&self) -> NetworkConfig<TYPES::SignatureKey> {
+    fn config(&self) -> NetworkConfig<TYPES> {
         self.config.clone()
     }
 
-    fn validator_config(&self) -> ValidatorConfig<TYPES::SignatureKey> {
+    fn validator_config(&self) -> ValidatorConfig<TYPES> {
         self.validator_config.clone()
     }
 }
@@ -680,9 +680,9 @@ where
 /// Represents a libp2p-based run
 pub struct Libp2pDaRun<TYPES: NodeType> {
     /// The underlying network configuration
-    config: NetworkConfig<TYPES::SignatureKey>,
+    config: NetworkConfig<TYPES>,
     /// The private validator config
-    validator_config: ValidatorConfig<TYPES::SignatureKey>,
+    validator_config: ValidatorConfig<TYPES>,
     /// The underlying network
     network: Libp2pNetwork<TYPES>,
 }
@@ -710,8 +710,8 @@ where
     Self: Sync,
 {
     async fn initialize_networking(
-        config: NetworkConfig<TYPES::SignatureKey>,
-        validator_config: ValidatorConfig<TYPES::SignatureKey>,
+        config: NetworkConfig<TYPES>,
+        validator_config: ValidatorConfig<TYPES>,
         libp2p_advertise_address: Option<String>,
         membership: &Arc<RwLock<<TYPES as NodeType>::Membership>>,
     ) -> Libp2pDaRun<TYPES> {
@@ -775,11 +775,11 @@ where
         self.network.clone()
     }
 
-    fn config(&self) -> NetworkConfig<TYPES::SignatureKey> {
+    fn config(&self) -> NetworkConfig<TYPES> {
         self.config.clone()
     }
 
-    fn validator_config(&self) -> ValidatorConfig<TYPES::SignatureKey> {
+    fn validator_config(&self) -> ValidatorConfig<TYPES> {
         self.validator_config.clone()
     }
 }
@@ -789,9 +789,9 @@ where
 /// Represents a combined-network-based run
 pub struct CombinedDaRun<TYPES: NodeType> {
     /// The underlying network configuration
-    config: NetworkConfig<TYPES::SignatureKey>,
+    config: NetworkConfig<TYPES>,
     /// The private validator config
-    validator_config: ValidatorConfig<TYPES::SignatureKey>,
+    validator_config: ValidatorConfig<TYPES>,
     /// The underlying network
     network: CombinedNetworks<TYPES>,
 }
@@ -819,8 +819,8 @@ where
     Self: Sync,
 {
     async fn initialize_networking(
-        config: NetworkConfig<TYPES::SignatureKey>,
-        validator_config: ValidatorConfig<TYPES::SignatureKey>,
+        config: NetworkConfig<TYPES>,
+        validator_config: ValidatorConfig<TYPES>,
         libp2p_advertise_address: Option<String>,
         membership: &Arc<RwLock<<TYPES as NodeType>::Membership>>,
     ) -> CombinedDaRun<TYPES> {
@@ -874,11 +874,11 @@ where
         self.network.clone()
     }
 
-    fn config(&self) -> NetworkConfig<TYPES::SignatureKey> {
+    fn config(&self) -> NetworkConfig<TYPES> {
         self.config.clone()
     }
 
-    fn validator_config(&self) -> ValidatorConfig<TYPES::SignatureKey> {
+    fn validator_config(&self) -> ValidatorConfig<TYPES> {
         self.validator_config.clone()
     }
 }
@@ -917,7 +917,7 @@ pub async fn main_entry_point<
     let orchestrator_client: OrchestratorClient = OrchestratorClient::new(args.url.clone());
 
     // We assume one node will not call this twice to generate two validator_config-s with same identity.
-    let validator_config = NetworkConfig::<TYPES::SignatureKey>::generate_init_validator_config(
+    let validator_config = NetworkConfig::<TYPES>::generate_init_validator_config(
         orchestrator_client
             .get_node_index_for_init_validator_config()
             .await,
@@ -931,8 +931,7 @@ pub async fn main_entry_point<
             .expect("failed to derive Libp2p keypair");
 
     // We need this to be able to register our node
-    let peer_config =
-        PeerConfig::<TYPES::SignatureKey>::to_bytes(&validator_config.public_config()).clone();
+    let peer_config = PeerConfig::<TYPES>::to_bytes(&validator_config.public_config()).clone();
 
     // Derive the advertise multiaddress from the supplied string
     let advertise_multiaddress = args.advertise_address.clone().map(|advertise_address| {
@@ -1059,8 +1058,8 @@ async fn initialize_builder<
         InstanceState = TestInstanceState,
     >,
 >(
-    run_config: &mut NetworkConfig<<TYPES as NodeType>::SignatureKey>,
-    validator_config: &ValidatorConfig<<TYPES as NodeType>::SignatureKey>,
+    run_config: &mut NetworkConfig<TYPES>,
+    validator_config: &ValidatorConfig<TYPES>,
     args: &ValidatorArgs,
     orchestrator_client: &OrchestratorClient,
 ) -> Option<Box<dyn BuilderTask<TYPES>>>
@@ -1090,11 +1089,11 @@ where
                 })
                 .collect();
             bind_address = Url::parse(&format!("http://0.0.0.0:{port}")).unwrap();
-        }
+        },
         Some(ref addr) => {
             bind_address = Url::parse(&format!("http://{addr}")).expect("Valid URL");
             advertise_urls = vec![bind_address.clone()];
-        }
+        },
     }
 
     match run_config.builder {
@@ -1114,7 +1113,7 @@ where
                 .await;
 
             Some(builder_task)
-        }
+        },
         BuilderType::Simple => {
             let builder_task =
                 <SimpleBuilderImplementation as TestBuilderImplementation<TYPES>>::start(
@@ -1130,7 +1129,7 @@ where
                 .await;
 
             Some(builder_task)
-        }
+        },
     }
 }
 

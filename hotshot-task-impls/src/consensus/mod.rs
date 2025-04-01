@@ -4,12 +4,14 @@
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see <https://mit-license.org/>.
 
+use std::{sync::Arc, time::Instant};
+
 use async_broadcast::{Receiver, Sender};
-use async_lock::RwLock;
 use async_trait::async_trait;
 use hotshot_task::task::TaskState;
 use hotshot_types::{
     consensus::OuterConsensus,
+    epoch_membership::EpochMembershipCoordinator,
     event::Event,
     message::UpgradeLock,
     simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, TimeoutCertificate2},
@@ -18,11 +20,10 @@ use hotshot_types::{
         node_implementation::{NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
     },
-    utils::option_epoch_from_block_number,
+    utils::{is_last_block, is_transition_block, option_epoch_from_block_number},
     vote::HasViewNumber,
 };
 use hotshot_utils::anytrace::*;
-use std::{sync::Arc, time::Instant};
 use tokio::task::JoinHandle;
 use tracing::instrument;
 
@@ -53,7 +54,7 @@ pub struct ConsensusTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>, V: 
     pub network: Arc<I::Network>,
 
     /// Membership for Quorum Certs/votes
-    pub membership: Arc<RwLock<TYPES::Membership>>,
+    pub membership_coordinator: EpochMembershipCoordinator<TYPES>,
 
     /// A map of `QuorumVote` collector tasks.
     pub vote_collectors: VoteCollectorsMap<TYPES, QuorumVote2<TYPES>, QuorumCertificate2<TYPES>, V>,
@@ -120,14 +121,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                 {
                     tracing::debug!("Failed to handle QuorumVoteRecv event; error = {e}");
                 }
-            }
+            },
             HotShotEvent::TimeoutVoteRecv(ref vote) => {
                 if let Err(e) =
                     handle_timeout_vote_recv(vote, Arc::clone(&event), &sender, self).await
                 {
                     tracing::debug!("Failed to handle TimeoutVoteRecv event; error = {e}");
                 }
-            }
+            },
             HotShotEvent::ViewChange(new_view_number, epoch_number) => {
                 if let Err(e) =
                     handle_view_change(*new_view_number, *epoch_number, &sender, &receiver, self)
@@ -136,12 +137,12 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     tracing::trace!("Failed to handle ViewChange event; error = {e}");
                 }
                 self.view_start_time = Instant::now();
-            }
+            },
             HotShotEvent::Timeout(view_number, epoch) => {
                 if let Err(e) = handle_timeout(*view_number, *epoch, &sender, self).await {
                     tracing::debug!("Failed to handle Timeout event; error = {e}");
                 }
-            }
+            },
             HotShotEvent::ExtendedQc2Formed(eqc) => {
                 let cert_view = eqc.view_number();
                 let cert_block_number = self
@@ -160,6 +161,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     cert_block_number,
                     self.epoch_height,
                 );
+                tracing::debug!(
+                    "Formed Extended QC for view {:?} and epoch {:?}.",
+                    cert_view,
+                    cert_epoch
+                );
                 // Transition to the new epoch by sending ViewChange
                 let next_epoch = cert_epoch.map(|x| x + 1);
                 tracing::info!("Entering new epoch: {:?}", next_epoch);
@@ -168,13 +174,76 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     &sender,
                 )
                 .await;
-            }
+            },
+            HotShotEvent::HighQcRecv(high_qc, maybe_next_epoch_high_qc, _) => {
+                if let Err(e) = validate_qc_and_next_epoch_qc(
+                    high_qc,
+                    maybe_next_epoch_high_qc.as_ref(),
+                    &self.consensus,
+                    &self.membership_coordinator,
+                    &self.upgrade_lock,
+                    self.epoch_height,
+                )
+                .await
+                {
+                    tracing::error!("Received invalid high QC: {}", e);
+                    return Ok(());
+                }
+                let mut consensus_writer = self.consensus.write().await;
+
+                if high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_transition_block(bn, self.epoch_height))
+                {
+                    let Some(next_epoch_high_qc) = maybe_next_epoch_high_qc else {
+                        tracing::error!("Received transition QC but no next epoch high QC");
+                        return Ok(());
+                    };
+                    consensus_writer
+                        .update_transition_qc(high_qc.clone(), next_epoch_high_qc.clone());
+                }
+
+                let high_qc_updated = consensus_writer.update_high_qc(high_qc.clone()).is_ok();
+                let next_high_qc_updated =
+                    if let Some(next_epoch_high_qc) = maybe_next_epoch_high_qc {
+                        consensus_writer
+                            .update_next_epoch_high_qc(next_epoch_high_qc.clone())
+                            .is_ok()
+                    } else {
+                        false
+                    };
+                drop(consensus_writer);
+
+                tracing::debug!(
+                    "Received High QC for view {:?} and epoch {:?}. \
+                    Received corresponding next epoch High QC? {:?}",
+                    high_qc.view_number(),
+                    high_qc.epoch(),
+                    maybe_next_epoch_high_qc.is_some(),
+                );
+                if high_qc_updated || next_high_qc_updated {
+                    // Send ViewChange indicating new view and new epoch.
+                    tracing::trace!(
+                        "Sending ViewChange for view {} and epoch {:?}",
+                        high_qc.view_number() + 1,
+                        high_qc.data.epoch(),
+                    );
+                    broadcast_event(
+                        Arc::new(HotShotEvent::ViewChange(
+                            high_qc.view_number() + 1,
+                            high_qc.data.epoch(),
+                        )),
+                        &sender,
+                    )
+                    .await;
+                }
+            },
             HotShotEvent::ExtendedQcRecv(high_qc, next_epoch_high_qc, _) => {
-                if !self
-                    .consensus
-                    .read()
-                    .await
-                    .is_leaf_extended(high_qc.data.leaf_commit)
+                if !high_qc
+                    .data
+                    .block_number
+                    .is_some_and(|bn| is_last_block(bn, self.epoch_height))
                 {
                     tracing::warn!("Received extended QC but we can't verify the leaf is extended");
                     return Ok(());
@@ -183,8 +252,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     high_qc,
                     Some(next_epoch_high_qc),
                     &self.consensus,
-                    &self.membership,
+                    &self.membership_coordinator,
                     &self.upgrade_lock,
+                    self.epoch_height,
                 )
                 .await
                 {
@@ -217,8 +287,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     )
                     .await;
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         Ok(())
