@@ -1125,7 +1125,17 @@
 <a href="#1124" id="1124">1124</a>
 <a href="#1125" id="1125">1125</a>
 <a href="#1126" id="1126">1126</a>
-<a href="#1127" id="1127">1127</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#1127" id="1127">1127</a>
+<a href="#1128" id="1128">1128</a>
+<a href="#1129" id="1129">1129</a>
+<a href="#1130" id="1130">1130</a>
+<a href="#1131" id="1131">1131</a>
+<a href="#1132" id="1132">1132</a>
+<a href="#1133" id="1133">1133</a>
+<a href="#1134" id="1134">1134</a>
+<a href="#1135" id="1135">1135</a>
+<a href="#1136" id="1136">1136</a>
+<a href="#1137" id="1137">1137</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     cmp::max,
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
@@ -1931,40 +1941,50 @@
         }
     }
 
-    <span class="kw">async fn </span>get_epoch_root_and_drb(
+    <span class="kw">async fn </span>get_epoch_root(
         membership: Arc&lt;RwLock&lt;<span class="self">Self</span>&gt;&gt;,
         block_height: u64,
-        epoch_height: u64,
         epoch: Epoch,
-    ) -&gt; anyhow::Result&lt;(Header, DrbResult)&gt; {
+    ) -&gt; anyhow::Result&lt;Header&gt; {
         <span class="kw">let </span>peers = membership.read().<span class="kw">await</span>.peers.clone();
         <span class="kw">let </span>stake_table = membership.read().<span class="kw">await</span>.stake_table(<span class="prelude-val">Some</span>(epoch)).clone();
         <span class="kw">let </span>success_threshold = membership.read().<span class="kw">await</span>.success_threshold(<span class="prelude-val">Some</span>(epoch));
         <span class="comment">// Fetch leaves from peers
         </span><span class="kw">let </span>leaf: Leaf2 = peers
-            .fetch_leaf(
-                block_height,
-                stake_table.clone(),
-                success_threshold,
-                epoch_height,
-            )
+            .fetch_leaf(block_height, stake_table.clone(), success_threshold)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="comment">//DRB height is decided in the next epoch's last block
-        </span><span class="kw">let </span>drb_height = block_height + epoch_height + <span class="number">3</span>;
+
+        <span class="prelude-val">Ok</span>(leaf.block_header().clone())
+    }
+
+    <span class="kw">async fn </span>get_epoch_drb(
+        membership: Arc&lt;RwLock&lt;<span class="self">Self</span>&gt;&gt;,
+        block_height: u64,
+        epoch: Epoch,
+    ) -&gt; anyhow::Result&lt;DrbResult&gt; {
+        <span class="kw">let </span>peers = membership.read().<span class="kw">await</span>.peers.clone();
+        <span class="kw">let </span>stake_table = membership.read().<span class="kw">await</span>.stake_table(<span class="prelude-val">Some</span>(epoch)).clone();
+        <span class="kw">let </span>success_threshold = membership.read().<span class="kw">await</span>.success_threshold(<span class="prelude-val">Some</span>(epoch));
+
+        <span class="macro">tracing::debug!</span>(
+            <span class="string">"Getting DRB for epoch {:?}, block height {:?}"</span>,
+            epoch,
+            block_height
+        );
         <span class="kw">let </span>drb_leaf = peers
-            .fetch_leaf(drb_height, stake_table, success_threshold, epoch_height)
+            .fetch_leaf(block_height, stake_table, success_threshold)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="prelude-val">Some</span>(drb) = drb_leaf.next_drb_result <span class="kw">else </span>{
             <span class="macro">tracing::error!</span>(
-              <span class="string">"We received a leaf that should contain a DRB result, but the DRB result is missing: {:?}"</span>,
-              drb_leaf
-            );
+          <span class="string">"We received a leaf that should contain a DRB result, but the DRB result is missing: {:?}"</span>,
+          drb_leaf
+        );
 
             <span class="macro">bail!</span>(<span class="string">"DRB leaf is missing the DRB result."</span>);
         };
 
-        <span class="prelude-val">Ok</span>((leaf.block_header().clone(), drb))
+        <span class="prelude-val">Ok</span>(drb)
     }
 
     <span class="kw">fn </span>add_drb_result(<span class="kw-2">&amp;mut </span><span class="self">self</span>, epoch: Epoch, drb: DrbResult) {

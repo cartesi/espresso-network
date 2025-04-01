@@ -465,7 +465,38 @@
 <a href="#464" id="464">464</a>
 <a href="#465" id="465">465</a>
 <a href="#466" id="466">466</a>
-<a href="#467" id="467">467</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a>
+<a href="#484" id="484">484</a>
+<a href="#485" id="485">485</a>
+<a href="#486" id="486">486</a>
+<a href="#487" id="487">487</a>
+<a href="#488" id="488">488</a>
+<a href="#489" id="489">489</a>
+<a href="#490" id="490">490</a>
+<a href="#491" id="491">491</a>
+<a href="#492" id="492">492</a>
+<a href="#493" id="493">493</a>
+<a href="#494" id="494">494</a>
+<a href="#495" id="495">495</a>
+<a href="#496" id="496">496</a>
+<a href="#497" id="497">497</a>
+<a href="#498" id="498">498</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::{
     collections::{BTreeSet, HashMap},
     sync::Arc,
 };
@@ -473,7 +504,7 @@
 <span class="kw">use </span>async_broadcast::{broadcast, InactiveReceiver};
 <span class="kw">use </span>async_lock::{Mutex, RwLock};
 <span class="kw">use </span>hotshot_utils::{
-    anytrace::{<span class="self">self</span>, Error, Level, <span class="prelude-ty">Result</span>, DEFAULT_LOG_LEVEL},
+    anytrace::{<span class="self">self</span>, Error, Level, <span class="prelude-ty">Result</span>, Wrap, DEFAULT_LOG_LEVEL},
     ensure, line_info, log, warn,
 };
 <span class="kw">use </span>primitive_types::U256;
@@ -484,7 +515,7 @@
         election::Membership,
         node_implementation::{ConsensusTime, NodeType},
     },
-    utils::root_block_in_epoch,
+    utils::{root_block_in_epoch, transition_block_for_epoch},
     PeerConfig,
 };
 
@@ -632,12 +663,13 @@
 
         <span class="comment">// Get the epoch root headers and update our membership with them, finally sync them
         // Verification of the root is handled in get_epoch_root_and_drb
-        </span><span class="kw">let </span><span class="prelude-val">Ok</span>((header, drb)) = root_membership
-            .get_epoch_root_and_drb(root_block_in_epoch(<span class="kw-2">*</span>root_epoch, <span class="self">self</span>.epoch_height))
+        </span><span class="kw">let </span><span class="prelude-val">Ok</span>(header) = root_membership
+            .get_epoch_root(root_block_in_epoch(<span class="kw-2">*</span>root_epoch, <span class="self">self</span>.epoch_height))
             .<span class="kw">await
         else </span>{
             <span class="macro">anytrace::bail!</span>(<span class="string">"get epoch root failed for epoch {:?}"</span>, root_epoch);
         };
+
         <span class="kw">let </span>updater = <span class="self">self
             </span>.membership
             .read()
@@ -646,6 +678,26 @@
             .<span class="kw">await
             </span>.ok_or(<span class="macro">anytrace::warn!</span>(<span class="string">"add epoch root failed"</span>))<span class="question-mark">?</span>;
         updater(<span class="kw-2">&amp;mut *</span>(<span class="self">self</span>.membership.write().<span class="kw">await</span>));
+
+        <span class="kw">let </span>drb_membership = <span class="kw">match </span>root_membership.next_epoch_stake_table().<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(drb_membership) =&gt; drb_membership,
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; Box::pin(<span class="self">self</span>.wait_for_catchup(root_epoch + <span class="number">1</span>)).<span class="kw">await</span><span class="question-mark">?</span>,
+        };
+
+        <span class="comment">// get the DRB from the last block of the epoch right before the one we're catching up to
+        </span><span class="kw">let </span><span class="prelude-val">Ok</span>(drb) = drb_membership
+            .get_epoch_drb(transition_block_for_epoch(
+                <span class="kw-2">*</span>(root_epoch + <span class="number">1</span>),
+                <span class="self">self</span>.epoch_height,
+            ))
+            .<span class="kw">await
+        else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anytrace::warn!</span>(
+                <span class="string">"get epoch drb failed for in epoch {:?}"</span>,
+                root_epoch + <span class="number">1
+            </span>));
+        };
+
         <span class="self">self</span>.membership.write().<span class="kw">await</span>.add_drb_result(epoch, drb);
         <span class="prelude-val">Ok</span>(EpochMembership {
             epoch: <span class="prelude-val">Some</span>(epoch),
@@ -735,21 +787,31 @@
     </span>}
 
     <span class="doccomment">/// Wraps the same named Membership trait fn
-    </span><span class="kw">async fn </span>get_epoch_root_and_drb(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        block_height: u64,
-    ) -&gt; anyhow::Result&lt;(TYPES::BlockHeader, DrbResult)&gt; {
+    </span><span class="kw">async fn </span>get_epoch_root(<span class="kw-2">&amp;</span><span class="self">self</span>, block_height: u64) -&gt; anyhow::Result&lt;TYPES::BlockHeader&gt; {
         <span class="kw">let </span><span class="prelude-val">Some</span>(epoch) = <span class="self">self</span>.epoch <span class="kw">else </span>{
             <span class="macro">anyhow::bail!</span>(<span class="string">"Cannot get root for None epoch"</span>);
         };
-        &lt;TYPES::Membership <span class="kw">as </span>Membership&lt;TYPES&gt;&gt;::get_epoch_root_and_drb(
+        &lt;TYPES::Membership <span class="kw">as </span>Membership&lt;TYPES&gt;&gt;::get_epoch_root(
             <span class="self">self</span>.coordinator.membership.clone(),
             block_height,
-            <span class="self">self</span>.coordinator.epoch_height,
             epoch,
         )
         .<span class="kw">await
     </span>}
+
+    <span class="doccomment">/// Wraps the same named Membership trait fn
+    </span><span class="kw">async fn </span>get_epoch_drb(<span class="kw-2">&amp;</span><span class="self">self</span>, block_height: u64) -&gt; <span class="prelude-ty">Result</span>&lt;DrbResult&gt; {
+        <span class="kw">let </span><span class="prelude-val">Some</span>(epoch) = <span class="self">self</span>.epoch <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anytrace::warn!</span>(<span class="string">"Cannot get drb for None epoch"</span>));
+        };
+        &lt;TYPES::Membership <span class="kw">as </span>Membership&lt;TYPES&gt;&gt;::get_epoch_drb(
+            <span class="self">self</span>.coordinator.membership.clone(),
+            block_height,
+            epoch,
+        )
+        .<span class="kw">await
+        </span>.wrap()
+    }
 
     <span class="doccomment">/// Get all participants in the committee (including their stake) for a specific epoch
     </span><span class="kw">pub async fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;PeerConfig&lt;TYPES&gt;&gt; {

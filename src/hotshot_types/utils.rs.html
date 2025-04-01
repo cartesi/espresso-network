@@ -546,7 +546,17 @@
 <a href="#545" id="545">545</a>
 <a href="#546" id="546">546</a>
 <a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -651,11 +661,11 @@
     <span class="prelude-ty">Option</span>&lt;Arc&lt;&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::ValidatedState <span class="kw">as </span>ValidatedState&lt;TYPES&gt;&gt;::Delta&gt;&gt;,
 );
 
-<span class="kw">pub async fn </span>verify_epoch_root_chain&lt;T: NodeType, V: Versions&gt;(
+<span class="kw">pub async fn </span>verify_leaf_chain&lt;T: NodeType, V: Versions&gt;(
     leaf_chain: Vec&lt;Leaf2&lt;T&gt;&gt;,
     stake_table: Vec&lt;PeerConfig&lt;T&gt;&gt;,
     success_threshold: U256,
-    epoch_height: u64,
+    expected_height: u64,
     upgrade_lock: <span class="kw-2">&amp;</span><span class="kw">crate</span>::message::UpgradeLock&lt;T, V&gt;,
 ) -&gt; anyhow::Result&lt;Leaf2&lt;T&gt;&gt; {
     <span class="comment">// Check we actually have a chain long enough for deciding
@@ -722,7 +732,7 @@
                 upgrade_lock,
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">if </span>leaf.height() % epoch_height == epoch_height - <span class="number">2 </span>{
+        <span class="kw">if </span>leaf.height() == expected_height {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(leaf.clone());
         }
         last_leaf = leaf;
@@ -899,6 +909,16 @@
         <span class="number">0
     </span>} <span class="kw">else </span>{
         epoch_height * epoch - <span class="number">5
+    </span>}
+}
+
+<span class="doccomment">/// Get the block height of the transition block for the given epoch
+</span><span class="attr">#[must_use]
+</span><span class="kw">pub fn </span>transition_block_for_epoch(epoch: u64, epoch_height: u64) -&gt; u64 {
+    <span class="kw">if </span>epoch_height == <span class="number">0 </span>|| epoch &lt; <span class="number">1 </span>{
+        <span class="number">0
+    </span>} <span class="kw">else </span>{
+        epoch_height * epoch - <span class="number">3
     </span>}
 }
 
