@@ -29,4 +29,6 @@ jobs:
           shared-key: build-x86-${{ github.ref }}
 
       - name: Release build
-        run: cargo build --workspace --release --all-targets
+        run: cargo build --release
+
+      # TODO: Add docker builds
