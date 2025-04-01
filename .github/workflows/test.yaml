@@ -26,7 +26,7 @@ jobs:
       - name: Use Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: test-${{ matrix.target }}-${{ github.ref }}
+          shared-key: test-${{ github.ref }}
 
       - name: Install cargo-nextest
         run: cargo install cargo-nextest --locked
@@ -55,16 +55,13 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal
 
-     - name: Install cargo-nextest
+      - name: Install cargo-nextest
         run: cargo install cargo-nextest --locked
 
       - name: Download test archive
         uses: actions/download-artifact@v4
         with:
           name: test-archive.tar.zst
-          path: test-archive.tar.zst
 
       - name: Test
-        run: cargo nextest run --archive test-archive.tar.zst --partition hash:${{ matrix.partition }}/12
-
-    
+        run: cargo nextest run --archive-file test-archive.tar.zst --partition hash:${{ matrix.partition }}/12
