@@ -815,18 +815,17 @@ impl Membership<SeqTypes> for EpochCommittees {
         }
     }
 
-    async fn get_epoch_root_and_drb(
+    async fn get_epoch_root(
         membership: Arc<RwLock<Self>>,
         block_height: u64,
-        epoch_height: u64,
         epoch: Epoch,
-    ) -> anyhow::Result<(Header, DrbResult)> {
+    ) -> anyhow::Result<Header> {
         let peers = membership.read().await.peers.clone();
         let stake_table = membership.read().await.stake_table(Some(epoch)).clone();
         let success_threshold = membership.read().await.success_threshold(Some(epoch));
 
         tracing::error!(
-            "Getting epoch root and DRB for epoch {:?}, block height {:?}",
+            "Getting epoch root for epoch {:?}, block height {:?}",
             epoch,
             block_height
         );
@@ -839,27 +838,38 @@ impl Membership<SeqTypes> for EpochCommittees {
                 block_height,
             )
             .await?;
-        //DRB height is decided in the next epoch's last block
-        let drb_height = block_height + epoch_height + 5;
+
+        Ok(leaf.block_header().clone())
+    }
+
+    async fn get_epoch_drb(
+        membership: Arc<RwLock<Self>>,
+        block_height: u64,
+        epoch: Epoch,
+    ) -> anyhow::Result<DrbResult> {
+        let peers = membership.read().await.peers.clone();
+        let stake_table = membership.read().await.stake_table(Some(epoch)).clone();
+        let success_threshold = membership.read().await.success_threshold(Some(epoch));
+
         tracing::error!(
-            "Fetching DRB leaf at height {:?}, epoch {:?}",
-            drb_height,
-            epoch
+            "Getting DRB for epoch {:?}, block height {:?}",
+            epoch,
+            block_height
         );
         let drb_leaf = peers
-            .fetch_leaf(drb_height, stake_table, success_threshold, drb_height)
+            .fetch_leaf(block_height, stake_table, success_threshold, block_height)
             .await?;
 
         let Some(drb) = drb_leaf.next_drb_result else {
             tracing::error!(
-              "We received a leaf that should contain a DRB result, but the DRB result is missing: {:?}",
-              drb_leaf
-            );
+          "We received a leaf that should contain a DRB result, but the DRB result is missing: {:?}",
+          drb_leaf
+        );
 
             bail!("DRB leaf is missing the DRB result.");
         };
 
-        Ok((leaf.block_header().clone(), drb))
+        Ok(drb)
     }
 
     fn add_drb_result(&mut self, epoch: Epoch, drb: DrbResult) {
