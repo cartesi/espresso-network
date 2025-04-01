@@ -64,4 +64,4 @@ jobs:
           name: test-archive.tar.zst
 
       - name: Test
-        run: cargo nextest run --archive-file test-archive.tar.zst --partition hash:${{ matrix.partition }}/12
+        run: cargo nextest run --archive-file test-archive.tar.zst --partition hash:${{ matrix.partition }}/12 --no-fail-fast
