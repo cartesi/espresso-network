@@ -355,7 +355,8 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         }
 
         blsKeys[_hashBlsKey(blsVK)] = true;
-        validators[validator] = ValidatorInfo({ status: ValidatorStatus.Active, delegatedAmount: 0 });
+        validators[validator] =
+            ValidatorInfo({ status: ValidatorStatus.Active, delegatedAmount: 0 });
 
         emit ValidatorRegistered(validator, blsVK, schnorrVK, commission);
     }
