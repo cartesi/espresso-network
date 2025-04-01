@@ -28,8 +28,8 @@ jobs:
         with:
           shared-key: test-${{ matrix.target }}-${{ github.ref }}
 
-      - name: Install nextest
-        run: cargo install nextest
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest --locked
 
       - name: Build test archive
         run: cargo nextest archive --archive-file test-archive.tar.zst
@@ -55,8 +55,8 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal
 
-      - name: Install nextest
-        run: cargo install nextest
+     - name: Install cargo-nextest
+        run: cargo install cargo-nextest --locked
 
       - name: Download test archive
         uses: actions/download-artifact@v4
