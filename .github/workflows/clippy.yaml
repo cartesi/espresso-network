@@ -13,14 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal
 
-      - name: Use Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: clippy-${{ github.ref }}
+      # We could use caching here, but it takes almost as long to download
+      # the cache as it does to run the lint again.
 
       - name: Format
         run: cargo fmt --all -- --check
