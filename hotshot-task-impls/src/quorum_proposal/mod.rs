@@ -222,6 +222,28 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             event_receiver.clone(),
         );
 
+        let epoch_height = self.epoch_height;
+
+        let mut next_epoch_qc_dependency = EventDependency::new(
+            event_receiver.clone(),
+            Box::new(move |event| {
+                if let HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) =
+                    event.as_ref()
+                {
+                    return next_epoch_qc.view_number() == view_number + 1;
+                }
+                if let HotShotEvent::Qc2Formed(Either::Left(qc)) = event.as_ref() {
+                    if qc.view_number() == view_number + 1 {
+                        return qc
+                            .data
+                            .block_number
+                            .is_some_and(|bn| !is_transition_block(bn, epoch_height));
+                    }
+                }
+                false
+            }),
+        );
+
         match event.as_ref() {
             HotShotEvent::SendPayloadCommitmentAndMetadata(..) => {
                 payload_commitment_dependency.mark_as_completed(Arc::clone(&event));
@@ -233,7 +255,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 Either::Right(_) => {
                     timeout_dependency.mark_as_completed(event);
                 },
-                Either::Left(_) => {
+                Either::Left(qc) => {
+                    if qc
+                        .data
+                        .block_number
+                        .is_none_or(|bn| !is_transition_block(bn, epoch_height))
+                    {
+                        next_epoch_qc_dependency.mark_as_completed(event.clone());
+                    }
                     qc_dependency.mark_as_completed(event);
                 },
             },
@@ -242,6 +271,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             },
             HotShotEvent::VidDisperseSend(..) => {
                 vid_share_dependency.mark_as_completed(event);
+            },
+            HotShotEvent::NextEpochQc2Formed(_) => {
+                next_epoch_qc_dependency.mark_as_completed(event);
             },
             _ => {},
         };
@@ -258,6 +290,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             secondary_deps.push(AndDependency::from_deps(vec![
                 qc_dependency,
                 proposal_dependency,
+                next_epoch_qc_dependency,
             ]));
         } else {
             secondary_deps.push(AndDependency::from_deps(vec![qc_dependency]));

@@ -548,6 +548,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
         let mut view_sync_finalize_cert = None;
         let mut vid_share = None;
         let mut parent_qc = None;
+        let mut next_epoch_qc = None;
         for event in res.iter().flatten().flatten() {
             match event.as_ref() {
                 HotShotEvent::SendPayloadCommitmentAndMetadata(
@@ -581,6 +582,9 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
                 HotShotEvent::VidDisperseSend(share, _) => {
                     vid_share = Some(share.clone());
                 },
+                HotShotEvent::NextEpochQc2Formed(either::Left(qc)) => {
+                    next_epoch_qc = Some(qc.clone());
+                },
                 _ => {},
             }
         }
@@ -607,7 +611,7 @@ impl<TYPES: NodeType, V: Versions> HandleDepOutput for ProposalDependencyHandle<
             }
         };
 
-        let mut maybe_next_epoch_qc = None;
+        let mut maybe_next_epoch_qc = next_epoch_qc;
 
         let parent_qc = if let Some(qc) = parent_qc {
             qc
