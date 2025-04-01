@@ -1,4 +1,4 @@
-name: Release build (x86)
+name: Release build
 
 on:
   push:
@@ -7,13 +7,18 @@ on:
     branches: [ main ]
 
 concurrency: 
-  group: ${{ github.ref }}-build-x86
+  group: ${{ github.ref }}-build
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build (x86)
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    strategy:
+      matrix:
+        target: [arm, x86_64]
+
+    name: Release build (${{ matrix.target }})
+    runs-on: ${{ matrix.target == 'arm' && 'buildjet-16vcpu-ubuntu-2204-arm' || 'buildjet-16vcpu-ubuntu-2204' }}
+    
     steps:
       - uses: actions/checkout@v3
 
@@ -26,7 +31,7 @@ jobs:
       - name: Use Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: build-x86-${{ github.ref }}
+          shared-key: build-${{ matrix.target }}-${{ github.ref }}
 
       - name: Release build
         run: cargo build --release
