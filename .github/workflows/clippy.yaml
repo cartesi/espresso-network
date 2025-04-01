@@ -18,7 +18,8 @@ jobs:
 
       - name: Use Rust Cache
         uses: Swatinem/rust-cache@v2
-        shared-key: clippy-${{ github.ref }}
+        with:
+          shared-key: clippy-${{ github.ref }}
 
       - name: Format
         run: cargo fmt --all -- --check
