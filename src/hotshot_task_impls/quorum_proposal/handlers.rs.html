@@ -735,7 +735,10 @@
 <a href="#734" id="734">734</a>
 <a href="#735" id="735">735</a>
 <a href="#736" id="736">736</a>
-<a href="#737" id="737">737</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -765,10 +768,11 @@
         block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType},
         signature_key::SignatureKey,
+        BlockPayload,
     },
     utils::{
         epoch_from_block_number, is_epoch_transition, is_last_block, is_transition_block,
-        option_epoch_from_block_number, BuilderCommitment,
+        option_epoch_from_block_number,
     },
     vote::HasViewNumber,
 };
@@ -1123,9 +1127,11 @@
             <span class="kw">if </span>is_epoch_transition(parent_block_number, <span class="self">self</span>.epoch_height)
                 &amp;&amp; !is_last_block(parent_block_number, <span class="self">self</span>.epoch_height)
             {
+                <span class="kw">let </span>(empty_payload, empty_metadata) = &lt;TYPES <span class="kw">as </span>NodeType&gt;::BlockPayload::empty();
                 <span class="macro">tracing::info!</span>(<span class="string">"Reached end of epoch."</span>);
                 <span class="macro">ensure!</span>(
-                    builder_commitment == BuilderCommitment::from_bytes([]),
+                    builder_commitment == empty_payload.builder_commitment(<span class="kw-2">&amp;</span>metadata)
+                        &amp;&amp; metadata == empty_metadata,
                     <span class="string">"We're trying to propose non empty block in the epoch transition. Do not propose. View number: {}. Parent Block number: {}"</span>,
                     <span class="self">self</span>.view_number,
                     parent_block_number,
