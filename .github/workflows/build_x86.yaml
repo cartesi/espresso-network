@@ -26,7 +26,6 @@ jobs:
       - name: Use Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          cache-all-crates: "true"
           shared-key: build-x86-${{ github.ref }}
 
       - name: Release build
