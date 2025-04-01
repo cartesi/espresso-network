@@ -24,7 +24,7 @@ use hotshot_types::{
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
     },
-    utils::{is_transition_block, EpochTransitionIndicator},
+    utils::{is_epoch_transition, EpochTransitionIndicator},
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -228,14 +228,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 if let HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) =
                     event.as_ref()
                 {
-                    return next_epoch_qc.view_number() == view_number + 1;
+                    return next_epoch_qc.view_number() + 1 == view_number;
                 }
                 if let HotShotEvent::Qc2Formed(Either::Left(qc)) = event.as_ref() {
-                    if qc.view_number() == view_number + 1 {
+                    if qc.view_number() + 1 == view_number {
                         return qc
                             .data
                             .block_number
-                            .is_none_or(|bn| !is_transition_block(bn, epoch_height));
+                            .is_none_or(|bn| !is_epoch_transition(bn, epoch_height));
                     }
                 }
                 false
@@ -257,7 +257,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     if qc
                         .data
                         .block_number
-                        .is_none_or(|bn| !is_transition_block(bn, epoch_height))
+                        .is_none_or(|bn| !is_epoch_transition(bn, epoch_height))
                     {
                         next_epoch_qc_dependency.mark_as_completed(event.clone());
                     }
@@ -270,7 +270,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
             HotShotEvent::VidDisperseSend(..) => {
                 vid_share_dependency.mark_as_completed(event);
             },
-            HotShotEvent::NextEpochQc2Formed(_) => {
+            HotShotEvent::NextEpochQc2Formed(Either::Left(_)) => {
                 next_epoch_qc_dependency.mark_as_completed(event);
             },
             _ => {},
@@ -618,6 +618,17 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     &event_sender,
                 )
                 .await;
+
+                let view_number = next_epoch_qc.view_number() + 1;
+                self.create_dependency_task_if_new(
+                    view_number,
+                    epoch_number,
+                    event_receiver,
+                    event_sender,
+                    Arc::clone(&event),
+                    epoch_transition_indicator,
+                )
+                .await?;
             },
             _ => {},
         }

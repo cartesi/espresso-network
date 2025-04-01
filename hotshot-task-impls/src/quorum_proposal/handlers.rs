@@ -449,11 +449,10 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
             );
             return Ok(());
         }
-        let is_high_qc_for_last_block = if let Some(block_number) = parent_qc.data.block_number {
-            is_epoch_transition(block_number, self.epoch_height)
-        } else {
-            false
-        };
+        let is_high_qc_for_last_block = parent_qc
+            .data
+            .block_number
+            .is_some_and(|block_number| is_epoch_transition(block_number, self.epoch_height));
         let next_epoch_qc = if self.upgrade_lock.epochs_enabled(self.view_number).await
             && is_high_qc_for_last_block
         {
@@ -739,6 +738,11 @@ pub(super) async fn handle_eqc_formed<
         return;
     }
     let current_epoch_qc_clone = current_epoch_qc.clone();
+
+    let mut consensus_writer = task_state.consensus.write().await;
+    let _ = consensus_writer.update_high_qc(current_epoch_qc_clone.clone());
+    let _ = consensus_writer.update_next_epoch_high_qc(next_epoch_qc.clone());
+    drop(consensus_writer);
 
     task_state.formed_quorum_certificates =
         task_state.formed_quorum_certificates.split_off(&cert_view);
