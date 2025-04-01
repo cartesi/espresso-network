@@ -2458,7 +2458,7 @@
         </span><span class="kw">if </span>qc.view_number() != next_epoch_qc.view_number() || qc.data != <span class="kw-2">*</span>next_epoch_qc.data {
             <span class="macro">bail!</span>(<span class="string">"Next epoch qc exists but it's not equal with qc."</span>);
         }
-        epoch_membership = epoch_membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>;
+        epoch_membership = epoch_membership.next_epoch_stake_table().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>membership_next_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
         <span class="kw">let </span>membership_next_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
 

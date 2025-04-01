@@ -632,7 +632,7 @@
                 <span class="kw">let </span>epoch_number = proposal.data.epoch;
                 <span class="kw">let </span>membership = <span class="self">self
                     </span>.membership_coordinator
-                    .membership_for_epoch(epoch_number)
+                    .stake_table_for_epoch(epoch_number)
                     .<span class="kw">await
                     </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?</span>;
 

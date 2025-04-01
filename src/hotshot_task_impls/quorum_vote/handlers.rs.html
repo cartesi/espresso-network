@@ -539,7 +539,11 @@
 <a href="#538" id="538">538</a>
 <a href="#539" id="539">539</a>
 <a href="#540" id="540">540</a>
-<a href="#541" id="541">541</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -645,7 +649,7 @@
     <span class="kw">if let </span><span class="prelude-val">Some</span>(epoch_val) = epoch {
         <span class="kw">let </span>has_stake_current_epoch = task_state
             .membership
-            .membership_for_epoch(epoch)
+            .stake_table_for_epoch(epoch)
             .<span class="kw">await
             </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?
             </span>.has_stake(<span class="kw-2">&amp;</span>task_state.public_key)
@@ -1023,7 +1027,11 @@
     // in the next epoch, the node should vote to achieve the double quorum.
     </span><span class="kw">let </span>committee_member_in_next_epoch = leaf.with_epoch
         &amp;&amp; is_epoch_transition(leaf.height(), epoch_height)
-        &amp;&amp; membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await</span>;
+        &amp;&amp; membership
+            .next_epoch_stake_table()
+            .<span class="kw">await</span><span class="question-mark">?
+            </span>.has_stake(<span class="kw-2">&amp;</span>public_key)
+            .<span class="kw">await</span>;
 
     <span class="macro">ensure!</span>(
         committee_member_in_current_epoch || committee_member_in_next_epoch,

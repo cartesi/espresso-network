@@ -548,11 +548,11 @@
                 // 2. we are part of the next epoch and this is a proposal for in transition.
                 </span><span class="kw">let </span>membership = <span class="self">self
                     </span>.membership_coordinator
-                    .membership_for_epoch(prop_epoch)
+                    .stake_table_for_epoch(prop_epoch)
                     .<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">if </span>!membership.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key).<span class="kw">await
                     </span>&amp;&amp; (!membership
-                        .next_epoch()
+                        .next_epoch_stake_table()
                         .<span class="kw">await</span><span class="question-mark">?
                         </span>.has_stake(<span class="kw-2">&amp;</span><span class="self">self</span>.public_key)
                         .<span class="kw">await

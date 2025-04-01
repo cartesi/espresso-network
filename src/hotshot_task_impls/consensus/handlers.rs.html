@@ -477,7 +477,11 @@
 <a href="#476" id="476">476</a>
 <a href="#477" id="477">477</a>
 <a href="#478" id="478">478</a>
-<a href="#479" id="479">479</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
+<a href="#483" id="483">483</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -560,7 +564,7 @@
     <span class="kw">if </span>vote.epoch().is_some() {
         <span class="comment">// If the vote sender belongs to the next epoch, collect it separately to form the second QC
         </span><span class="kw">let </span>has_stake = epoch_membership
-            .next_epoch()
+            .next_epoch_stake_table()
             .<span class="kw">await</span><span class="question-mark">?
             </span>.has_stake(<span class="kw-2">&amp;</span>vote.signing_key())
             .<span class="kw">await</span>;
@@ -569,7 +573,11 @@
                 <span class="kw-2">&amp;mut </span>task_state.next_epoch_vote_collectors,
                 <span class="kw-2">&amp;</span>vote.clone().into(),
                 task_state.public_key.clone(),
-                <span class="kw-2">&amp;</span>epoch_membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.clone(),
+                <span class="comment">// We eventually verify in `handle_vote` that we are the leader before assembling the certificate here,
+                // so we must request the full randomized stake table.
+                //
+                // I'm not sure this is really necessary, but I've opted not to modify the logic.
+                </span><span class="kw-2">&amp;</span>epoch_membership.next_epoch().<span class="kw">await</span><span class="question-mark">?</span>.clone(),
                 task_state.id,
                 <span class="kw-2">&amp;</span>event,
                 sender,
@@ -891,7 +899,7 @@
     <span class="macro">ensure!</span>(
         task_state
             .membership_coordinator
-            .membership_for_epoch(epoch)
+            .stake_table_for_epoch(epoch)
             .<span class="kw">await
             </span>.context(<span class="macro">warn!</span>(<span class="string">"No stake table for epoch"</span>))<span class="question-mark">?
             </span>.has_stake(<span class="kw-2">&amp;</span>task_state.public_key)
