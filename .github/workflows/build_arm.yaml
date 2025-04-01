@@ -1,4 +1,4 @@
-name: Release build (x86)
+name: Release build (ARM)
 
 on:
   push:
@@ -7,13 +7,13 @@ on:
     branches: [ main ]
 
 concurrency: 
-  group: ${{ github.ref }}-build-x86
+  group: ${{ github.ref }}-build-arm
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build (x86)
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    name: Build (ARM)
+    runs-on: buildjet-16vcpu-ubuntu-2204-arm
     steps:
       - uses: actions/checkout@v3
 
@@ -27,7 +27,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           cache-all-crates: "true"
-          shared-key: build-x86-${{ github.ref }}
+          shared-key: build-arm-${{ github.ref }}
 
       - name: Release build
         run: cargo build --workspace --release --all-targets
