@@ -1,4 +1,4 @@
-name: Clippy
+name: Lint
 
 on:
   push:
@@ -7,11 +7,17 @@ on:
     branches: [ main ]
 
 jobs:
-  clippy:
-    name: Run Clippy  
-    runs-on: ubuntu-latest
+  lint:
+    name: Lint  
+    runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
-      
+
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
       - name: Clippy
         run: cargo clippy --workspace --features testing --all-targets -- -D warnings
