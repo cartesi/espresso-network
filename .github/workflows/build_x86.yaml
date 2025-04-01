@@ -1,4 +1,4 @@
-name: Release build
+name: Release build (x86)
 
 on:
   push:
@@ -8,18 +8,21 @@ on:
 
 jobs:
   build:
-    name: Build
-    runs-on: buildjet-16vcpu-ubuntu-2204
+    name: Build (x86)
+    runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
 
       - name: Install Rust
         run: rustup toolchain install stable --profile minimal
 
+      - name: Install mold
+        uses: rui314/setup-mold@v1
+
       - name: Use Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          shared-key: build-${{ github.ref }}
+          shared-key: build-x86-${{ github.ref }}
 
       - name: Release build
-        run: cargo build --release --all-targets
+        run: cargo build --workspace --release --all-targets
