@@ -2605,7 +2605,7 @@
         );
 
         <span class="kw">if let </span><span class="prelude-val">Some</span>((old_number, old_block)) = <span class="self">self</span>.finalized.push(block.info.number, block) {
-            <span class="kw">if </span>old_number == block.info.number {
+            <span class="kw">if </span>old_number == block.info.number &amp;&amp; block != old_block {
                 <span class="macro">tracing::error!</span>(
                     <span class="question-mark">?</span>old_block,
                     <span class="question-mark">?</span>block,
