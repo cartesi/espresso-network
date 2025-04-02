@@ -795,7 +795,20 @@
 <a href="#794" id="794">794</a>
 <a href="#795" id="795">795</a>
 <a href="#796" id="796">796</a>
-<a href="#797" id="797">797</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>location_details;
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a>
+<a href="#809" id="809">809</a>
+<a href="#810" id="810">810</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>location_details;
 <span class="kw">pub mod </span>node_identity;
 
 <span class="kw">use </span>std::{collections::HashSet, iter::zip, sync::Arc};
@@ -806,9 +819,9 @@
 <span class="kw">use </span>espresso_types::{Header, Payload, SeqTypes};
 <span class="kw">use </span>futures::{channel::mpsc::SendError, Sink, SinkExt, Stream, StreamExt};
 <span class="kw">use </span>hotshot_query_service::{
-    availability::{QueryableHeader, QueryablePayload},
+    availability::{BlockQueryData, Leaf1QueryData, QueryableHeader},
     explorer::{BlockDetail, ExplorerHeader, Timestamp},
-    Leaf2, Resolvable,
+    Resolvable,
 };
 <span class="kw">use </span>hotshot_stake_table::vec_based::StakeTable;
 <span class="kw">use </span>hotshot_types::{
@@ -817,7 +830,7 @@
     traits::{
         block_contents::BlockHeader,
         stake_table::{SnapshotVersion, StakeTableScheme},
-        BlockPayload,
+        BlockPayload, EncodeBytes,
     },
 };
 <span class="kw">pub use </span>location_details::LocationDetails;
@@ -825,16 +838,22 @@
 <span class="kw">use </span>time::OffsetDateTime;
 <span class="kw">use </span>tokio::{spawn, task::JoinHandle};
 
+<span class="kw">use </span><span class="kw">crate</span>::api::node_validator::v0::LeafAndBlock;
+
 <span class="doccomment">/// MAX_HISTORY represents the last N records that are stored within the
 /// DataState structure for the various different sample types.
-</span><span class="kw">const </span>MAX_HISTORY: usize = <span class="number">50</span>;
+</span><span class="kw">pub const </span>MAX_HISTORY: usize = <span class="number">50</span>;
+
+<span class="doccomment">/// MAX_VOTERS_HISTORY represents the last N records that are stored within
+/// the DataState structure for the voters.
+</span><span class="kw">pub const </span>MAX_VOTERS_HISTORY: usize = <span class="number">100</span>;
 
 <span class="doccomment">/// [DataState] represents the state of the data that is being stored within
 /// the service.
 </span><span class="attr">#[cfg_attr(test, derive(Default))]
 </span><span class="kw">pub struct </span>DataState {
     latest_blocks: CircularBuffer&lt;MAX_HISTORY, BlockDetail&lt;SeqTypes&gt;&gt;,
-    latest_voters: CircularBuffer&lt;MAX_HISTORY, BitVec&lt;u16&gt;&gt;,
+    latest_voters: CircularBuffer&lt;MAX_VOTERS_HISTORY, BitVec&lt;u16&gt;&gt;,
     stake_table: StakeTable&lt;BLSPubKey, StateVerKey, CircuitField&gt;,
     <span class="comment">// Do we need any other data at the moment?
     </span>node_identity: Vec&lt;NodeIdentity&gt;,
@@ -843,7 +862,7 @@
 <span class="kw">impl </span>DataState {
     <span class="kw">pub fn </span>new(
         latest_blocks: CircularBuffer&lt;MAX_HISTORY, BlockDetail&lt;SeqTypes&gt;&gt;,
-        latest_voters: CircularBuffer&lt;MAX_HISTORY, BitVec&lt;u16&gt;&gt;,
+        latest_voters: CircularBuffer&lt;MAX_VOTERS_HISTORY, BitVec&lt;u16&gt;&gt;,
         stake_table: StakeTable&lt;BLSPubKey, StateVerKey, CircuitField&gt;,
     ) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>node_identity = {
@@ -947,44 +966,6 @@
     }
 }
 
-<span class="doccomment">/// [create_block_detail_from_leaf] is a helper function that will build a
-/// [BlockDetail] from the reference to [Leaf].
-</span><span class="kw">pub fn </span>create_block_detail_from_leaf(leaf: <span class="kw-2">&amp;</span>Leaf2&lt;SeqTypes&gt;) -&gt; BlockDetail&lt;SeqTypes&gt; {
-    <span class="kw">let </span>block_header = leaf.block_header();
-    <span class="kw">let </span>block_payload = <span class="kw-2">&amp;</span>leaf.block_payload().unwrap_or(Payload::empty().<span class="number">0</span>);
-
-    <span class="kw">let </span>transaction_iter = block_payload.iter(block_header.metadata());
-
-    <span class="comment">// Calculate the number of transactions and the total payload size of the
-    // transactions contained within the Payload.
-    </span><span class="kw">let </span>(num_transactions, total_payload_size) = transaction_iter.fold(
-        (<span class="number">0u64</span>, <span class="number">0u64</span>),
-        |(num_transactions, total_payload_size), tx_index| {
-            (
-                num_transactions + <span class="number">1</span>,
-                total_payload_size
-                    + block_payload
-                        .transaction(<span class="kw-2">&amp;</span>tx_index)
-                        .map_or(<span class="number">0u64</span>, |tx| tx.payload().len() <span class="kw">as </span>u64),
-            )
-        },
-    );
-
-    BlockDetail::&lt;SeqTypes&gt; {
-        hash: block_header.commitment(),
-        height: block_header.height(),
-        time: Timestamp(
-            OffsetDateTime::from_unix_timestamp(block_header.timestamp() <span class="kw">as </span>i64)
-                .unwrap_or(OffsetDateTime::UNIX_EPOCH),
-        ),
-        proposer_id: block_header.proposer_id(),
-        num_transactions,
-        block_reward: <span class="macro">vec!</span>[block_header.fee_info_balance().into()],
-        fee_recipient: block_header.fee_info_account(),
-        size: total_payload_size,
-    }
-}
-
 <span class="doccomment">/// [ProcessLeafError] represents the error that can occur when processing
 /// a [Leaf].
 </span><span class="attr">#[derive(Debug)]
@@ -1015,13 +996,38 @@
     }
 }
 
-<span class="doccomment">/// [process_incoming_leaf] is a helper function that will process an incoming
-/// [Leaf] and update the [DataState] with the new information.
+<span class="doccomment">/// create_block_detail_from_block is a helper function that will create a
+/// [BlockDetail] from a [BlockQueryData].
+</span><span class="kw">pub fn </span>create_block_detail_from_block(block: <span class="kw-2">&amp;</span>BlockQueryData&lt;SeqTypes&gt;) -&gt; BlockDetail&lt;SeqTypes&gt; {
+    <span class="kw">let </span>block_header = block.header();
+    <span class="kw">let </span>block_payload = block.payload();
+    <span class="kw">let </span>num_transactions = block.num_transactions();
+    <span class="kw">let </span>encoded_bytes = block_payload.encode();
+    <span class="kw">let </span>total_payload_size = encoded_bytes.len() <span class="kw">as </span>u64;
+
+    BlockDetail::&lt;SeqTypes&gt; {
+        hash: block_header.commitment(),
+        height: block_header.height(),
+        time: Timestamp(
+            OffsetDateTime::from_unix_timestamp(block_header.timestamp() <span class="kw">as </span>i64)
+                .unwrap_or(OffsetDateTime::UNIX_EPOCH),
+        ),
+        proposer_id: block_header.proposer_id(),
+        num_transactions,
+        block_reward: <span class="macro">vec!</span>[block_header.fee_info_balance().into()],
+        fee_recipient: block_header.fee_info_account(),
+        size: total_payload_size,
+    }
+}
+
+<span class="doccomment">/// [process_incoming_leaf_and_block] is a helper function that will process
+/// an incoming [Leaf] and update the [DataState] with the new information.
 /// Additionally, the block that is contained within the [Leaf] will be
 /// computed into a [BlockDetail] and sent to the [Sink] so that it can be
 /// processed for real-time considerations.
-</span><span class="kw">async fn </span>process_incoming_leaf&lt;BDSink, BVSink&gt;(
-    leaf: Leaf2&lt;SeqTypes&gt;,
+</span><span class="kw">async fn </span>process_incoming_leaf_and_block&lt;BDSink, BVSink&gt;(
+    leaf: Leaf1QueryData&lt;SeqTypes&gt;,
+    block: BlockQueryData&lt;SeqTypes&gt;,
     data_state: Arc&lt;RwLock&lt;DataState&gt;&gt;,
     <span class="kw-2">mut </span>block_sender: BDSink,
     <span class="kw-2">mut </span>voters_sender: BVSink,
@@ -1032,10 +1038,10 @@
     BDSink: Sink&lt;BlockDetail&lt;SeqTypes&gt;, Error = SendError&gt; + Unpin,
     BVSink: Sink&lt;BitVec&lt;u16&gt;, Error = SendError&gt; + Unpin,
 {
-    <span class="kw">let </span>block_detail = create_block_detail_from_leaf(<span class="kw-2">&amp;</span>leaf);
-    <span class="kw">let </span>block_detail_copy = create_block_detail_from_leaf(<span class="kw-2">&amp;</span>leaf);
+    <span class="kw">let </span>block_detail = create_block_detail_from_block(<span class="kw-2">&amp;</span>block);
+    <span class="kw">let </span>block_detail_copy = create_block_detail_from_block(<span class="kw-2">&amp;</span>block);
 
-    <span class="kw">let </span>certificate = leaf.justify_qc();
+    <span class="kw">let </span>certificate = leaf.leaf().justify_qc();
     <span class="kw">let </span>signatures = <span class="kw-2">&amp;</span>certificate.signatures;
 
     <span class="comment">// Let's take a look at the quorum certificate signatures.
@@ -1117,13 +1123,13 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="doccomment">/// [ProcessLeafStreamTask] represents the task that is responsible for
-/// processing a stream of incoming [Leaf]s.
-</span><span class="kw">pub struct </span>ProcessLeafStreamTask {
+<span class="doccomment">/// [ProcessLeafAndBlockPairStreamTask] represents the task that is responsible
+/// for processing a stream of incoming pairs of [Leaf]s and [BlockQueryData].
+</span><span class="kw">pub struct </span>ProcessLeafAndBlockPairStreamTask {
     <span class="kw">pub </span>task_handle: <span class="prelude-ty">Option</span>&lt;JoinHandle&lt;()&gt;&gt;,
 }
 
-<span class="kw">impl </span>ProcessLeafStreamTask {
+<span class="kw">impl </span>ProcessLeafAndBlockPairStreamTask {
     <span class="doccomment">/// [new] creates a new [ProcessLeafStreamTask] that will process a stream
     /// of incoming [Leaf]s.
     ///
@@ -1137,7 +1143,7 @@
         voters_sender: K2,
     ) -&gt; <span class="self">Self
     </span><span class="kw">where
-        </span>S: Stream&lt;Item = Leaf2&lt;SeqTypes&gt;&gt; + Send + Sync + Unpin + <span class="lifetime">'static</span>,
+        </span>S: Stream&lt;Item = LeafAndBlock&lt;SeqTypes&gt;&gt; + Send + Sync + Unpin + <span class="lifetime">'static</span>,
         K1: Sink&lt;BlockDetail&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
         K2: Sink&lt;BitVec&lt;u16&gt;, Error = SendError&gt; + Clone + Send + Sync + Unpin + <span class="lifetime">'static</span>,
     {
@@ -1161,7 +1167,7 @@
         block_sender: BDSink,
         voters_senders: BVSink,
     ) <span class="kw">where
-        </span>S: Stream&lt;Item = Leaf2&lt;SeqTypes&gt;&gt; + Unpin,
+        </span>S: Stream&lt;Item = LeafAndBlock&lt;SeqTypes&gt;&gt; + Unpin,
         Header: BlockHeader&lt;SeqTypes&gt; + QueryableHeader&lt;SeqTypes&gt; + ExplorerHeader&lt;SeqTypes&gt;,
         Payload: BlockPayload&lt;SeqTypes&gt;,
         BDSink: Sink&lt;BlockDetail&lt;SeqTypes&gt;, Error = SendError&gt; + Clone + Unpin,
@@ -1169,16 +1175,17 @@
     {
         <span class="kw">loop </span>{
             <span class="kw">let </span>leaf_result = stream.next().<span class="kw">await</span>;
-            <span class="kw">let </span>leaf = <span class="kw">if let </span><span class="prelude-val">Some</span>(leaf) = leaf_result {
-                leaf
+            <span class="kw">let </span>(leaf, block) = <span class="kw">if let </span><span class="prelude-val">Some</span>(pair) = leaf_result {
+                pair
             } <span class="kw">else </span>{
                 <span class="comment">// We have reached the end of the stream
                 </span><span class="macro">tracing::error!</span>(<span class="string">"process leaf stream: end of stream reached for leaf stream."</span>);
                 <span class="kw">return</span>;
             };
 
-            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = process_incoming_leaf(
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = process_incoming_leaf_and_block(
                 leaf,
+                block,
                 data_state.clone(),
                 block_sender.clone(),
                 voters_senders.clone(),
@@ -1206,7 +1213,7 @@
 
 <span class="doccomment">/// [Drop] implementation for [ProcessLeafStreamTask] that will cancel the
 /// task if it is dropped.
-</span><span class="kw">impl </span>Drop <span class="kw">for </span>ProcessLeafStreamTask {
+</span><span class="kw">impl </span>Drop <span class="kw">for </span>ProcessLeafAndBlockPairStreamTask {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>task_handle = <span class="self">self</span>.task_handle.take();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(task_handle) = task_handle {
@@ -1365,16 +1372,22 @@
 
     <span class="kw">use </span>async_lock::RwLock;
     <span class="kw">use </span>espresso_types::{
-        v0_1::RewardMerkleTree, v0_99::ChainConfig, BlockMerkleTree, FeeMerkleTree, Leaf2,
-        NodeState, ValidatedState,
+        v0_1::RewardMerkleTree, v0_99::ChainConfig, BlockMerkleTree, FeeMerkleTree, NodeState,
+        ValidatedState,
     };
     <span class="kw">use </span>futures::{channel::mpsc, SinkExt, StreamExt};
     <span class="kw">use </span>hotshot_example_types::node_types::TestVersions;
-    <span class="kw">use </span>hotshot_types::{signature_key::BLSPubKey, traits::signature_key::SignatureKey};
+    <span class="kw">use </span>hotshot_query_service::{
+        availability::{BlockQueryData, Leaf1QueryData},
+        testing::mocks::MockVersions,
+    };
+    <span class="kw">use </span>hotshot_types::{
+        data::Leaf2, signature_key::BLSPubKey, traits::signature_key::SignatureKey,
+    };
     <span class="kw">use </span>tokio::time::timeout;
     <span class="kw">use </span>url::Url;
 
-    <span class="kw">use super</span>::{DataState, ProcessLeafStreamTask};
+    <span class="kw">use super</span>::{DataState, ProcessLeafAndBlockPairStreamTask};
     <span class="kw">use </span><span class="kw">crate</span>::service::data_state::{
         LocationDetails, NodeIdentity, ProcessNodeIdentityStreamTask,
     };
@@ -1407,7 +1420,7 @@
         <span class="kw">let </span>(voters_sender, voters_receiver) = futures::channel::mpsc::channel(<span class="number">1</span>);
         <span class="kw">let </span>(leaf_sender, leaf_receiver) = futures::channel::mpsc::channel(<span class="number">1</span>);
 
-        <span class="kw">let </span><span class="kw-2">mut </span>process_leaf_stream_task_handle = ProcessLeafStreamTask::new(
+        <span class="kw">let </span><span class="kw-2">mut </span>process_leaf_stream_task_handle = ProcessLeafAndBlockPairStreamTask::new(
             leaf_receiver,
             data_state.clone(),
             block_sender,
@@ -1431,10 +1444,23 @@
         <span class="kw">let </span>instance_state = NodeState::mock();
 
         <span class="kw">let </span>sample_leaf = Leaf2::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>validated_state, <span class="kw-2">&amp;</span>instance_state).<span class="kw">await</span>;
+        <span class="kw">let </span>sample_block_query_data =
+            BlockQueryData::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>validated_state, <span class="kw-2">&amp;</span>instance_state).<span class="kw">await</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>leaf_sender = leaf_sender;
         <span class="comment">// We should be able to send a leaf without issue
-        </span><span class="macro">assert_eq!</span>(leaf_sender.send(sample_leaf).<span class="kw">await</span>, <span class="prelude-val">Ok</span>(()),);
+        </span><span class="macro">assert_eq!</span>(
+            leaf_sender
+                .send((
+                    Leaf1QueryData::new(
+                        sample_leaf.clone().to_leaf_unsafe(),
+                        sample_leaf.justify_qc().to_qc()
+                    ),
+                    sample_block_query_data
+                ))
+                .<span class="kw">await</span>,
+            <span class="prelude-val">Ok</span>(()),
+        );
 
         <span class="kw">let </span><span class="kw-2">mut </span>block_receiver = block_receiver;
         <span class="comment">// We should receive a Block Detail.

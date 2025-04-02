@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CreateNodeValidatorProcessingError","ExternalMessage"],"fn":["create_node_validator_processing"],"struct":["HotShotEventProcessingTask","NodeValidatorAPI","NodeValidatorConfig","ProcessExternalMessageHandlingTask","RollCallInfo"]};
+window.SIDEBAR_ITEMS = {"constant":["PUBLIC_URL_RESUBMIT_INTERVAL"],"enum":["CreateNodeValidatorProcessingError"],"fn":["create_node_validator_processing"],"struct":["NodeValidatorAPI","NodeValidatorConfig","SubmitPublicUrlsToScrapeTask"]};

@@ -298,12 +298,7 @@
 <a href="#297" id="297">297</a>
 <a href="#298" id="298">298</a>
 <a href="#299" id="299">299</a>
-<a href="#300" id="300">300</a>
-<a href="#301" id="301">301</a>
-<a href="#302" id="302">302</a>
-<a href="#303" id="303">303</a>
-<a href="#304" id="304">304</a>
-<a href="#305" id="305">305</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#300" id="300">300</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -404,24 +399,21 @@
 </span><span class="kw">pub mod </span>api;
 <span class="kw">pub mod </span>service;
 
+<span class="kw">use </span>api::node_validator::v0::SurfDiscoAvailabilityAPIStream;
 <span class="kw">use </span>clap::Parser;
-<span class="kw">use </span>espresso_types::{PubKey, SeqTypes};
-<span class="kw">use </span>futures::channel::mpsc::{<span class="self">self</span>, Sender};
-<span class="kw">use </span>hotshot::traits::implementations::{
-    CdnMetricsValue, CdnTopic, PushCdnNetwork, WrappedSignatureKey,
+<span class="kw">use </span>futures::{
+    channel::mpsc::{<span class="self">self</span>, Sender},
+    StreamExt,
 };
-<span class="kw">use </span>hotshot_query_service::metrics::PrometheusMetrics;
-<span class="kw">use </span>hotshot_types::traits::{node_implementation::NodeType, signature_key::BuilderSignatureKey};
+<span class="kw">use </span>service::data_state::MAX_VOTERS_HISTORY;
 <span class="kw">use </span>tide_disco::App;
 <span class="kw">use </span>tokio::spawn;
 <span class="kw">use </span>url::Url;
 
 <span class="kw">use crate</span>::{
     api::node_validator::v0::{
-        cdn::{BroadcastRollCallTask, CdnReceiveMessagesTask},
         create_node_validator_api::{create_node_validator_processing, NodeValidatorConfig},
-        HotshotQueryServiceLeafStreamRetriever, ProcessProduceLeafStreamTask,
-        StateClientMessageSender, STATIC_VER_0_1,
+        BridgeLeafAndBlockStreamToSenderTask, StateClientMessageSender, STATIC_VER_0_1,
     },
     service::{client_message::InternalClientMessage, server_message::ServerMessage},
 };
@@ -480,13 +472,6 @@
         default_value = <span class="string">"9000"
     </span>)]
     </span>port: u16,
-
-    <span class="doccomment">/// cdn_marshal_endpoint is the endpoint for the CDN marshal service.
-    ///
-    /// This endpoint is optional, and if it is not provided, then the CDN
-    /// service will not be utilized.
-    </span><span class="attr">#[clap(long, env = <span class="string">"ESPRESSO_NODE_VALIDATOR_CDN_MARSHAL_ENDPOINT"</span>)]
-    </span>cdn_marshal_endpoint: <span class="prelude-ty">Option</span>&lt;String&gt;,
 }
 
 <span class="kw">impl </span>Options {
@@ -504,10 +489,6 @@
 
     <span class="kw">fn </span>port(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
         <span class="self">self</span>.port
-    }
-
-    <span class="kw">fn </span>cdn_marshal_endpoint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="prelude-ty">Option</span>&lt;String&gt; {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.cdn_marshal_endpoint
     }
 }
 
@@ -545,20 +526,59 @@
         },
     }
 
-    <span class="kw">let </span>(leaf_sender, leaf_receiver) = mpsc::channel(<span class="number">10</span>);
+    <span class="kw">let </span>(leaf_and_block_pair_sender, leaf_and_block_pair_receiver) = mpsc::channel(<span class="number">10</span>);
 
-    <span class="kw">let </span>_process_consume_leaves = ProcessProduceLeafStreamTask::new(
-        HotshotQueryServiceLeafStreamRetriever::new(options.leaf_stream_base_url().clone()),
-        leaf_sender,
-    );
+    <span class="kw">let </span>client = surf_disco::Client::new(options.leaf_stream_base_url().clone());
 
-    <span class="kw">let </span>node_validator_task_state = <span class="kw">match </span>create_node_validator_processing(
+    <span class="comment">// Let's get the current starting block height.
+    </span><span class="kw">let </span>block_height = {
+        <span class="comment">// Retry up to 4 times to get the block height
+        </span><span class="kw">let </span><span class="kw-2">mut </span>i = <span class="number">0</span>;
+        <span class="kw">let </span>block_height: <span class="prelude-ty">Option</span>&lt;u64&gt; = <span class="kw">loop </span>{
+            <span class="kw">let </span>block_height_result = client.get(<span class="string">"status/block-height"</span>).send().<span class="kw">await</span>;
+            <span class="kw">match </span>block_height_result {
+                <span class="prelude-val">Ok</span>(block_height) =&gt; <span class="kw">break </span><span class="prelude-val">Some</span>(block_height),
+                <span class="prelude-val">Err</span>(err) =&gt; {
+                    <span class="macro">tracing::warn!</span>(<span class="string">"retrieve block height request failed: {}"</span>, err);
+                },
+            };
+
+            <span class="comment">// Sleep so we're not spamming too much with back to back requests.
+            // The sleep time delay will be 10ms, then 100ms, then 1s, then 10s.
+            </span>tokio::time::sleep(std::time::Duration::from_millis(<span class="number">10u64</span>.pow(i + <span class="number">1</span>))).<span class="kw">await</span>;
+            i += <span class="number">1</span>;
+
+            <span class="kw">if </span>i &gt;= <span class="number">4 </span>{
+                <span class="kw">break </span><span class="prelude-val">None</span>;
+            }
+        };
+
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(block_height) = block_height {
+            <span class="comment">// We want to make sure that we have at least MAX_VOTERS_HISTORY blocks of
+            // history that we are pulling
+            </span>block_height.saturating_sub(MAX_VOTERS_HISTORY <span class="kw">as </span>u64 + <span class="number">1</span>)
+        } <span class="kw">else </span>{
+            <span class="macro">panic!</span>(<span class="string">"unable to retrieve block height"</span>);
+        }
+    };
+
+    <span class="macro">tracing::debug!</span>(<span class="string">"creating stream starting at block height: {}"</span>, block_height);
+
+    <span class="kw">let </span>leaf_stream = SurfDiscoAvailabilityAPIStream::new_leaf_stream(client.clone(), block_height);
+    <span class="kw">let </span>block_stream = SurfDiscoAvailabilityAPIStream::new_block_stream(client, block_height);
+
+    <span class="kw">let </span>zipped_stream = leaf_stream.zip(block_stream);
+
+    <span class="kw">let </span>_process_consume_leaves =
+        BridgeLeafAndBlockStreamToSenderTask::new(zipped_stream, leaf_and_block_pair_sender);
+
+    <span class="kw">let </span>_node_validator_task_state = <span class="kw">match </span>create_node_validator_processing(
         NodeValidatorConfig {
             stake_table_url_base: options.stake_table_source_base_url().clone(),
             initial_node_public_base_urls: options.initial_node_public_base_urls().to_vec(),
         },
         internal_client_message_receiver,
-        leaf_receiver,
+        leaf_and_block_pair_receiver,
     )
     .<span class="kw">await
     </span>{
@@ -568,36 +588,6 @@
             <span class="macro">panic!</span>(<span class="string">"error defining node validator api: {:?}"</span>, err);
         },
     };
-
-    <span class="kw">let </span>_cdn_tasks = <span class="kw">if let </span><span class="prelude-val">Some</span>(cdn_broker_url_string) = options.cdn_marshal_endpoint() {
-        <span class="kw">let </span>(public_key, private_key) = PubKey::generated_from_seed_indexed([<span class="number">1</span>; <span class="number">32</span>], <span class="number">0</span>);
-        <span class="kw">let </span>cdn_network_result = PushCdnNetwork::&lt;&lt;SeqTypes <span class="kw">as </span>NodeType&gt;::SignatureKey&gt;::new(
-            cdn_broker_url_string.to_string(),
-            <span class="macro">vec!</span>[CdnTopic::Global],
-            hotshot::traits::implementations::KeyPair {
-                public_key: WrappedSignatureKey(public_key),
-                private_key: private_key.clone(),
-            },
-            CdnMetricsValue::new(<span class="kw-2">&amp;</span>PrometheusMetrics::default()),
-        );
-        <span class="kw">let </span>cdn_network = <span class="kw">match </span>cdn_network_result {
-            <span class="prelude-val">Ok</span>(cdn_network) =&gt; cdn_network,
-            <span class="prelude-val">Err</span>(err) =&gt; {
-                <span class="macro">panic!</span>(<span class="string">"error creating cdn network: {:?}"</span>, err);
-            },
-        };
-
-        <span class="kw">let </span>url_sender = node_validator_task_state.url_sender.clone();
-
-        <span class="kw">let </span>broadcast_cdn_network = cdn_network.clone();
-        <span class="kw">let </span>cdn_receive_message_task = CdnReceiveMessagesTask::new(cdn_network, url_sender);
-        <span class="kw">let </span>broadcast_roll_call_task =
-            BroadcastRollCallTask::new(broadcast_cdn_network, public_key);
-
-        <span class="prelude-val">Some</span>((broadcast_roll_call_task, cdn_receive_message_task))
-    } <span class="kw">else </span>{
-        <span class="prelude-val">None
-    </span>};
 
     <span class="kw">let </span>port = options.port();
     <span class="comment">// We would like to wait until being signaled
