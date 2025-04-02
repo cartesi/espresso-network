@@ -738,7 +738,25 @@
 <a href="#737" id="737">737</a>
 <a href="#738" id="738">738</a>
 <a href="#739" id="739">739</a>
-<a href="#740" id="740">740</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2021-2024 Espresso Systems (espressosys.com)
 // This file is part of the HotShot repository.
 
 // You should have received a copy of the MIT License
@@ -1189,11 +1207,10 @@
             </span>);
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
-        <span class="kw">let </span>is_high_qc_for_last_block = <span class="kw">if let </span><span class="prelude-val">Some</span>(block_number) = parent_qc.data.block_number {
-            is_epoch_transition(block_number, <span class="self">self</span>.epoch_height)
-        } <span class="kw">else </span>{
-            <span class="bool-val">false
-        </span>};
+        <span class="kw">let </span>is_high_qc_for_last_block = parent_qc
+            .data
+            .block_number
+            .is_some_and(|block_number| is_epoch_transition(block_number, <span class="self">self</span>.epoch_height));
         <span class="kw">let </span>next_epoch_qc = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(<span class="self">self</span>.view_number).<span class="kw">await
             </span>&amp;&amp; is_high_qc_for_last_block
         {
@@ -1288,6 +1305,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>view_sync_finalize_cert = <span class="prelude-val">None</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>vid_share = <span class="prelude-val">None</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>parent_qc = <span class="prelude-val">None</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>next_epoch_qc = <span class="prelude-val">None</span>;
         <span class="kw">for </span>event <span class="kw">in </span>res.iter().flatten().flatten() {
             <span class="kw">match </span>event.as_ref() {
                 HotShotEvent::SendPayloadCommitmentAndMetadata(
@@ -1321,6 +1339,9 @@
                 HotShotEvent::VidDisperseSend(share, <span class="kw">_</span>) =&gt; {
                     vid_share = <span class="prelude-val">Some</span>(share.clone());
                 },
+                HotShotEvent::NextEpochQc2Formed(either::Left(qc)) =&gt; {
+                    next_epoch_qc = <span class="prelude-val">Some</span>(qc.clone());
+                },
                 <span class="kw">_ </span>=&gt; {},
             }
         }
@@ -1347,7 +1368,7 @@
             }
         };
 
-        <span class="kw">let </span><span class="kw-2">mut </span>maybe_next_epoch_qc = <span class="prelude-val">None</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>maybe_next_epoch_qc = next_epoch_qc;
 
         <span class="kw">let </span>parent_qc = <span class="kw">if let </span><span class="prelude-val">Some</span>(qc) = parent_qc {
             qc
@@ -1439,7 +1460,7 @@
     cert_view: TYPES::View,
     leaf_commit: Commitment&lt;Leaf2&lt;TYPES&gt;&gt;,
     block_number: <span class="prelude-ty">Option</span>&lt;u64&gt;,
-    task_state: <span class="kw-2">&amp;</span>QuorumProposalTaskState&lt;TYPES, I, V&gt;,
+    task_state: <span class="kw-2">&amp;mut </span>QuorumProposalTaskState&lt;TYPES, I, V&gt;,
     event_sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
 ) {
     <span class="kw">if </span>!task_state.upgrade_lock.epochs_enabled(cert_view).<span class="kw">await </span>{
@@ -1451,15 +1472,20 @@
         <span class="kw">return</span>;
     }
 
-    <span class="kw">let </span>consensus_reader = task_state.consensus.read().<span class="kw">await</span>;
-    <span class="kw">let </span>current_epoch_qc = consensus_reader.high_qc();
+    <span class="kw">let </span><span class="prelude-val">Some</span>(current_epoch_qc) = task_state.formed_quorum_certificates.get(<span class="kw-2">&amp;</span>cert_view) <span class="kw">else </span>{
+        <span class="macro">tracing::debug!</span>(<span class="string">"We formed the eQC but we don't have the current epoch QC at all."</span>);
+        <span class="kw">return</span>;
+    };
     <span class="kw">if </span>current_epoch_qc.view_number() != cert_view
         || current_epoch_qc.data.leaf_commit != leaf_commit
     {
         <span class="macro">tracing::debug!</span>(<span class="string">"We haven't yet formed the eQC. Do nothing"</span>);
         <span class="kw">return</span>;
     }
-    <span class="kw">let </span><span class="prelude-val">Some</span>(next_epoch_qc) = consensus_reader.next_epoch_high_qc() <span class="kw">else </span>{
+    <span class="kw">let </span><span class="prelude-val">Some</span>(next_epoch_qc) = task_state
+        .formed_next_epoch_quorum_certificates
+        .get(<span class="kw-2">&amp;</span>cert_view)
+    <span class="kw">else </span>{
         <span class="macro">tracing::debug!</span>(<span class="string">"We formed the eQC but we don't have the next epoch eQC at all."</span>);
         <span class="kw">return</span>;
     };
@@ -1470,7 +1496,17 @@
         <span class="kw">return</span>;
     }
     <span class="kw">let </span>current_epoch_qc_clone = current_epoch_qc.clone();
-    drop(consensus_reader);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>consensus_writer = task_state.consensus.write().<span class="kw">await</span>;
+    <span class="kw">let _ </span>= consensus_writer.update_high_qc(current_epoch_qc_clone.clone());
+    <span class="kw">let _ </span>= consensus_writer.update_next_epoch_high_qc(next_epoch_qc.clone());
+    drop(consensus_writer);
+
+    task_state.formed_quorum_certificates =
+        task_state.formed_quorum_certificates.split_off(<span class="kw-2">&amp;</span>cert_view);
+    task_state.formed_next_epoch_quorum_certificates = task_state
+        .formed_next_epoch_quorum_certificates
+        .split_off(<span class="kw-2">&amp;</span>cert_view);
 
     broadcast_event(
         Arc::new(HotShotEvent::ExtendedQc2Formed(current_epoch_qc_clone)),
