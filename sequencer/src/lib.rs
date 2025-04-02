@@ -470,7 +470,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         },
     };
 
-    tracing::debug!("L1 genesis block set: {}", l1_genesis);
+    tracing::debug!("L1 genesis block set: {:?}", l1_genesis);
 
     let mut genesis_state = ValidatedState {
         chain_config: genesis.chain_config.into(),
@@ -522,7 +522,10 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
     };
 
     // Initialize the Libp2p network
+
     let network = {
+        tracing::debug!("Initializing the libp2p network");
+
         let p2p_network = Libp2pNetwork::from_config(
             network_config.clone(),
             DhtNoPersistence,
@@ -562,6 +565,7 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
         ))
     };
 
+    tracing::debug!("Initializing SequencerContext");
     let mut ctx = SequencerContext::init(
         network_config,
         validator_config,
