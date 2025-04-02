@@ -50,7 +50,7 @@ contract StakeTable_register_Test is Test {
     string seed2 = "255";
 
     function genClientWallet(address sender, string memory _seed)
-        private
+        public
         returns (BN254.G2Point memory, EdOnBN254.EdOnBN254Point memory, BN254.G1Point memory)
     {
         // Generate a BLS signature and other values using rust code
@@ -490,7 +490,7 @@ contract StakeTable_register_Test is Test {
 
         // Delegate some funds
         vm.expectEmit(false, false, false, true, address(stakeTable));
-        emit S.Delegated(delegator, validator, 3 ether);
+        emit S.Staked(delegator, validator, 3 ether);
         stakeTable.delegate(validator, 3 ether);
 
         assertEq(token.balanceOf(delegator), INITIAL_BALANCE - 3 ether);
@@ -532,7 +532,7 @@ contract StakeTable_register_Test is Test {
         vm.expectRevert(S.PrematureWithdrawal.selector);
         stakeTable.claimValidatorExit(validator);
 
-        // Try to undelegate after validator exit
+        // Try to unstake after validator exit
         vm.expectRevert(S.ValidatorInactive.selector);
         stakeTable.undelegate(validator, 1);
 
@@ -547,7 +547,7 @@ contract StakeTable_register_Test is Test {
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function test_revertIf_undelegate_AfterValidatorExit() public {
+    function test_revertIf_unstake_AfterValidatorExit() public {
         // TODO
     }
 }
@@ -754,4 +754,277 @@ contract StakeTableUpgradeTest is Test {
 
         vm.stopPrank();
     }
+}
+
+contract StakeTableVotesTest is Test {
+    StakeTable_register_Test internal stakeTableRegisterTest;
+    S internal stakeTable;
+    address internal delegator;
+    address internal validator;
+    address internal tokenGrantRecipient;
+    uint256 internal initialBalance;
+    uint16 internal commission;
+    EspToken internal token;
+
+    function setUp() public {
+        stakeTableRegisterTest = new StakeTable_register_Test();
+        stakeTableRegisterTest.setUp();
+        stakeTable = S(stakeTableRegisterTest.proxy());
+        delegator = stakeTableRegisterTest.delegator();
+        validator = stakeTableRegisterTest.validator();
+        initialBalance = stakeTableRegisterTest.INITIAL_BALANCE();
+        tokenGrantRecipient = stakeTableRegisterTest.tokenGrantRecipient();
+        token = stakeTableRegisterTest.token();
+        commission = stakeTableRegisterTest.COMMISSION();
+        //register validator
+        stakeTableRegisterTest.test_Registration_succeeds();
+    }
+
+    function test_voting_units_are_determined_by_staked_amount_and_delegated_to_validator()
+        public
+    {
+        vm.startPrank(tokenGrantRecipient);
+        token.transfer(delegator, initialBalance);
+        vm.stopPrank();
+
+        vm.startPrank(delegator);
+        token.approve(address(stakeTable), initialBalance);
+
+        stakeTable.delegate(validator, initialBalance);
+        uint256 delegatorVotes = stakeTable.getVotes(delegator);
+        assertEq(delegatorVotes, 0);
+
+        uint256 validatorVotes = stakeTable.getVotes(validator);
+        assertEq(validatorVotes, initialBalance);
+        //change block number
+        vm.roll(block.number + 1);
+        uint256 totalSupply = stakeTable.getPastTotalSupply(1);
+        assertEq(totalSupply, initialBalance);
+
+        assertEq(stakeTable.delegates(delegator), validator);
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastVotes(validator, 1), initialBalance);
+    }
+
+    function test_expect_revert_when_validator_stakes_to_itself() public {
+        vm.startPrank(validator);
+
+        vm.expectRevert(S.ValidatorCannotDelegate.selector);
+        stakeTable.delegate(validator, 1);
+
+        assertEq(stakeTable.delegates(validator), address(0));
+        vm.roll(block.number + 1);
+        assertEq(stakeTable.getPastTotalSupply(1), 0);
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastVotes(validator, 1), 0);
+
+        vm.stopPrank();
+    }
+
+    function test_expect_revert_when_staker_already_staked_to_validator() public {
+        vm.startPrank(tokenGrantRecipient);
+        token.transfer(delegator, initialBalance);
+        vm.stopPrank();
+
+        uint256 stakeAmount = 1 ether;
+
+        vm.startPrank(delegator);
+
+        token.approve(address(stakeTable), 2 ether);
+        stakeTable.delegate(validator, stakeAmount);
+
+        assertEq(stakeTable.delegatorValidator(delegator), validator);
+        (uint256 stakedAmount,) = stakeTable.validators(validator);
+        assertEq(stakedAmount, stakeAmount);
+        vm.stopPrank();
+
+        // register another validator
+        address otherValidator = makeAddr("other_validator");
+        (
+            BN254.G2Point memory blsVK,
+            EdOnBN254.EdOnBN254Point memory schnorrVK,
+            BN254.G1Point memory sig
+        ) = stakeTableRegisterTest.genClientWallet(otherValidator, "255");
+
+        vm.startPrank(otherValidator);
+        vm.expectEmit(false, false, false, true, address(stakeTable));
+        emit S.ValidatorRegistered(otherValidator, blsVK, schnorrVK, commission);
+        stakeTable.registerValidator(blsVK, schnorrVK, sig, commission);
+        vm.stopPrank();
+
+        vm.startPrank(delegator);
+        vm.expectRevert(S.DelegatorAlreadyStaked.selector);
+        stakeTable.delegate(otherValidator, stakeAmount);
+
+        assertEq(stakeTable.delegates(delegator), validator);
+        vm.roll(block.number + 1);
+        assertEq(stakeTable.getPastTotalSupply(1), stakeAmount);
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastVotes(validator, 1), stakeAmount);
+        assertEq(stakeTable.getPastVotes(otherValidator, 0), 0);
+        assertEq(stakeTable.getPastVotes(otherValidator, 1), 0);
+    }
+
+    function test_multiple_stakes_to_the_same_validator_are_summed_up() public {
+        vm.startPrank(tokenGrantRecipient);
+        token.transfer(delegator, initialBalance);
+        vm.stopPrank();
+
+        uint256 stakeAmount = 1 ether;
+
+        vm.startPrank(delegator);
+
+        token.approve(address(stakeTable), 2 ether);
+
+        stakeTable.delegate(validator, stakeAmount);
+        vm.roll(block.number + 1);
+        stakeTable.delegate(validator, stakeAmount);
+
+        assertEq(stakeTable.delegatorValidator(delegator), validator);
+        (uint256 validatorStakedAmount,) = stakeTable.validators(validator);
+
+        uint256 totalStakedAmount = stakeAmount * 2;
+        assertEq(validatorStakedAmount, totalStakedAmount);
+        assertEq(stakeTable.delegations(validator, delegator), totalStakedAmount);
+
+        assertEq(stakeTable.delegates(validator), address(0));
+        vm.roll(block.number + 1);
+        assertEq(stakeTable.getPastTotalSupply(block.number - 1), totalStakedAmount);
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastVotes(validator, block.number - 1), totalStakedAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_unstake_partially_adjusts_voting_power_but_staker_still_delegated_to_validator()
+        public
+    {
+        // stake
+        test_voting_units_are_determined_by_staked_amount_and_delegated_to_validator();
+        assertEq(block.number, 2);
+
+        vm.startPrank(delegator);
+        uint256 unStakeAmount = 1 ether;
+        uint256 votingPowerBefore = stakeTable.getVotes(validator);
+        uint256 totalStakedAmount = stakeTable.delegations(validator, delegator);
+        assertEq(votingPowerBefore, totalStakedAmount);
+
+        // unstake at the next block
+        vm.roll(block.number + 1);
+        stakeTable.undelegate(validator, unStakeAmount);
+        uint256 votingPowerAfter = stakeTable.getVotes(validator);
+        assertEq(votingPowerAfter, totalStakedAmount - unStakeAmount);
+
+        uint256 blockNumAtUnstake = block.number;
+        vm.roll(blockNumAtUnstake + 1);
+
+        // verify that the total supply decreased after block 1 by the unstaked amount
+        assertEq(stakeTable.getPastTotalSupply(1), totalStakedAmount);
+        assertEq(stakeTable.getPastTotalSupply(blockNumAtUnstake), votingPowerAfter);
+
+        // verify that the delegator is still delegated to the validator
+        assertEq(stakeTable.delegatorValidator(delegator), validator);
+        assertEq(stakeTable.delegates(delegator), validator);
+
+        // verify that the validator has the current staked amount after the partial undelegation
+        (uint256 stakedAmount,) = stakeTable.validators(validator);
+        assertEq(stakedAmount, stakeTable.getVotes(validator));
+
+        //verify that the voting power decreased at various block numbers
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastVotes(validator, blockNumAtUnstake - 1), totalStakedAmount);
+        assertEq(
+            stakeTable.getPastVotes(validator, blockNumAtUnstake), totalStakedAmount - unStakeAmount
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_unstake_fully_removes_all_voting_power_for_relative_to_that_staker() public {
+        // stake
+        test_voting_units_are_determined_by_staked_amount_and_delegated_to_validator();
+        assertEq(block.number, 2);
+
+        vm.startPrank(delegator);
+        uint256 votingPowerBefore = stakeTable.getVotes(validator);
+        assertEq(votingPowerBefore, initialBalance);
+        uint256 unStakeAmount = initialBalance;
+
+        // unstake at block number 2
+        stakeTable.undelegate(validator, unStakeAmount);
+        uint256 votingPowerAfter = stakeTable.getVotes(validator);
+        assertEq(votingPowerAfter, 0);
+        assertEq(stakeTable.delegations(validator, delegator), 0);
+        (uint256 stakedAmount,) = stakeTable.validators(validator);
+        assertEq(stakedAmount, 0);
+        vm.roll(block.number + 1);
+
+        // at block number 1 all tokens were staked to the validator
+        uint256 totalSupply = stakeTable.getPastTotalSupply(1);
+        assertEq(totalSupply, initialBalance);
+
+        // at block number 2, un_stake_amount was unstaked from the validator
+        totalSupply = stakeTable.getPastTotalSupply(2);
+        assertEq(totalSupply, votingPowerAfter);
+
+        assertEq(stakeTable.delegates(delegator), address(0));
+        assertEq(stakeTable.delegatorValidator(delegator), address(0));
+        assertEq(stakeTable.delegations(validator, delegator), 0);
+        (uint256 delegatedAmount,) = stakeTable.validators(validator);
+        assertEq(delegatedAmount, 0);
+        assertEq(stakeTable.getVotes(validator), 0);
+        assertEq(stakeTable.getPastVotes(validator, 1), initialBalance);
+        assertEq(stakeTable.getPastVotes(validator, 2), 0);
+
+        vm.stopPrank();
+    }
+
+    function test_delegate_all_tokens_to_validator() public {
+        vm.startPrank(tokenGrantRecipient);
+        token.transfer(delegator, initialBalance);
+        vm.stopPrank();
+
+        vm.startPrank(delegator);
+        token.approve(address(stakeTable), initialBalance);
+        stakeTable.delegate(validator);
+        vm.stopPrank();
+
+        vm.roll(block.number + 1);
+
+        assertEq(stakeTable.delegatorValidator(delegator), validator);
+        assertEq(stakeTable.delegates(delegator), validator);
+        assertEq(stakeTable.delegations(validator, delegator), initialBalance);
+        assertEq(stakeTable.getVotes(validator), initialBalance);
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastTotalSupply(0), 0);
+        assertEq(stakeTable.getPastVotes(validator, 1), initialBalance);
+        assertEq(stakeTable.getPastTotalSupply(1), initialBalance);
+    }
+
+    function test_undelegate_all_tokens_from_validator() public {
+        test_delegate_all_tokens_to_validator();
+        uint256 totalDelegatedAmount = stakeTable.delegations(validator, delegator);
+
+        vm.roll(block.number + 1);
+
+        uint256 undelegateBlockNumber = block.number;
+        vm.startPrank(delegator);
+        stakeTable.undelegate(validator);
+        vm.stopPrank();
+
+        vm.roll(block.number + 1);
+
+        assertEq(stakeTable.delegatorValidator(delegator), address(0));
+        assertEq(stakeTable.delegates(delegator), address(0));
+        assertEq(stakeTable.delegations(validator, delegator), 0);
+        assertEq(stakeTable.getVotes(validator), 0);
+        assertEq(stakeTable.getPastVotes(validator, undelegateBlockNumber), 0);
+        assertEq(stakeTable.getPastTotalSupply(undelegateBlockNumber), 0);
+        assertEq(
+            stakeTable.getPastVotes(validator, undelegateBlockNumber - 1), totalDelegatedAmount
+        );
+        assertEq(stakeTable.getPastTotalSupply(undelegateBlockNumber - 1), totalDelegatedAmount);
+    }
+
+    // todo add fuzz tests
 }
