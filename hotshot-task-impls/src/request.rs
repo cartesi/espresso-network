@@ -119,7 +119,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>> TaskState for NetworkRequest
                 // 2. we are part of the next epoch and this is a proposal for in transition.
                 let membership = self
                     .membership_coordinator
-                    .membership_for_epoch(prop_epoch)
+                    .stake_table_for_epoch(prop_epoch)
                     .await?;
                 if !membership.has_stake(&self.public_key).await
                     && (!membership

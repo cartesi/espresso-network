@@ -95,6 +95,10 @@ pub(crate) async fn handle_quorum_vote_recv<
                 &mut task_state.next_epoch_vote_collectors,
                 &vote.clone().into(),
                 task_state.public_key.clone(),
+                // We eventually verify in `handle_vote` that we are the leader before assembling the certificate here,
+                // so we must request the full randomized stake table.
+                //
+                // I'm not sure this is really necessary, but I've opted not to modify the logic.
                 &epoch_membership.next_epoch().await?.clone(),
                 task_state.id,
                 &event,
@@ -417,7 +421,7 @@ pub(crate) async fn handle_timeout<TYPES: NodeType, I: NodeImplementation<TYPES>
     ensure!(
         task_state
             .membership_coordinator
-            .membership_for_epoch(epoch)
+            .stake_table_for_epoch(epoch)
             .await
             .context(warn!("No stake table for epoch"))?
             .has_stake(&task_state.public_key)

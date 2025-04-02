@@ -57,7 +57,6 @@ pub trait StateCatchup: Send + Sync {
         height: u64,
         stake_table: Vec<PeerConfig<SeqTypes>>,
         success_threshold: U256,
-        expected_height: u64,
     ) -> anyhow::Result<Leaf2> {
         self.backoff().retry(
             self, |provider, retry| {
@@ -70,7 +69,7 @@ pub trait StateCatchup: Send + Sync {
                         leaf_chain,
                         stake_table_clone.clone(),
                         success_threshold,
-                        expected_height,
+                        height,
                         &UpgradeLock::<SeqTypes, SequencerVersions<EpochVersion, EpochVersion>>::new()).await
                 }.boxed()
             }).await
@@ -244,10 +243,9 @@ impl<T: StateCatchup + ?Sized> StateCatchup for Box<T> {
         height: u64,
         stake_table: Vec<PeerConfig<SeqTypes>>,
         success_threshold: U256,
-        expected_height: u64,
     ) -> anyhow::Result<Leaf2> {
         (**self)
-            .fetch_leaf(height, stake_table, success_threshold, expected_height)
+            .fetch_leaf(height, stake_table, success_threshold)
             .await
     }
     async fn try_fetch_accounts(
@@ -378,10 +376,9 @@ impl<T: StateCatchup + ?Sized> StateCatchup for Arc<T> {
         height: u64,
         stake_table: Vec<PeerConfig<SeqTypes>>,
         success_threshold: U256,
-        expected_height: u64,
     ) -> anyhow::Result<Leaf2> {
         (**self)
-            .fetch_leaf(height, stake_table, success_threshold, expected_height)
+            .fetch_leaf(height, stake_table, success_threshold)
             .await
     }
     async fn try_fetch_accounts(

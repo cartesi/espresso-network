@@ -831,12 +831,7 @@ impl Membership<SeqTypes> for EpochCommittees {
         );
         // Fetch leaves from peers
         let leaf: Leaf2 = peers
-            .fetch_leaf(
-                block_height,
-                stake_table.clone(),
-                success_threshold,
-                block_height,
-            )
+            .fetch_leaf(block_height, stake_table.clone(), success_threshold)
             .await?;
 
         Ok(leaf.block_header().clone())
@@ -851,13 +846,13 @@ impl Membership<SeqTypes> for EpochCommittees {
         let stake_table = membership.read().await.stake_table(Some(epoch)).clone();
         let success_threshold = membership.read().await.success_threshold(Some(epoch));
 
-        tracing::error!(
+        tracing::debug!(
             "Getting DRB for epoch {:?}, block height {:?}",
             epoch,
             block_height
         );
         let drb_leaf = peers
-            .fetch_leaf(block_height, stake_table, success_threshold, block_height)
+            .fetch_leaf(block_height, stake_table, success_threshold)
             .await?;
 
         let Some(drb) = drb_leaf.next_drb_result else {

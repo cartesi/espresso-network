@@ -388,7 +388,6 @@ impl<TYPES: NodeType, V: Versions> ProposalDependencyHandle<TYPES, V> {
                 && !is_last_block(parent_block_number, self.epoch_height)
             {
                 let (empty_payload, empty_metadata) = <TYPES as NodeType>::BlockPayload::empty();
-
                 tracing::info!("Reached end of epoch.");
                 ensure!(
                     builder_commitment == empty_payload.builder_commitment(&metadata)

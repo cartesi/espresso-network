@@ -104,7 +104,7 @@ async fn verify_drb_result<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Ver
     if let Some(epoch_val) = epoch {
         let has_stake_current_epoch = task_state
             .membership
-            .membership_for_epoch(epoch)
+            .stake_table_for_epoch(epoch)
             .await
             .context(warn!("No stake table for epoch"))?
             .has_stake(&task_state.public_key)
