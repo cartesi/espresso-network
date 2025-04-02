@@ -778,7 +778,7 @@ pub(crate) async fn validate_epoch_transition_qc<
             .await
             .update_transition_qc(proposed_qc.clone(), next_epoch_qc.clone());
         // reset the high qc to the transition qc
-        update_high_qc(proposal, validation_info).await?;
+        reset_high_qc(proposal, validation_info).await?;
     } else {
         // Height is either epoch height - 1 or epoch height
         ensure!(
