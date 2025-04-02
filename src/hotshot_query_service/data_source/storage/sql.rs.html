@@ -1840,7 +1840,17 @@
 <a href="#1839" id="1839">1839</a>
 <a href="#1840" id="1840">1840</a>
 <a href="#1841" id="1841">1841</a>
-<a href="#1842" id="1842">1842</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
+<a href="#1842" id="1842">1842</a>
+<a href="#1843" id="1843">1843</a>
+<a href="#1844" id="1844">1844</a>
+<a href="#1845" id="1845">1845</a>
+<a href="#1846" id="1846">1846</a>
+<a href="#1847" id="1847">1847</a>
+<a href="#1848" id="1848">1848</a>
+<a href="#1849" id="1849">1849</a>
+<a href="#1850" id="1850">1850</a>
+<a href="#1851" id="1851">1851</a>
+<a href="#1852" id="1852">1852</a></pre></div><pre class="rust"><code><span class="comment">// Copyright (c) 2022 Espresso Systems (espressosys.com)
 // This file is part of the HotShot Query Service library.
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the GNU
@@ -1868,7 +1878,7 @@
         metrics::Metrics,
         node_implementation::{ConsensusTime, NodeType},
     },
-    vid::advz::ADVZShare,
+    vid::advz::{ADVZCommon, ADVZShare},
 };
 <span class="kw">use </span>itertools::Itertools;
 <span class="kw">use </span>log::LevelFilter;
@@ -1889,7 +1899,7 @@
     },
     metrics::PrometheusMetrics,
     status::HasMetrics,
-    QueryError, QueryResult,
+    QueryError, QueryResult, VidCommon,
 };
 <span class="kw">pub extern crate </span>sqlx;
 <span class="kw">pub use </span>sqlx::{Database, Sqlite};
@@ -2729,12 +2739,22 @@
                 <span class="kw">let </span>vid_share_bytes: Vec&lt;u8&gt; = row.try_get(<span class="string">"vid_share"</span>)<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>vid_share: ADVZShare = bincode::deserialize(<span class="kw-2">&amp;</span>vid_share_bytes)
-                    .context(<span class="string">"failed to serialize vid_share"</span>)<span class="question-mark">?</span>;
+                    .context(<span class="string">"failed to deserialize vid_share"</span>)<span class="question-mark">?</span>;
 
                 <span class="kw">let </span>new_vid_share_bytes = bincode::serialize(<span class="kw-2">&amp;</span>VidShare::V0(vid_share))
                     .context(<span class="string">"failed to serialize vid_share"</span>)<span class="question-mark">?</span>;
 
-                vid_rows.push((leaf2.height() <span class="kw">as </span>i64, vid_common_bytes, new_vid_share_bytes));
+                <span class="kw">let </span>vid_common: ADVZCommon = bincode::deserialize(<span class="kw-2">&amp;</span>vid_common_bytes)
+                    .context(<span class="string">"failed to deserialize vid_common"</span>)<span class="question-mark">?</span>;
+
+                <span class="kw">let </span>new_vid_common_bytes = bincode::serialize(<span class="kw-2">&amp;</span>VidCommon::V0(vid_common))
+                    .context(<span class="string">"failed to serialize vid_common"</span>)<span class="question-mark">?</span>;
+
+                vid_rows.push((
+                    leaf2.height() <span class="kw">as </span>i64,
+                    new_vid_common_bytes,
+                    new_vid_share_bytes,
+                ));
                 leaf_rows.push((
                     leaf2.height() <span class="kw">as </span>i64,
                     leaf2.view_number().u64() <span class="kw">as </span>i64,
@@ -3646,7 +3666,7 @@
 
             <span class="kw">let </span><span class="kw-2">mut </span>vid = advz_scheme(<span class="number">2</span>);
             <span class="kw">let </span>disperse = vid.disperse(payload.encode()).unwrap();
-            <span class="kw">let </span>common = <span class="prelude-val">Some</span>(disperse.common);
+            <span class="kw">let </span>common = disperse.common;
             <span class="kw">let </span>share = disperse.shares[<span class="number">0</span>].clone();
 
             <span class="kw">let </span>common_bytes = bincode::serialize(<span class="kw-2">&amp;</span>common).unwrap();
