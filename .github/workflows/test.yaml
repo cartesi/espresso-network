@@ -6,12 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
-concurrency: 
-  group: ${{ github.ref }}-test-${{ matrix.partition }}
-  cancel-in-progress: true
-
 jobs:
   build-test-archive:
+    concurrency: 
+      group: ${{ github.ref }}-build-test-archive
+      cancel-in-progress: true
+
     name: Build test archive
     runs-on: buildjet-8vcpu-ubuntu-2204
     steps:
@@ -41,6 +41,9 @@ jobs:
           path: test-archive.tar.zst
 
   test:
+    concurrency: 
+      group: ${{ github.ref }}-test-${{ matrix.partition }}
+      cancel-in-progress: true
     needs: build-test-archive
     strategy:
       matrix:

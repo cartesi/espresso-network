@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 concurrency: 
-  group: ${{ github.ref }}-build-${{ matrix.target }}
+  group: ${{ github.ref }}-build
   cancel-in-progress: true
 
 jobs:
