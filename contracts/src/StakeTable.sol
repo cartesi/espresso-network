@@ -157,7 +157,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     /// registered. Upon registration the status will become `Active` and if the validator
     /// deregisters its status becomes `Exited`.
     ///
-    /// @notice Validators become "Active" in this contract upon succesfully sending the transaction
+    /// @notice Validators become "Active" in this contract upon successfully sending the transaction
     /// to register. This does not mean they will necessarily be part of the active stake table in
     /// the GCL. To be part of the active validator set in the GCL stake table their registration
     /// data needs to be correct and delegators must delegate funds to them.
