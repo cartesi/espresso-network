@@ -7,6 +7,7 @@
 use std::{sync::Arc, time::Instant};
 
 use async_broadcast::{Receiver, Sender};
+use async_lock::RwLock;
 use async_trait::async_trait;
 use hotshot_task::task::TaskState;
 use hotshot_types::{
@@ -17,10 +18,11 @@ use hotshot_types::{
     simple_certificate::{NextEpochQuorumCertificate2, QuorumCertificate2, TimeoutCertificate2},
     simple_vote::{HasEpoch, NextEpochQuorumVote2, QuorumVote2, TimeoutVote2},
     traits::{
-        node_implementation::{NodeImplementation, NodeType, Versions},
+        node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
+        storage::Storage,
     },
-    utils::{is_last_block, is_transition_block, option_epoch_from_block_number},
+    utils::{epoch_from_block_number, is_last_block, is_transition_block},
     vote::HasViewNumber,
 };
 use hotshot_utils::anytrace::*;
@@ -92,6 +94,9 @@ pub struct ConsensusTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>, V: 
     /// A reference to the metrics trait.
     pub consensus: OuterConsensus<TYPES>,
 
+    /// A reference to the storage trait.
+    pub storage: Arc<RwLock<I::Storage>>,
+
     /// The node's id
     pub id: u64,
 
@@ -145,32 +150,21 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
             },
             HotShotEvent::ExtendedQc2Formed(eqc) => {
                 let cert_view = eqc.view_number();
-                let cert_block_number = self
-                    .consensus
-                    .read()
-                    .await
-                    .saved_leaves()
-                    .get(&eqc.data.leaf_commit)
-                    .context(error!(
-                        "Could not find the leaf for the eQC. It shouldn't happen."
-                    ))?
-                    .height();
-
-                let cert_epoch = option_epoch_from_block_number::<TYPES>(
-                    true,
-                    cert_block_number,
-                    self.epoch_height,
-                );
-                tracing::debug!(
+                let Some(cert_block_number) = eqc.data.block_number else {
+                    tracing::error!("Received extended QC but no block number");
+                    return Ok(());
+                };
+                let cert_epoch = epoch_from_block_number(cert_block_number, self.epoch_height);
+                tracing::error!(
                     "Formed Extended QC for view {:?} and epoch {:?}.",
                     cert_view,
                     cert_epoch
                 );
                 // Transition to the new epoch by sending ViewChange
-                let next_epoch = cert_epoch.map(|x| x + 1);
+                let next_epoch = TYPES::Epoch::new(cert_epoch + 1);
                 tracing::info!("Entering new epoch: {:?}", next_epoch);
                 broadcast_event(
-                    Arc::new(HotShotEvent::ViewChange(cert_view + 1, next_epoch)),
+                    Arc::new(HotShotEvent::ViewChange(cert_view + 1, Some(next_epoch))),
                     &sender,
                 )
                 .await;
@@ -268,6 +262,19 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     .update_next_epoch_high_qc(next_epoch_high_qc.clone())
                     .is_ok();
                 drop(consensus_writer);
+
+                self.storage
+                    .write()
+                    .await
+                    .update_high_qc2(high_qc.clone())
+                    .await
+                    .map_err(|_| warn!("Failed to update high QC"))?;
+                self.storage
+                    .write()
+                    .await
+                    .update_next_epoch_high_qc2(next_epoch_high_qc.clone())
+                    .await
+                    .map_err(|_| warn!("Failed to update next epoch high QC"))?;
 
                 tracing::debug!(
                     "Received Extended QC for view {:?} and epoch {:?}.",
