@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 concurrency: 
-  group: ${{ github.ref }}-test
+  group: ${{ github.ref }}-test-${{ matrix.partition }}
   cancel-in-progress: true
 
 jobs:
