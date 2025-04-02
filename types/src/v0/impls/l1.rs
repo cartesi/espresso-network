@@ -888,6 +888,8 @@ impl L1Client {
         // before update loop starts.
         let stake_table_contract = StakeTableInstance::new(contract, self.provider.clone());
 
+        // @audit-issue - This always fetches from the beginning of time. While N is small, this isn't
+        // too bad. But if someone spams the delegate call they could block us.
         let registered = stake_table_contract
             .ValidatorRegistered_filter()
             .from_block(0)
