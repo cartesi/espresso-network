@@ -4,8 +4,7 @@ import { SafeTransferLib, ERC20 } from "solmate/utils/SafeTransferLib.sol";
 import { OwnableUpgradeable } from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { UUPSUpgradeable } from
-    "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BN254 } from "bn254/BN254.sol";
 import { BLSSig } from "./libraries/BLSSig.sol";
 import { LightClient } from "../src/LightClient.sol";
@@ -194,7 +193,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     mapping(address validator => uint256 unlocksAt) public validatorExits;
 
     /// Currently active delegation amounts.
-    mapping(address validator => mapping(address delegator => uint256 amount)) delegations;
+    mapping(address validator => mapping(address delegator => uint256 amount)) public delegations;
 
     /// Delegations held in escrow that are to be unlocked at a later time.
     //
@@ -240,6 +239,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         }
         token = ERC20(_tokenAddress);
         lightClient = LightClient(_lightClientAddress);
+        // @audit - no bounds on exitEscrowPeriod
         exitEscrowPeriod = _exitEscrowPeriod;
     }
 
@@ -280,6 +280,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         }
     }
 
+    // @audit-issue - this check weather a validator is planning to exit/ has exited ie if a validator has at any point said I want to exit
     function ensureValidatorNotExited(address validator) internal view {
         if (validatorExits[validator] != 0) {
             revert ValidatorAlreadyExited();
@@ -327,8 +328,13 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     ) external virtual {
         address validator = msg.sender;
 
+        // address can not have been used before.
+        // @audit - what if we exit can we enter again?
         ensureValidatorNotRegistered(validator);
+        // ensure that the schnorr key is not zero
+        // @audit-issue - someone could steam your schnorrKey via a front run, in could disable people from ever registering 
         ensureNonZeroSchnorrKey(schnorrVK);
+        // ensure that the bls key has not been used before
         ensureNewKey(blsVK);
 
         // Verify that the validator can sign for that blsVK. This prevents rogue public-key
@@ -336,13 +342,17 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         //
         // TODO: we will move this check to the GCL to save gas.
         bytes memory message = abi.encode(validator);
+        // since we dont have control over msg.sender/validator/message in this case we know that the signature would be validated to the sendeer
         BLSSig.verifyBlsSig(message, blsSig, blsVK);
 
+        // @audit - there is nothing that goes into what the commission is used for?
         if (commission > 10000) {
             revert InvalidCommission();
         }
 
+        // ensures that the bls key is now used so it cant be registered again
         blsKeys[_hashBlsKey(blsVK)] = true;
+        // set the validator to active
         validators[validator] = Validator({ status: ValidatorStatus.Active, delegatedAmount: 0 });
 
         emit ValidatorRegistered(validator, blsVK, schnorrVK, commission);
@@ -353,6 +363,10 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         address validator = msg.sender;
         ensureValidatorActive(validator);
 
+        // Q: if you deregister what happens to all the delegations?
+        // A: they are still able to claim/withdraw their funds after the exit escrow period via claimValidatorExit
+        // @audit-issue - if I deregister I can not go back in might be by design but it could be as simple as having it be a enum of 2 instead of 3 like
+        // dead, active
         validators[validator].status = ValidatorStatus.Exited;
         validatorExits[validator] = block.timestamp + exitEscrowPeriod;
 
@@ -367,13 +381,13 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         address delegator = msg.sender;
 
         // TODO: revert if amount is zero
-
         uint256 allowance = token.allowance(delegator, address(this));
         if (allowance < amount) {
             revert InsufficientAllowance(allowance, amount);
         }
-
+        // the total delegated amount is the sum of all delegations
         validators[validator].delegatedAmount += amount;
+        // the amount delegated by 1 actor to this validator
         delegations[validator][delegator] += amount;
 
         SafeTransferLib.safeTransferFrom(token, delegator, address(this), amount);
@@ -400,8 +414,12 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         }
 
         delegations[validator][delegator] -= amount;
-        undelegations[validator][delegator] =
-            Undelegation({ amount: amount, unlocksAt: block.timestamp + exitEscrowPeriod });
+        // @audit-issue - if you undelegate any amount and want to undelegate more you have to wait the full escrow period again 
+        // ie say I want to delegate 5 and before the escrow period is over I undelegate 3, I have to wait the full escrow period before I can undelegate the remaining 2
+        
+        // @audit-issue - CRITICAL- if we have 20 
+        // undelegate 10 and undelegate 10 again, we will lose the first 10 since it will override the previous undelegation
+        undelegations[validator][delegator] = Undelegation({ amount: amount, unlocksAt: block.timestamp + exitEscrowPeriod });
 
         emit Undelegated(delegator, validator, amount);
     }
@@ -446,6 +464,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
             revert NothingToWithdraw();
         }
 
+        // @audit-issue - INF - does not delete anymore
         // Mark funds as spent
         delegations[validator][delegator] = 0;
 
@@ -471,6 +490,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     /// would also mean two separate events, or storing the keys in the contract only for this
     /// update function to remit the old keys, or throw errors if the keys are not changed. None of
     /// that seems useful enough to warrant the extra complexity in the contract and GCL.
+    // @audit-issue - INF - if you update your keys you take up two slots and does not free up the key we changed from
     function updateConsensusKeys(
         BN254.G2Point memory newBlsVK,
         EdOnBN254.EdOnBN254Point memory newSchnorrVK,
