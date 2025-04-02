@@ -452,6 +452,7 @@ impl L1Client {
                         Some(urls) => {
                             // Use a new WebSockets host each time we retry in case there is a
                             // problem with one of the hosts specifically.
+                            // @audit-issue - Want to always make sure we're getting the urls in order, we'll be wasting money otherwise.
                             let provider = i % urls.len();
                             let url = &urls[provider];
                             ws = match ProviderBuilder::new().on_ws(WsConnect::new(url.clone())).await {

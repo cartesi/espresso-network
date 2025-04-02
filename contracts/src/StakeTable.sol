@@ -275,6 +275,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     }
 
     function ensureValidatorNotRegistered(address validator) internal view {
+        // @audit-issue - This means that someone cannot re-join if they decide to stop being here
         if (validators[validator].status != ValidatorStatus.Unknown) {
             revert ValidatorAlreadyRegistered();
         }
@@ -332,7 +333,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         // @audit - what if we exit can we enter again?
         ensureValidatorNotRegistered(validator);
         // ensure that the schnorr key is not zero
-        // @audit-issue - someone could steam your schnorrKey via a front run, in could disable people from ever registering 
+        // @audit-issue - someone could steam your schnorrKey via a front run, in could disable people from ever registering
         ensureNonZeroSchnorrKey(schnorrVK);
         // ensure that the bls key has not been used before
         ensureNewKey(blsVK);
@@ -414,10 +415,10 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         }
 
         delegations[validator][delegator] -= amount;
-        // @audit-issue - if you undelegate any amount and want to undelegate more you have to wait the full escrow period again 
+        // @audit-issue - if you undelegate any amount and want to undelegate more you have to wait the full escrow period again
         // ie say I want to delegate 5 and before the escrow period is over I undelegate 3, I have to wait the full escrow period before I can undelegate the remaining 2
-        
-        // @audit-issue - CRITICAL- if we have 20 
+
+        // @audit-issue - CRITICAL- if we have 20
         // undelegate 10 and undelegate 10 again, we will lose the first 10 since it will override the previous undelegation
         undelegations[validator][delegator] = Undelegation({ amount: amount, unlocksAt: block.timestamp + exitEscrowPeriod });
 
@@ -466,6 +467,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
 
         // @audit-issue - INF - does not delete anymore
         // Mark funds as spent
+        // @audit-issue - does not delete
         delegations[validator][delegator] = 0;
 
         SafeTransferLib.safeTransfer(token, delegator, amount);
@@ -492,23 +494,34 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     /// that seems useful enough to warrant the extra complexity in the contract and GCL.
     // @audit-issue - INF - if you update your keys you take up two slots and does not free up the key we changed from
     function updateConsensusKeys(
-        BN254.G2Point memory newBlsVK,
-        EdOnBN254.EdOnBN254Point memory newSchnorrVK,
-        BN254.G1Point memory newBlsSig
-    ) external virtual {
-        address validator = msg.sender;
+        BN254.G2Point memory newBlsVK,              // The new BLS verification key, passed as a struct stored in memory.
+        EdOnBN254.EdOnBN254Point memory newSchnorrVK,  // The new Schnorr verification key, also a struct in memory.
+        BN254.G1Point memory newBlsSig               // The new BLS signature, in memory, proving ownership of the new BLS key.
+    ) external virtual {                              // Function is externally callable and can be overridden in derived contracts.
+        address validator = msg.sender;             // Get the address of the caller; this should be the validator updating its keys.
 
-        ensureValidatorActive(validator);
-        ensureNonZeroSchnorrKey(newSchnorrVK);
-        ensureNewKey(newBlsVK);
+        ensureValidatorActive(validator);           // Check that the validator is active (has not exited).
+                                                    // If not active, the function will revert.
 
-        // Verify that the validator can sign for that blsVK. This prevents rogue public-key
-        // attacks.
+        ensureNonZeroSchnorrKey(newSchnorrVK);        // Ensure that the new Schnorr key is not the zero value (i.e., it is valid).
+
+        ensureNewKey(newBlsVK);                       // Ensure that the new BLS key hasn't already been used.
+
+        // Prepare a message for signature verification:
+        // Here, we encode the validator's address into bytes so that it becomes the message that is signed.
         bytes memory message = abi.encode(validator);
+
+        // Verify the BLS signature:
+        // This function checks that the newBlsSig is a valid signature for the 'message' using the newBlsVK.
+        // This step proves that the validator owns the new BLS key.
         BLSSig.verifyBlsSig(message, newBlsSig, newBlsVK);
 
+        // Mark the new BLS key as valid in the contract state:
+        // This typically involves hashing the new key and updating a mapping (blsKeys) to reflect that this key is now registered.
         blsKeys[_hashBlsKey(newBlsVK)] = true;
 
+        // Emit an event to log the key update:
+        // This event signals to off-chain listeners (e.g., user interfaces, monitoring services) that the validator has updated its consensus keys.
         emit ConsensusKeysUpdated(validator, newBlsVK, newSchnorrVK);
     }
 }
