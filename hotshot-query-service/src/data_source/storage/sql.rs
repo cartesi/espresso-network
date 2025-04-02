@@ -852,7 +852,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
 
             let rows = QueryBuilder::default()
                 .query(&format!(
-                    "SELECT leaf, qc, common as vid_common, share as vid_share FROM leaf INNER JOIN vid on leaf.height = vid.height ORDER BY leaf.height LIMIT {} OFFSET {}",
+                    "SELECT leaf, qc, common as \"vid_common?\", share as \"vid_share?\" FROM leaf INNER JOIN vid on leaf.height = vid.height ORDER BY leaf.height LIMIT {} OFFSET {}",
                     limit, offset
                 ))
                 .fetch_all(tx.as_mut())
