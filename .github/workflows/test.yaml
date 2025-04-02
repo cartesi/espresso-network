@@ -32,7 +32,7 @@ jobs:
         run: cargo install cargo-nextest --locked
 
       - name: Build test archive
-        run: cargo nextest archive --archive-file test-archive.tar.zst
+        run: cargo nextest archive --locked --archive-file test-archive.tar.zst
 
       - name: Upload test archive
         uses: actions/upload-artifact@v4
