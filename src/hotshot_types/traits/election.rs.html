@@ -12,7 +12,7 @@
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>primitive_types::U256;
 <a href=#13 id=13 data-nosnippet>13</a>
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">super</span>::node_implementation::NodeType;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{drb::DrbResult, traits::signature_key::StakeTableEntryType, PeerConfig};
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{data::Leaf2, drb::DrbResult, traits::signature_key::StakeTableEntryType, PeerConfig};
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a><span class="doccomment">/// A protocol for determining membership in and participating in a committee.
 <a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub trait </span>Membership&lt;TYPES: NodeType&gt;: Debug + Send + Sync {
@@ -146,7 +146,7 @@
 <a href=#146 id=146 data-nosnippet>146</a>        _membership: Arc&lt;RwLock&lt;<span class="self">Self</span>&gt;&gt;,
 <a href=#147 id=147 data-nosnippet>147</a>        _block_height: u64,
 <a href=#148 id=148 data-nosnippet>148</a>        _epoch: TYPES::Epoch,
-<a href=#149 id=149 data-nosnippet>149</a>    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;Output = anyhow::Result&lt;TYPES::BlockHeader&gt;&gt; + Send {
+<a href=#149 id=149 data-nosnippet>149</a>    ) -&gt; <span class="kw">impl </span>std::future::Future&lt;Output = anyhow::Result&lt;Leaf2&lt;TYPES&gt;&gt;&gt; + Send {
 <a href=#150 id=150 data-nosnippet>150</a>        <span class="kw">async move </span>{ <span class="macro">anyhow::bail!</span>(<span class="string">"Not implemented"</span>) }
 <a href=#151 id=151 data-nosnippet>151</a>    }
 <a href=#152 id=152 data-nosnippet>152</a>
