@@ -458,7 +458,7 @@ pub async fn find_validator(
     let missing_reward_accts = validated_state.forgotten_reward_accounts(reward_accounts);
 
     if !missing_reward_accts.is_empty() {
-        tracing::error!(
+        tracing::warn!(
             height,
             ?parent_view,
             ?missing_reward_accts,

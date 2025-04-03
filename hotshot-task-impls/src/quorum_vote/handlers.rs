@@ -454,7 +454,7 @@ pub(crate) async fn update_shared_state<
     ) {
         tracing::trace!("{e:?}");
     }
-    tracing::error!(
+    tracing::debug!(
         "Updated state using validate and applywith height {}",
         proposed_leaf.height()
     );
