@@ -129,6 +129,7 @@ processes:
         condition: process_completed
 
   sequencer0:
+    log_location: seq0.log
     command: sequencer -- storage-sql -- http -- query -- submit -- hotshot-events -- config
     environment:
       - ESPRESSO_SEQUENCER_API_PORT=$ESPRESSO_SEQUENCER_API_PORT
@@ -185,6 +186,7 @@ processes:
       failure_threshold: 100
 
   sequencer1:
+    log_location: seq1.log
     command: sequencer -- storage-sql -- http -- query -- explorer
     environment:
       - ESPRESSO_SEQUENCER_API_PORT=$ESPRESSO_SEQUENCER1_API_PORT
@@ -290,6 +292,7 @@ processes:
       restart: exit_on_failure
 
   sequencer3:
+    log_location: seq3.log
     command: sequencer -- http -- query -- storage-fs
     environment:
       - ESPRESSO_SEQUENCER_API_PORT=$ESPRESSO_SEQUENCER3_API_PORT
@@ -340,6 +343,7 @@ processes:
       restart: exit_on_failure
 
   sequencer4:
+    log_location: seq4.log
     command: sequencer-sqlite -- storage-sql -- http -- query
     environment:
       - ESPRESSO_SEQUENCER_LIGHTWEIGHT=true
