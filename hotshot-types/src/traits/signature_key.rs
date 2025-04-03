@@ -370,10 +370,7 @@ fn aggregate_fee_data_with_vid_commitment<Metadata: EncodeBytes>(
 
     fee_info.extend_from_slice(fee_amount.to_be_bytes().as_ref());
     fee_info.extend_from_slice(metadata.encode().as_ref());
-
-    if let VidCommitment::V0(advz_commit) = vid_commitment {
-        fee_info.extend_from_slice(advz_commit.as_ref().as_ref());
-    }
+    fee_info.extend_from_slice(vid_commitment.as_ref());
 
     fee_info
 }
