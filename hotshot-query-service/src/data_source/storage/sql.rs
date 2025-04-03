@@ -916,7 +916,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
 
             // migrate leaf2
             let mut query_builder: sqlx::QueryBuilder<Db> = sqlx::QueryBuilder::new(
-                "INSERT INTO leaf2 (height, view, hash, block_hash, leaf, qc)",
+                "INSERT INTO leaf2 (height, view, hash, block_hash, leaf, qc) ",
             );
 
             query_builder.push_values(leaf_rows.into_iter(), |mut b, row| {
