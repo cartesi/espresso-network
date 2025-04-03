@@ -47,7 +47,10 @@ use tracing::Instrument;
 use url::Url;
 
 use super::{
-    from_l1_events, v0_1::{SingleTransport, SingleTransportStatus, SwitchingTransport}, v0_3::Validator, L1BlockInfo, L1ClientMetrics, L1State, L1UpdateTask, StakeTableEvent
+    from_l1_events,
+    v0_1::{SingleTransport, SingleTransportStatus, SwitchingTransport},
+    v0_3::Validator,
+    L1BlockInfo, L1ClientMetrics, L1State, L1UpdateTask, StakeTableEvent,
 };
 use crate::{FeeInfo, L1Client, L1ClientOptions, L1Event, L1Snapshot};
 
