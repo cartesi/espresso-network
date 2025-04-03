@@ -53,7 +53,7 @@ contract StakeTable_register_Test is Test {
     {
         // Generate a BLS signature and other values using rust code
         string[] memory cmds = new string[](4);
-        cmds[0] = "diff-test";
+        cmds[0] = "./target/release/diff-test";
         cmds[1] = "gen-client-wallet";
         cmds[2] = vm.toString(sender);
         cmds[3] = _seed;
@@ -79,7 +79,7 @@ contract StakeTable_register_Test is Test {
         delegator = makeAddr("delegator");
 
         string[] memory cmds = new string[](3);
-        cmds[0] = "diff-test";
+        cmds[0] = "./target/release/diff-test";
         cmds[1] = "mock-genesis";
         cmds[2] = "5";
 
@@ -464,7 +464,7 @@ contract StakeTable_register_Test is Test {
         vm.stopPrank();
     }
 
-    function test_claimWithdrawal_succeeds() public {
+    function test_PoC_Undelegation_Overrides() public {
         (
             BN254.G2Point memory blsVK,
             EdOnBN254.EdOnBN254Point memory schnorrVK,
@@ -494,52 +494,24 @@ contract StakeTable_register_Test is Test {
         assertEq(token.balanceOf(delegator), INITIAL_BALANCE - 3 ether);
         assertEq(token.balanceOf(address(stakeTable)), 3 ether);
 
-        // Withdraw from non-existent validator
-        vm.expectRevert(S.NothingToWithdraw.selector);
-        stakeTable.claimWithdrawal(makeAddr("nobody"));
 
-        // Withdraw without undelegation
-        vm.expectRevert(S.NothingToWithdraw.selector);
-        stakeTable.claimWithdrawal(validator);
-
-        // Request partial undelegation of funds
-        vm.expectEmit(false, false, false, true, address(stakeTable));
-        emit S.Undelegated(delegator, validator, 1 ether);
+        stakeTable.undelegate(validator, 2 ether);
+        // deleator overrides the previous undelegation and loses 2e18 worth of tokens
         stakeTable.undelegate(validator, 1 ether);
-
-        // Withdraw too early
-        vm.expectRevert(S.PrematureWithdrawal.selector);
-        stakeTable.claimWithdrawal(validator);
 
         // Withdraw after escrow period
         vm.warp(block.timestamp + ESCROW_PERIOD);
         stakeTable.claimWithdrawal(validator);
         assertEq(token.balanceOf(delegator), INITIAL_BALANCE - 2 ether);
 
-        vm.stopPrank();
+        // Here we can see that the neither the delegator nor the validator have any delegations but the contract still has the stake
+        assertEq(stakeTable.delegations(validator, delegator), 0);
+        assertEq(stakeTable.delegations(delegator, validator), 0);
 
-        // Validator exit
-        vm.prank(validator);
-        vm.expectEmit(false, false, false, true, address(stakeTable));
-        emit S.ValidatorExit(validator);
-        stakeTable.deregisterValidator();
+        assertEq(token.balanceOf(address(stakeTable)), 2 ether);
 
-        vm.startPrank(delegator);
-
-        // Withdraw too early
-        vm.expectRevert(S.PrematureWithdrawal.selector);
-        stakeTable.claimValidatorExit(validator);
-
-        // Try to undelegate after validator exit
-        vm.expectRevert(S.ValidatorInactive.selector);
-        stakeTable.undelegate(validator, 1);
-
-        // Withdraw after escrow period
-        vm.warp(block.timestamp + ESCROW_PERIOD);
-        stakeTable.claimValidatorExit(validator);
-
-        // The delegator withdrew all their funds
-        assertEq(token.balanceOf(delegator), INITIAL_BALANCE);
+        vm.expectRevert(S.NothingToWithdraw.selector);
+        stakeTable.claimWithdrawal(validator);
 
         vm.stopPrank();
     }

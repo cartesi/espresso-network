@@ -347,6 +347,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         BLSSig.verifyBlsSig(message, blsSig, blsVK);
 
         // @audit - there is nothing that goes into what the commission is used for?
+        // @audit - should there be a lower and upper bound?
         if (commission > 10000) {
             revert InvalidCommission();
         }

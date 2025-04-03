@@ -58,50 +58,64 @@ pub fn from_l1_events<I: Iterator<Item = StakeTableEvent>>(
     for event in events {
         tracing::debug!("Processing stake table event: {:?}", event);
         match event {
+            // match the event type, this will be from the events emitted from the stake table contract 
             StakeTableEvent::Register(ValidatorRegistered {
+                // in this case a validator has called registerValidator and is in the stake table
                 account,
                 blsVk,
                 schnorrVk,
                 commission,
             }) => {
                 // TODO(abdul): BLS and Schnorr signature keys verification
+                // @audit-issue - Schnorr keys are not verified
                 let stake_table_key = bls_alloy_to_jf2(blsVk.clone());
                 let state_ver_key = edward_bn254point_to_state_ver(schnorrVk.clone());
                 // TODO(MA): The stake table contract currently enforces that each bls key is only used once. We will
                 // move this check to the confirmation layer and remove it from the contract. Once we have the signature
                 // check in this functions we can skip if a BLS key, or Schnorr key was previously used.
+                // you can only have 1 key in these key sets
                 if bls_keys.contains(&stake_table_key) {
                     bail!("bls key {} already used", stake_table_key.to_string());
                 };
-
+                // @audit-issue - MED - now we can always just front run someone elses registration and use their schnorr key
+                // since its not validated in the contract and we dont check here we would get in assuming it looks in cronological order
                 // The contract does *not* enforce that each schnorr key is only used once.
                 if schnorr_keys.contains(&state_ver_key) {
                     tracing::warn!("schnorr key {} already used", state_ver_key.to_string());
                 };
 
+                // if we know we dont already have those keys insert them into the sets
                 bls_keys.insert(stake_table_key);
                 schnorr_keys.insert(state_ver_key.clone());
 
+                // if we dont have the validator in the map insert it and if we have it bail
                 match validators.entry(account) {
                     indexmap::map::Entry::Occupied(_occupied_entry) => {
                         bail!("validator {:#x} already registered", *account)
                     },
                     indexmap::map::Entry::Vacant(vacant_entry) => vacant_entry.insert(Validator {
                         account,
+                        // bls key for your ethereum address
                         stake_table_key,
+                        // schnorr key for your ethereum address
                         state_ver_key,
+                        // stake is 0 on registration
                         stake: U256::from(0_u64),
+                        // commission is 0-10000
                         commission,
+                        // delegators is an empty hashmap on registration
                         delegators: HashMap::default(),
                     }),
                 };
             },
             StakeTableEvent::Deregister(exit) => {
+                // Q: what does shift_remove do?
                 validators
                     .shift_remove(&exit.validator)
                     .with_context(|| format!("validator {:#x} not found", exit.validator))?;
             },
             StakeTableEvent::Delegate(delegated) => {
+                // @audit - why is this done differently then in register?
                 let Delegated {
                     delegator,
                     validator,
@@ -111,6 +125,7 @@ pub fn from_l1_events<I: Iterator<Item = StakeTableEvent>>(
                     .get_mut(&validator)
                     .with_context(|| format!("validator {validator:#x} not found"))?;
 
+                // @audit - there is a todo in the stake table contract to revert if amount is 0
                 if amount.is_zero() {
                     tracing::warn!("delegator {delegator:?} has 0 stake");
                     continue;
@@ -118,6 +133,7 @@ pub fn from_l1_events<I: Iterator<Item = StakeTableEvent>>(
                 // Increase stake
                 validator_entry.stake += amount;
                 // Add delegator to the set
+                // @audit-issue - CRITICAL - what happens in this case if we delegate more than once from the same delegator?
                 validator_entry.delegators.insert(delegator, amount);
             },
             StakeTableEvent::Undelegate(undelegated) => {
@@ -135,10 +151,12 @@ pub fn from_l1_events<I: Iterator<Item = StakeTableEvent>>(
                     .checked_sub(amount)
                     .with_context(|| "stake is less than undelegated amount")?;
 
+                // this grabs the delegators delegated amount which will be decreasted since we can do partial undelegations 
                 let delegator_stake = validator_entry
                     .delegators
                     .get_mut(&delegator)
                     .with_context(|| format!("delegator {delegator:#x} not found"))?;
+                // update the delegator stake by the amount undelegated
                 *delegator_stake = delegator_stake
                     .checked_sub(amount)
                     .with_context(|| "delegator_stake is less than undelegated amount")?;
@@ -149,6 +167,7 @@ pub fn from_l1_events<I: Iterator<Item = StakeTableEvent>>(
                 }
             },
             StakeTableEvent::KeyUpdate(update) => {
+                // @audit-issue - You can update to a jay that is already in the set
                 let ConsensusKeysUpdated {
                     account,
                     blsVK,
@@ -176,11 +195,12 @@ fn select_validators(
 ) -> anyhow::Result<()> {
     // Remove invalid validators first
     validators.retain(|address, validator| {
+        // if the delegator got deleted
         if validator.delegators.is_empty() {
             tracing::info!("Validator {address:?} does not have any delegator");
             return false;
         }
-
+        // if the validator has no more stake
         if validator.stake.is_zero() {
             tracing::info!("Validator {address:?} does not have any stake");
             return false;
@@ -189,17 +209,21 @@ fn select_validators(
         true
     });
 
+    // if there are no validators
     if validators.is_empty() {
         bail!("No valid validators found");
     }
 
     // Find the maximum stake
+    // @audit - is this based on the events we have just processed?
+    // if so this will not be the max stake it will be the max stake for the newst events?!
     let maximum_stake = validators
         .values()
         .map(|v| v.stake)
         .max()
         .context("Failed to determine max stake")?;
 
+    // min is determined based on the max stake
     let minimum_stake = maximum_stake
         .checked_div(U256::from(VID_TARGET_TOTAL_STAKE))
         .context("div err")?;
@@ -215,6 +239,7 @@ fn select_validators(
     valid_stakers.sort_by_key(|(_, stake)| std::cmp::Reverse(*stake));
 
     // Keep only the top 100 stakers
+    // @audit-issue - if a validator is over the minimum stake there is still a chance they wont earn rewards?
     if valid_stakers.len() > 100 {
         valid_stakers.truncate(100);
     }
@@ -558,6 +583,8 @@ impl EpochCommittees {
         contract_address: Address,
         l1_block: u64,
     ) -> Result<IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>, GetStakeTablesError>
+    // if we already have a stake table stored use that or else fetch from l1
+    // this means that we fetch from 0th block every single time
     {
         if let Some(stake_tables) = self
             .persistence
