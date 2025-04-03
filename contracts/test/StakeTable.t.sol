@@ -22,7 +22,7 @@ import { IPlonkVerifier as V } from "../src/interfaces/IPlonkVerifier.sol";
 import { OwnableUpgradeable } from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
+import { Checkpoints } from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 // Token contract
 import { EspToken } from "../src/EspToken.sol";
 
@@ -866,24 +866,25 @@ contract StakeTableVotesTest is Test {
     }
 
     function test_multiple_stakes_to_the_same_validator_are_summed_up() public {
+        uint256 amount1 = 1 ether;
+        uint256 amount2 = 2 ether;
+
         vm.startPrank(tokenGrantRecipient);
         token.transfer(delegator, initialBalance);
         vm.stopPrank();
 
-        uint256 stakeAmount = 1 ether;
-
         vm.startPrank(delegator);
+        uint256 totalStakedAmount = amount1 + amount2;
 
-        token.approve(address(stakeTable), 2 ether);
+        token.approve(address(stakeTable), totalStakedAmount);
 
-        stakeTable.delegate(validator, stakeAmount);
+        stakeTable.delegate(validator, amount1);
         vm.roll(block.number + 1);
-        stakeTable.delegate(validator, stakeAmount);
+        stakeTable.delegate(validator, amount2);
 
         assertEq(stakeTable.delegatorValidator(delegator), validator);
         (uint256 validatorStakedAmount,) = stakeTable.validators(validator);
 
-        uint256 totalStakedAmount = stakeAmount * 2;
         assertEq(validatorStakedAmount, totalStakedAmount);
         assertEq(stakeTable.delegations(validator, delegator), totalStakedAmount);
 
@@ -1026,5 +1027,93 @@ contract StakeTableVotesTest is Test {
         assertEq(stakeTable.getPastTotalSupply(undelegateBlockNumber - 1), totalDelegatedAmount);
     }
 
-    // todo add fuzz tests
+    function test_numCheckpoints_returns_valid_values() public {
+        uint256 numCheckpoints = stakeTable.numCheckpoints(validator);
+        assertEq(numCheckpoints, 0);
+
+        test_multiple_stakes_to_the_same_validator_are_summed_up();
+        numCheckpoints = stakeTable.numCheckpoints(validator);
+        assertEq(numCheckpoints, 2);
+
+        // remove all stake
+        vm.startPrank(delegator);
+        stakeTable.undelegate(validator);
+        vm.stopPrank();
+        numCheckpoints = stakeTable.numCheckpoints(validator);
+        assertEq(numCheckpoints, 3);
+
+        // delegators checkpoints is always zero
+        assertEq(stakeTable.numCheckpoints(delegator), 0);
+
+        uint256 currBlockNumber = block.number;
+        vm.roll(currBlockNumber + 1);
+
+        assertEq(stakeTable.getPastTotalSupply(currBlockNumber), 0);
+    }
+
+    function test_reverted_operation_still_returns_zero_checkpoints() public {
+        test_expect_revert_when_validator_stakes_to_itself();
+        assertEq(stakeTable.numCheckpoints(validator), 0);
+    }
+
+    function test_checkpoints_returns_valid_values() public {
+        test_voting_units_are_determined_by_staked_amount_and_delegated_to_validator();
+        assertEq(block.number, 2);
+        Checkpoints.Checkpoint208 memory checkpoint = stakeTable.checkpoints(validator, 0);
+        assertEq(checkpoint._key, 1);
+        assertEq(checkpoint._value, initialBalance);
+        assertEq(stakeTable.numCheckpoints(validator), 1);
+
+        // remove stake
+        vm.startPrank(delegator);
+        stakeTable.undelegate(validator);
+        vm.stopPrank();
+
+        checkpoint = stakeTable.checkpoints(validator, 1);
+        assertEq(checkpoint._key, block.number);
+        assertEq(checkpoint._value, 0);
+        assertEq(stakeTable.numCheckpoints(validator), 2);
+    }
+
+    function testFuzz_MultipleDelegations(
+        uint256 amount1,
+        uint256 amount2,
+        uint256 initialBalance,
+        uint256 divisor1,
+        uint256 divisor2
+    ) public {
+        vm.assume(
+            divisor1 > 1 && divisor1 <= initialBalance && divisor2 > 1 && divisor2 <= initialBalance
+                && initialBalance <= token.balanceOf(tokenGrantRecipient) && amount1 > 0 && amount2 > 0
+                && amount1 < initialBalance / divisor1 && amount2 < initialBalance / divisor2
+                && (amount1 + amount2) <= initialBalance
+        );
+
+        vm.startPrank(tokenGrantRecipient);
+        token.transfer(delegator, initialBalance);
+        vm.stopPrank();
+
+        vm.startPrank(delegator);
+        uint256 totalStakedAmount = amount1 + amount2;
+
+        token.approve(address(stakeTable), totalStakedAmount);
+
+        stakeTable.delegate(validator, amount1);
+        vm.roll(block.number + 1);
+        stakeTable.delegate(validator, amount2);
+
+        assertEq(stakeTable.delegatorValidator(delegator), validator);
+        (uint256 validatorStakedAmount,) = stakeTable.validators(validator);
+
+        assertEq(validatorStakedAmount, totalStakedAmount);
+        assertEq(stakeTable.delegations(validator, delegator), totalStakedAmount);
+
+        assertEq(stakeTable.delegates(validator), address(0));
+        vm.roll(block.number + 1);
+        assertEq(stakeTable.getPastTotalSupply(block.number - 1), totalStakedAmount);
+        assertEq(stakeTable.getPastVotes(validator, 0), 0);
+        assertEq(stakeTable.getPastVotes(validator, block.number - 1), totalStakedAmount);
+
+        vm.stopPrank();
+    }
 }

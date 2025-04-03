@@ -8,6 +8,8 @@ import { UUPSUpgradeable } from
     "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { VotesUpgradeable } from
     "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol";
+import { Checkpoints } from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
+
 import { BN254 } from "bn254/BN254.sol";
 import { BLSSig } from "./libraries/BLSSig.sol";
 import { LightClient } from "../src/LightClient.sol";
@@ -595,5 +597,25 @@ contract StakeTable is
         return validators[validator].delegatedAmount;
     }
 
-    // todo override checkpoints and numCheckpoints similar to ERC20VotesUpgradeable
+    /// @notice override the numCheckpoints function from VotesUpgradeable
+    /// @dev this is used to get the number of checkpoints for a given account
+    /// @param account The address of the account to get the number of checkpoints for
+    /// @return The number of checkpoints for the given account
+    function numCheckpoints(address account) public view virtual returns (uint256) {
+        return _numCheckpoints(account);
+    }
+
+    /// @notice override the getCheckpoint function from VotesUpgradeable
+    /// @dev this is used to get the checkpoint for a given account and index
+    /// @param account The address of the account to get the checkpoint for
+    /// @param pos The position of the checkpoint to get
+    /// @return The checkpoint for the given account and index
+    function checkpoints(address account, uint32 pos)
+        public
+        view
+        virtual
+        returns (Checkpoints.Checkpoint208 memory)
+    {
+        return _checkpoints(account, pos);
+    }
 }
