@@ -145,50 +145,51 @@
 <a href=#145 id=145 data-nosnippet>145</a>                next_drb_result: <span class="prelude-val">None</span>,
 <a href=#146 id=146 data-nosnippet>146</a>                next_epoch_justify_qc: <span class="prelude-val">None</span>,
 <a href=#147 id=147 data-nosnippet>147</a>                epoch: <span class="self">self</span>.epoch,
-<a href=#148 id=148 data-nosnippet>148</a>            },
-<a href=#149 id=149 data-nosnippet>149</a>        };
-<a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>        <span class="kw">let </span>quorum_proposal_event = EventType::QuorumProposal {
-<a href=#152 id=152 data-nosnippet>152</a>            proposal: Proposal {
-<a href=#153 id=153 data-nosnippet>153</a>                data: quorum_proposal.clone(),
-<a href=#154 id=154 data-nosnippet>154</a>                signature: quorum_signature,
-<a href=#155 id=155 data-nosnippet>155</a>                _pd: PhantomData,
-<a href=#156 id=156 data-nosnippet>156</a>            },
-<a href=#157 id=157 data-nosnippet>157</a>            sender: pub_key,
-<a href=#158 id=158 data-nosnippet>158</a>        };
-<a href=#159 id=159 data-nosnippet>159</a>
-<a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">let </span>da_proposal_event = EventType::DaProposal {
-<a href=#161 id=161 data-nosnippet>161</a>            proposal: Proposal {
-<a href=#162 id=162 data-nosnippet>162</a>                data: da_proposal,
-<a href=#163 id=163 data-nosnippet>163</a>                signature: da_signature,
-<a href=#164 id=164 data-nosnippet>164</a>                _pd: PhantomData,
-<a href=#165 id=165 data-nosnippet>165</a>            },
-<a href=#166 id=166 data-nosnippet>166</a>            sender: pub_key,
-<a href=#167 id=167 data-nosnippet>167</a>        };
-<a href=#168 id=168 data-nosnippet>168</a>
-<a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">let </span>builder_state_id = BuilderStateId {
-<a href=#170 id=170 data-nosnippet>170</a>            parent_commitment: block_vid_commitment,
-<a href=#171 id=171 data-nosnippet>171</a>            parent_view: <span class="self">self</span>.round,
-<a href=#172 id=172 data-nosnippet>172</a>        };
-<a href=#173 id=173 data-nosnippet>173</a>
-<a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span><span class="kw-2">mut </span>events = <span class="macro">vec!</span>[quorum_proposal_event, da_proposal_event];
-<a href=#175 id=175 data-nosnippet>175</a>        <span class="comment">// Shuffle the events to shake out possible bugs that depend on event ordering
-<a href=#176 id=176 data-nosnippet>176</a>        </span>events.shuffle(<span class="kw-2">&amp;mut </span>thread_rng());
-<a href=#177 id=177 data-nosnippet>177</a>
-<a href=#178 id=178 data-nosnippet>178</a>        <span class="kw">for </span>evt <span class="kw">in </span>events {
-<a href=#179 id=179 data-nosnippet>179</a>            <span class="self">self</span>.event_stream_sender
-<a href=#180 id=180 data-nosnippet>180</a>                .broadcast(Event {
-<a href=#181 id=181 data-nosnippet>181</a>                    view_number: <span class="self">self</span>.round,
-<a href=#182 id=182 data-nosnippet>182</a>                    event: evt,
-<a href=#183 id=183 data-nosnippet>183</a>                })
-<a href=#184 id=184 data-nosnippet>184</a>                .<span class="kw">await
-<a href=#185 id=185 data-nosnippet>185</a>                </span>.unwrap();
-<a href=#186 id=186 data-nosnippet>186</a>        }
-<a href=#187 id=187 data-nosnippet>187</a>
-<a href=#188 id=188 data-nosnippet>188</a>        <span class="comment">// Update own state
-<a href=#189 id=189 data-nosnippet>189</a>        </span><span class="self">self</span>.round = ViewNumber::new(<span class="self">self</span>.round.u64() + <span class="number">1</span>);
-<a href=#190 id=190 data-nosnippet>190</a>        <span class="self">self</span>.previous_quorum_proposal = <span class="prelude-val">Some</span>(quorum_proposal);
-<a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a>        builder_state_id
-<a href=#193 id=193 data-nosnippet>193</a>    }
-<a href=#194 id=194 data-nosnippet>194</a>}</code></pre></div></section></main></body></html>
+<a href=#148 id=148 data-nosnippet>148</a>                state_cert: <span class="prelude-val">None</span>,
+<a href=#149 id=149 data-nosnippet>149</a>            },
+<a href=#150 id=150 data-nosnippet>150</a>        };
+<a href=#151 id=151 data-nosnippet>151</a>
+<a href=#152 id=152 data-nosnippet>152</a>        <span class="kw">let </span>quorum_proposal_event = EventType::QuorumProposal {
+<a href=#153 id=153 data-nosnippet>153</a>            proposal: Proposal {
+<a href=#154 id=154 data-nosnippet>154</a>                data: quorum_proposal.clone(),
+<a href=#155 id=155 data-nosnippet>155</a>                signature: quorum_signature,
+<a href=#156 id=156 data-nosnippet>156</a>                _pd: PhantomData,
+<a href=#157 id=157 data-nosnippet>157</a>            },
+<a href=#158 id=158 data-nosnippet>158</a>            sender: pub_key,
+<a href=#159 id=159 data-nosnippet>159</a>        };
+<a href=#160 id=160 data-nosnippet>160</a>
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">let </span>da_proposal_event = EventType::DaProposal {
+<a href=#162 id=162 data-nosnippet>162</a>            proposal: Proposal {
+<a href=#163 id=163 data-nosnippet>163</a>                data: da_proposal,
+<a href=#164 id=164 data-nosnippet>164</a>                signature: da_signature,
+<a href=#165 id=165 data-nosnippet>165</a>                _pd: PhantomData,
+<a href=#166 id=166 data-nosnippet>166</a>            },
+<a href=#167 id=167 data-nosnippet>167</a>            sender: pub_key,
+<a href=#168 id=168 data-nosnippet>168</a>        };
+<a href=#169 id=169 data-nosnippet>169</a>
+<a href=#170 id=170 data-nosnippet>170</a>        <span class="kw">let </span>builder_state_id = BuilderStateId {
+<a href=#171 id=171 data-nosnippet>171</a>            parent_commitment: block_vid_commitment,
+<a href=#172 id=172 data-nosnippet>172</a>            parent_view: <span class="self">self</span>.round,
+<a href=#173 id=173 data-nosnippet>173</a>        };
+<a href=#174 id=174 data-nosnippet>174</a>
+<a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">let </span><span class="kw-2">mut </span>events = <span class="macro">vec!</span>[quorum_proposal_event, da_proposal_event];
+<a href=#176 id=176 data-nosnippet>176</a>        <span class="comment">// Shuffle the events to shake out possible bugs that depend on event ordering
+<a href=#177 id=177 data-nosnippet>177</a>        </span>events.shuffle(<span class="kw-2">&amp;mut </span>thread_rng());
+<a href=#178 id=178 data-nosnippet>178</a>
+<a href=#179 id=179 data-nosnippet>179</a>        <span class="kw">for </span>evt <span class="kw">in </span>events {
+<a href=#180 id=180 data-nosnippet>180</a>            <span class="self">self</span>.event_stream_sender
+<a href=#181 id=181 data-nosnippet>181</a>                .broadcast(Event {
+<a href=#182 id=182 data-nosnippet>182</a>                    view_number: <span class="self">self</span>.round,
+<a href=#183 id=183 data-nosnippet>183</a>                    event: evt,
+<a href=#184 id=184 data-nosnippet>184</a>                })
+<a href=#185 id=185 data-nosnippet>185</a>                .<span class="kw">await
+<a href=#186 id=186 data-nosnippet>186</a>                </span>.unwrap();
+<a href=#187 id=187 data-nosnippet>187</a>        }
+<a href=#188 id=188 data-nosnippet>188</a>
+<a href=#189 id=189 data-nosnippet>189</a>        <span class="comment">// Update own state
+<a href=#190 id=190 data-nosnippet>190</a>        </span><span class="self">self</span>.round = ViewNumber::new(<span class="self">self</span>.round.u64() + <span class="number">1</span>);
+<a href=#191 id=191 data-nosnippet>191</a>        <span class="self">self</span>.previous_quorum_proposal = <span class="prelude-val">Some</span>(quorum_proposal);
+<a href=#192 id=192 data-nosnippet>192</a>
+<a href=#193 id=193 data-nosnippet>193</a>        builder_state_id
+<a href=#194 id=194 data-nosnippet>194</a>    }
+<a href=#195 id=195 data-nosnippet>195</a>}</code></pre></div></section></main></body></html>

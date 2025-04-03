@@ -17,7 +17,7 @@
 <a href=#17 id=17 data-nosnippet>17</a>    epoch_membership::{EpochMembership, EpochMembershipCoordinator},
 <a href=#18 id=18 data-nosnippet>18</a>    event::{Event, EventType},
 <a href=#19 id=19 data-nosnippet>19</a>    message::{Proposal, UpgradeLock},
-<a href=#20 id=20 data-nosnippet>20</a>    simple_vote::{QuorumData2, QuorumVote2},
+<a href=#20 id=20 data-nosnippet>20</a>    simple_vote::{EpochRootQuorumVote, LightClientStateUpdateVote, QuorumData2, QuorumVote2},
 <a href=#21 id=21 data-nosnippet>21</a>    traits::{
 <a href=#22 id=22 data-nosnippet>22</a>        block_contents::BlockHeader,
 <a href=#23 id=23 data-nosnippet>23</a>        election::Membership,
@@ -474,72 +474,105 @@
 <a href=#474 id=474 data-nosnippet>474</a>    leaf: Leaf2&lt;TYPES&gt;,
 <a href=#475 id=475 data-nosnippet>475</a>    vid_share: Proposal&lt;TYPES, VidDisperseShare&lt;TYPES&gt;&gt;,
 <a href=#476 id=476 data-nosnippet>476</a>    extended_vote: bool,
-<a href=#477 id=477 data-nosnippet>477</a>    epoch_height: u64,
-<a href=#478 id=478 data-nosnippet>478</a>    _state_private_key: <span class="kw-2">&amp;</span>&lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
-<a href=#479 id=479 data-nosnippet>479</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#480 id=480 data-nosnippet>480</a>    <span class="kw">let </span>committee_member_in_current_epoch = membership.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await</span>;
-<a href=#481 id=481 data-nosnippet>481</a>    <span class="comment">// If the proposed leaf is for the last block in the epoch and the node is part of the quorum committee
-<a href=#482 id=482 data-nosnippet>482</a>    // in the next epoch, the node should vote to achieve the double quorum.
-<a href=#483 id=483 data-nosnippet>483</a>    </span><span class="kw">let </span>committee_member_in_next_epoch = leaf.with_epoch
-<a href=#484 id=484 data-nosnippet>484</a>        &amp;&amp; is_epoch_transition(leaf.height(), epoch_height)
-<a href=#485 id=485 data-nosnippet>485</a>        &amp;&amp; membership
-<a href=#486 id=486 data-nosnippet>486</a>            .next_epoch_stake_table()
-<a href=#487 id=487 data-nosnippet>487</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#488 id=488 data-nosnippet>488</a>            </span>.has_stake(<span class="kw-2">&amp;</span>public_key)
-<a href=#489 id=489 data-nosnippet>489</a>            .<span class="kw">await</span>;
-<a href=#490 id=490 data-nosnippet>490</a>
-<a href=#491 id=491 data-nosnippet>491</a>    <span class="macro">ensure!</span>(
-<a href=#492 id=492 data-nosnippet>492</a>        committee_member_in_current_epoch || committee_member_in_next_epoch,
-<a href=#493 id=493 data-nosnippet>493</a>        <span class="macro">info!</span>(
-<a href=#494 id=494 data-nosnippet>494</a>            <span class="string">"We were not chosen for quorum committee on {:?}"</span>,
-<a href=#495 id=495 data-nosnippet>495</a>            view_number
-<a href=#496 id=496 data-nosnippet>496</a>        )
-<a href=#497 id=497 data-nosnippet>497</a>    );
-<a href=#498 id=498 data-nosnippet>498</a>
-<a href=#499 id=499 data-nosnippet>499</a>    <span class="kw">let </span>height = <span class="kw">if </span>membership.epoch().is_some() {
-<a href=#500 id=500 data-nosnippet>500</a>        <span class="prelude-val">Some</span>(leaf.height())
-<a href=#501 id=501 data-nosnippet>501</a>    } <span class="kw">else </span>{
-<a href=#502 id=502 data-nosnippet>502</a>        <span class="prelude-val">None
-<a href=#503 id=503 data-nosnippet>503</a>    </span>};
-<a href=#504 id=504 data-nosnippet>504</a>
-<a href=#505 id=505 data-nosnippet>505</a>    <span class="comment">// Create and send the vote.
-<a href=#506 id=506 data-nosnippet>506</a>    </span><span class="kw">let </span>vote = QuorumVote2::&lt;TYPES&gt;::create_signed_vote(
-<a href=#507 id=507 data-nosnippet>507</a>        QuorumData2 {
-<a href=#508 id=508 data-nosnippet>508</a>            leaf_commit: leaf.commit(),
-<a href=#509 id=509 data-nosnippet>509</a>            epoch: membership.epoch(),
-<a href=#510 id=510 data-nosnippet>510</a>            block_number: height,
-<a href=#511 id=511 data-nosnippet>511</a>        },
-<a href=#512 id=512 data-nosnippet>512</a>        view_number,
-<a href=#513 id=513 data-nosnippet>513</a>        <span class="kw-2">&amp;</span>public_key,
-<a href=#514 id=514 data-nosnippet>514</a>        <span class="kw-2">&amp;</span>private_key,
-<a href=#515 id=515 data-nosnippet>515</a>        <span class="kw-2">&amp;</span>upgrade_lock,
-<a href=#516 id=516 data-nosnippet>516</a>    )
-<a href=#517 id=517 data-nosnippet>517</a>    .<span class="kw">await
-<a href=#518 id=518 data-nosnippet>518</a>    </span>.wrap()
-<a href=#519 id=519 data-nosnippet>519</a>    .context(<span class="macro">error!</span>(<span class="string">"Failed to sign vote. This should never happen."</span>))<span class="question-mark">?</span>;
-<a href=#520 id=520 data-nosnippet>520</a>    <span class="comment">// Add to the storage.
-<a href=#521 id=521 data-nosnippet>521</a>    </span>storage
-<a href=#522 id=522 data-nosnippet>522</a>        .write()
-<a href=#523 id=523 data-nosnippet>523</a>        .<span class="kw">await
-<a href=#524 id=524 data-nosnippet>524</a>        </span>.append_vid_general(<span class="kw-2">&amp;</span>vid_share)
-<a href=#525 id=525 data-nosnippet>525</a>        .<span class="kw">await
-<a href=#526 id=526 data-nosnippet>526</a>        </span>.wrap()
-<a href=#527 id=527 data-nosnippet>527</a>        .context(<span class="macro">error!</span>(<span class="string">"Failed to store VID share"</span>))<span class="question-mark">?</span>;
-<a href=#528 id=528 data-nosnippet>528</a>
-<a href=#529 id=529 data-nosnippet>529</a>    <span class="kw">if </span>extended_vote &amp;&amp; upgrade_lock.epochs_enabled(view_number).<span class="kw">await </span>{
-<a href=#530 id=530 data-nosnippet>530</a>        <span class="macro">tracing::debug!</span>(<span class="string">"sending extended vote to everybody"</span>,);
-<a href=#531 id=531 data-nosnippet>531</a>        broadcast_event(
-<a href=#532 id=532 data-nosnippet>532</a>            Arc::new(HotShotEvent::ExtendedQuorumVoteSend(vote)),
-<a href=#533 id=533 data-nosnippet>533</a>            <span class="kw-2">&amp;</span>sender,
-<a href=#534 id=534 data-nosnippet>534</a>        )
-<a href=#535 id=535 data-nosnippet>535</a>        .<span class="kw">await</span>;
-<a href=#536 id=536 data-nosnippet>536</a>    } <span class="kw">else </span>{
-<a href=#537 id=537 data-nosnippet>537</a>        <span class="macro">tracing::debug!</span>(
-<a href=#538 id=538 data-nosnippet>538</a>            <span class="string">"sending vote to next quorum leader {:?}"</span>,
-<a href=#539 id=539 data-nosnippet>539</a>            vote.view_number() + <span class="number">1
-<a href=#540 id=540 data-nosnippet>540</a>        </span>);
-<a href=#541 id=541 data-nosnippet>541</a>        broadcast_event(Arc::new(HotShotEvent::QuorumVoteSend(vote)), <span class="kw-2">&amp;</span>sender).<span class="kw">await</span>;
-<a href=#542 id=542 data-nosnippet>542</a>    }
-<a href=#543 id=543 data-nosnippet>543</a>
-<a href=#544 id=544 data-nosnippet>544</a>    <span class="prelude-val">Ok</span>(())
-<a href=#545 id=545 data-nosnippet>545</a>}</code></pre></div></section></main></body></html>
+<a href=#477 id=477 data-nosnippet>477</a>    epoch_root_vote: bool,
+<a href=#478 id=478 data-nosnippet>478</a>    epoch_height: u64,
+<a href=#479 id=479 data-nosnippet>479</a>    state_private_key: <span class="kw-2">&amp;</span>&lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::StatePrivateKey,
+<a href=#480 id=480 data-nosnippet>480</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#481 id=481 data-nosnippet>481</a>    <span class="kw">let </span>committee_member_in_current_epoch = membership.has_stake(<span class="kw-2">&amp;</span>public_key).<span class="kw">await</span>;
+<a href=#482 id=482 data-nosnippet>482</a>    <span class="comment">// If the proposed leaf is for the last block in the epoch and the node is part of the quorum committee
+<a href=#483 id=483 data-nosnippet>483</a>    // in the next epoch, the node should vote to achieve the double quorum.
+<a href=#484 id=484 data-nosnippet>484</a>    </span><span class="kw">let </span>committee_member_in_next_epoch = leaf.with_epoch
+<a href=#485 id=485 data-nosnippet>485</a>        &amp;&amp; is_epoch_transition(leaf.height(), epoch_height)
+<a href=#486 id=486 data-nosnippet>486</a>        &amp;&amp; membership
+<a href=#487 id=487 data-nosnippet>487</a>            .next_epoch_stake_table()
+<a href=#488 id=488 data-nosnippet>488</a>            .<span class="kw">await</span><span class="question-mark">?
+<a href=#489 id=489 data-nosnippet>489</a>            </span>.has_stake(<span class="kw-2">&amp;</span>public_key)
+<a href=#490 id=490 data-nosnippet>490</a>            .<span class="kw">await</span>;
+<a href=#491 id=491 data-nosnippet>491</a>
+<a href=#492 id=492 data-nosnippet>492</a>    <span class="macro">ensure!</span>(
+<a href=#493 id=493 data-nosnippet>493</a>        committee_member_in_current_epoch || committee_member_in_next_epoch,
+<a href=#494 id=494 data-nosnippet>494</a>        <span class="macro">info!</span>(
+<a href=#495 id=495 data-nosnippet>495</a>            <span class="string">"We were not chosen for quorum committee on {:?}"</span>,
+<a href=#496 id=496 data-nosnippet>496</a>            view_number
+<a href=#497 id=497 data-nosnippet>497</a>        )
+<a href=#498 id=498 data-nosnippet>498</a>    );
+<a href=#499 id=499 data-nosnippet>499</a>
+<a href=#500 id=500 data-nosnippet>500</a>    <span class="kw">let </span>height = <span class="kw">if </span>membership.epoch().is_some() {
+<a href=#501 id=501 data-nosnippet>501</a>        <span class="prelude-val">Some</span>(leaf.height())
+<a href=#502 id=502 data-nosnippet>502</a>    } <span class="kw">else </span>{
+<a href=#503 id=503 data-nosnippet>503</a>        <span class="prelude-val">None
+<a href=#504 id=504 data-nosnippet>504</a>    </span>};
+<a href=#505 id=505 data-nosnippet>505</a>
+<a href=#506 id=506 data-nosnippet>506</a>    <span class="comment">// Create and send the vote.
+<a href=#507 id=507 data-nosnippet>507</a>    </span><span class="kw">let </span>vote = QuorumVote2::&lt;TYPES&gt;::create_signed_vote(
+<a href=#508 id=508 data-nosnippet>508</a>        QuorumData2 {
+<a href=#509 id=509 data-nosnippet>509</a>            leaf_commit: leaf.commit(),
+<a href=#510 id=510 data-nosnippet>510</a>            epoch: membership.epoch(),
+<a href=#511 id=511 data-nosnippet>511</a>            block_number: height,
+<a href=#512 id=512 data-nosnippet>512</a>        },
+<a href=#513 id=513 data-nosnippet>513</a>        view_number,
+<a href=#514 id=514 data-nosnippet>514</a>        <span class="kw-2">&amp;</span>public_key,
+<a href=#515 id=515 data-nosnippet>515</a>        <span class="kw-2">&amp;</span>private_key,
+<a href=#516 id=516 data-nosnippet>516</a>        <span class="kw-2">&amp;</span>upgrade_lock,
+<a href=#517 id=517 data-nosnippet>517</a>    )
+<a href=#518 id=518 data-nosnippet>518</a>    .<span class="kw">await
+<a href=#519 id=519 data-nosnippet>519</a>    </span>.wrap()
+<a href=#520 id=520 data-nosnippet>520</a>    .context(<span class="macro">error!</span>(<span class="string">"Failed to sign vote. This should never happen."</span>))<span class="question-mark">?</span>;
+<a href=#521 id=521 data-nosnippet>521</a>    <span class="comment">// Add to the storage.
+<a href=#522 id=522 data-nosnippet>522</a>    </span>storage
+<a href=#523 id=523 data-nosnippet>523</a>        .write()
+<a href=#524 id=524 data-nosnippet>524</a>        .<span class="kw">await
+<a href=#525 id=525 data-nosnippet>525</a>        </span>.append_vid_general(<span class="kw-2">&amp;</span>vid_share)
+<a href=#526 id=526 data-nosnippet>526</a>        .<span class="kw">await
+<a href=#527 id=527 data-nosnippet>527</a>        </span>.wrap()
+<a href=#528 id=528 data-nosnippet>528</a>        .context(<span class="macro">error!</span>(<span class="string">"Failed to store VID share"</span>))<span class="question-mark">?</span>;
+<a href=#529 id=529 data-nosnippet>529</a>
+<a href=#530 id=530 data-nosnippet>530</a>    <span class="comment">// Make epoch root vote
+<a href=#531 id=531 data-nosnippet>531</a>
+<a href=#532 id=532 data-nosnippet>532</a>    </span><span class="kw">let </span>epoch_enabled = upgrade_lock.epochs_enabled(view_number).<span class="kw">await</span>;
+<a href=#533 id=533 data-nosnippet>533</a>    <span class="kw">if </span>extended_vote &amp;&amp; epoch_enabled {
+<a href=#534 id=534 data-nosnippet>534</a>        <span class="macro">tracing::debug!</span>(<span class="string">"sending extended vote to everybody"</span>,);
+<a href=#535 id=535 data-nosnippet>535</a>        broadcast_event(
+<a href=#536 id=536 data-nosnippet>536</a>            Arc::new(HotShotEvent::ExtendedQuorumVoteSend(vote)),
+<a href=#537 id=537 data-nosnippet>537</a>            <span class="kw-2">&amp;</span>sender,
+<a href=#538 id=538 data-nosnippet>538</a>        )
+<a href=#539 id=539 data-nosnippet>539</a>        .<span class="kw">await</span>;
+<a href=#540 id=540 data-nosnippet>540</a>    } <span class="kw">else if </span>epoch_root_vote &amp;&amp; epoch_enabled {
+<a href=#541 id=541 data-nosnippet>541</a>        <span class="macro">tracing::debug!</span>(
+<a href=#542 id=542 data-nosnippet>542</a>            <span class="string">"sending epoch root vote to next quorum leader {:?}"</span>,
+<a href=#543 id=543 data-nosnippet>543</a>            vote.view_number() + <span class="number">1
+<a href=#544 id=544 data-nosnippet>544</a>        </span>);
+<a href=#545 id=545 data-nosnippet>545</a>        <span class="kw">let </span>light_client_state = leaf
+<a href=#546 id=546 data-nosnippet>546</a>            .block_header()
+<a href=#547 id=547 data-nosnippet>547</a>            .get_light_client_state(view_number)
+<a href=#548 id=548 data-nosnippet>548</a>            .wrap()
+<a href=#549 id=549 data-nosnippet>549</a>            .context(<span class="macro">error!</span>(<span class="string">"Failed to generate light client state"</span>))<span class="question-mark">?</span>;
+<a href=#550 id=550 data-nosnippet>550</a>        <span class="kw">let </span>signature = &lt;TYPES::StateSignatureKey <span class="kw">as </span>StateSignatureKey&gt;::sign_state(
+<a href=#551 id=551 data-nosnippet>551</a>            state_private_key,
+<a href=#552 id=552 data-nosnippet>552</a>            <span class="kw-2">&amp;</span>(<span class="kw-2">&amp;</span>light_client_state).into(),
+<a href=#553 id=553 data-nosnippet>553</a>        )
+<a href=#554 id=554 data-nosnippet>554</a>        .wrap()
+<a href=#555 id=555 data-nosnippet>555</a>        .context(<span class="macro">error!</span>(<span class="string">"Failed to sign the light client state"</span>))<span class="question-mark">?</span>;
+<a href=#556 id=556 data-nosnippet>556</a>        <span class="kw">let </span>state_vote = LightClientStateUpdateVote {
+<a href=#557 id=557 data-nosnippet>557</a>            epoch: TYPES::Epoch::new(epoch_from_block_number(leaf.height(), epoch_height)),
+<a href=#558 id=558 data-nosnippet>558</a>            light_client_state,
+<a href=#559 id=559 data-nosnippet>559</a>            signature,
+<a href=#560 id=560 data-nosnippet>560</a>        };
+<a href=#561 id=561 data-nosnippet>561</a>        broadcast_event(
+<a href=#562 id=562 data-nosnippet>562</a>            Arc::new(HotShotEvent::EpochRootQuorumVoteSend(EpochRootQuorumVote {
+<a href=#563 id=563 data-nosnippet>563</a>                vote,
+<a href=#564 id=564 data-nosnippet>564</a>                state_vote,
+<a href=#565 id=565 data-nosnippet>565</a>            })),
+<a href=#566 id=566 data-nosnippet>566</a>            <span class="kw-2">&amp;</span>sender,
+<a href=#567 id=567 data-nosnippet>567</a>        )
+<a href=#568 id=568 data-nosnippet>568</a>        .<span class="kw">await</span>;
+<a href=#569 id=569 data-nosnippet>569</a>    } <span class="kw">else </span>{
+<a href=#570 id=570 data-nosnippet>570</a>        <span class="macro">tracing::debug!</span>(
+<a href=#571 id=571 data-nosnippet>571</a>            <span class="string">"sending vote to next quorum leader {:?}"</span>,
+<a href=#572 id=572 data-nosnippet>572</a>            vote.view_number() + <span class="number">1
+<a href=#573 id=573 data-nosnippet>573</a>        </span>);
+<a href=#574 id=574 data-nosnippet>574</a>        broadcast_event(Arc::new(HotShotEvent::QuorumVoteSend(vote)), <span class="kw-2">&amp;</span>sender).<span class="kw">await</span>;
+<a href=#575 id=575 data-nosnippet>575</a>    }
+<a href=#576 id=576 data-nosnippet>576</a>
+<a href=#577 id=577 data-nosnippet>577</a>    <span class="prelude-val">Ok</span>(())
+<a href=#578 id=578 data-nosnippet>578</a>}</code></pre></div></section></main></body></html>

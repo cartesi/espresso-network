@@ -4112,643 +4112,646 @@
 <a href=#4112 id=4112 data-nosnippet>4112</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
 <a href=#4113 id=4113 data-nosnippet>4113</a>                    next_drb_result: <span class="prelude-val">None</span>,
 <a href=#4114 id=4114 data-nosnippet>4114</a>                    epoch: <span class="prelude-val">None</span>,
-<a href=#4115 id=4115 data-nosnippet>4115</a>                },
-<a href=#4116 id=4116 data-nosnippet>4116</a>            }
-<a href=#4117 id=4117 data-nosnippet>4117</a>        };
-<a href=#4118 id=4118 data-nosnippet>4118</a>
-<a href=#4119 id=4119 data-nosnippet>4119</a>        <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
-<a href=#4120 id=4120 data-nosnippet>4120</a>
-<a href=#4121 id=4121 data-nosnippet>4121</a>        <span class="kw">let </span>signature =
-<a href=#4122 id=4122 data-nosnippet>4122</a>            &lt;BLSPubKey <span class="kw">as </span>SignatureKey&gt;::sign(<span class="kw-2">&amp;</span>leader_private_key, leaf.commit().as_ref()).unwrap();
-<a href=#4123 id=4123 data-nosnippet>4123</a>
-<a href=#4124 id=4124 data-nosnippet>4124</a>        <span class="kw">let </span>signed_quorum_proposal = Arc::new(Proposal {
-<a href=#4125 id=4125 data-nosnippet>4125</a>            data: quorum_proposal,
-<a href=#4126 id=4126 data-nosnippet>4126</a>            signature,
-<a href=#4127 id=4127 data-nosnippet>4127</a>            _pd: Default::default(),
-<a href=#4128 id=4128 data-nosnippet>4128</a>        });
-<a href=#4129 id=4129 data-nosnippet>4129</a>
-<a href=#4130 id=4130 data-nosnippet>4130</a>        <span class="kw">let </span>result = handle_quorum_event_implementation(
-<a href=#4131 id=4131 data-nosnippet>4131</a>            <span class="kw-2">&amp;</span>quorum_channel_sender,
-<a href=#4132 id=4132 data-nosnippet>4132</a>            signed_quorum_proposal.clone(),
-<a href=#4133 id=4133 data-nosnippet>4133</a>            sender_public_key,
-<a href=#4134 id=4134 data-nosnippet>4134</a>        )
-<a href=#4135 id=4135 data-nosnippet>4135</a>        .<span class="kw">await</span>;
-<a href=#4136 id=4136 data-nosnippet>4136</a>
-<a href=#4137 id=4137 data-nosnippet>4137</a>        <span class="kw">match </span>result {
-<a href=#4138 id=4138 data-nosnippet>4138</a>            <span class="prelude-val">Err</span>(HandleQuorumEventError::SignatureValidationFailed) =&gt; {
-<a href=#4139 id=4139 data-nosnippet>4139</a>                <span class="comment">// This is expected.
-<a href=#4140 id=4140 data-nosnippet>4140</a>            </span>},
-<a href=#4141 id=4141 data-nosnippet>4141</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-<a href=#4142 id=4142 data-nosnippet>4142</a>                <span class="macro">panic!</span>(<span class="string">"expected an error, but received a successful attempt instead"</span>);
-<a href=#4143 id=4143 data-nosnippet>4143</a>            },
-<a href=#4144 id=4144 data-nosnippet>4144</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#4145 id=4145 data-nosnippet>4145</a>                <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
-<a href=#4146 id=4146 data-nosnippet>4146</a>            },
-<a href=#4147 id=4147 data-nosnippet>4147</a>        }
-<a href=#4148 id=4148 data-nosnippet>4148</a>    }
-<a href=#4149 id=4149 data-nosnippet>4149</a>
-<a href=#4150 id=4150 data-nosnippet>4150</a>    <span class="doccomment">/// This test checks that the error [HandleQuorumEventError::BroadcastFailed]
-<a href=#4151 id=4151 data-nosnippet>4151</a>    /// is returned under the right conditions of invoking
-<a href=#4152 id=4152 data-nosnippet>4152</a>    /// [handle_quorum_event_implementation].
-<a href=#4153 id=4153 data-nosnippet>4153</a>    ///
-<a href=#4154 id=4154 data-nosnippet>4154</a>    /// To trigger this error, we simply need to ensure that the broadcast
-<a href=#4155 id=4155 data-nosnippet>4155</a>    /// channel receiver has been closed / dropped before the attempt to
-<a href=#4156 id=4156 data-nosnippet>4156</a>    /// send on the broadcast sender is performed.
-<a href=#4157 id=4157 data-nosnippet>4157</a>    </span><span class="attr">#[tokio::test]
-<a href=#4158 id=4158 data-nosnippet>4158</a>    </span><span class="kw">async fn </span>test_handle_quorum_event_error_broadcast_failed() {
-<a href=#4159 id=4159 data-nosnippet>4159</a>        <span class="kw">let </span>(sender_public_key, sender_private_key) =
-<a href=#4160 id=4160 data-nosnippet>4160</a>            &lt;BLSPubKey <span class="kw">as </span>BuilderSignatureKey&gt;::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">0</span>);
-<a href=#4161 id=4161 data-nosnippet>4161</a>        <span class="kw">let </span>quorum_channel_sender = {
-<a href=#4162 id=4162 data-nosnippet>4162</a>            <span class="kw">let </span>(quorum_channel_sender, <span class="kw">_</span>) = async_broadcast::broadcast(<span class="number">10</span>);
-<a href=#4163 id=4163 data-nosnippet>4163</a>            quorum_channel_sender
-<a href=#4164 id=4164 data-nosnippet>4164</a>        };
-<a href=#4165 id=4165 data-nosnippet>4165</a>
-<a href=#4166 id=4166 data-nosnippet>4166</a>        <span class="kw">let </span>view_number = ViewNumber::new(<span class="number">10</span>);
-<a href=#4167 id=4167 data-nosnippet>4167</a>
-<a href=#4168 id=4168 data-nosnippet>4168</a>        <span class="kw">let </span>quorum_proposal = {
-<a href=#4169 id=4169 data-nosnippet>4169</a>            <span class="kw">let </span>leaf: Leaf2&lt;<span class="kw">_</span>&gt; = Leaf::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(
-<a href=#4170 id=4170 data-nosnippet>4170</a>                <span class="kw-2">&amp;</span>TestValidatedState::default(),
-<a href=#4171 id=4171 data-nosnippet>4171</a>                <span class="kw-2">&amp;</span>TestInstanceState::default(),
-<a href=#4172 id=4172 data-nosnippet>4172</a>            )
-<a href=#4173 id=4173 data-nosnippet>4173</a>            .<span class="kw">await
-<a href=#4174 id=4174 data-nosnippet>4174</a>            </span>.into();
-<a href=#4175 id=4175 data-nosnippet>4175</a>
-<a href=#4176 id=4176 data-nosnippet>4176</a>            QuorumProposalWrapper::&lt;TestTypes&gt; {
-<a href=#4177 id=4177 data-nosnippet>4177</a>                proposal: QuorumProposal2::&lt;TestTypes&gt; {
-<a href=#4178 id=4178 data-nosnippet>4178</a>                    block_header: leaf.block_header().clone(),
-<a href=#4179 id=4179 data-nosnippet>4179</a>                    view_number,
-<a href=#4180 id=4180 data-nosnippet>4180</a>                    justify_qc: QuorumCertificate2::genesis::&lt;TestVersions&gt;(
-<a href=#4181 id=4181 data-nosnippet>4181</a>                        <span class="kw-2">&amp;</span>TestValidatedState::default(),
-<a href=#4182 id=4182 data-nosnippet>4182</a>                        <span class="kw-2">&amp;</span>TestInstanceState::default(),
-<a href=#4183 id=4183 data-nosnippet>4183</a>                    )
-<a href=#4184 id=4184 data-nosnippet>4184</a>                    .<span class="kw">await</span>,
-<a href=#4185 id=4185 data-nosnippet>4185</a>                    upgrade_certificate: <span class="prelude-val">None</span>,
-<a href=#4186 id=4186 data-nosnippet>4186</a>                    view_change_evidence: <span class="prelude-val">None</span>,
-<a href=#4187 id=4187 data-nosnippet>4187</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
-<a href=#4188 id=4188 data-nosnippet>4188</a>                    next_drb_result: <span class="prelude-val">None</span>,
-<a href=#4189 id=4189 data-nosnippet>4189</a>                    epoch: <span class="prelude-val">None</span>,
-<a href=#4190 id=4190 data-nosnippet>4190</a>                },
-<a href=#4191 id=4191 data-nosnippet>4191</a>            }
-<a href=#4192 id=4192 data-nosnippet>4192</a>        };
-<a href=#4193 id=4193 data-nosnippet>4193</a>
-<a href=#4194 id=4194 data-nosnippet>4194</a>        <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
+<a href=#4115 id=4115 data-nosnippet>4115</a>                    state_cert: <span class="prelude-val">None</span>,
+<a href=#4116 id=4116 data-nosnippet>4116</a>                },
+<a href=#4117 id=4117 data-nosnippet>4117</a>            }
+<a href=#4118 id=4118 data-nosnippet>4118</a>        };
+<a href=#4119 id=4119 data-nosnippet>4119</a>
+<a href=#4120 id=4120 data-nosnippet>4120</a>        <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
+<a href=#4121 id=4121 data-nosnippet>4121</a>
+<a href=#4122 id=4122 data-nosnippet>4122</a>        <span class="kw">let </span>signature =
+<a href=#4123 id=4123 data-nosnippet>4123</a>            &lt;BLSPubKey <span class="kw">as </span>SignatureKey&gt;::sign(<span class="kw-2">&amp;</span>leader_private_key, leaf.commit().as_ref()).unwrap();
+<a href=#4124 id=4124 data-nosnippet>4124</a>
+<a href=#4125 id=4125 data-nosnippet>4125</a>        <span class="kw">let </span>signed_quorum_proposal = Arc::new(Proposal {
+<a href=#4126 id=4126 data-nosnippet>4126</a>            data: quorum_proposal,
+<a href=#4127 id=4127 data-nosnippet>4127</a>            signature,
+<a href=#4128 id=4128 data-nosnippet>4128</a>            _pd: Default::default(),
+<a href=#4129 id=4129 data-nosnippet>4129</a>        });
+<a href=#4130 id=4130 data-nosnippet>4130</a>
+<a href=#4131 id=4131 data-nosnippet>4131</a>        <span class="kw">let </span>result = handle_quorum_event_implementation(
+<a href=#4132 id=4132 data-nosnippet>4132</a>            <span class="kw-2">&amp;</span>quorum_channel_sender,
+<a href=#4133 id=4133 data-nosnippet>4133</a>            signed_quorum_proposal.clone(),
+<a href=#4134 id=4134 data-nosnippet>4134</a>            sender_public_key,
+<a href=#4135 id=4135 data-nosnippet>4135</a>        )
+<a href=#4136 id=4136 data-nosnippet>4136</a>        .<span class="kw">await</span>;
+<a href=#4137 id=4137 data-nosnippet>4137</a>
+<a href=#4138 id=4138 data-nosnippet>4138</a>        <span class="kw">match </span>result {
+<a href=#4139 id=4139 data-nosnippet>4139</a>            <span class="prelude-val">Err</span>(HandleQuorumEventError::SignatureValidationFailed) =&gt; {
+<a href=#4140 id=4140 data-nosnippet>4140</a>                <span class="comment">// This is expected.
+<a href=#4141 id=4141 data-nosnippet>4141</a>            </span>},
+<a href=#4142 id=4142 data-nosnippet>4142</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+<a href=#4143 id=4143 data-nosnippet>4143</a>                <span class="macro">panic!</span>(<span class="string">"expected an error, but received a successful attempt instead"</span>);
+<a href=#4144 id=4144 data-nosnippet>4144</a>            },
+<a href=#4145 id=4145 data-nosnippet>4145</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#4146 id=4146 data-nosnippet>4146</a>                <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4147 id=4147 data-nosnippet>4147</a>            },
+<a href=#4148 id=4148 data-nosnippet>4148</a>        }
+<a href=#4149 id=4149 data-nosnippet>4149</a>    }
+<a href=#4150 id=4150 data-nosnippet>4150</a>
+<a href=#4151 id=4151 data-nosnippet>4151</a>    <span class="doccomment">/// This test checks that the error [HandleQuorumEventError::BroadcastFailed]
+<a href=#4152 id=4152 data-nosnippet>4152</a>    /// is returned under the right conditions of invoking
+<a href=#4153 id=4153 data-nosnippet>4153</a>    /// [handle_quorum_event_implementation].
+<a href=#4154 id=4154 data-nosnippet>4154</a>    ///
+<a href=#4155 id=4155 data-nosnippet>4155</a>    /// To trigger this error, we simply need to ensure that the broadcast
+<a href=#4156 id=4156 data-nosnippet>4156</a>    /// channel receiver has been closed / dropped before the attempt to
+<a href=#4157 id=4157 data-nosnippet>4157</a>    /// send on the broadcast sender is performed.
+<a href=#4158 id=4158 data-nosnippet>4158</a>    </span><span class="attr">#[tokio::test]
+<a href=#4159 id=4159 data-nosnippet>4159</a>    </span><span class="kw">async fn </span>test_handle_quorum_event_error_broadcast_failed() {
+<a href=#4160 id=4160 data-nosnippet>4160</a>        <span class="kw">let </span>(sender_public_key, sender_private_key) =
+<a href=#4161 id=4161 data-nosnippet>4161</a>            &lt;BLSPubKey <span class="kw">as </span>BuilderSignatureKey&gt;::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">0</span>);
+<a href=#4162 id=4162 data-nosnippet>4162</a>        <span class="kw">let </span>quorum_channel_sender = {
+<a href=#4163 id=4163 data-nosnippet>4163</a>            <span class="kw">let </span>(quorum_channel_sender, <span class="kw">_</span>) = async_broadcast::broadcast(<span class="number">10</span>);
+<a href=#4164 id=4164 data-nosnippet>4164</a>            quorum_channel_sender
+<a href=#4165 id=4165 data-nosnippet>4165</a>        };
+<a href=#4166 id=4166 data-nosnippet>4166</a>
+<a href=#4167 id=4167 data-nosnippet>4167</a>        <span class="kw">let </span>view_number = ViewNumber::new(<span class="number">10</span>);
+<a href=#4168 id=4168 data-nosnippet>4168</a>
+<a href=#4169 id=4169 data-nosnippet>4169</a>        <span class="kw">let </span>quorum_proposal = {
+<a href=#4170 id=4170 data-nosnippet>4170</a>            <span class="kw">let </span>leaf: Leaf2&lt;<span class="kw">_</span>&gt; = Leaf::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(
+<a href=#4171 id=4171 data-nosnippet>4171</a>                <span class="kw-2">&amp;</span>TestValidatedState::default(),
+<a href=#4172 id=4172 data-nosnippet>4172</a>                <span class="kw-2">&amp;</span>TestInstanceState::default(),
+<a href=#4173 id=4173 data-nosnippet>4173</a>            )
+<a href=#4174 id=4174 data-nosnippet>4174</a>            .<span class="kw">await
+<a href=#4175 id=4175 data-nosnippet>4175</a>            </span>.into();
+<a href=#4176 id=4176 data-nosnippet>4176</a>
+<a href=#4177 id=4177 data-nosnippet>4177</a>            QuorumProposalWrapper::&lt;TestTypes&gt; {
+<a href=#4178 id=4178 data-nosnippet>4178</a>                proposal: QuorumProposal2::&lt;TestTypes&gt; {
+<a href=#4179 id=4179 data-nosnippet>4179</a>                    block_header: leaf.block_header().clone(),
+<a href=#4180 id=4180 data-nosnippet>4180</a>                    view_number,
+<a href=#4181 id=4181 data-nosnippet>4181</a>                    justify_qc: QuorumCertificate2::genesis::&lt;TestVersions&gt;(
+<a href=#4182 id=4182 data-nosnippet>4182</a>                        <span class="kw-2">&amp;</span>TestValidatedState::default(),
+<a href=#4183 id=4183 data-nosnippet>4183</a>                        <span class="kw-2">&amp;</span>TestInstanceState::default(),
+<a href=#4184 id=4184 data-nosnippet>4184</a>                    )
+<a href=#4185 id=4185 data-nosnippet>4185</a>                    .<span class="kw">await</span>,
+<a href=#4186 id=4186 data-nosnippet>4186</a>                    upgrade_certificate: <span class="prelude-val">None</span>,
+<a href=#4187 id=4187 data-nosnippet>4187</a>                    view_change_evidence: <span class="prelude-val">None</span>,
+<a href=#4188 id=4188 data-nosnippet>4188</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
+<a href=#4189 id=4189 data-nosnippet>4189</a>                    next_drb_result: <span class="prelude-val">None</span>,
+<a href=#4190 id=4190 data-nosnippet>4190</a>                    epoch: <span class="prelude-val">None</span>,
+<a href=#4191 id=4191 data-nosnippet>4191</a>                    state_cert: <span class="prelude-val">None</span>,
+<a href=#4192 id=4192 data-nosnippet>4192</a>                },
+<a href=#4193 id=4193 data-nosnippet>4193</a>            }
+<a href=#4194 id=4194 data-nosnippet>4194</a>        };
 <a href=#4195 id=4195 data-nosnippet>4195</a>
-<a href=#4196 id=4196 data-nosnippet>4196</a>        <span class="kw">let </span>signature =
-<a href=#4197 id=4197 data-nosnippet>4197</a>            &lt;BLSPubKey <span class="kw">as </span>SignatureKey&gt;::sign(<span class="kw-2">&amp;</span>sender_private_key, leaf.commit().as_ref()).unwrap();
-<a href=#4198 id=4198 data-nosnippet>4198</a>
-<a href=#4199 id=4199 data-nosnippet>4199</a>        <span class="kw">let </span>signed_quorum_proposal = Arc::new(Proposal {
-<a href=#4200 id=4200 data-nosnippet>4200</a>            data: quorum_proposal,
-<a href=#4201 id=4201 data-nosnippet>4201</a>            signature,
-<a href=#4202 id=4202 data-nosnippet>4202</a>            _pd: Default::default(),
-<a href=#4203 id=4203 data-nosnippet>4203</a>        });
-<a href=#4204 id=4204 data-nosnippet>4204</a>
-<a href=#4205 id=4205 data-nosnippet>4205</a>        <span class="kw">let </span>result = handle_quorum_event_implementation(
-<a href=#4206 id=4206 data-nosnippet>4206</a>            <span class="kw-2">&amp;</span>quorum_channel_sender,
-<a href=#4207 id=4207 data-nosnippet>4207</a>            signed_quorum_proposal.clone(),
-<a href=#4208 id=4208 data-nosnippet>4208</a>            sender_public_key,
-<a href=#4209 id=4209 data-nosnippet>4209</a>        )
-<a href=#4210 id=4210 data-nosnippet>4210</a>        .<span class="kw">await</span>;
-<a href=#4211 id=4211 data-nosnippet>4211</a>
-<a href=#4212 id=4212 data-nosnippet>4212</a>        <span class="kw">match </span>result {
-<a href=#4213 id=4213 data-nosnippet>4213</a>            <span class="prelude-val">Err</span>(HandleQuorumEventError::BroadcastFailed(<span class="kw">_</span>)) =&gt; {
-<a href=#4214 id=4214 data-nosnippet>4214</a>                <span class="comment">// This is expected.
-<a href=#4215 id=4215 data-nosnippet>4215</a>            </span>},
-<a href=#4216 id=4216 data-nosnippet>4216</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-<a href=#4217 id=4217 data-nosnippet>4217</a>                <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
-<a href=#4218 id=4218 data-nosnippet>4218</a>            },
-<a href=#4219 id=4219 data-nosnippet>4219</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#4220 id=4220 data-nosnippet>4220</a>                <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
-<a href=#4221 id=4221 data-nosnippet>4221</a>            },
-<a href=#4222 id=4222 data-nosnippet>4222</a>        }
-<a href=#4223 id=4223 data-nosnippet>4223</a>    }
-<a href=#4224 id=4224 data-nosnippet>4224</a>
-<a href=#4225 id=4225 data-nosnippet>4225</a>    <span class="doccomment">/// This test checks to ensure that [handle_quorum_event_implementation]
-<a href=#4226 id=4226 data-nosnippet>4226</a>    /// completes successfully as expected when the correct conditions are met.
-<a href=#4227 id=4227 data-nosnippet>4227</a>    </span><span class="attr">#[tokio::test]
-<a href=#4228 id=4228 data-nosnippet>4228</a>    </span><span class="kw">async fn </span>test_handle_quorum_event_success() {
-<a href=#4229 id=4229 data-nosnippet>4229</a>        <span class="kw">let </span>(sender_public_key, sender_private_key) =
-<a href=#4230 id=4230 data-nosnippet>4230</a>            &lt;BLSPubKey <span class="kw">as </span>BuilderSignatureKey&gt;::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">0</span>);
-<a href=#4231 id=4231 data-nosnippet>4231</a>        <span class="kw">let </span>(quorum_channel_sender, quorum_channel_receiver) = async_broadcast::broadcast(<span class="number">10</span>);
-<a href=#4232 id=4232 data-nosnippet>4232</a>        <span class="kw">let </span>view_number = ViewNumber::new(<span class="number">10</span>);
-<a href=#4233 id=4233 data-nosnippet>4233</a>
-<a href=#4234 id=4234 data-nosnippet>4234</a>        <span class="kw">let </span>quorum_proposal = {
-<a href=#4235 id=4235 data-nosnippet>4235</a>            <span class="kw">let </span>leaf: Leaf2&lt;<span class="kw">_</span>&gt; = Leaf::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(
-<a href=#4236 id=4236 data-nosnippet>4236</a>                <span class="kw-2">&amp;</span>TestValidatedState::default(),
-<a href=#4237 id=4237 data-nosnippet>4237</a>                <span class="kw-2">&amp;</span>TestInstanceState::default(),
-<a href=#4238 id=4238 data-nosnippet>4238</a>            )
-<a href=#4239 id=4239 data-nosnippet>4239</a>            .<span class="kw">await
-<a href=#4240 id=4240 data-nosnippet>4240</a>            </span>.into();
-<a href=#4241 id=4241 data-nosnippet>4241</a>
-<a href=#4242 id=4242 data-nosnippet>4242</a>            QuorumProposalWrapper::&lt;TestTypes&gt; {
-<a href=#4243 id=4243 data-nosnippet>4243</a>                proposal: QuorumProposal2::&lt;TestTypes&gt; {
-<a href=#4244 id=4244 data-nosnippet>4244</a>                    block_header: leaf.block_header().clone(),
-<a href=#4245 id=4245 data-nosnippet>4245</a>                    view_number,
-<a href=#4246 id=4246 data-nosnippet>4246</a>                    justify_qc: QuorumCertificate2::genesis::&lt;TestVersions&gt;(
-<a href=#4247 id=4247 data-nosnippet>4247</a>                        <span class="kw-2">&amp;</span>TestValidatedState::default(),
-<a href=#4248 id=4248 data-nosnippet>4248</a>                        <span class="kw-2">&amp;</span>TestInstanceState::default(),
-<a href=#4249 id=4249 data-nosnippet>4249</a>                    )
-<a href=#4250 id=4250 data-nosnippet>4250</a>                    .<span class="kw">await</span>,
-<a href=#4251 id=4251 data-nosnippet>4251</a>                    upgrade_certificate: <span class="prelude-val">None</span>,
-<a href=#4252 id=4252 data-nosnippet>4252</a>                    view_change_evidence: <span class="prelude-val">None</span>,
-<a href=#4253 id=4253 data-nosnippet>4253</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
-<a href=#4254 id=4254 data-nosnippet>4254</a>                    next_drb_result: <span class="prelude-val">None</span>,
-<a href=#4255 id=4255 data-nosnippet>4255</a>                    epoch: <span class="prelude-val">None</span>,
-<a href=#4256 id=4256 data-nosnippet>4256</a>                },
-<a href=#4257 id=4257 data-nosnippet>4257</a>            }
-<a href=#4258 id=4258 data-nosnippet>4258</a>        };
-<a href=#4259 id=4259 data-nosnippet>4259</a>
-<a href=#4260 id=4260 data-nosnippet>4260</a>        <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
-<a href=#4261 id=4261 data-nosnippet>4261</a>
-<a href=#4262 id=4262 data-nosnippet>4262</a>        <span class="kw">let </span>signature =
-<a href=#4263 id=4263 data-nosnippet>4263</a>            &lt;BLSPubKey <span class="kw">as </span>SignatureKey&gt;::sign(<span class="kw-2">&amp;</span>sender_private_key, leaf.commit().as_ref()).unwrap();
+<a href=#4196 id=4196 data-nosnippet>4196</a>        <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
+<a href=#4197 id=4197 data-nosnippet>4197</a>
+<a href=#4198 id=4198 data-nosnippet>4198</a>        <span class="kw">let </span>signature =
+<a href=#4199 id=4199 data-nosnippet>4199</a>            &lt;BLSPubKey <span class="kw">as </span>SignatureKey&gt;::sign(<span class="kw-2">&amp;</span>sender_private_key, leaf.commit().as_ref()).unwrap();
+<a href=#4200 id=4200 data-nosnippet>4200</a>
+<a href=#4201 id=4201 data-nosnippet>4201</a>        <span class="kw">let </span>signed_quorum_proposal = Arc::new(Proposal {
+<a href=#4202 id=4202 data-nosnippet>4202</a>            data: quorum_proposal,
+<a href=#4203 id=4203 data-nosnippet>4203</a>            signature,
+<a href=#4204 id=4204 data-nosnippet>4204</a>            _pd: Default::default(),
+<a href=#4205 id=4205 data-nosnippet>4205</a>        });
+<a href=#4206 id=4206 data-nosnippet>4206</a>
+<a href=#4207 id=4207 data-nosnippet>4207</a>        <span class="kw">let </span>result = handle_quorum_event_implementation(
+<a href=#4208 id=4208 data-nosnippet>4208</a>            <span class="kw-2">&amp;</span>quorum_channel_sender,
+<a href=#4209 id=4209 data-nosnippet>4209</a>            signed_quorum_proposal.clone(),
+<a href=#4210 id=4210 data-nosnippet>4210</a>            sender_public_key,
+<a href=#4211 id=4211 data-nosnippet>4211</a>        )
+<a href=#4212 id=4212 data-nosnippet>4212</a>        .<span class="kw">await</span>;
+<a href=#4213 id=4213 data-nosnippet>4213</a>
+<a href=#4214 id=4214 data-nosnippet>4214</a>        <span class="kw">match </span>result {
+<a href=#4215 id=4215 data-nosnippet>4215</a>            <span class="prelude-val">Err</span>(HandleQuorumEventError::BroadcastFailed(<span class="kw">_</span>)) =&gt; {
+<a href=#4216 id=4216 data-nosnippet>4216</a>                <span class="comment">// This is expected.
+<a href=#4217 id=4217 data-nosnippet>4217</a>            </span>},
+<a href=#4218 id=4218 data-nosnippet>4218</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+<a href=#4219 id=4219 data-nosnippet>4219</a>                <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4220 id=4220 data-nosnippet>4220</a>            },
+<a href=#4221 id=4221 data-nosnippet>4221</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#4222 id=4222 data-nosnippet>4222</a>                <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4223 id=4223 data-nosnippet>4223</a>            },
+<a href=#4224 id=4224 data-nosnippet>4224</a>        }
+<a href=#4225 id=4225 data-nosnippet>4225</a>    }
+<a href=#4226 id=4226 data-nosnippet>4226</a>
+<a href=#4227 id=4227 data-nosnippet>4227</a>    <span class="doccomment">/// This test checks to ensure that [handle_quorum_event_implementation]
+<a href=#4228 id=4228 data-nosnippet>4228</a>    /// completes successfully as expected when the correct conditions are met.
+<a href=#4229 id=4229 data-nosnippet>4229</a>    </span><span class="attr">#[tokio::test]
+<a href=#4230 id=4230 data-nosnippet>4230</a>    </span><span class="kw">async fn </span>test_handle_quorum_event_success() {
+<a href=#4231 id=4231 data-nosnippet>4231</a>        <span class="kw">let </span>(sender_public_key, sender_private_key) =
+<a href=#4232 id=4232 data-nosnippet>4232</a>            &lt;BLSPubKey <span class="kw">as </span>BuilderSignatureKey&gt;::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">0</span>);
+<a href=#4233 id=4233 data-nosnippet>4233</a>        <span class="kw">let </span>(quorum_channel_sender, quorum_channel_receiver) = async_broadcast::broadcast(<span class="number">10</span>);
+<a href=#4234 id=4234 data-nosnippet>4234</a>        <span class="kw">let </span>view_number = ViewNumber::new(<span class="number">10</span>);
+<a href=#4235 id=4235 data-nosnippet>4235</a>
+<a href=#4236 id=4236 data-nosnippet>4236</a>        <span class="kw">let </span>quorum_proposal = {
+<a href=#4237 id=4237 data-nosnippet>4237</a>            <span class="kw">let </span>leaf: Leaf2&lt;<span class="kw">_</span>&gt; = Leaf::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(
+<a href=#4238 id=4238 data-nosnippet>4238</a>                <span class="kw-2">&amp;</span>TestValidatedState::default(),
+<a href=#4239 id=4239 data-nosnippet>4239</a>                <span class="kw-2">&amp;</span>TestInstanceState::default(),
+<a href=#4240 id=4240 data-nosnippet>4240</a>            )
+<a href=#4241 id=4241 data-nosnippet>4241</a>            .<span class="kw">await
+<a href=#4242 id=4242 data-nosnippet>4242</a>            </span>.into();
+<a href=#4243 id=4243 data-nosnippet>4243</a>
+<a href=#4244 id=4244 data-nosnippet>4244</a>            QuorumProposalWrapper::&lt;TestTypes&gt; {
+<a href=#4245 id=4245 data-nosnippet>4245</a>                proposal: QuorumProposal2::&lt;TestTypes&gt; {
+<a href=#4246 id=4246 data-nosnippet>4246</a>                    block_header: leaf.block_header().clone(),
+<a href=#4247 id=4247 data-nosnippet>4247</a>                    view_number,
+<a href=#4248 id=4248 data-nosnippet>4248</a>                    justify_qc: QuorumCertificate2::genesis::&lt;TestVersions&gt;(
+<a href=#4249 id=4249 data-nosnippet>4249</a>                        <span class="kw-2">&amp;</span>TestValidatedState::default(),
+<a href=#4250 id=4250 data-nosnippet>4250</a>                        <span class="kw-2">&amp;</span>TestInstanceState::default(),
+<a href=#4251 id=4251 data-nosnippet>4251</a>                    )
+<a href=#4252 id=4252 data-nosnippet>4252</a>                    .<span class="kw">await</span>,
+<a href=#4253 id=4253 data-nosnippet>4253</a>                    upgrade_certificate: <span class="prelude-val">None</span>,
+<a href=#4254 id=4254 data-nosnippet>4254</a>                    view_change_evidence: <span class="prelude-val">None</span>,
+<a href=#4255 id=4255 data-nosnippet>4255</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
+<a href=#4256 id=4256 data-nosnippet>4256</a>                    next_drb_result: <span class="prelude-val">None</span>,
+<a href=#4257 id=4257 data-nosnippet>4257</a>                    epoch: <span class="prelude-val">None</span>,
+<a href=#4258 id=4258 data-nosnippet>4258</a>                    state_cert: <span class="prelude-val">None</span>,
+<a href=#4259 id=4259 data-nosnippet>4259</a>                },
+<a href=#4260 id=4260 data-nosnippet>4260</a>            }
+<a href=#4261 id=4261 data-nosnippet>4261</a>        };
+<a href=#4262 id=4262 data-nosnippet>4262</a>
+<a href=#4263 id=4263 data-nosnippet>4263</a>        <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>quorum_proposal);
 <a href=#4264 id=4264 data-nosnippet>4264</a>
-<a href=#4265 id=4265 data-nosnippet>4265</a>        <span class="kw">let </span>signed_quorum_proposal = Arc::new(Proposal {
-<a href=#4266 id=4266 data-nosnippet>4266</a>            data: quorum_proposal,
-<a href=#4267 id=4267 data-nosnippet>4267</a>            signature,
-<a href=#4268 id=4268 data-nosnippet>4268</a>            _pd: Default::default(),
-<a href=#4269 id=4269 data-nosnippet>4269</a>        });
-<a href=#4270 id=4270 data-nosnippet>4270</a>
-<a href=#4271 id=4271 data-nosnippet>4271</a>        <span class="kw">let </span>result = handle_quorum_event_implementation(
-<a href=#4272 id=4272 data-nosnippet>4272</a>            <span class="kw-2">&amp;</span>quorum_channel_sender,
-<a href=#4273 id=4273 data-nosnippet>4273</a>            signed_quorum_proposal.clone(),
-<a href=#4274 id=4274 data-nosnippet>4274</a>            sender_public_key,
-<a href=#4275 id=4275 data-nosnippet>4275</a>        )
-<a href=#4276 id=4276 data-nosnippet>4276</a>        .<span class="kw">await</span>;
-<a href=#4277 id=4277 data-nosnippet>4277</a>
-<a href=#4278 id=4278 data-nosnippet>4278</a>        <span class="kw">match </span>result {
-<a href=#4279 id=4279 data-nosnippet>4279</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-<a href=#4280 id=4280 data-nosnippet>4280</a>                <span class="comment">// This is expected.
-<a href=#4281 id=4281 data-nosnippet>4281</a>            </span>},
-<a href=#4282 id=4282 data-nosnippet>4282</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#4283 id=4283 data-nosnippet>4283</a>                <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
-<a href=#4284 id=4284 data-nosnippet>4284</a>            },
-<a href=#4285 id=4285 data-nosnippet>4285</a>        }
-<a href=#4286 id=4286 data-nosnippet>4286</a>
-<a href=#4287 id=4287 data-nosnippet>4287</a>        <span class="kw">let </span><span class="kw-2">mut </span>quorum_channel_receiver = quorum_channel_receiver;
-<a href=#4288 id=4288 data-nosnippet>4288</a>        <span class="kw">match </span>quorum_channel_receiver.next().<span class="kw">await </span>{
-<a href=#4289 id=4289 data-nosnippet>4289</a>            <span class="prelude-val">Some</span>(MessageType::QuorumProposalMessage(da_proposal_message)) =&gt; {
-<a href=#4290 id=4290 data-nosnippet>4290</a>                <span class="macro">assert_eq!</span>(da_proposal_message.proposal, signed_quorum_proposal);
-<a href=#4291 id=4291 data-nosnippet>4291</a>            },
-<a href=#4292 id=4292 data-nosnippet>4292</a>            <span class="kw">_ </span>=&gt; {
-<a href=#4293 id=4293 data-nosnippet>4293</a>                <span class="macro">panic!</span>(<span class="string">"Expected a QuorumProposalMessage, but got something else"</span>);
+<a href=#4265 id=4265 data-nosnippet>4265</a>        <span class="kw">let </span>signature =
+<a href=#4266 id=4266 data-nosnippet>4266</a>            &lt;BLSPubKey <span class="kw">as </span>SignatureKey&gt;::sign(<span class="kw-2">&amp;</span>sender_private_key, leaf.commit().as_ref()).unwrap();
+<a href=#4267 id=4267 data-nosnippet>4267</a>
+<a href=#4268 id=4268 data-nosnippet>4268</a>        <span class="kw">let </span>signed_quorum_proposal = Arc::new(Proposal {
+<a href=#4269 id=4269 data-nosnippet>4269</a>            data: quorum_proposal,
+<a href=#4270 id=4270 data-nosnippet>4270</a>            signature,
+<a href=#4271 id=4271 data-nosnippet>4271</a>            _pd: Default::default(),
+<a href=#4272 id=4272 data-nosnippet>4272</a>        });
+<a href=#4273 id=4273 data-nosnippet>4273</a>
+<a href=#4274 id=4274 data-nosnippet>4274</a>        <span class="kw">let </span>result = handle_quorum_event_implementation(
+<a href=#4275 id=4275 data-nosnippet>4275</a>            <span class="kw-2">&amp;</span>quorum_channel_sender,
+<a href=#4276 id=4276 data-nosnippet>4276</a>            signed_quorum_proposal.clone(),
+<a href=#4277 id=4277 data-nosnippet>4277</a>            sender_public_key,
+<a href=#4278 id=4278 data-nosnippet>4278</a>        )
+<a href=#4279 id=4279 data-nosnippet>4279</a>        .<span class="kw">await</span>;
+<a href=#4280 id=4280 data-nosnippet>4280</a>
+<a href=#4281 id=4281 data-nosnippet>4281</a>        <span class="kw">match </span>result {
+<a href=#4282 id=4282 data-nosnippet>4282</a>            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+<a href=#4283 id=4283 data-nosnippet>4283</a>                <span class="comment">// This is expected.
+<a href=#4284 id=4284 data-nosnippet>4284</a>            </span>},
+<a href=#4285 id=4285 data-nosnippet>4285</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#4286 id=4286 data-nosnippet>4286</a>                <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4287 id=4287 data-nosnippet>4287</a>            },
+<a href=#4288 id=4288 data-nosnippet>4288</a>        }
+<a href=#4289 id=4289 data-nosnippet>4289</a>
+<a href=#4290 id=4290 data-nosnippet>4290</a>        <span class="kw">let </span><span class="kw-2">mut </span>quorum_channel_receiver = quorum_channel_receiver;
+<a href=#4291 id=4291 data-nosnippet>4291</a>        <span class="kw">match </span>quorum_channel_receiver.next().<span class="kw">await </span>{
+<a href=#4292 id=4292 data-nosnippet>4292</a>            <span class="prelude-val">Some</span>(MessageType::QuorumProposalMessage(da_proposal_message)) =&gt; {
+<a href=#4293 id=4293 data-nosnippet>4293</a>                <span class="macro">assert_eq!</span>(da_proposal_message.proposal, signed_quorum_proposal);
 <a href=#4294 id=4294 data-nosnippet>4294</a>            },
-<a href=#4295 id=4295 data-nosnippet>4295</a>        }
-<a href=#4296 id=4296 data-nosnippet>4296</a>    }
-<a href=#4297 id=4297 data-nosnippet>4297</a>
-<a href=#4298 id=4298 data-nosnippet>4298</a>    <span class="comment">// HandleReceivedTxns Tests
-<a href=#4299 id=4299 data-nosnippet>4299</a>
-<a href=#4300 id=4300 data-nosnippet>4300</a>    </span><span class="doccomment">/// This test checks that the error [HandleReceivedTxnsError::TooManyTransactions]
-<a href=#4301 id=4301 data-nosnippet>4301</a>    /// is returned when the conditions are met.
-<a href=#4302 id=4302 data-nosnippet>4302</a>    ///
-<a href=#4303 id=4303 data-nosnippet>4303</a>    /// To trigger this error we simply provide a broadcast channel with a
-<a href=#4304 id=4304 data-nosnippet>4304</a>    /// buffer smaller than the number of transactions we are attempting to
-<a href=#4305 id=4305 data-nosnippet>4305</a>    /// send through it.
-<a href=#4306 id=4306 data-nosnippet>4306</a>    </span><span class="attr">#[tokio::test]
-<a href=#4307 id=4307 data-nosnippet>4307</a>    </span><span class="kw">async fn </span>test_handle_received_txns_error_too_many_transactions() {
-<a href=#4308 id=4308 data-nosnippet>4308</a>        <span class="kw">let </span>(tx_sender, tx_receiver) = async_broadcast::broadcast(<span class="number">2</span>);
-<a href=#4309 id=4309 data-nosnippet>4309</a>        <span class="kw">let </span>num_transactions = <span class="number">5</span>;
-<a href=#4310 id=4310 data-nosnippet>4310</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
-<a href=#4311 id=4311 data-nosnippet>4311</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
-<a href=#4312 id=4312 data-nosnippet>4312</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
-<a href=#4313 id=4313 data-nosnippet>4313</a>        }
-<a href=#4314 id=4314 data-nosnippet>4314</a>        <span class="kw">let </span>txns = txns;
-<a href=#4315 id=4315 data-nosnippet>4315</a>
-<a href=#4316 id=4316 data-nosnippet>4316</a>        {
-<a href=#4317 id=4317 data-nosnippet>4317</a>            <span class="kw">let </span><span class="kw-2">mut </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
-<a href=#4318 id=4318 data-nosnippet>4318</a>                tx_sender,
-<a href=#4319 id=4319 data-nosnippet>4319</a>                txns.clone(),
-<a href=#4320 id=4320 data-nosnippet>4320</a>                TransactionSource::HotShot,
-<a href=#4321 id=4321 data-nosnippet>4321</a>                TEST_MAX_TX_LEN,
-<a href=#4322 id=4322 data-nosnippet>4322</a>            );
-<a href=#4323 id=4323 data-nosnippet>4323</a>
-<a href=#4324 id=4324 data-nosnippet>4324</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
-<a href=#4325 id=4325 data-nosnippet>4325</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
-<a href=#4326 id=4326 data-nosnippet>4326</a>            <span class="kw">match </span>handle_received_txns_iter.next() {
-<a href=#4327 id=4327 data-nosnippet>4327</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(HandleReceivedTxnsError::TooManyTransactions)) =&gt; {
-<a href=#4328 id=4328 data-nosnippet>4328</a>                    <span class="comment">// This is expected,
-<a href=#4329 id=4329 data-nosnippet>4329</a>                </span>},
-<a href=#4330 id=4330 data-nosnippet>4330</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
-<a href=#4331 id=4331 data-nosnippet>4331</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
-<a href=#4332 id=4332 data-nosnippet>4332</a>                },
-<a href=#4333 id=4333 data-nosnippet>4333</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-<a href=#4334 id=4334 data-nosnippet>4334</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4295 id=4295 data-nosnippet>4295</a>            <span class="kw">_ </span>=&gt; {
+<a href=#4296 id=4296 data-nosnippet>4296</a>                <span class="macro">panic!</span>(<span class="string">"Expected a QuorumProposalMessage, but got something else"</span>);
+<a href=#4297 id=4297 data-nosnippet>4297</a>            },
+<a href=#4298 id=4298 data-nosnippet>4298</a>        }
+<a href=#4299 id=4299 data-nosnippet>4299</a>    }
+<a href=#4300 id=4300 data-nosnippet>4300</a>
+<a href=#4301 id=4301 data-nosnippet>4301</a>    <span class="comment">// HandleReceivedTxns Tests
+<a href=#4302 id=4302 data-nosnippet>4302</a>
+<a href=#4303 id=4303 data-nosnippet>4303</a>    </span><span class="doccomment">/// This test checks that the error [HandleReceivedTxnsError::TooManyTransactions]
+<a href=#4304 id=4304 data-nosnippet>4304</a>    /// is returned when the conditions are met.
+<a href=#4305 id=4305 data-nosnippet>4305</a>    ///
+<a href=#4306 id=4306 data-nosnippet>4306</a>    /// To trigger this error we simply provide a broadcast channel with a
+<a href=#4307 id=4307 data-nosnippet>4307</a>    /// buffer smaller than the number of transactions we are attempting to
+<a href=#4308 id=4308 data-nosnippet>4308</a>    /// send through it.
+<a href=#4309 id=4309 data-nosnippet>4309</a>    </span><span class="attr">#[tokio::test]
+<a href=#4310 id=4310 data-nosnippet>4310</a>    </span><span class="kw">async fn </span>test_handle_received_txns_error_too_many_transactions() {
+<a href=#4311 id=4311 data-nosnippet>4311</a>        <span class="kw">let </span>(tx_sender, tx_receiver) = async_broadcast::broadcast(<span class="number">2</span>);
+<a href=#4312 id=4312 data-nosnippet>4312</a>        <span class="kw">let </span>num_transactions = <span class="number">5</span>;
+<a href=#4313 id=4313 data-nosnippet>4313</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
+<a href=#4314 id=4314 data-nosnippet>4314</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
+<a href=#4315 id=4315 data-nosnippet>4315</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
+<a href=#4316 id=4316 data-nosnippet>4316</a>        }
+<a href=#4317 id=4317 data-nosnippet>4317</a>        <span class="kw">let </span>txns = txns;
+<a href=#4318 id=4318 data-nosnippet>4318</a>
+<a href=#4319 id=4319 data-nosnippet>4319</a>        {
+<a href=#4320 id=4320 data-nosnippet>4320</a>            <span class="kw">let </span><span class="kw-2">mut </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
+<a href=#4321 id=4321 data-nosnippet>4321</a>                tx_sender,
+<a href=#4322 id=4322 data-nosnippet>4322</a>                txns.clone(),
+<a href=#4323 id=4323 data-nosnippet>4323</a>                TransactionSource::HotShot,
+<a href=#4324 id=4324 data-nosnippet>4324</a>                TEST_MAX_TX_LEN,
+<a href=#4325 id=4325 data-nosnippet>4325</a>            );
+<a href=#4326 id=4326 data-nosnippet>4326</a>
+<a href=#4327 id=4327 data-nosnippet>4327</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
+<a href=#4328 id=4328 data-nosnippet>4328</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
+<a href=#4329 id=4329 data-nosnippet>4329</a>            <span class="kw">match </span>handle_received_txns_iter.next() {
+<a href=#4330 id=4330 data-nosnippet>4330</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(HandleReceivedTxnsError::TooManyTransactions)) =&gt; {
+<a href=#4331 id=4331 data-nosnippet>4331</a>                    <span class="comment">// This is expected,
+<a href=#4332 id=4332 data-nosnippet>4332</a>                </span>},
+<a href=#4333 id=4333 data-nosnippet>4333</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
+<a href=#4334 id=4334 data-nosnippet>4334</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
 <a href=#4335 id=4335 data-nosnippet>4335</a>                },
-<a href=#4336 id=4336 data-nosnippet>4336</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#4336 id=4336 data-nosnippet>4336</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
 <a href=#4337 id=4337 data-nosnippet>4337</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
 <a href=#4338 id=4338 data-nosnippet>4338</a>                },
-<a href=#4339 id=4339 data-nosnippet>4339</a>            }
-<a href=#4340 id=4340 data-nosnippet>4340</a>        }
-<a href=#4341 id=4341 data-nosnippet>4341</a>
-<a href=#4342 id=4342 data-nosnippet>4342</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx_receiver = tx_receiver;
-<a href=#4343 id=4343 data-nosnippet>4343</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
-<a href=#4344 id=4344 data-nosnippet>4344</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
-<a href=#4345 id=4345 data-nosnippet>4345</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_none());
-<a href=#4346 id=4346 data-nosnippet>4346</a>    }
-<a href=#4347 id=4347 data-nosnippet>4347</a>
-<a href=#4348 id=4348 data-nosnippet>4348</a>    <span class="doccomment">/// This test checks that the error [HandleReceivedTxnsError::TransactionTooBig]
-<a href=#4349 id=4349 data-nosnippet>4349</a>    /// when the conditions are met.
-<a href=#4350 id=4350 data-nosnippet>4350</a>    ///
-<a href=#4351 id=4351 data-nosnippet>4351</a>    /// To trigger this error we simply provide a [TestTransaction] whose size
-<a href=#4352 id=4352 data-nosnippet>4352</a>    /// exceeds the maximum transaction length. we pass to [HandleReceivedTxns].
-<a href=#4353 id=4353 data-nosnippet>4353</a>    </span><span class="attr">#[tokio::test]
-<a href=#4354 id=4354 data-nosnippet>4354</a>    </span><span class="kw">async fn </span>test_handle_received_txns_error_transaction_too_big() {
-<a href=#4355 id=4355 data-nosnippet>4355</a>        <span class="kw">let </span>(tx_sender, tx_receiver) = async_broadcast::broadcast(<span class="number">10</span>);
-<a href=#4356 id=4356 data-nosnippet>4356</a>        <span class="kw">let </span>num_transactions = <span class="number">2</span>;
-<a href=#4357 id=4357 data-nosnippet>4357</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions + <span class="number">1</span>);
-<a href=#4358 id=4358 data-nosnippet>4358</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
-<a href=#4359 id=4359 data-nosnippet>4359</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
-<a href=#4360 id=4360 data-nosnippet>4360</a>        }
-<a href=#4361 id=4361 data-nosnippet>4361</a>        txns.push(TestTransaction::new(<span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">256</span>]));
-<a href=#4362 id=4362 data-nosnippet>4362</a>        <span class="kw">let </span>txns = txns;
-<a href=#4363 id=4363 data-nosnippet>4363</a>
-<a href=#4364 id=4364 data-nosnippet>4364</a>        {
-<a href=#4365 id=4365 data-nosnippet>4365</a>            <span class="kw">let </span><span class="kw-2">mut </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
-<a href=#4366 id=4366 data-nosnippet>4366</a>                tx_sender,
-<a href=#4367 id=4367 data-nosnippet>4367</a>                txns.clone(),
-<a href=#4368 id=4368 data-nosnippet>4368</a>                TransactionSource::HotShot,
-<a href=#4369 id=4369 data-nosnippet>4369</a>                TEST_MAX_TX_LEN,
-<a href=#4370 id=4370 data-nosnippet>4370</a>            );
-<a href=#4371 id=4371 data-nosnippet>4371</a>
-<a href=#4372 id=4372 data-nosnippet>4372</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
-<a href=#4373 id=4373 data-nosnippet>4373</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
-<a href=#4374 id=4374 data-nosnippet>4374</a>            <span class="kw">match </span>handle_received_txns_iter.next() {
-<a href=#4375 id=4375 data-nosnippet>4375</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(HandleReceivedTxnsError::TransactionTooBig {
-<a href=#4376 id=4376 data-nosnippet>4376</a>                    estimated_length,
-<a href=#4377 id=4377 data-nosnippet>4377</a>                    max_txn_len,
-<a href=#4378 id=4378 data-nosnippet>4378</a>                })) =&gt; {
-<a href=#4379 id=4379 data-nosnippet>4379</a>                    <span class="comment">// This is expected,
-<a href=#4380 id=4380 data-nosnippet>4380</a>                    </span><span class="macro">assert!</span>(estimated_length &gt;= <span class="number">256</span>);
-<a href=#4381 id=4381 data-nosnippet>4381</a>                    <span class="macro">assert_eq!</span>(max_txn_len, TEST_MAX_TX_LEN);
-<a href=#4382 id=4382 data-nosnippet>4382</a>                },
-<a href=#4383 id=4383 data-nosnippet>4383</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
-<a href=#4384 id=4384 data-nosnippet>4384</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4339 id=4339 data-nosnippet>4339</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#4340 id=4340 data-nosnippet>4340</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4341 id=4341 data-nosnippet>4341</a>                },
+<a href=#4342 id=4342 data-nosnippet>4342</a>            }
+<a href=#4343 id=4343 data-nosnippet>4343</a>        }
+<a href=#4344 id=4344 data-nosnippet>4344</a>
+<a href=#4345 id=4345 data-nosnippet>4345</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx_receiver = tx_receiver;
+<a href=#4346 id=4346 data-nosnippet>4346</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
+<a href=#4347 id=4347 data-nosnippet>4347</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
+<a href=#4348 id=4348 data-nosnippet>4348</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_none());
+<a href=#4349 id=4349 data-nosnippet>4349</a>    }
+<a href=#4350 id=4350 data-nosnippet>4350</a>
+<a href=#4351 id=4351 data-nosnippet>4351</a>    <span class="doccomment">/// This test checks that the error [HandleReceivedTxnsError::TransactionTooBig]
+<a href=#4352 id=4352 data-nosnippet>4352</a>    /// when the conditions are met.
+<a href=#4353 id=4353 data-nosnippet>4353</a>    ///
+<a href=#4354 id=4354 data-nosnippet>4354</a>    /// To trigger this error we simply provide a [TestTransaction] whose size
+<a href=#4355 id=4355 data-nosnippet>4355</a>    /// exceeds the maximum transaction length. we pass to [HandleReceivedTxns].
+<a href=#4356 id=4356 data-nosnippet>4356</a>    </span><span class="attr">#[tokio::test]
+<a href=#4357 id=4357 data-nosnippet>4357</a>    </span><span class="kw">async fn </span>test_handle_received_txns_error_transaction_too_big() {
+<a href=#4358 id=4358 data-nosnippet>4358</a>        <span class="kw">let </span>(tx_sender, tx_receiver) = async_broadcast::broadcast(<span class="number">10</span>);
+<a href=#4359 id=4359 data-nosnippet>4359</a>        <span class="kw">let </span>num_transactions = <span class="number">2</span>;
+<a href=#4360 id=4360 data-nosnippet>4360</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions + <span class="number">1</span>);
+<a href=#4361 id=4361 data-nosnippet>4361</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
+<a href=#4362 id=4362 data-nosnippet>4362</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
+<a href=#4363 id=4363 data-nosnippet>4363</a>        }
+<a href=#4364 id=4364 data-nosnippet>4364</a>        txns.push(TestTransaction::new(<span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">256</span>]));
+<a href=#4365 id=4365 data-nosnippet>4365</a>        <span class="kw">let </span>txns = txns;
+<a href=#4366 id=4366 data-nosnippet>4366</a>
+<a href=#4367 id=4367 data-nosnippet>4367</a>        {
+<a href=#4368 id=4368 data-nosnippet>4368</a>            <span class="kw">let </span><span class="kw-2">mut </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
+<a href=#4369 id=4369 data-nosnippet>4369</a>                tx_sender,
+<a href=#4370 id=4370 data-nosnippet>4370</a>                txns.clone(),
+<a href=#4371 id=4371 data-nosnippet>4371</a>                TransactionSource::HotShot,
+<a href=#4372 id=4372 data-nosnippet>4372</a>                TEST_MAX_TX_LEN,
+<a href=#4373 id=4373 data-nosnippet>4373</a>            );
+<a href=#4374 id=4374 data-nosnippet>4374</a>
+<a href=#4375 id=4375 data-nosnippet>4375</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
+<a href=#4376 id=4376 data-nosnippet>4376</a>            <span class="macro">assert!</span>(handle_received_txns_iter.next().is_some());
+<a href=#4377 id=4377 data-nosnippet>4377</a>            <span class="kw">match </span>handle_received_txns_iter.next() {
+<a href=#4378 id=4378 data-nosnippet>4378</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(HandleReceivedTxnsError::TransactionTooBig {
+<a href=#4379 id=4379 data-nosnippet>4379</a>                    estimated_length,
+<a href=#4380 id=4380 data-nosnippet>4380</a>                    max_txn_len,
+<a href=#4381 id=4381 data-nosnippet>4381</a>                })) =&gt; {
+<a href=#4382 id=4382 data-nosnippet>4382</a>                    <span class="comment">// This is expected,
+<a href=#4383 id=4383 data-nosnippet>4383</a>                    </span><span class="macro">assert!</span>(estimated_length &gt;= <span class="number">256</span>);
+<a href=#4384 id=4384 data-nosnippet>4384</a>                    <span class="macro">assert_eq!</span>(max_txn_len, TEST_MAX_TX_LEN);
 <a href=#4385 id=4385 data-nosnippet>4385</a>                },
-<a href=#4386 id=4386 data-nosnippet>4386</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-<a href=#4387 id=4387 data-nosnippet>4387</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4386 id=4386 data-nosnippet>4386</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
+<a href=#4387 id=4387 data-nosnippet>4387</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
 <a href=#4388 id=4388 data-nosnippet>4388</a>                },
-<a href=#4389 id=4389 data-nosnippet>4389</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#4389 id=4389 data-nosnippet>4389</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
 <a href=#4390 id=4390 data-nosnippet>4390</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
 <a href=#4391 id=4391 data-nosnippet>4391</a>                },
-<a href=#4392 id=4392 data-nosnippet>4392</a>            }
-<a href=#4393 id=4393 data-nosnippet>4393</a>        }
-<a href=#4394 id=4394 data-nosnippet>4394</a>
-<a href=#4395 id=4395 data-nosnippet>4395</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx_receiver = tx_receiver;
-<a href=#4396 id=4396 data-nosnippet>4396</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
-<a href=#4397 id=4397 data-nosnippet>4397</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
-<a href=#4398 id=4398 data-nosnippet>4398</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_none());
-<a href=#4399 id=4399 data-nosnippet>4399</a>    }
-<a href=#4400 id=4400 data-nosnippet>4400</a>
-<a href=#4401 id=4401 data-nosnippet>4401</a>    <span class="doccomment">/// This test checks that the error [HandleReceivedTxnsError::Internal]
-<a href=#4402 id=4402 data-nosnippet>4402</a>    /// is returned when the broadcast channel is closed.
-<a href=#4403 id=4403 data-nosnippet>4403</a>    ///
-<a href=#4404 id=4404 data-nosnippet>4404</a>    /// To trigger this error we simply close the broadcast channel receiver
-<a href=#4405 id=4405 data-nosnippet>4405</a>    /// before attempting to send any transactions through the broadcast channel
-<a href=#4406 id=4406 data-nosnippet>4406</a>    /// sender.
-<a href=#4407 id=4407 data-nosnippet>4407</a>    </span><span class="attr">#[tokio::test]
-<a href=#4408 id=4408 data-nosnippet>4408</a>    </span><span class="kw">async fn </span>test_handle_received_txns_error_internal() {
-<a href=#4409 id=4409 data-nosnippet>4409</a>        <span class="kw">let </span>tx_sender = {
-<a href=#4410 id=4410 data-nosnippet>4410</a>            <span class="kw">let </span>(tx_sender, <span class="kw">_</span>) = async_broadcast::broadcast(<span class="number">10</span>);
-<a href=#4411 id=4411 data-nosnippet>4411</a>            tx_sender
-<a href=#4412 id=4412 data-nosnippet>4412</a>        };
-<a href=#4413 id=4413 data-nosnippet>4413</a>
-<a href=#4414 id=4414 data-nosnippet>4414</a>        <span class="kw">let </span>num_transactions = <span class="number">10</span>;
-<a href=#4415 id=4415 data-nosnippet>4415</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
-<a href=#4416 id=4416 data-nosnippet>4416</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
-<a href=#4417 id=4417 data-nosnippet>4417</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
-<a href=#4418 id=4418 data-nosnippet>4418</a>        }
-<a href=#4419 id=4419 data-nosnippet>4419</a>        txns.push(TestTransaction::new(<span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">256</span>]));
-<a href=#4420 id=4420 data-nosnippet>4420</a>        <span class="kw">let </span>txns = txns;
-<a href=#4421 id=4421 data-nosnippet>4421</a>
-<a href=#4422 id=4422 data-nosnippet>4422</a>        {
-<a href=#4423 id=4423 data-nosnippet>4423</a>            <span class="kw">let </span><span class="kw-2">mut </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
-<a href=#4424 id=4424 data-nosnippet>4424</a>                tx_sender,
-<a href=#4425 id=4425 data-nosnippet>4425</a>                txns.clone(),
-<a href=#4426 id=4426 data-nosnippet>4426</a>                TransactionSource::HotShot,
-<a href=#4427 id=4427 data-nosnippet>4427</a>                TEST_MAX_TX_LEN,
-<a href=#4428 id=4428 data-nosnippet>4428</a>            );
-<a href=#4429 id=4429 data-nosnippet>4429</a>
-<a href=#4430 id=4430 data-nosnippet>4430</a>            <span class="kw">match </span>handle_received_txns_iter.next() {
-<a href=#4431 id=4431 data-nosnippet>4431</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(HandleReceivedTxnsError::Internal(err))) =&gt; {
-<a href=#4432 id=4432 data-nosnippet>4432</a>                    <span class="comment">// This is expected,
-<a href=#4433 id=4433 data-nosnippet>4433</a>
-<a href=#4434 id=4434 data-nosnippet>4434</a>                    </span><span class="kw">match </span>err {
-<a href=#4435 id=4435 data-nosnippet>4435</a>                        async_broadcast::TrySendError::Closed(<span class="kw">_</span>) =&gt; {
-<a href=#4436 id=4436 data-nosnippet>4436</a>                            <span class="comment">// This is expected.
-<a href=#4437 id=4437 data-nosnippet>4437</a>                        </span>},
-<a href=#4438 id=4438 data-nosnippet>4438</a>                        <span class="kw">_ </span>=&gt; {
-<a href=#4439 id=4439 data-nosnippet>4439</a>                            <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
-<a href=#4440 id=4440 data-nosnippet>4440</a>                        },
-<a href=#4441 id=4441 data-nosnippet>4441</a>                    }
-<a href=#4442 id=4442 data-nosnippet>4442</a>                },
-<a href=#4443 id=4443 data-nosnippet>4443</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
-<a href=#4444 id=4444 data-nosnippet>4444</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4392 id=4392 data-nosnippet>4392</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#4393 id=4393 data-nosnippet>4393</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4394 id=4394 data-nosnippet>4394</a>                },
+<a href=#4395 id=4395 data-nosnippet>4395</a>            }
+<a href=#4396 id=4396 data-nosnippet>4396</a>        }
+<a href=#4397 id=4397 data-nosnippet>4397</a>
+<a href=#4398 id=4398 data-nosnippet>4398</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx_receiver = tx_receiver;
+<a href=#4399 id=4399 data-nosnippet>4399</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
+<a href=#4400 id=4400 data-nosnippet>4400</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_some());
+<a href=#4401 id=4401 data-nosnippet>4401</a>        <span class="macro">assert!</span>(tx_receiver.next().<span class="kw">await</span>.is_none());
+<a href=#4402 id=4402 data-nosnippet>4402</a>    }
+<a href=#4403 id=4403 data-nosnippet>4403</a>
+<a href=#4404 id=4404 data-nosnippet>4404</a>    <span class="doccomment">/// This test checks that the error [HandleReceivedTxnsError::Internal]
+<a href=#4405 id=4405 data-nosnippet>4405</a>    /// is returned when the broadcast channel is closed.
+<a href=#4406 id=4406 data-nosnippet>4406</a>    ///
+<a href=#4407 id=4407 data-nosnippet>4407</a>    /// To trigger this error we simply close the broadcast channel receiver
+<a href=#4408 id=4408 data-nosnippet>4408</a>    /// before attempting to send any transactions through the broadcast channel
+<a href=#4409 id=4409 data-nosnippet>4409</a>    /// sender.
+<a href=#4410 id=4410 data-nosnippet>4410</a>    </span><span class="attr">#[tokio::test]
+<a href=#4411 id=4411 data-nosnippet>4411</a>    </span><span class="kw">async fn </span>test_handle_received_txns_error_internal() {
+<a href=#4412 id=4412 data-nosnippet>4412</a>        <span class="kw">let </span>tx_sender = {
+<a href=#4413 id=4413 data-nosnippet>4413</a>            <span class="kw">let </span>(tx_sender, <span class="kw">_</span>) = async_broadcast::broadcast(<span class="number">10</span>);
+<a href=#4414 id=4414 data-nosnippet>4414</a>            tx_sender
+<a href=#4415 id=4415 data-nosnippet>4415</a>        };
+<a href=#4416 id=4416 data-nosnippet>4416</a>
+<a href=#4417 id=4417 data-nosnippet>4417</a>        <span class="kw">let </span>num_transactions = <span class="number">10</span>;
+<a href=#4418 id=4418 data-nosnippet>4418</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
+<a href=#4419 id=4419 data-nosnippet>4419</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
+<a href=#4420 id=4420 data-nosnippet>4420</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
+<a href=#4421 id=4421 data-nosnippet>4421</a>        }
+<a href=#4422 id=4422 data-nosnippet>4422</a>        txns.push(TestTransaction::new(<span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">256</span>]));
+<a href=#4423 id=4423 data-nosnippet>4423</a>        <span class="kw">let </span>txns = txns;
+<a href=#4424 id=4424 data-nosnippet>4424</a>
+<a href=#4425 id=4425 data-nosnippet>4425</a>        {
+<a href=#4426 id=4426 data-nosnippet>4426</a>            <span class="kw">let </span><span class="kw-2">mut </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
+<a href=#4427 id=4427 data-nosnippet>4427</a>                tx_sender,
+<a href=#4428 id=4428 data-nosnippet>4428</a>                txns.clone(),
+<a href=#4429 id=4429 data-nosnippet>4429</a>                TransactionSource::HotShot,
+<a href=#4430 id=4430 data-nosnippet>4430</a>                TEST_MAX_TX_LEN,
+<a href=#4431 id=4431 data-nosnippet>4431</a>            );
+<a href=#4432 id=4432 data-nosnippet>4432</a>
+<a href=#4433 id=4433 data-nosnippet>4433</a>            <span class="kw">match </span>handle_received_txns_iter.next() {
+<a href=#4434 id=4434 data-nosnippet>4434</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(HandleReceivedTxnsError::Internal(err))) =&gt; {
+<a href=#4435 id=4435 data-nosnippet>4435</a>                    <span class="comment">// This is expected,
+<a href=#4436 id=4436 data-nosnippet>4436</a>
+<a href=#4437 id=4437 data-nosnippet>4437</a>                    </span><span class="kw">match </span>err {
+<a href=#4438 id=4438 data-nosnippet>4438</a>                        async_broadcast::TrySendError::Closed(<span class="kw">_</span>) =&gt; {
+<a href=#4439 id=4439 data-nosnippet>4439</a>                            <span class="comment">// This is expected.
+<a href=#4440 id=4440 data-nosnippet>4440</a>                        </span>},
+<a href=#4441 id=4441 data-nosnippet>4441</a>                        <span class="kw">_ </span>=&gt; {
+<a href=#4442 id=4442 data-nosnippet>4442</a>                            <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4443 id=4443 data-nosnippet>4443</a>                        },
+<a href=#4444 id=4444 data-nosnippet>4444</a>                    }
 <a href=#4445 id=4445 data-nosnippet>4445</a>                },
-<a href=#4446 id=4446 data-nosnippet>4446</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
-<a href=#4447 id=4447 data-nosnippet>4447</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4446 id=4446 data-nosnippet>4446</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
+<a href=#4447 id=4447 data-nosnippet>4447</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
 <a href=#4448 id=4448 data-nosnippet>4448</a>                },
-<a href=#4449 id=4449 data-nosnippet>4449</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#4449 id=4449 data-nosnippet>4449</a>                <span class="prelude-val">Some</span>(<span class="prelude-val">Ok</span>(<span class="kw">_</span>)) =&gt; {
 <a href=#4450 id=4450 data-nosnippet>4450</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
 <a href=#4451 id=4451 data-nosnippet>4451</a>                },
-<a href=#4452 id=4452 data-nosnippet>4452</a>            }
-<a href=#4453 id=4453 data-nosnippet>4453</a>        }
-<a href=#4454 id=4454 data-nosnippet>4454</a>    }
-<a href=#4455 id=4455 data-nosnippet>4455</a>
-<a href=#4456 id=4456 data-nosnippet>4456</a>    <span class="doccomment">/// This test checks that [HandleReceivedTxns] processes completely without
-<a href=#4457 id=4457 data-nosnippet>4457</a>    /// issue when the conditions are correct for it to do so.
-<a href=#4458 id=4458 data-nosnippet>4458</a>    </span><span class="attr">#[tokio::test]
-<a href=#4459 id=4459 data-nosnippet>4459</a>    </span><span class="kw">async fn </span>test_handle_received_txns_success() {
-<a href=#4460 id=4460 data-nosnippet>4460</a>        <span class="kw">let </span>(tx_sender, tx_receiver) = async_broadcast::broadcast(<span class="number">10</span>);
-<a href=#4461 id=4461 data-nosnippet>4461</a>        <span class="kw">let </span>num_transactions = <span class="number">10</span>;
-<a href=#4462 id=4462 data-nosnippet>4462</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
-<a href=#4463 id=4463 data-nosnippet>4463</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
-<a href=#4464 id=4464 data-nosnippet>4464</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
-<a href=#4465 id=4465 data-nosnippet>4465</a>        }
-<a href=#4466 id=4466 data-nosnippet>4466</a>        <span class="kw">let </span>txns = txns;
-<a href=#4467 id=4467 data-nosnippet>4467</a>
-<a href=#4468 id=4468 data-nosnippet>4468</a>        <span class="kw">let </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
-<a href=#4469 id=4469 data-nosnippet>4469</a>            tx_sender,
-<a href=#4470 id=4470 data-nosnippet>4470</a>            txns.clone(),
-<a href=#4471 id=4471 data-nosnippet>4471</a>            TransactionSource::HotShot,
-<a href=#4472 id=4472 data-nosnippet>4472</a>            TEST_MAX_TX_LEN,
-<a href=#4473 id=4473 data-nosnippet>4473</a>        );
-<a href=#4474 id=4474 data-nosnippet>4474</a>
-<a href=#4475 id=4475 data-nosnippet>4475</a>        <span class="kw">for </span>iteration <span class="kw">in </span>handle_received_txns_iter {
-<a href=#4476 id=4476 data-nosnippet>4476</a>            <span class="kw">match </span>iteration {
-<a href=#4477 id=4477 data-nosnippet>4477</a>                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
-<a href=#4478 id=4478 data-nosnippet>4478</a>                    <span class="comment">// This is expected.
-<a href=#4479 id=4479 data-nosnippet>4479</a>                </span>},
-<a href=#4480 id=4480 data-nosnippet>4480</a>                <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#4481 id=4481 data-nosnippet>4481</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
-<a href=#4482 id=4482 data-nosnippet>4482</a>                },
-<a href=#4483 id=4483 data-nosnippet>4483</a>            }
-<a href=#4484 id=4484 data-nosnippet>4484</a>        }
-<a href=#4485 id=4485 data-nosnippet>4485</a>
-<a href=#4486 id=4486 data-nosnippet>4486</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx_receiver = tx_receiver;
-<a href=#4487 id=4487 data-nosnippet>4487</a>        <span class="kw">for </span>tx <span class="kw">in </span>txns {
-<a href=#4488 id=4488 data-nosnippet>4488</a>            <span class="kw">match </span>tx_receiver.next().<span class="kw">await </span>{
-<a href=#4489 id=4489 data-nosnippet>4489</a>                <span class="prelude-val">Some</span>(received_txn) =&gt; {
-<a href=#4490 id=4490 data-nosnippet>4490</a>                    <span class="macro">assert_eq!</span>(received_txn.tx, tx);
-<a href=#4491 id=4491 data-nosnippet>4491</a>                },
-<a href=#4492 id=4492 data-nosnippet>4492</a>                <span class="kw">_ </span>=&gt; {
-<a href=#4493 id=4493 data-nosnippet>4493</a>                    <span class="macro">panic!</span>(<span class="string">"Expected a TransactionMessage, but got something else"</span>);
+<a href=#4452 id=4452 data-nosnippet>4452</a>                <span class="prelude-val">None </span>=&gt; {
+<a href=#4453 id=4453 data-nosnippet>4453</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4454 id=4454 data-nosnippet>4454</a>                },
+<a href=#4455 id=4455 data-nosnippet>4455</a>            }
+<a href=#4456 id=4456 data-nosnippet>4456</a>        }
+<a href=#4457 id=4457 data-nosnippet>4457</a>    }
+<a href=#4458 id=4458 data-nosnippet>4458</a>
+<a href=#4459 id=4459 data-nosnippet>4459</a>    <span class="doccomment">/// This test checks that [HandleReceivedTxns] processes completely without
+<a href=#4460 id=4460 data-nosnippet>4460</a>    /// issue when the conditions are correct for it to do so.
+<a href=#4461 id=4461 data-nosnippet>4461</a>    </span><span class="attr">#[tokio::test]
+<a href=#4462 id=4462 data-nosnippet>4462</a>    </span><span class="kw">async fn </span>test_handle_received_txns_success() {
+<a href=#4463 id=4463 data-nosnippet>4463</a>        <span class="kw">let </span>(tx_sender, tx_receiver) = async_broadcast::broadcast(<span class="number">10</span>);
+<a href=#4464 id=4464 data-nosnippet>4464</a>        <span class="kw">let </span>num_transactions = <span class="number">10</span>;
+<a href=#4465 id=4465 data-nosnippet>4465</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
+<a href=#4466 id=4466 data-nosnippet>4466</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
+<a href=#4467 id=4467 data-nosnippet>4467</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
+<a href=#4468 id=4468 data-nosnippet>4468</a>        }
+<a href=#4469 id=4469 data-nosnippet>4469</a>        <span class="kw">let </span>txns = txns;
+<a href=#4470 id=4470 data-nosnippet>4470</a>
+<a href=#4471 id=4471 data-nosnippet>4471</a>        <span class="kw">let </span>handle_received_txns_iter = HandleReceivedTxns::&lt;TestTypes&gt;::new(
+<a href=#4472 id=4472 data-nosnippet>4472</a>            tx_sender,
+<a href=#4473 id=4473 data-nosnippet>4473</a>            txns.clone(),
+<a href=#4474 id=4474 data-nosnippet>4474</a>            TransactionSource::HotShot,
+<a href=#4475 id=4475 data-nosnippet>4475</a>            TEST_MAX_TX_LEN,
+<a href=#4476 id=4476 data-nosnippet>4476</a>        );
+<a href=#4477 id=4477 data-nosnippet>4477</a>
+<a href=#4478 id=4478 data-nosnippet>4478</a>        <span class="kw">for </span>iteration <span class="kw">in </span>handle_received_txns_iter {
+<a href=#4479 id=4479 data-nosnippet>4479</a>            <span class="kw">match </span>iteration {
+<a href=#4480 id=4480 data-nosnippet>4480</a>                <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; {
+<a href=#4481 id=4481 data-nosnippet>4481</a>                    <span class="comment">// This is expected.
+<a href=#4482 id=4482 data-nosnippet>4482</a>                </span>},
+<a href=#4483 id=4483 data-nosnippet>4483</a>                <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#4484 id=4484 data-nosnippet>4484</a>                    <span class="macro">panic!</span>(<span class="string">"Unexpected error: {:?}"</span>, err);
+<a href=#4485 id=4485 data-nosnippet>4485</a>                },
+<a href=#4486 id=4486 data-nosnippet>4486</a>            }
+<a href=#4487 id=4487 data-nosnippet>4487</a>        }
+<a href=#4488 id=4488 data-nosnippet>4488</a>
+<a href=#4489 id=4489 data-nosnippet>4489</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx_receiver = tx_receiver;
+<a href=#4490 id=4490 data-nosnippet>4490</a>        <span class="kw">for </span>tx <span class="kw">in </span>txns {
+<a href=#4491 id=4491 data-nosnippet>4491</a>            <span class="kw">match </span>tx_receiver.next().<span class="kw">await </span>{
+<a href=#4492 id=4492 data-nosnippet>4492</a>                <span class="prelude-val">Some</span>(received_txn) =&gt; {
+<a href=#4493 id=4493 data-nosnippet>4493</a>                    <span class="macro">assert_eq!</span>(received_txn.tx, tx);
 <a href=#4494 id=4494 data-nosnippet>4494</a>                },
-<a href=#4495 id=4495 data-nosnippet>4495</a>            }
-<a href=#4496 id=4496 data-nosnippet>4496</a>        }
-<a href=#4497 id=4497 data-nosnippet>4497</a>    }
-<a href=#4498 id=4498 data-nosnippet>4498</a>
-<a href=#4499 id=4499 data-nosnippet>4499</a>    <span class="doccomment">/// This test checks builder does save the status of transactions correctly
-<a href=#4500 id=4500 data-nosnippet>4500</a>    </span><span class="attr">#[tokio::test]
-<a href=#4501 id=4501 data-nosnippet>4501</a>    </span><span class="kw">async fn </span>test_get_txn_status() {
-<a href=#4502 id=4502 data-nosnippet>4502</a>        <span class="kw">let </span>(proxy_global_state, <span class="kw">_</span>, da_proposal_sender, quorum_proposal_sender, <span class="kw">_</span>) =
-<a href=#4503 id=4503 data-nosnippet>4503</a>            setup_builder_for_test();
-<a href=#4504 id=4504 data-nosnippet>4504</a>        <span class="macro">tracing::debug!</span>(<span class="string">"start tests on correctly setting transaction status."</span>);
-<a href=#4505 id=4505 data-nosnippet>4505</a>
-<a href=#4506 id=4506 data-nosnippet>4506</a>        <span class="kw">let </span><span class="kw-2">mut </span>round = <span class="number">0</span>;
-<a href=#4507 id=4507 data-nosnippet>4507</a>        <span class="kw">let </span><span class="kw-2">mut </span>current_builder_state_id = BuilderStateId::&lt;TestTypes&gt; {
-<a href=#4508 id=4508 data-nosnippet>4508</a>            parent_commitment: vid_commitment::&lt;TestVersions&gt;(
-<a href=#4509 id=4509 data-nosnippet>4509</a>                <span class="kw-2">&amp;</span>[],
-<a href=#4510 id=4510 data-nosnippet>4510</a>                <span class="kw-2">&amp;</span>[],
-<a href=#4511 id=4511 data-nosnippet>4511</a>                <span class="number">8</span>,
-<a href=#4512 id=4512 data-nosnippet>4512</a>                &lt;TestVersions <span class="kw">as </span>Versions&gt;::Base::VERSION,
-<a href=#4513 id=4513 data-nosnippet>4513</a>            ),
-<a href=#4514 id=4514 data-nosnippet>4514</a>            parent_view: ViewNumber::genesis(),
-<a href=#4515 id=4515 data-nosnippet>4515</a>        };
-<a href=#4516 id=4516 data-nosnippet>4516</a>        current_builder_state_id = progress_round_without_available_block_info(
-<a href=#4517 id=4517 data-nosnippet>4517</a>            current_builder_state_id,
-<a href=#4518 id=4518 data-nosnippet>4518</a>            round,
-<a href=#4519 id=4519 data-nosnippet>4519</a>            <span class="kw-2">&amp;</span>da_proposal_sender,
-<a href=#4520 id=4520 data-nosnippet>4520</a>            <span class="kw-2">&amp;</span>quorum_proposal_sender,
-<a href=#4521 id=4521 data-nosnippet>4521</a>        )
-<a href=#4522 id=4522 data-nosnippet>4522</a>        .<span class="kw">await</span>;
-<a href=#4523 id=4523 data-nosnippet>4523</a>
-<a href=#4524 id=4524 data-nosnippet>4524</a>        <span class="comment">// round 1: test status Pending
-<a href=#4525 id=4525 data-nosnippet>4525</a>        </span><span class="kw">let </span>num_transactions = <span class="number">10</span>;
-<a href=#4526 id=4526 data-nosnippet>4526</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
-<a href=#4527 id=4527 data-nosnippet>4527</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
-<a href=#4528 id=4528 data-nosnippet>4528</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
-<a href=#4529 id=4529 data-nosnippet>4529</a>        }
-<a href=#4530 id=4530 data-nosnippet>4530</a>        <span class="kw">let </span>txns = txns;
-<a href=#4531 id=4531 data-nosnippet>4531</a>        proxy_global_state
-<a href=#4532 id=4532 data-nosnippet>4532</a>            .submit_txns(txns.clone())
-<a href=#4533 id=4533 data-nosnippet>4533</a>            .<span class="kw">await
-<a href=#4534 id=4534 data-nosnippet>4534</a>            </span>.expect(<span class="string">"should submit transaction without issue"</span>);
-<a href=#4535 id=4535 data-nosnippet>4535</a>        <span class="comment">// advance the round
-<a href=#4536 id=4536 data-nosnippet>4536</a>        </span>{
-<a href=#4537 id=4537 data-nosnippet>4537</a>            round = <span class="number">1</span>;
-<a href=#4538 id=4538 data-nosnippet>4538</a>            <span class="kw">let </span>(_attempts, available_available_blocks_result) = process_available_blocks_round(
-<a href=#4539 id=4539 data-nosnippet>4539</a>                <span class="kw-2">&amp;</span>proxy_global_state,
-<a href=#4540 id=4540 data-nosnippet>4540</a>                current_builder_state_id.clone(),
-<a href=#4541 id=4541 data-nosnippet>4541</a>                round,
-<a href=#4542 id=4542 data-nosnippet>4542</a>            )
-<a href=#4543 id=4543 data-nosnippet>4543</a>            .<span class="kw">await</span>;
-<a href=#4544 id=4544 data-nosnippet>4544</a>            current_builder_state_id = progress_round_with_available_block_info(
-<a href=#4545 id=4545 data-nosnippet>4545</a>                <span class="kw-2">&amp;</span>proxy_global_state,
-<a href=#4546 id=4546 data-nosnippet>4546</a>                available_available_blocks_result.unwrap()[<span class="number">0</span>].clone(),
-<a href=#4547 id=4547 data-nosnippet>4547</a>                current_builder_state_id,
-<a href=#4548 id=4548 data-nosnippet>4548</a>                round,
-<a href=#4549 id=4549 data-nosnippet>4549</a>                <span class="kw-2">&amp;</span>da_proposal_sender,
-<a href=#4550 id=4550 data-nosnippet>4550</a>                <span class="kw-2">&amp;</span>quorum_proposal_sender,
-<a href=#4551 id=4551 data-nosnippet>4551</a>            )
-<a href=#4552 id=4552 data-nosnippet>4552</a>            .<span class="kw">await</span>;
-<a href=#4553 id=4553 data-nosnippet>4553</a>        }
-<a href=#4554 id=4554 data-nosnippet>4554</a>        <span class="comment">// tx submitted in round 1 should be pending
-<a href=#4555 id=4555 data-nosnippet>4555</a>        </span><span class="kw">for </span>tx <span class="kw">in </span>txns.clone() {
-<a href=#4556 id=4556 data-nosnippet>4556</a>            <span class="kw">match </span>proxy_global_state.txn_status(tx.commit()).<span class="kw">await </span>{
-<a href=#4557 id=4557 data-nosnippet>4557</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
-<a href=#4558 id=4558 data-nosnippet>4558</a>                    <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
-<a href=#4559 id=4559 data-nosnippet>4559</a>                },
-<a href=#4560 id=4560 data-nosnippet>4560</a>                e =&gt; {
-<a href=#4561 id=4561 data-nosnippet>4561</a>                    <span class="macro">panic!</span>(<span class="string">"transaction status should be Pending instead of {:?}"</span>, e);
+<a href=#4495 id=4495 data-nosnippet>4495</a>                <span class="kw">_ </span>=&gt; {
+<a href=#4496 id=4496 data-nosnippet>4496</a>                    <span class="macro">panic!</span>(<span class="string">"Expected a TransactionMessage, but got something else"</span>);
+<a href=#4497 id=4497 data-nosnippet>4497</a>                },
+<a href=#4498 id=4498 data-nosnippet>4498</a>            }
+<a href=#4499 id=4499 data-nosnippet>4499</a>        }
+<a href=#4500 id=4500 data-nosnippet>4500</a>    }
+<a href=#4501 id=4501 data-nosnippet>4501</a>
+<a href=#4502 id=4502 data-nosnippet>4502</a>    <span class="doccomment">/// This test checks builder does save the status of transactions correctly
+<a href=#4503 id=4503 data-nosnippet>4503</a>    </span><span class="attr">#[tokio::test]
+<a href=#4504 id=4504 data-nosnippet>4504</a>    </span><span class="kw">async fn </span>test_get_txn_status() {
+<a href=#4505 id=4505 data-nosnippet>4505</a>        <span class="kw">let </span>(proxy_global_state, <span class="kw">_</span>, da_proposal_sender, quorum_proposal_sender, <span class="kw">_</span>) =
+<a href=#4506 id=4506 data-nosnippet>4506</a>            setup_builder_for_test();
+<a href=#4507 id=4507 data-nosnippet>4507</a>        <span class="macro">tracing::debug!</span>(<span class="string">"start tests on correctly setting transaction status."</span>);
+<a href=#4508 id=4508 data-nosnippet>4508</a>
+<a href=#4509 id=4509 data-nosnippet>4509</a>        <span class="kw">let </span><span class="kw-2">mut </span>round = <span class="number">0</span>;
+<a href=#4510 id=4510 data-nosnippet>4510</a>        <span class="kw">let </span><span class="kw-2">mut </span>current_builder_state_id = BuilderStateId::&lt;TestTypes&gt; {
+<a href=#4511 id=4511 data-nosnippet>4511</a>            parent_commitment: vid_commitment::&lt;TestVersions&gt;(
+<a href=#4512 id=4512 data-nosnippet>4512</a>                <span class="kw-2">&amp;</span>[],
+<a href=#4513 id=4513 data-nosnippet>4513</a>                <span class="kw-2">&amp;</span>[],
+<a href=#4514 id=4514 data-nosnippet>4514</a>                <span class="number">8</span>,
+<a href=#4515 id=4515 data-nosnippet>4515</a>                &lt;TestVersions <span class="kw">as </span>Versions&gt;::Base::VERSION,
+<a href=#4516 id=4516 data-nosnippet>4516</a>            ),
+<a href=#4517 id=4517 data-nosnippet>4517</a>            parent_view: ViewNumber::genesis(),
+<a href=#4518 id=4518 data-nosnippet>4518</a>        };
+<a href=#4519 id=4519 data-nosnippet>4519</a>        current_builder_state_id = progress_round_without_available_block_info(
+<a href=#4520 id=4520 data-nosnippet>4520</a>            current_builder_state_id,
+<a href=#4521 id=4521 data-nosnippet>4521</a>            round,
+<a href=#4522 id=4522 data-nosnippet>4522</a>            <span class="kw-2">&amp;</span>da_proposal_sender,
+<a href=#4523 id=4523 data-nosnippet>4523</a>            <span class="kw-2">&amp;</span>quorum_proposal_sender,
+<a href=#4524 id=4524 data-nosnippet>4524</a>        )
+<a href=#4525 id=4525 data-nosnippet>4525</a>        .<span class="kw">await</span>;
+<a href=#4526 id=4526 data-nosnippet>4526</a>
+<a href=#4527 id=4527 data-nosnippet>4527</a>        <span class="comment">// round 1: test status Pending
+<a href=#4528 id=4528 data-nosnippet>4528</a>        </span><span class="kw">let </span>num_transactions = <span class="number">10</span>;
+<a href=#4529 id=4529 data-nosnippet>4529</a>        <span class="kw">let </span><span class="kw-2">mut </span>txns = Vec::with_capacity(num_transactions);
+<a href=#4530 id=4530 data-nosnippet>4530</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
+<a href=#4531 id=4531 data-nosnippet>4531</a>            txns.push(TestTransaction::new(<span class="macro">vec!</span>[index <span class="kw">as </span>u8]));
+<a href=#4532 id=4532 data-nosnippet>4532</a>        }
+<a href=#4533 id=4533 data-nosnippet>4533</a>        <span class="kw">let </span>txns = txns;
+<a href=#4534 id=4534 data-nosnippet>4534</a>        proxy_global_state
+<a href=#4535 id=4535 data-nosnippet>4535</a>            .submit_txns(txns.clone())
+<a href=#4536 id=4536 data-nosnippet>4536</a>            .<span class="kw">await
+<a href=#4537 id=4537 data-nosnippet>4537</a>            </span>.expect(<span class="string">"should submit transaction without issue"</span>);
+<a href=#4538 id=4538 data-nosnippet>4538</a>        <span class="comment">// advance the round
+<a href=#4539 id=4539 data-nosnippet>4539</a>        </span>{
+<a href=#4540 id=4540 data-nosnippet>4540</a>            round = <span class="number">1</span>;
+<a href=#4541 id=4541 data-nosnippet>4541</a>            <span class="kw">let </span>(_attempts, available_available_blocks_result) = process_available_blocks_round(
+<a href=#4542 id=4542 data-nosnippet>4542</a>                <span class="kw-2">&amp;</span>proxy_global_state,
+<a href=#4543 id=4543 data-nosnippet>4543</a>                current_builder_state_id.clone(),
+<a href=#4544 id=4544 data-nosnippet>4544</a>                round,
+<a href=#4545 id=4545 data-nosnippet>4545</a>            )
+<a href=#4546 id=4546 data-nosnippet>4546</a>            .<span class="kw">await</span>;
+<a href=#4547 id=4547 data-nosnippet>4547</a>            current_builder_state_id = progress_round_with_available_block_info(
+<a href=#4548 id=4548 data-nosnippet>4548</a>                <span class="kw-2">&amp;</span>proxy_global_state,
+<a href=#4549 id=4549 data-nosnippet>4549</a>                available_available_blocks_result.unwrap()[<span class="number">0</span>].clone(),
+<a href=#4550 id=4550 data-nosnippet>4550</a>                current_builder_state_id,
+<a href=#4551 id=4551 data-nosnippet>4551</a>                round,
+<a href=#4552 id=4552 data-nosnippet>4552</a>                <span class="kw-2">&amp;</span>da_proposal_sender,
+<a href=#4553 id=4553 data-nosnippet>4553</a>                <span class="kw-2">&amp;</span>quorum_proposal_sender,
+<a href=#4554 id=4554 data-nosnippet>4554</a>            )
+<a href=#4555 id=4555 data-nosnippet>4555</a>            .<span class="kw">await</span>;
+<a href=#4556 id=4556 data-nosnippet>4556</a>        }
+<a href=#4557 id=4557 data-nosnippet>4557</a>        <span class="comment">// tx submitted in round 1 should be pending
+<a href=#4558 id=4558 data-nosnippet>4558</a>        </span><span class="kw">for </span>tx <span class="kw">in </span>txns.clone() {
+<a href=#4559 id=4559 data-nosnippet>4559</a>            <span class="kw">match </span>proxy_global_state.txn_status(tx.commit()).<span class="kw">await </span>{
+<a href=#4560 id=4560 data-nosnippet>4560</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
+<a href=#4561 id=4561 data-nosnippet>4561</a>                    <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
 <a href=#4562 id=4562 data-nosnippet>4562</a>                },
-<a href=#4563 id=4563 data-nosnippet>4563</a>            }
-<a href=#4564 id=4564 data-nosnippet>4564</a>        }
-<a href=#4565 id=4565 data-nosnippet>4565</a>
-<a href=#4566 id=4566 data-nosnippet>4566</a>        <span class="comment">// round 2: test status Pending again
-<a href=#4567 id=4567 data-nosnippet>4567</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>txns_2 = Vec::with_capacity(num_transactions);
-<a href=#4568 id=4568 data-nosnippet>4568</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
-<a href=#4569 id=4569 data-nosnippet>4569</a>            txns_2.push(TestTransaction::new(<span class="macro">vec!</span>[(num_transactions + index) <span class="kw">as </span>u8]));
-<a href=#4570 id=4570 data-nosnippet>4570</a>        }
-<a href=#4571 id=4571 data-nosnippet>4571</a>        <span class="kw">let </span>txns_2 = txns_2;
-<a href=#4572 id=4572 data-nosnippet>4572</a>        proxy_global_state
-<a href=#4573 id=4573 data-nosnippet>4573</a>            .submit_txns(txns_2.clone())
-<a href=#4574 id=4574 data-nosnippet>4574</a>            .<span class="kw">await
-<a href=#4575 id=4575 data-nosnippet>4575</a>            </span>.expect(<span class="string">"should submit transaction without issue"</span>);
-<a href=#4576 id=4576 data-nosnippet>4576</a>        <span class="comment">// advance the round
-<a href=#4577 id=4577 data-nosnippet>4577</a>        </span>{
-<a href=#4578 id=4578 data-nosnippet>4578</a>            round = <span class="number">2</span>;
-<a href=#4579 id=4579 data-nosnippet>4579</a>            <span class="kw">let </span>(_attempts, available_available_blocks_result) = process_available_blocks_round(
-<a href=#4580 id=4580 data-nosnippet>4580</a>                <span class="kw-2">&amp;</span>proxy_global_state,
-<a href=#4581 id=4581 data-nosnippet>4581</a>                current_builder_state_id.clone(),
-<a href=#4582 id=4582 data-nosnippet>4582</a>                round,
-<a href=#4583 id=4583 data-nosnippet>4583</a>            )
-<a href=#4584 id=4584 data-nosnippet>4584</a>            .<span class="kw">await</span>;
-<a href=#4585 id=4585 data-nosnippet>4585</a>            progress_round_with_available_block_info(
-<a href=#4586 id=4586 data-nosnippet>4586</a>                <span class="kw-2">&amp;</span>proxy_global_state,
-<a href=#4587 id=4587 data-nosnippet>4587</a>                available_available_blocks_result.unwrap()[<span class="number">0</span>].clone(),
-<a href=#4588 id=4588 data-nosnippet>4588</a>                current_builder_state_id,
-<a href=#4589 id=4589 data-nosnippet>4589</a>                round,
-<a href=#4590 id=4590 data-nosnippet>4590</a>                <span class="kw-2">&amp;</span>da_proposal_sender,
-<a href=#4591 id=4591 data-nosnippet>4591</a>                <span class="kw-2">&amp;</span>quorum_proposal_sender,
-<a href=#4592 id=4592 data-nosnippet>4592</a>            )
-<a href=#4593 id=4593 data-nosnippet>4593</a>            .<span class="kw">await</span>;
-<a href=#4594 id=4594 data-nosnippet>4594</a>        }
-<a href=#4595 id=4595 data-nosnippet>4595</a>        <span class="comment">// tx submitted in round 2 should be pending
-<a href=#4596 id=4596 data-nosnippet>4596</a>        </span><span class="kw">for </span>tx <span class="kw">in </span>txns_2.clone() {
-<a href=#4597 id=4597 data-nosnippet>4597</a>            <span class="kw">match </span>proxy_global_state.txn_status(tx.commit()).<span class="kw">await </span>{
-<a href=#4598 id=4598 data-nosnippet>4598</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
-<a href=#4599 id=4599 data-nosnippet>4599</a>                    <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
-<a href=#4600 id=4600 data-nosnippet>4600</a>                },
-<a href=#4601 id=4601 data-nosnippet>4601</a>                e =&gt; {
-<a href=#4602 id=4602 data-nosnippet>4602</a>                    <span class="macro">panic!</span>(<span class="string">"transaction status should be Pending instead of {:?}"</span>, e);
+<a href=#4563 id=4563 data-nosnippet>4563</a>                e =&gt; {
+<a href=#4564 id=4564 data-nosnippet>4564</a>                    <span class="macro">panic!</span>(<span class="string">"transaction status should be Pending instead of {:?}"</span>, e);
+<a href=#4565 id=4565 data-nosnippet>4565</a>                },
+<a href=#4566 id=4566 data-nosnippet>4566</a>            }
+<a href=#4567 id=4567 data-nosnippet>4567</a>        }
+<a href=#4568 id=4568 data-nosnippet>4568</a>
+<a href=#4569 id=4569 data-nosnippet>4569</a>        <span class="comment">// round 2: test status Pending again
+<a href=#4570 id=4570 data-nosnippet>4570</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>txns_2 = Vec::with_capacity(num_transactions);
+<a href=#4571 id=4571 data-nosnippet>4571</a>        <span class="kw">for </span>index <span class="kw">in </span><span class="number">0</span>..num_transactions {
+<a href=#4572 id=4572 data-nosnippet>4572</a>            txns_2.push(TestTransaction::new(<span class="macro">vec!</span>[(num_transactions + index) <span class="kw">as </span>u8]));
+<a href=#4573 id=4573 data-nosnippet>4573</a>        }
+<a href=#4574 id=4574 data-nosnippet>4574</a>        <span class="kw">let </span>txns_2 = txns_2;
+<a href=#4575 id=4575 data-nosnippet>4575</a>        proxy_global_state
+<a href=#4576 id=4576 data-nosnippet>4576</a>            .submit_txns(txns_2.clone())
+<a href=#4577 id=4577 data-nosnippet>4577</a>            .<span class="kw">await
+<a href=#4578 id=4578 data-nosnippet>4578</a>            </span>.expect(<span class="string">"should submit transaction without issue"</span>);
+<a href=#4579 id=4579 data-nosnippet>4579</a>        <span class="comment">// advance the round
+<a href=#4580 id=4580 data-nosnippet>4580</a>        </span>{
+<a href=#4581 id=4581 data-nosnippet>4581</a>            round = <span class="number">2</span>;
+<a href=#4582 id=4582 data-nosnippet>4582</a>            <span class="kw">let </span>(_attempts, available_available_blocks_result) = process_available_blocks_round(
+<a href=#4583 id=4583 data-nosnippet>4583</a>                <span class="kw-2">&amp;</span>proxy_global_state,
+<a href=#4584 id=4584 data-nosnippet>4584</a>                current_builder_state_id.clone(),
+<a href=#4585 id=4585 data-nosnippet>4585</a>                round,
+<a href=#4586 id=4586 data-nosnippet>4586</a>            )
+<a href=#4587 id=4587 data-nosnippet>4587</a>            .<span class="kw">await</span>;
+<a href=#4588 id=4588 data-nosnippet>4588</a>            progress_round_with_available_block_info(
+<a href=#4589 id=4589 data-nosnippet>4589</a>                <span class="kw-2">&amp;</span>proxy_global_state,
+<a href=#4590 id=4590 data-nosnippet>4590</a>                available_available_blocks_result.unwrap()[<span class="number">0</span>].clone(),
+<a href=#4591 id=4591 data-nosnippet>4591</a>                current_builder_state_id,
+<a href=#4592 id=4592 data-nosnippet>4592</a>                round,
+<a href=#4593 id=4593 data-nosnippet>4593</a>                <span class="kw-2">&amp;</span>da_proposal_sender,
+<a href=#4594 id=4594 data-nosnippet>4594</a>                <span class="kw-2">&amp;</span>quorum_proposal_sender,
+<a href=#4595 id=4595 data-nosnippet>4595</a>            )
+<a href=#4596 id=4596 data-nosnippet>4596</a>            .<span class="kw">await</span>;
+<a href=#4597 id=4597 data-nosnippet>4597</a>        }
+<a href=#4598 id=4598 data-nosnippet>4598</a>        <span class="comment">// tx submitted in round 2 should be pending
+<a href=#4599 id=4599 data-nosnippet>4599</a>        </span><span class="kw">for </span>tx <span class="kw">in </span>txns_2.clone() {
+<a href=#4600 id=4600 data-nosnippet>4600</a>            <span class="kw">match </span>proxy_global_state.txn_status(tx.commit()).<span class="kw">await </span>{
+<a href=#4601 id=4601 data-nosnippet>4601</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
+<a href=#4602 id=4602 data-nosnippet>4602</a>                    <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
 <a href=#4603 id=4603 data-nosnippet>4603</a>                },
-<a href=#4604 id=4604 data-nosnippet>4604</a>            }
-<a href=#4605 id=4605 data-nosnippet>4605</a>        }
-<a href=#4606 id=4606 data-nosnippet>4606</a>
-<a href=#4607 id=4607 data-nosnippet>4607</a>        <span class="comment">// round 3: test status Rejected with correct error message
-<a href=#4608 id=4608 data-nosnippet>4608</a>        </span><span class="kw">let </span>big_txns = <span class="macro">vec!</span>[TestTransaction::new(<span class="macro">vec!</span>[
-<a href=#4609 id=4609 data-nosnippet>4609</a>            <span class="number">0</span>;
-<a href=#4610 id=4610 data-nosnippet>4610</a>            TEST_PROTOCOL_MAX_BLOCK_SIZE
-<a href=#4611 id=4611 data-nosnippet>4611</a>                <span class="kw">as </span>usize
-<a href=#4612 id=4612 data-nosnippet>4612</a>                + <span class="number">1
-<a href=#4613 id=4613 data-nosnippet>4613</a>        </span>])];
-<a href=#4614 id=4614 data-nosnippet>4614</a>        <span class="kw">let _ </span>= proxy_global_state.submit_txns(big_txns.clone()).<span class="kw">await</span>;
-<a href=#4615 id=4615 data-nosnippet>4615</a>        <span class="kw">for </span>tx <span class="kw">in </span>big_txns.clone() {
-<a href=#4616 id=4616 data-nosnippet>4616</a>            <span class="kw">match </span>proxy_global_state.txn_status(tx.commit()).<span class="kw">await </span>{
-<a href=#4617 id=4617 data-nosnippet>4617</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
-<a href=#4618 id=4618 data-nosnippet>4618</a>                    <span class="kw">if </span>tx.minimum_block_size() &gt; TEST_PROTOCOL_MAX_BLOCK_SIZE {
-<a href=#4619 id=4619 data-nosnippet>4619</a>                        <span class="macro">tracing::debug!</span>(
-<a href=#4620 id=4620 data-nosnippet>4620</a>                            <span class="string">"In test_get_txn_status(), txn_status of large tx = {:?}"</span>,
-<a href=#4621 id=4621 data-nosnippet>4621</a>                            txn_status
-<a href=#4622 id=4622 data-nosnippet>4622</a>                        );
-<a href=#4623 id=4623 data-nosnippet>4623</a>                        <span class="macro">matches!</span>(txn_status, TransactionStatus::Rejected { .. });
-<a href=#4624 id=4624 data-nosnippet>4624</a>                        <span class="kw">if let </span>TransactionStatus::Rejected { reason } = txn_status {
-<a href=#4625 id=4625 data-nosnippet>4625</a>                            <span class="macro">assert!</span>(reason.contains(<span class="string">"Transaction too big"</span>));
-<a href=#4626 id=4626 data-nosnippet>4626</a>                        }
-<a href=#4627 id=4627 data-nosnippet>4627</a>                    } <span class="kw">else </span>{
-<a href=#4628 id=4628 data-nosnippet>4628</a>                        <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
-<a href=#4629 id=4629 data-nosnippet>4629</a>                    }
-<a href=#4630 id=4630 data-nosnippet>4630</a>                },
-<a href=#4631 id=4631 data-nosnippet>4631</a>                e =&gt; {
-<a href=#4632 id=4632 data-nosnippet>4632</a>                    <span class="macro">panic!</span>(
-<a href=#4633 id=4633 data-nosnippet>4633</a>                        <span class="string">"transaction status should be a valid status instead of {:?}"</span>,
-<a href=#4634 id=4634 data-nosnippet>4634</a>                        e
-<a href=#4635 id=4635 data-nosnippet>4635</a>                    );
-<a href=#4636 id=4636 data-nosnippet>4636</a>                },
-<a href=#4637 id=4637 data-nosnippet>4637</a>            }
-<a href=#4638 id=4638 data-nosnippet>4638</a>        }
-<a href=#4639 id=4639 data-nosnippet>4639</a>
-<a href=#4640 id=4640 data-nosnippet>4640</a>        {
-<a href=#4641 id=4641 data-nosnippet>4641</a>            <span class="comment">// Test a rejected txn marked as other status again
-<a href=#4642 id=4642 data-nosnippet>4642</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>write_guard = proxy_global_state.global_state.write_arc().<span class="kw">await</span>;
-<a href=#4643 id=4643 data-nosnippet>4643</a>            <span class="kw">for </span>tx <span class="kw">in </span>big_txns {
-<a href=#4644 id=4644 data-nosnippet>4644</a>                <span class="kw">match </span>write_guard
-<a href=#4645 id=4645 data-nosnippet>4645</a>                    .set_txn_status(tx.commit(), TransactionStatus::Pending)
-<a href=#4646 id=4646 data-nosnippet>4646</a>                    .<span class="kw">await
-<a href=#4647 id=4647 data-nosnippet>4647</a>                </span>{
-<a href=#4648 id=4648 data-nosnippet>4648</a>                    <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#4649 id=4649 data-nosnippet>4649</a>                        <span class="macro">panic!</span>(<span class="string">"Expected a result, but got a error {:?}"</span>, err);
-<a href=#4650 id=4650 data-nosnippet>4650</a>                    },
-<a href=#4651 id=4651 data-nosnippet>4651</a>                    <span class="kw">_ </span>=&gt; {
-<a href=#4652 id=4652 data-nosnippet>4652</a>                        <span class="comment">// This is expected
-<a href=#4653 id=4653 data-nosnippet>4653</a>                    </span>},
-<a href=#4654 id=4654 data-nosnippet>4654</a>                }
-<a href=#4655 id=4655 data-nosnippet>4655</a>
-<a href=#4656 id=4656 data-nosnippet>4656</a>                <span class="kw">match </span>write_guard.txn_status(tx.commit()).<span class="kw">await </span>{
-<a href=#4657 id=4657 data-nosnippet>4657</a>                    <span class="prelude-val">Ok</span>(txn_status) =&gt; {
-<a href=#4658 id=4658 data-nosnippet>4658</a>                        <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
-<a href=#4659 id=4659 data-nosnippet>4659</a>                    },
-<a href=#4660 id=4660 data-nosnippet>4660</a>                    e =&gt; {
-<a href=#4661 id=4661 data-nosnippet>4661</a>                        <span class="macro">panic!</span>(
-<a href=#4662 id=4662 data-nosnippet>4662</a>                            <span class="string">"transaction status should be a valid status instead of {:?}"</span>,
-<a href=#4663 id=4663 data-nosnippet>4663</a>                            e
-<a href=#4664 id=4664 data-nosnippet>4664</a>                        );
-<a href=#4665 id=4665 data-nosnippet>4665</a>                    },
-<a href=#4666 id=4666 data-nosnippet>4666</a>                }
-<a href=#4667 id=4667 data-nosnippet>4667</a>            }
-<a href=#4668 id=4668 data-nosnippet>4668</a>        }
-<a href=#4669 id=4669 data-nosnippet>4669</a>
-<a href=#4670 id=4670 data-nosnippet>4670</a>        {
-<a href=#4671 id=4671 data-nosnippet>4671</a>            <span class="comment">// Test a sequenced txn cannot be marked as other status again
-<a href=#4672 id=4672 data-nosnippet>4672</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>write_guard = proxy_global_state.global_state.write_arc().<span class="kw">await</span>;
-<a href=#4673 id=4673 data-nosnippet>4673</a>            <span class="kw">let </span>tx_test_assigned_twice =
-<a href=#4674 id=4674 data-nosnippet>4674</a>                TestTransaction::new(<span class="macro">vec!</span>[(num_transactions * <span class="number">3 </span>+ <span class="number">1</span>) <span class="kw">as </span>u8]);
-<a href=#4675 id=4675 data-nosnippet>4675</a>            write_guard
-<a href=#4676 id=4676 data-nosnippet>4676</a>                .set_txn_status(
-<a href=#4677 id=4677 data-nosnippet>4677</a>                    tx_test_assigned_twice.commit(),
-<a href=#4678 id=4678 data-nosnippet>4678</a>                    TransactionStatus::Sequenced { leaf: <span class="number">0 </span>},
-<a href=#4679 id=4679 data-nosnippet>4679</a>                )
-<a href=#4680 id=4680 data-nosnippet>4680</a>                .<span class="kw">await
-<a href=#4681 id=4681 data-nosnippet>4681</a>                </span>.unwrap();
-<a href=#4682 id=4682 data-nosnippet>4682</a>            <span class="kw">match </span>write_guard
-<a href=#4683 id=4683 data-nosnippet>4683</a>                .set_txn_status(tx_test_assigned_twice.commit(), TransactionStatus::Pending)
-<a href=#4684 id=4684 data-nosnippet>4684</a>                .<span class="kw">await
-<a href=#4685 id=4685 data-nosnippet>4685</a>            </span>{
-<a href=#4686 id=4686 data-nosnippet>4686</a>                <span class="prelude-val">Err</span>(_err) =&gt; {
-<a href=#4687 id=4687 data-nosnippet>4687</a>                    <span class="comment">// This is expected
-<a href=#4688 id=4688 data-nosnippet>4688</a>                </span>},
-<a href=#4689 id=4689 data-nosnippet>4689</a>                <span class="kw">_ </span>=&gt; {
-<a href=#4690 id=4690 data-nosnippet>4690</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
-<a href=#4691 id=4691 data-nosnippet>4691</a>                },
-<a href=#4692 id=4692 data-nosnippet>4692</a>            }
-<a href=#4693 id=4693 data-nosnippet>4693</a>        }
-<a href=#4694 id=4694 data-nosnippet>4694</a>
-<a href=#4695 id=4695 data-nosnippet>4695</a>        {
-<a href=#4696 id=4696 data-nosnippet>4696</a>            <span class="comment">// Test status Unknown when the txn is unknown
-<a href=#4697 id=4697 data-nosnippet>4697</a>            </span><span class="kw">let </span>unknown_tx = TestTransaction::new(<span class="macro">vec!</span>[(num_transactions * <span class="number">4 </span>+ <span class="number">1</span>) <span class="kw">as </span>u8]);
-<a href=#4698 id=4698 data-nosnippet>4698</a>            <span class="kw">match </span>proxy_global_state.txn_status(unknown_tx.commit()).<span class="kw">await </span>{
-<a href=#4699 id=4699 data-nosnippet>4699</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
-<a href=#4700 id=4700 data-nosnippet>4700</a>                    <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Unknown);
-<a href=#4701 id=4701 data-nosnippet>4701</a>                },
-<a href=#4702 id=4702 data-nosnippet>4702</a>                e =&gt; {
-<a href=#4703 id=4703 data-nosnippet>4703</a>                    <span class="macro">panic!</span>(<span class="string">"transaction status should be Unknown instead of {:?}"</span>, e);
+<a href=#4604 id=4604 data-nosnippet>4604</a>                e =&gt; {
+<a href=#4605 id=4605 data-nosnippet>4605</a>                    <span class="macro">panic!</span>(<span class="string">"transaction status should be Pending instead of {:?}"</span>, e);
+<a href=#4606 id=4606 data-nosnippet>4606</a>                },
+<a href=#4607 id=4607 data-nosnippet>4607</a>            }
+<a href=#4608 id=4608 data-nosnippet>4608</a>        }
+<a href=#4609 id=4609 data-nosnippet>4609</a>
+<a href=#4610 id=4610 data-nosnippet>4610</a>        <span class="comment">// round 3: test status Rejected with correct error message
+<a href=#4611 id=4611 data-nosnippet>4611</a>        </span><span class="kw">let </span>big_txns = <span class="macro">vec!</span>[TestTransaction::new(<span class="macro">vec!</span>[
+<a href=#4612 id=4612 data-nosnippet>4612</a>            <span class="number">0</span>;
+<a href=#4613 id=4613 data-nosnippet>4613</a>            TEST_PROTOCOL_MAX_BLOCK_SIZE
+<a href=#4614 id=4614 data-nosnippet>4614</a>                <span class="kw">as </span>usize
+<a href=#4615 id=4615 data-nosnippet>4615</a>                + <span class="number">1
+<a href=#4616 id=4616 data-nosnippet>4616</a>        </span>])];
+<a href=#4617 id=4617 data-nosnippet>4617</a>        <span class="kw">let _ </span>= proxy_global_state.submit_txns(big_txns.clone()).<span class="kw">await</span>;
+<a href=#4618 id=4618 data-nosnippet>4618</a>        <span class="kw">for </span>tx <span class="kw">in </span>big_txns.clone() {
+<a href=#4619 id=4619 data-nosnippet>4619</a>            <span class="kw">match </span>proxy_global_state.txn_status(tx.commit()).<span class="kw">await </span>{
+<a href=#4620 id=4620 data-nosnippet>4620</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
+<a href=#4621 id=4621 data-nosnippet>4621</a>                    <span class="kw">if </span>tx.minimum_block_size() &gt; TEST_PROTOCOL_MAX_BLOCK_SIZE {
+<a href=#4622 id=4622 data-nosnippet>4622</a>                        <span class="macro">tracing::debug!</span>(
+<a href=#4623 id=4623 data-nosnippet>4623</a>                            <span class="string">"In test_get_txn_status(), txn_status of large tx = {:?}"</span>,
+<a href=#4624 id=4624 data-nosnippet>4624</a>                            txn_status
+<a href=#4625 id=4625 data-nosnippet>4625</a>                        );
+<a href=#4626 id=4626 data-nosnippet>4626</a>                        <span class="macro">matches!</span>(txn_status, TransactionStatus::Rejected { .. });
+<a href=#4627 id=4627 data-nosnippet>4627</a>                        <span class="kw">if let </span>TransactionStatus::Rejected { reason } = txn_status {
+<a href=#4628 id=4628 data-nosnippet>4628</a>                            <span class="macro">assert!</span>(reason.contains(<span class="string">"Transaction too big"</span>));
+<a href=#4629 id=4629 data-nosnippet>4629</a>                        }
+<a href=#4630 id=4630 data-nosnippet>4630</a>                    } <span class="kw">else </span>{
+<a href=#4631 id=4631 data-nosnippet>4631</a>                        <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
+<a href=#4632 id=4632 data-nosnippet>4632</a>                    }
+<a href=#4633 id=4633 data-nosnippet>4633</a>                },
+<a href=#4634 id=4634 data-nosnippet>4634</a>                e =&gt; {
+<a href=#4635 id=4635 data-nosnippet>4635</a>                    <span class="macro">panic!</span>(
+<a href=#4636 id=4636 data-nosnippet>4636</a>                        <span class="string">"transaction status should be a valid status instead of {:?}"</span>,
+<a href=#4637 id=4637 data-nosnippet>4637</a>                        e
+<a href=#4638 id=4638 data-nosnippet>4638</a>                    );
+<a href=#4639 id=4639 data-nosnippet>4639</a>                },
+<a href=#4640 id=4640 data-nosnippet>4640</a>            }
+<a href=#4641 id=4641 data-nosnippet>4641</a>        }
+<a href=#4642 id=4642 data-nosnippet>4642</a>
+<a href=#4643 id=4643 data-nosnippet>4643</a>        {
+<a href=#4644 id=4644 data-nosnippet>4644</a>            <span class="comment">// Test a rejected txn marked as other status again
+<a href=#4645 id=4645 data-nosnippet>4645</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>write_guard = proxy_global_state.global_state.write_arc().<span class="kw">await</span>;
+<a href=#4646 id=4646 data-nosnippet>4646</a>            <span class="kw">for </span>tx <span class="kw">in </span>big_txns {
+<a href=#4647 id=4647 data-nosnippet>4647</a>                <span class="kw">match </span>write_guard
+<a href=#4648 id=4648 data-nosnippet>4648</a>                    .set_txn_status(tx.commit(), TransactionStatus::Pending)
+<a href=#4649 id=4649 data-nosnippet>4649</a>                    .<span class="kw">await
+<a href=#4650 id=4650 data-nosnippet>4650</a>                </span>{
+<a href=#4651 id=4651 data-nosnippet>4651</a>                    <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#4652 id=4652 data-nosnippet>4652</a>                        <span class="macro">panic!</span>(<span class="string">"Expected a result, but got a error {:?}"</span>, err);
+<a href=#4653 id=4653 data-nosnippet>4653</a>                    },
+<a href=#4654 id=4654 data-nosnippet>4654</a>                    <span class="kw">_ </span>=&gt; {
+<a href=#4655 id=4655 data-nosnippet>4655</a>                        <span class="comment">// This is expected
+<a href=#4656 id=4656 data-nosnippet>4656</a>                    </span>},
+<a href=#4657 id=4657 data-nosnippet>4657</a>                }
+<a href=#4658 id=4658 data-nosnippet>4658</a>
+<a href=#4659 id=4659 data-nosnippet>4659</a>                <span class="kw">match </span>write_guard.txn_status(tx.commit()).<span class="kw">await </span>{
+<a href=#4660 id=4660 data-nosnippet>4660</a>                    <span class="prelude-val">Ok</span>(txn_status) =&gt; {
+<a href=#4661 id=4661 data-nosnippet>4661</a>                        <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Pending);
+<a href=#4662 id=4662 data-nosnippet>4662</a>                    },
+<a href=#4663 id=4663 data-nosnippet>4663</a>                    e =&gt; {
+<a href=#4664 id=4664 data-nosnippet>4664</a>                        <span class="macro">panic!</span>(
+<a href=#4665 id=4665 data-nosnippet>4665</a>                            <span class="string">"transaction status should be a valid status instead of {:?}"</span>,
+<a href=#4666 id=4666 data-nosnippet>4666</a>                            e
+<a href=#4667 id=4667 data-nosnippet>4667</a>                        );
+<a href=#4668 id=4668 data-nosnippet>4668</a>                    },
+<a href=#4669 id=4669 data-nosnippet>4669</a>                }
+<a href=#4670 id=4670 data-nosnippet>4670</a>            }
+<a href=#4671 id=4671 data-nosnippet>4671</a>        }
+<a href=#4672 id=4672 data-nosnippet>4672</a>
+<a href=#4673 id=4673 data-nosnippet>4673</a>        {
+<a href=#4674 id=4674 data-nosnippet>4674</a>            <span class="comment">// Test a sequenced txn cannot be marked as other status again
+<a href=#4675 id=4675 data-nosnippet>4675</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>write_guard = proxy_global_state.global_state.write_arc().<span class="kw">await</span>;
+<a href=#4676 id=4676 data-nosnippet>4676</a>            <span class="kw">let </span>tx_test_assigned_twice =
+<a href=#4677 id=4677 data-nosnippet>4677</a>                TestTransaction::new(<span class="macro">vec!</span>[(num_transactions * <span class="number">3 </span>+ <span class="number">1</span>) <span class="kw">as </span>u8]);
+<a href=#4678 id=4678 data-nosnippet>4678</a>            write_guard
+<a href=#4679 id=4679 data-nosnippet>4679</a>                .set_txn_status(
+<a href=#4680 id=4680 data-nosnippet>4680</a>                    tx_test_assigned_twice.commit(),
+<a href=#4681 id=4681 data-nosnippet>4681</a>                    TransactionStatus::Sequenced { leaf: <span class="number">0 </span>},
+<a href=#4682 id=4682 data-nosnippet>4682</a>                )
+<a href=#4683 id=4683 data-nosnippet>4683</a>                .<span class="kw">await
+<a href=#4684 id=4684 data-nosnippet>4684</a>                </span>.unwrap();
+<a href=#4685 id=4685 data-nosnippet>4685</a>            <span class="kw">match </span>write_guard
+<a href=#4686 id=4686 data-nosnippet>4686</a>                .set_txn_status(tx_test_assigned_twice.commit(), TransactionStatus::Pending)
+<a href=#4687 id=4687 data-nosnippet>4687</a>                .<span class="kw">await
+<a href=#4688 id=4688 data-nosnippet>4688</a>            </span>{
+<a href=#4689 id=4689 data-nosnippet>4689</a>                <span class="prelude-val">Err</span>(_err) =&gt; {
+<a href=#4690 id=4690 data-nosnippet>4690</a>                    <span class="comment">// This is expected
+<a href=#4691 id=4691 data-nosnippet>4691</a>                </span>},
+<a href=#4692 id=4692 data-nosnippet>4692</a>                <span class="kw">_ </span>=&gt; {
+<a href=#4693 id=4693 data-nosnippet>4693</a>                    <span class="macro">panic!</span>(<span class="string">"Expected an error, but got a result"</span>);
+<a href=#4694 id=4694 data-nosnippet>4694</a>                },
+<a href=#4695 id=4695 data-nosnippet>4695</a>            }
+<a href=#4696 id=4696 data-nosnippet>4696</a>        }
+<a href=#4697 id=4697 data-nosnippet>4697</a>
+<a href=#4698 id=4698 data-nosnippet>4698</a>        {
+<a href=#4699 id=4699 data-nosnippet>4699</a>            <span class="comment">// Test status Unknown when the txn is unknown
+<a href=#4700 id=4700 data-nosnippet>4700</a>            </span><span class="kw">let </span>unknown_tx = TestTransaction::new(<span class="macro">vec!</span>[(num_transactions * <span class="number">4 </span>+ <span class="number">1</span>) <span class="kw">as </span>u8]);
+<a href=#4701 id=4701 data-nosnippet>4701</a>            <span class="kw">match </span>proxy_global_state.txn_status(unknown_tx.commit()).<span class="kw">await </span>{
+<a href=#4702 id=4702 data-nosnippet>4702</a>                <span class="prelude-val">Ok</span>(txn_status) =&gt; {
+<a href=#4703 id=4703 data-nosnippet>4703</a>                    <span class="macro">assert_eq!</span>(txn_status, TransactionStatus::Unknown);
 <a href=#4704 id=4704 data-nosnippet>4704</a>                },
-<a href=#4705 id=4705 data-nosnippet>4705</a>            }
-<a href=#4706 id=4706 data-nosnippet>4706</a>        }
-<a href=#4707 id=4707 data-nosnippet>4707</a>    }
-<a href=#4708 id=4708 data-nosnippet>4708</a>
-<a href=#4709 id=4709 data-nosnippet>4709</a>    <span class="attr">#[test]
-<a href=#4710 id=4710 data-nosnippet>4710</a>    </span><span class="kw">fn </span>test_increment_block_size() {
-<a href=#4711 id=4711 data-nosnippet>4711</a>        <span class="kw">let </span><span class="kw-2">mut </span>block_size_limits =
-<a href=#4712 id=4712 data-nosnippet>4712</a>            BlockSizeLimits::new(TEST_PROTOCOL_MAX_BLOCK_SIZE, Duration::from_millis(<span class="number">25</span>));
-<a href=#4713 id=4713 data-nosnippet>4713</a>        <span class="comment">// Simulate decreased limits
-<a href=#4714 id=4714 data-nosnippet>4714</a>        </span>block_size_limits.max_block_size = TEST_PROTOCOL_MAX_BLOCK_SIZE / <span class="number">2</span>;
-<a href=#4715 id=4715 data-nosnippet>4715</a>
-<a href=#4716 id=4716 data-nosnippet>4716</a>        <span class="comment">// Shouldn't increment, increment period hasn't passed yet
-<a href=#4717 id=4717 data-nosnippet>4717</a>        </span>block_size_limits.try_increment_block_size(<span class="bool-val">false</span>);
-<a href=#4718 id=4718 data-nosnippet>4718</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size == TEST_PROTOCOL_MAX_BLOCK_SIZE / <span class="number">2</span>);
-<a href=#4719 id=4719 data-nosnippet>4719</a>
-<a href=#4720 id=4720 data-nosnippet>4720</a>        <span class="comment">// Should increment, increment period hasn't passed yet, but force flag is set
-<a href=#4721 id=4721 data-nosnippet>4721</a>        </span>block_size_limits.try_increment_block_size(<span class="bool-val">true</span>);
-<a href=#4722 id=4722 data-nosnippet>4722</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size &gt; TEST_PROTOCOL_MAX_BLOCK_SIZE / <span class="number">2</span>);
-<a href=#4723 id=4723 data-nosnippet>4723</a>        <span class="kw">let </span>new_size = block_size_limits.max_block_size;
-<a href=#4724 id=4724 data-nosnippet>4724</a>
-<a href=#4725 id=4725 data-nosnippet>4725</a>        std::thread::sleep(Duration::from_millis(<span class="number">30</span>));
-<a href=#4726 id=4726 data-nosnippet>4726</a>
-<a href=#4727 id=4727 data-nosnippet>4727</a>        <span class="comment">// Should increment, increment period has passed
-<a href=#4728 id=4728 data-nosnippet>4728</a>        </span>block_size_limits.try_increment_block_size(<span class="bool-val">false</span>);
-<a href=#4729 id=4729 data-nosnippet>4729</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size &gt; new_size);
-<a href=#4730 id=4730 data-nosnippet>4730</a>    }
-<a href=#4731 id=4731 data-nosnippet>4731</a>
-<a href=#4732 id=4732 data-nosnippet>4732</a>    <span class="attr">#[test]
-<a href=#4733 id=4733 data-nosnippet>4733</a>    </span><span class="kw">fn </span>test_decrement_block_size() {
-<a href=#4734 id=4734 data-nosnippet>4734</a>        <span class="kw">let </span><span class="kw-2">mut </span>block_size_limits = BlockSizeLimits::new(
-<a href=#4735 id=4735 data-nosnippet>4735</a>            TEST_PROTOCOL_MAX_BLOCK_SIZE,
-<a href=#4736 id=4736 data-nosnippet>4736</a>            TEST_MAX_BLOCK_SIZE_INCREMENT_PERIOD,
-<a href=#4737 id=4737 data-nosnippet>4737</a>        );
-<a href=#4738 id=4738 data-nosnippet>4738</a>        block_size_limits.decrement_block_size();
-<a href=#4739 id=4739 data-nosnippet>4739</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size &lt; TEST_PROTOCOL_MAX_BLOCK_SIZE);
-<a href=#4740 id=4740 data-nosnippet>4740</a>    }
-<a href=#4741 id=4741 data-nosnippet>4741</a>
-<a href=#4742 id=4742 data-nosnippet>4742</a>    <span class="attr">#[test]
-<a href=#4743 id=4743 data-nosnippet>4743</a>    </span><span class="kw">fn </span>test_max_block_size_floor() {
-<a href=#4744 id=4744 data-nosnippet>4744</a>        <span class="kw">let </span><span class="kw-2">mut </span>block_size_limits = BlockSizeLimits::new(
-<a href=#4745 id=4745 data-nosnippet>4745</a>            BlockSizeLimits::MAX_BLOCK_SIZE_FLOOR + <span class="number">1</span>,
-<a href=#4746 id=4746 data-nosnippet>4746</a>            TEST_MAX_BLOCK_SIZE_INCREMENT_PERIOD,
-<a href=#4747 id=4747 data-nosnippet>4747</a>        );
-<a href=#4748 id=4748 data-nosnippet>4748</a>        block_size_limits.decrement_block_size();
-<a href=#4749 id=4749 data-nosnippet>4749</a>        <span class="macro">assert_eq!</span>(
-<a href=#4750 id=4750 data-nosnippet>4750</a>            block_size_limits.max_block_size,
-<a href=#4751 id=4751 data-nosnippet>4751</a>            BlockSizeLimits::MAX_BLOCK_SIZE_FLOOR
-<a href=#4752 id=4752 data-nosnippet>4752</a>        );
-<a href=#4753 id=4753 data-nosnippet>4753</a>    }
-<a href=#4754 id=4754 data-nosnippet>4754</a>}</code></pre></div></section></main></body></html>
+<a href=#4705 id=4705 data-nosnippet>4705</a>                e =&gt; {
+<a href=#4706 id=4706 data-nosnippet>4706</a>                    <span class="macro">panic!</span>(<span class="string">"transaction status should be Unknown instead of {:?}"</span>, e);
+<a href=#4707 id=4707 data-nosnippet>4707</a>                },
+<a href=#4708 id=4708 data-nosnippet>4708</a>            }
+<a href=#4709 id=4709 data-nosnippet>4709</a>        }
+<a href=#4710 id=4710 data-nosnippet>4710</a>    }
+<a href=#4711 id=4711 data-nosnippet>4711</a>
+<a href=#4712 id=4712 data-nosnippet>4712</a>    <span class="attr">#[test]
+<a href=#4713 id=4713 data-nosnippet>4713</a>    </span><span class="kw">fn </span>test_increment_block_size() {
+<a href=#4714 id=4714 data-nosnippet>4714</a>        <span class="kw">let </span><span class="kw-2">mut </span>block_size_limits =
+<a href=#4715 id=4715 data-nosnippet>4715</a>            BlockSizeLimits::new(TEST_PROTOCOL_MAX_BLOCK_SIZE, Duration::from_millis(<span class="number">25</span>));
+<a href=#4716 id=4716 data-nosnippet>4716</a>        <span class="comment">// Simulate decreased limits
+<a href=#4717 id=4717 data-nosnippet>4717</a>        </span>block_size_limits.max_block_size = TEST_PROTOCOL_MAX_BLOCK_SIZE / <span class="number">2</span>;
+<a href=#4718 id=4718 data-nosnippet>4718</a>
+<a href=#4719 id=4719 data-nosnippet>4719</a>        <span class="comment">// Shouldn't increment, increment period hasn't passed yet
+<a href=#4720 id=4720 data-nosnippet>4720</a>        </span>block_size_limits.try_increment_block_size(<span class="bool-val">false</span>);
+<a href=#4721 id=4721 data-nosnippet>4721</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size == TEST_PROTOCOL_MAX_BLOCK_SIZE / <span class="number">2</span>);
+<a href=#4722 id=4722 data-nosnippet>4722</a>
+<a href=#4723 id=4723 data-nosnippet>4723</a>        <span class="comment">// Should increment, increment period hasn't passed yet, but force flag is set
+<a href=#4724 id=4724 data-nosnippet>4724</a>        </span>block_size_limits.try_increment_block_size(<span class="bool-val">true</span>);
+<a href=#4725 id=4725 data-nosnippet>4725</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size &gt; TEST_PROTOCOL_MAX_BLOCK_SIZE / <span class="number">2</span>);
+<a href=#4726 id=4726 data-nosnippet>4726</a>        <span class="kw">let </span>new_size = block_size_limits.max_block_size;
+<a href=#4727 id=4727 data-nosnippet>4727</a>
+<a href=#4728 id=4728 data-nosnippet>4728</a>        std::thread::sleep(Duration::from_millis(<span class="number">30</span>));
+<a href=#4729 id=4729 data-nosnippet>4729</a>
+<a href=#4730 id=4730 data-nosnippet>4730</a>        <span class="comment">// Should increment, increment period has passed
+<a href=#4731 id=4731 data-nosnippet>4731</a>        </span>block_size_limits.try_increment_block_size(<span class="bool-val">false</span>);
+<a href=#4732 id=4732 data-nosnippet>4732</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size &gt; new_size);
+<a href=#4733 id=4733 data-nosnippet>4733</a>    }
+<a href=#4734 id=4734 data-nosnippet>4734</a>
+<a href=#4735 id=4735 data-nosnippet>4735</a>    <span class="attr">#[test]
+<a href=#4736 id=4736 data-nosnippet>4736</a>    </span><span class="kw">fn </span>test_decrement_block_size() {
+<a href=#4737 id=4737 data-nosnippet>4737</a>        <span class="kw">let </span><span class="kw-2">mut </span>block_size_limits = BlockSizeLimits::new(
+<a href=#4738 id=4738 data-nosnippet>4738</a>            TEST_PROTOCOL_MAX_BLOCK_SIZE,
+<a href=#4739 id=4739 data-nosnippet>4739</a>            TEST_MAX_BLOCK_SIZE_INCREMENT_PERIOD,
+<a href=#4740 id=4740 data-nosnippet>4740</a>        );
+<a href=#4741 id=4741 data-nosnippet>4741</a>        block_size_limits.decrement_block_size();
+<a href=#4742 id=4742 data-nosnippet>4742</a>        <span class="macro">assert!</span>(block_size_limits.max_block_size &lt; TEST_PROTOCOL_MAX_BLOCK_SIZE);
+<a href=#4743 id=4743 data-nosnippet>4743</a>    }
+<a href=#4744 id=4744 data-nosnippet>4744</a>
+<a href=#4745 id=4745 data-nosnippet>4745</a>    <span class="attr">#[test]
+<a href=#4746 id=4746 data-nosnippet>4746</a>    </span><span class="kw">fn </span>test_max_block_size_floor() {
+<a href=#4747 id=4747 data-nosnippet>4747</a>        <span class="kw">let </span><span class="kw-2">mut </span>block_size_limits = BlockSizeLimits::new(
+<a href=#4748 id=4748 data-nosnippet>4748</a>            BlockSizeLimits::MAX_BLOCK_SIZE_FLOOR + <span class="number">1</span>,
+<a href=#4749 id=4749 data-nosnippet>4749</a>            TEST_MAX_BLOCK_SIZE_INCREMENT_PERIOD,
+<a href=#4750 id=4750 data-nosnippet>4750</a>        );
+<a href=#4751 id=4751 data-nosnippet>4751</a>        block_size_limits.decrement_block_size();
+<a href=#4752 id=4752 data-nosnippet>4752</a>        <span class="macro">assert_eq!</span>(
+<a href=#4753 id=4753 data-nosnippet>4753</a>            block_size_limits.max_block_size,
+<a href=#4754 id=4754 data-nosnippet>4754</a>            BlockSizeLimits::MAX_BLOCK_SIZE_FLOOR
+<a href=#4755 id=4755 data-nosnippet>4755</a>        );
+<a href=#4756 id=4756 data-nosnippet>4756</a>    }
+<a href=#4757 id=4757 data-nosnippet>4757</a>}</code></pre></div></section></main></body></html>

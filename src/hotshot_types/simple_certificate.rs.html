@@ -776,4 +776,23 @@
 <a href=#776 id=776 data-nosnippet>776</a>            signatures: <span class="macro">vec!</span>[],
 <a href=#777 id=777 data-nosnippet>777</a>        }
 <a href=#778 id=778 data-nosnippet>778</a>    }
-<a href=#779 id=779 data-nosnippet>779</a>}</code></pre></div></section></main></body></html>
+<a href=#779 id=779 data-nosnippet>779</a>}
+<a href=#780 id=780 data-nosnippet>780</a>
+<a href=#781 id=781 data-nosnippet>781</a><span class="attr">#[derive(Serialize, Deserialize, Eq, Hash, PartialEq, Debug, Clone)]
+<a href=#782 id=782 data-nosnippet>782</a>#[serde(bound(deserialize = <span class="string">"QuorumCertificate2&lt;TYPES&gt;:for&lt;'a&gt; Deserialize&lt;'a&gt;"</span>))]
+<a href=#783 id=783 data-nosnippet>783</a></span><span class="kw">pub struct </span>EpochRootQuorumCertificate&lt;TYPES: NodeType&gt; {
+<a href=#784 id=784 data-nosnippet>784</a>    <span class="kw">pub </span>qc: QuorumCertificate2&lt;TYPES&gt;,
+<a href=#785 id=785 data-nosnippet>785</a>    <span class="kw">pub </span>state_cert: LightClientStateUpdateCertificate&lt;TYPES&gt;,
+<a href=#786 id=786 data-nosnippet>786</a>}
+<a href=#787 id=787 data-nosnippet>787</a>
+<a href=#788 id=788 data-nosnippet>788</a><span class="kw">impl</span>&lt;TYPES: NodeType&gt; HasViewNumber&lt;TYPES&gt; <span class="kw">for </span>EpochRootQuorumCertificate&lt;TYPES&gt; {
+<a href=#789 id=789 data-nosnippet>789</a>    <span class="kw">fn </span>view_number(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; TYPES::View {
+<a href=#790 id=790 data-nosnippet>790</a>        <span class="self">self</span>.qc.view_number()
+<a href=#791 id=791 data-nosnippet>791</a>    }
+<a href=#792 id=792 data-nosnippet>792</a>}
+<a href=#793 id=793 data-nosnippet>793</a>
+<a href=#794 id=794 data-nosnippet>794</a><span class="kw">impl</span>&lt;TYPES: NodeType&gt; HasEpoch&lt;TYPES&gt; <span class="kw">for </span>EpochRootQuorumCertificate&lt;TYPES&gt; {
+<a href=#795 id=795 data-nosnippet>795</a>    <span class="kw">fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt; {
+<a href=#796 id=796 data-nosnippet>796</a>        <span class="self">self</span>.qc.epoch()
+<a href=#797 id=797 data-nosnippet>797</a>    }
+<a href=#798 id=798 data-nosnippet>798</a>}</code></pre></div></section></main></body></html>

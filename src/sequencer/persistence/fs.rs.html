@@ -1929,131 +1929,133 @@
 <a href=#1929 id=1929 data-nosnippet>1929</a>                    view_change_evidence: <span class="prelude-val">None</span>,
 <a href=#1930 id=1930 data-nosnippet>1930</a>                    next_drb_result: <span class="prelude-val">None</span>,
 <a href=#1931 id=1931 data-nosnippet>1931</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
-<a href=#1932 id=1932 data-nosnippet>1932</a>                },
-<a href=#1933 id=1933 data-nosnippet>1933</a>            },
-<a href=#1934 id=1934 data-nosnippet>1934</a>            signature,
-<a href=#1935 id=1935 data-nosnippet>1935</a>            _pd: Default::default(),
-<a href=#1936 id=1936 data-nosnippet>1936</a>        };
-<a href=#1937 id=1937 data-nosnippet>1937</a>
-<a href=#1938 id=1938 data-nosnippet>1938</a>        <span class="comment">// Store quorum proposals.
-<a href=#1939 id=1939 data-nosnippet>1939</a>        </span><span class="kw">let </span>quorum_proposal1 = quorum_proposal.clone();
-<a href=#1940 id=1940 data-nosnippet>1940</a>        storage
-<a href=#1941 id=1941 data-nosnippet>1941</a>            .append_quorum_proposal2(<span class="kw-2">&amp;</span>quorum_proposal1)
-<a href=#1942 id=1942 data-nosnippet>1942</a>            .<span class="kw">await
-<a href=#1943 id=1943 data-nosnippet>1943</a>            </span>.unwrap();
-<a href=#1944 id=1944 data-nosnippet>1944</a>        quorum_proposal.data.proposal.view_number = ViewNumber::new(<span class="number">1</span>);
-<a href=#1945 id=1945 data-nosnippet>1945</a>        <span class="kw">let </span>quorum_proposal2 = quorum_proposal.clone();
-<a href=#1946 id=1946 data-nosnippet>1946</a>        storage
-<a href=#1947 id=1947 data-nosnippet>1947</a>            .append_quorum_proposal2(<span class="kw-2">&amp;</span>quorum_proposal2)
-<a href=#1948 id=1948 data-nosnippet>1948</a>            .<span class="kw">await
-<a href=#1949 id=1949 data-nosnippet>1949</a>            </span>.unwrap();
-<a href=#1950 id=1950 data-nosnippet>1950</a>
-<a href=#1951 id=1951 data-nosnippet>1951</a>        <span class="comment">// Change one of the file extensions. It can happen that we end up with files with the wrong
-<a href=#1952 id=1952 data-nosnippet>1952</a>        // extension if, for example, the node is killed before cleaning up a swap file.
-<a href=#1953 id=1953 data-nosnippet>1953</a>        </span>fs::rename(
-<a href=#1954 id=1954 data-nosnippet>1954</a>            tmp.path().join(<span class="string">"quorum_proposals2/1.txt"</span>),
-<a href=#1955 id=1955 data-nosnippet>1955</a>            tmp.path().join(<span class="string">"quorum_proposals2/1.swp"</span>),
-<a href=#1956 id=1956 data-nosnippet>1956</a>        )
-<a href=#1957 id=1957 data-nosnippet>1957</a>        .unwrap();
-<a href=#1958 id=1958 data-nosnippet>1958</a>
-<a href=#1959 id=1959 data-nosnippet>1959</a>        <span class="comment">// Loading should simply ignore the unrecognized extension.
-<a href=#1960 id=1960 data-nosnippet>1960</a>        </span><span class="macro">assert_eq!</span>(
-<a href=#1961 id=1961 data-nosnippet>1961</a>            storage.load_quorum_proposals().<span class="kw">await</span>.unwrap(),
-<a href=#1962 id=1962 data-nosnippet>1962</a>            [(ViewNumber::genesis(), quorum_proposal1)]
-<a href=#1963 id=1963 data-nosnippet>1963</a>                .into_iter()
-<a href=#1964 id=1964 data-nosnippet>1964</a>                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()
-<a href=#1965 id=1965 data-nosnippet>1965</a>        );
-<a href=#1966 id=1966 data-nosnippet>1966</a>    }
-<a href=#1967 id=1967 data-nosnippet>1967</a>
-<a href=#1968 id=1968 data-nosnippet>1968</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
-<a href=#1969 id=1969 data-nosnippet>1969</a>    </span><span class="kw">async fn </span>test_load_quorum_proposals_malformed_data() {
-<a href=#1970 id=1970 data-nosnippet>1970</a>        setup_test();
-<a href=#1971 id=1971 data-nosnippet>1971</a>
-<a href=#1972 id=1972 data-nosnippet>1972</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
-<a href=#1973 id=1973 data-nosnippet>1973</a>        <span class="kw">let </span>storage = Persistence::connect(<span class="kw-2">&amp;</span>tmp).<span class="kw">await</span>;
-<a href=#1974 id=1974 data-nosnippet>1974</a>
-<a href=#1975 id=1975 data-nosnippet>1975</a>        <span class="comment">// Generate a valid quorum proposal.
-<a href=#1976 id=1976 data-nosnippet>1976</a>        </span><span class="kw">let </span>leaf: Leaf2 = Leaf::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>NodeState::mock())
-<a href=#1977 id=1977 data-nosnippet>1977</a>            .<span class="kw">await
-<a href=#1978 id=1978 data-nosnippet>1978</a>            </span>.into();
-<a href=#1979 id=1979 data-nosnippet>1979</a>        <span class="kw">let </span>privkey = PubKey::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">1</span>).<span class="number">1</span>;
-<a href=#1980 id=1980 data-nosnippet>1980</a>        <span class="kw">let </span>signature = PubKey::sign(<span class="kw-2">&amp;</span>privkey, <span class="kw-2">&amp;</span>[]).unwrap();
-<a href=#1981 id=1981 data-nosnippet>1981</a>        <span class="kw">let </span>quorum_proposal = Proposal {
-<a href=#1982 id=1982 data-nosnippet>1982</a>            data: QuorumProposalWrapper::&lt;SeqTypes&gt; {
-<a href=#1983 id=1983 data-nosnippet>1983</a>                proposal: QuorumProposal2::&lt;SeqTypes&gt; {
-<a href=#1984 id=1984 data-nosnippet>1984</a>                    epoch: <span class="prelude-val">None</span>,
-<a href=#1985 id=1985 data-nosnippet>1985</a>                    block_header: leaf.block_header().clone(),
-<a href=#1986 id=1986 data-nosnippet>1986</a>                    view_number: ViewNumber::new(<span class="number">1</span>),
-<a href=#1987 id=1987 data-nosnippet>1987</a>                    justify_qc: QuorumCertificate2::genesis::&lt;TestVersions&gt;(
-<a href=#1988 id=1988 data-nosnippet>1988</a>                        <span class="kw-2">&amp;</span>Default::default(),
-<a href=#1989 id=1989 data-nosnippet>1989</a>                        <span class="kw-2">&amp;</span>NodeState::mock(),
-<a href=#1990 id=1990 data-nosnippet>1990</a>                    )
-<a href=#1991 id=1991 data-nosnippet>1991</a>                    .<span class="kw">await</span>,
-<a href=#1992 id=1992 data-nosnippet>1992</a>                    upgrade_certificate: <span class="prelude-val">None</span>,
-<a href=#1993 id=1993 data-nosnippet>1993</a>                    view_change_evidence: <span class="prelude-val">None</span>,
-<a href=#1994 id=1994 data-nosnippet>1994</a>                    next_drb_result: <span class="prelude-val">None</span>,
-<a href=#1995 id=1995 data-nosnippet>1995</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
-<a href=#1996 id=1996 data-nosnippet>1996</a>                },
-<a href=#1997 id=1997 data-nosnippet>1997</a>            },
-<a href=#1998 id=1998 data-nosnippet>1998</a>            signature,
-<a href=#1999 id=1999 data-nosnippet>1999</a>            _pd: Default::default(),
-<a href=#2000 id=2000 data-nosnippet>2000</a>        };
-<a href=#2001 id=2001 data-nosnippet>2001</a>
-<a href=#2002 id=2002 data-nosnippet>2002</a>        <span class="comment">// First store an invalid quorum proposal.
-<a href=#2003 id=2003 data-nosnippet>2003</a>        </span>fs::create_dir_all(tmp.path().join(<span class="string">"quorum_proposals2"</span>)).unwrap();
-<a href=#2004 id=2004 data-nosnippet>2004</a>        fs::write(
-<a href=#2005 id=2005 data-nosnippet>2005</a>            tmp.path().join(<span class="string">"quorum_proposals2/0.txt"</span>),
-<a href=#2006 id=2006 data-nosnippet>2006</a>            <span class="string">"invalid data"</span>.as_bytes(),
-<a href=#2007 id=2007 data-nosnippet>2007</a>        )
-<a href=#2008 id=2008 data-nosnippet>2008</a>        .unwrap();
-<a href=#2009 id=2009 data-nosnippet>2009</a>
-<a href=#2010 id=2010 data-nosnippet>2010</a>        <span class="comment">// Store valid quorum proposal.
-<a href=#2011 id=2011 data-nosnippet>2011</a>        </span>storage
-<a href=#2012 id=2012 data-nosnippet>2012</a>            .append_quorum_proposal2(<span class="kw-2">&amp;</span>quorum_proposal)
-<a href=#2013 id=2013 data-nosnippet>2013</a>            .<span class="kw">await
-<a href=#2014 id=2014 data-nosnippet>2014</a>            </span>.unwrap();
-<a href=#2015 id=2015 data-nosnippet>2015</a>
-<a href=#2016 id=2016 data-nosnippet>2016</a>        <span class="comment">// Loading should ignore the invalid data and return the valid proposal.
-<a href=#2017 id=2017 data-nosnippet>2017</a>        </span><span class="macro">assert_eq!</span>(
-<a href=#2018 id=2018 data-nosnippet>2018</a>            storage.load_quorum_proposals().<span class="kw">await</span>.unwrap(),
-<a href=#2019 id=2019 data-nosnippet>2019</a>            [(ViewNumber::new(<span class="number">1</span>), quorum_proposal)]
-<a href=#2020 id=2020 data-nosnippet>2020</a>                .into_iter()
-<a href=#2021 id=2021 data-nosnippet>2021</a>                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()
-<a href=#2022 id=2022 data-nosnippet>2022</a>        );
-<a href=#2023 id=2023 data-nosnippet>2023</a>    }
-<a href=#2024 id=2024 data-nosnippet>2024</a>
-<a href=#2025 id=2025 data-nosnippet>2025</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
-<a href=#2026 id=2026 data-nosnippet>2026</a>    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
-<a href=#2027 id=2027 data-nosnippet>2027</a>        setup_test();
-<a href=#2028 id=2028 data-nosnippet>2028</a>
-<a href=#2029 id=2029 data-nosnippet>2029</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
-<a href=#2030 id=2030 data-nosnippet>2030</a>        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
-<a href=#2031 id=2031 data-nosnippet>2031</a>
-<a href=#2032 id=2032 data-nosnippet>2032</a>        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
+<a href=#1932 id=1932 data-nosnippet>1932</a>                    state_cert: <span class="prelude-val">None</span>,
+<a href=#1933 id=1933 data-nosnippet>1933</a>                },
+<a href=#1934 id=1934 data-nosnippet>1934</a>            },
+<a href=#1935 id=1935 data-nosnippet>1935</a>            signature,
+<a href=#1936 id=1936 data-nosnippet>1936</a>            _pd: Default::default(),
+<a href=#1937 id=1937 data-nosnippet>1937</a>        };
+<a href=#1938 id=1938 data-nosnippet>1938</a>
+<a href=#1939 id=1939 data-nosnippet>1939</a>        <span class="comment">// Store quorum proposals.
+<a href=#1940 id=1940 data-nosnippet>1940</a>        </span><span class="kw">let </span>quorum_proposal1 = quorum_proposal.clone();
+<a href=#1941 id=1941 data-nosnippet>1941</a>        storage
+<a href=#1942 id=1942 data-nosnippet>1942</a>            .append_quorum_proposal2(<span class="kw-2">&amp;</span>quorum_proposal1)
+<a href=#1943 id=1943 data-nosnippet>1943</a>            .<span class="kw">await
+<a href=#1944 id=1944 data-nosnippet>1944</a>            </span>.unwrap();
+<a href=#1945 id=1945 data-nosnippet>1945</a>        quorum_proposal.data.proposal.view_number = ViewNumber::new(<span class="number">1</span>);
+<a href=#1946 id=1946 data-nosnippet>1946</a>        <span class="kw">let </span>quorum_proposal2 = quorum_proposal.clone();
+<a href=#1947 id=1947 data-nosnippet>1947</a>        storage
+<a href=#1948 id=1948 data-nosnippet>1948</a>            .append_quorum_proposal2(<span class="kw-2">&amp;</span>quorum_proposal2)
+<a href=#1949 id=1949 data-nosnippet>1949</a>            .<span class="kw">await
+<a href=#1950 id=1950 data-nosnippet>1950</a>            </span>.unwrap();
+<a href=#1951 id=1951 data-nosnippet>1951</a>
+<a href=#1952 id=1952 data-nosnippet>1952</a>        <span class="comment">// Change one of the file extensions. It can happen that we end up with files with the wrong
+<a href=#1953 id=1953 data-nosnippet>1953</a>        // extension if, for example, the node is killed before cleaning up a swap file.
+<a href=#1954 id=1954 data-nosnippet>1954</a>        </span>fs::rename(
+<a href=#1955 id=1955 data-nosnippet>1955</a>            tmp.path().join(<span class="string">"quorum_proposals2/1.txt"</span>),
+<a href=#1956 id=1956 data-nosnippet>1956</a>            tmp.path().join(<span class="string">"quorum_proposals2/1.swp"</span>),
+<a href=#1957 id=1957 data-nosnippet>1957</a>        )
+<a href=#1958 id=1958 data-nosnippet>1958</a>        .unwrap();
+<a href=#1959 id=1959 data-nosnippet>1959</a>
+<a href=#1960 id=1960 data-nosnippet>1960</a>        <span class="comment">// Loading should simply ignore the unrecognized extension.
+<a href=#1961 id=1961 data-nosnippet>1961</a>        </span><span class="macro">assert_eq!</span>(
+<a href=#1962 id=1962 data-nosnippet>1962</a>            storage.load_quorum_proposals().<span class="kw">await</span>.unwrap(),
+<a href=#1963 id=1963 data-nosnippet>1963</a>            [(ViewNumber::genesis(), quorum_proposal1)]
+<a href=#1964 id=1964 data-nosnippet>1964</a>                .into_iter()
+<a href=#1965 id=1965 data-nosnippet>1965</a>                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()
+<a href=#1966 id=1966 data-nosnippet>1966</a>        );
+<a href=#1967 id=1967 data-nosnippet>1967</a>    }
+<a href=#1968 id=1968 data-nosnippet>1968</a>
+<a href=#1969 id=1969 data-nosnippet>1969</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+<a href=#1970 id=1970 data-nosnippet>1970</a>    </span><span class="kw">async fn </span>test_load_quorum_proposals_malformed_data() {
+<a href=#1971 id=1971 data-nosnippet>1971</a>        setup_test();
+<a href=#1972 id=1972 data-nosnippet>1972</a>
+<a href=#1973 id=1973 data-nosnippet>1973</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
+<a href=#1974 id=1974 data-nosnippet>1974</a>        <span class="kw">let </span>storage = Persistence::connect(<span class="kw-2">&amp;</span>tmp).<span class="kw">await</span>;
+<a href=#1975 id=1975 data-nosnippet>1975</a>
+<a href=#1976 id=1976 data-nosnippet>1976</a>        <span class="comment">// Generate a valid quorum proposal.
+<a href=#1977 id=1977 data-nosnippet>1977</a>        </span><span class="kw">let </span>leaf: Leaf2 = Leaf::genesis::&lt;MockVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>NodeState::mock())
+<a href=#1978 id=1978 data-nosnippet>1978</a>            .<span class="kw">await
+<a href=#1979 id=1979 data-nosnippet>1979</a>            </span>.into();
+<a href=#1980 id=1980 data-nosnippet>1980</a>        <span class="kw">let </span>privkey = PubKey::generated_from_seed_indexed([<span class="number">0</span>; <span class="number">32</span>], <span class="number">1</span>).<span class="number">1</span>;
+<a href=#1981 id=1981 data-nosnippet>1981</a>        <span class="kw">let </span>signature = PubKey::sign(<span class="kw-2">&amp;</span>privkey, <span class="kw-2">&amp;</span>[]).unwrap();
+<a href=#1982 id=1982 data-nosnippet>1982</a>        <span class="kw">let </span>quorum_proposal = Proposal {
+<a href=#1983 id=1983 data-nosnippet>1983</a>            data: QuorumProposalWrapper::&lt;SeqTypes&gt; {
+<a href=#1984 id=1984 data-nosnippet>1984</a>                proposal: QuorumProposal2::&lt;SeqTypes&gt; {
+<a href=#1985 id=1985 data-nosnippet>1985</a>                    epoch: <span class="prelude-val">None</span>,
+<a href=#1986 id=1986 data-nosnippet>1986</a>                    block_header: leaf.block_header().clone(),
+<a href=#1987 id=1987 data-nosnippet>1987</a>                    view_number: ViewNumber::new(<span class="number">1</span>),
+<a href=#1988 id=1988 data-nosnippet>1988</a>                    justify_qc: QuorumCertificate2::genesis::&lt;TestVersions&gt;(
+<a href=#1989 id=1989 data-nosnippet>1989</a>                        <span class="kw-2">&amp;</span>Default::default(),
+<a href=#1990 id=1990 data-nosnippet>1990</a>                        <span class="kw-2">&amp;</span>NodeState::mock(),
+<a href=#1991 id=1991 data-nosnippet>1991</a>                    )
+<a href=#1992 id=1992 data-nosnippet>1992</a>                    .<span class="kw">await</span>,
+<a href=#1993 id=1993 data-nosnippet>1993</a>                    upgrade_certificate: <span class="prelude-val">None</span>,
+<a href=#1994 id=1994 data-nosnippet>1994</a>                    view_change_evidence: <span class="prelude-val">None</span>,
+<a href=#1995 id=1995 data-nosnippet>1995</a>                    next_drb_result: <span class="prelude-val">None</span>,
+<a href=#1996 id=1996 data-nosnippet>1996</a>                    next_epoch_justify_qc: <span class="prelude-val">None</span>,
+<a href=#1997 id=1997 data-nosnippet>1997</a>                    state_cert: <span class="prelude-val">None</span>,
+<a href=#1998 id=1998 data-nosnippet>1998</a>                },
+<a href=#1999 id=1999 data-nosnippet>1999</a>            },
+<a href=#2000 id=2000 data-nosnippet>2000</a>            signature,
+<a href=#2001 id=2001 data-nosnippet>2001</a>            _pd: Default::default(),
+<a href=#2002 id=2002 data-nosnippet>2002</a>        };
+<a href=#2003 id=2003 data-nosnippet>2003</a>
+<a href=#2004 id=2004 data-nosnippet>2004</a>        <span class="comment">// First store an invalid quorum proposal.
+<a href=#2005 id=2005 data-nosnippet>2005</a>        </span>fs::create_dir_all(tmp.path().join(<span class="string">"quorum_proposals2"</span>)).unwrap();
+<a href=#2006 id=2006 data-nosnippet>2006</a>        fs::write(
+<a href=#2007 id=2007 data-nosnippet>2007</a>            tmp.path().join(<span class="string">"quorum_proposals2/0.txt"</span>),
+<a href=#2008 id=2008 data-nosnippet>2008</a>            <span class="string">"invalid data"</span>.as_bytes(),
+<a href=#2009 id=2009 data-nosnippet>2009</a>        )
+<a href=#2010 id=2010 data-nosnippet>2010</a>        .unwrap();
+<a href=#2011 id=2011 data-nosnippet>2011</a>
+<a href=#2012 id=2012 data-nosnippet>2012</a>        <span class="comment">// Store valid quorum proposal.
+<a href=#2013 id=2013 data-nosnippet>2013</a>        </span>storage
+<a href=#2014 id=2014 data-nosnippet>2014</a>            .append_quorum_proposal2(<span class="kw-2">&amp;</span>quorum_proposal)
+<a href=#2015 id=2015 data-nosnippet>2015</a>            .<span class="kw">await
+<a href=#2016 id=2016 data-nosnippet>2016</a>            </span>.unwrap();
+<a href=#2017 id=2017 data-nosnippet>2017</a>
+<a href=#2018 id=2018 data-nosnippet>2018</a>        <span class="comment">// Loading should ignore the invalid data and return the valid proposal.
+<a href=#2019 id=2019 data-nosnippet>2019</a>        </span><span class="macro">assert_eq!</span>(
+<a href=#2020 id=2020 data-nosnippet>2020</a>            storage.load_quorum_proposals().<span class="kw">await</span>.unwrap(),
+<a href=#2021 id=2021 data-nosnippet>2021</a>            [(ViewNumber::new(<span class="number">1</span>), quorum_proposal)]
+<a href=#2022 id=2022 data-nosnippet>2022</a>                .into_iter()
+<a href=#2023 id=2023 data-nosnippet>2023</a>                .collect::&lt;BTreeMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()
+<a href=#2024 id=2024 data-nosnippet>2024</a>        );
+<a href=#2025 id=2025 data-nosnippet>2025</a>    }
+<a href=#2026 id=2026 data-nosnippet>2026</a>
+<a href=#2027 id=2027 data-nosnippet>2027</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+<a href=#2028 id=2028 data-nosnippet>2028</a>    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
+<a href=#2029 id=2029 data-nosnippet>2029</a>        setup_test();
+<a href=#2030 id=2030 data-nosnippet>2030</a>
+<a href=#2031 id=2031 data-nosnippet>2031</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
+<a href=#2032 id=2032 data-nosnippet>2032</a>        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
 <a href=#2033 id=2033 data-nosnippet>2033</a>
-<a href=#2034 id=2034 data-nosnippet>2034</a>        <span class="kw">let </span>validator = Validator::mock();
-<a href=#2035 id=2035 data-nosnippet>2035</a>        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
-<a href=#2036 id=2036 data-nosnippet>2036</a>        st.insert(validator.account, validator);
-<a href=#2037 id=2037 data-nosnippet>2037</a>        storage
-<a href=#2038 id=2038 data-nosnippet>2038</a>            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
-<a href=#2039 id=2039 data-nosnippet>2039</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#2040 id=2040 data-nosnippet>2040</a>
-<a href=#2041 id=2041 data-nosnippet>2041</a>        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-<a href=#2042 id=2042 data-nosnippet>2042</a>        <span class="macro">assert_eq!</span>(st, table);
-<a href=#2043 id=2043 data-nosnippet>2043</a>
-<a href=#2044 id=2044 data-nosnippet>2044</a>        <span class="kw">let </span>val2 = Validator::mock();
-<a href=#2045 id=2045 data-nosnippet>2045</a>        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
-<a href=#2046 id=2046 data-nosnippet>2046</a>        st2.insert(val2.account, val2);
-<a href=#2047 id=2047 data-nosnippet>2047</a>        storage
-<a href=#2048 id=2048 data-nosnippet>2048</a>            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
-<a href=#2049 id=2049 data-nosnippet>2049</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#2050 id=2050 data-nosnippet>2050</a>
-<a href=#2051 id=2051 data-nosnippet>2051</a>        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-<a href=#2052 id=2052 data-nosnippet>2052</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
-<a href=#2053 id=2053 data-nosnippet>2053</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
-<a href=#2054 id=2054 data-nosnippet>2054</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
-<a href=#2055 id=2055 data-nosnippet>2055</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
-<a href=#2056 id=2056 data-nosnippet>2056</a>
-<a href=#2057 id=2057 data-nosnippet>2057</a>        <span class="prelude-val">Ok</span>(())
-<a href=#2058 id=2058 data-nosnippet>2058</a>    }
-<a href=#2059 id=2059 data-nosnippet>2059</a>}</code></pre></div></section></main></body></html>
+<a href=#2034 id=2034 data-nosnippet>2034</a>        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
+<a href=#2035 id=2035 data-nosnippet>2035</a>
+<a href=#2036 id=2036 data-nosnippet>2036</a>        <span class="kw">let </span>validator = Validator::mock();
+<a href=#2037 id=2037 data-nosnippet>2037</a>        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
+<a href=#2038 id=2038 data-nosnippet>2038</a>        st.insert(validator.account, validator);
+<a href=#2039 id=2039 data-nosnippet>2039</a>        storage
+<a href=#2040 id=2040 data-nosnippet>2040</a>            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
+<a href=#2041 id=2041 data-nosnippet>2041</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#2042 id=2042 data-nosnippet>2042</a>
+<a href=#2043 id=2043 data-nosnippet>2043</a>        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+<a href=#2044 id=2044 data-nosnippet>2044</a>        <span class="macro">assert_eq!</span>(st, table);
+<a href=#2045 id=2045 data-nosnippet>2045</a>
+<a href=#2046 id=2046 data-nosnippet>2046</a>        <span class="kw">let </span>val2 = Validator::mock();
+<a href=#2047 id=2047 data-nosnippet>2047</a>        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
+<a href=#2048 id=2048 data-nosnippet>2048</a>        st2.insert(val2.account, val2);
+<a href=#2049 id=2049 data-nosnippet>2049</a>        storage
+<a href=#2050 id=2050 data-nosnippet>2050</a>            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
+<a href=#2051 id=2051 data-nosnippet>2051</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#2052 id=2052 data-nosnippet>2052</a>
+<a href=#2053 id=2053 data-nosnippet>2053</a>        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+<a href=#2054 id=2054 data-nosnippet>2054</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
+<a href=#2055 id=2055 data-nosnippet>2055</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
+<a href=#2056 id=2056 data-nosnippet>2056</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
+<a href=#2057 id=2057 data-nosnippet>2057</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
+<a href=#2058 id=2058 data-nosnippet>2058</a>
+<a href=#2059 id=2059 data-nosnippet>2059</a>        <span class="prelude-val">Ok</span>(())
+<a href=#2060 id=2060 data-nosnippet>2060</a>    }
+<a href=#2061 id=2061 data-nosnippet>2061</a>}</code></pre></div></section></main></body></html>
