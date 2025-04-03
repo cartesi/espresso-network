@@ -257,49 +257,47 @@
 <a href=#257 id=257 data-nosnippet>257</a>        bad_witness[<span class="number">0</span>] = shares[<span class="number">0</span>].content.payload[<span class="number">0</span>][<span class="number">0</span>];
 <a href=#258 id=258 data-nosnippet>258</a>        <span class="kw">let </span>bad_proof2 = MalEncodingProof {
 <a href=#259 id=259 data-nosnippet>259</a>            recovered_poly: bad_witness,
-<a href=#260 id=260 data-nosnippet>260</a>            raw_shares: std::iter::repeat(bad_proof.raw_shares[<span class="number">0</span>].clone())
-<a href=#261 id=261 data-nosnippet>261</a>                .take(<span class="number">6</span>)
-<a href=#262 id=262 data-nosnippet>262</a>                .collect(),
-<a href=#263 id=263 data-nosnippet>263</a>        };
-<a href=#264 id=264 data-nosnippet>264</a>        <span class="macro">assert!</span>(bad_proof2.verify(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit).is_err());
-<a href=#265 id=265 data-nosnippet>265</a>    }
-<a href=#266 id=266 data-nosnippet>266</a>
-<a href=#267 id=267 data-nosnippet>267</a>    <span class="attr">#[test]
-<a href=#268 id=268 data-nosnippet>268</a>    </span><span class="kw">fn </span>test_ns_proof() {
-<a href=#269 id=269 data-nosnippet>269</a>        <span class="kw">let </span>param = AvidMScheme::setup(<span class="number">5usize</span>, <span class="number">10usize</span>).unwrap();
-<a href=#270 id=270 data-nosnippet>270</a>        <span class="kw">let </span>payload = <span class="macro">vec!</span>[<span class="number">1u8</span>; <span class="number">100</span>];
-<a href=#271 id=271 data-nosnippet>271</a>        <span class="kw">let </span>ns_table = <span class="macro">vec!</span>[(<span class="number">0</span>..<span class="number">10</span>), (<span class="number">10</span>..<span class="number">21</span>), (<span class="number">21</span>..<span class="number">33</span>), (<span class="number">33</span>..<span class="number">48</span>), (<span class="number">48</span>..<span class="number">100</span>)];
-<a href=#272 id=272 data-nosnippet>272</a>        <span class="kw">let </span>commit = NsAvidMScheme::commit(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>payload, ns_table.clone()).unwrap();
-<a href=#273 id=273 data-nosnippet>273</a>
-<a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">for </span>(i, <span class="kw">_</span>) <span class="kw">in </span>ns_table.iter().enumerate() {
-<a href=#275 id=275 data-nosnippet>275</a>            <span class="kw">let </span>proof =
-<a href=#276 id=276 data-nosnippet>276</a>                NsAvidMScheme::namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>payload, i, ns_table.clone()).unwrap();
-<a href=#277 id=277 data-nosnippet>277</a>            <span class="macro">assert!</span>(
-<a href=#278 id=278 data-nosnippet>278</a>                NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
-<a href=#279 id=279 data-nosnippet>279</a>                    .unwrap()
-<a href=#280 id=280 data-nosnippet>280</a>                    .is_ok()
-<a href=#281 id=281 data-nosnippet>281</a>            );
-<a href=#282 id=282 data-nosnippet>282</a>        }
-<a href=#283 id=283 data-nosnippet>283</a>        <span class="kw">let </span><span class="kw-2">mut </span>proof =
-<a href=#284 id=284 data-nosnippet>284</a>            NsAvidMScheme::namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>payload, <span class="number">1</span>, ns_table.clone()).unwrap();
-<a href=#285 id=285 data-nosnippet>285</a>        proof.ns_index = <span class="number">0</span>;
-<a href=#286 id=286 data-nosnippet>286</a>        <span class="macro">assert!</span>(
-<a href=#287 id=287 data-nosnippet>287</a>            NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
-<a href=#288 id=288 data-nosnippet>288</a>                .unwrap()
-<a href=#289 id=289 data-nosnippet>289</a>                .is_err()
-<a href=#290 id=290 data-nosnippet>290</a>        );
-<a href=#291 id=291 data-nosnippet>291</a>        proof.ns_index = <span class="number">1</span>;
-<a href=#292 id=292 data-nosnippet>292</a>        proof.ns_payload[<span class="number">0</span>] = <span class="number">0u8</span>;
-<a href=#293 id=293 data-nosnippet>293</a>        <span class="macro">assert!</span>(
-<a href=#294 id=294 data-nosnippet>294</a>            NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
-<a href=#295 id=295 data-nosnippet>295</a>                .unwrap()
-<a href=#296 id=296 data-nosnippet>296</a>                .is_err()
-<a href=#297 id=297 data-nosnippet>297</a>        );
-<a href=#298 id=298 data-nosnippet>298</a>        proof.ns_index = <span class="number">100</span>;
-<a href=#299 id=299 data-nosnippet>299</a>        <span class="macro">assert!</span>(
-<a href=#300 id=300 data-nosnippet>300</a>            NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
-<a href=#301 id=301 data-nosnippet>301</a>                .unwrap()
-<a href=#302 id=302 data-nosnippet>302</a>                .is_err()
-<a href=#303 id=303 data-nosnippet>303</a>        );
-<a href=#304 id=304 data-nosnippet>304</a>    }
-<a href=#305 id=305 data-nosnippet>305</a>}</code></pre></div></section></main></body></html>
+<a href=#260 id=260 data-nosnippet>260</a>            raw_shares: std::iter::repeat_n(bad_proof.raw_shares[<span class="number">0</span>].clone(), <span class="number">6</span>).collect(),
+<a href=#261 id=261 data-nosnippet>261</a>        };
+<a href=#262 id=262 data-nosnippet>262</a>        <span class="macro">assert!</span>(bad_proof2.verify(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit).is_err());
+<a href=#263 id=263 data-nosnippet>263</a>    }
+<a href=#264 id=264 data-nosnippet>264</a>
+<a href=#265 id=265 data-nosnippet>265</a>    <span class="attr">#[test]
+<a href=#266 id=266 data-nosnippet>266</a>    </span><span class="kw">fn </span>test_ns_proof() {
+<a href=#267 id=267 data-nosnippet>267</a>        <span class="kw">let </span>param = AvidMScheme::setup(<span class="number">5usize</span>, <span class="number">10usize</span>).unwrap();
+<a href=#268 id=268 data-nosnippet>268</a>        <span class="kw">let </span>payload = <span class="macro">vec!</span>[<span class="number">1u8</span>; <span class="number">100</span>];
+<a href=#269 id=269 data-nosnippet>269</a>        <span class="kw">let </span>ns_table = <span class="macro">vec!</span>[(<span class="number">0</span>..<span class="number">10</span>), (<span class="number">10</span>..<span class="number">21</span>), (<span class="number">21</span>..<span class="number">33</span>), (<span class="number">33</span>..<span class="number">48</span>), (<span class="number">48</span>..<span class="number">100</span>)];
+<a href=#270 id=270 data-nosnippet>270</a>        <span class="kw">let </span>commit = NsAvidMScheme::commit(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>payload, ns_table.clone()).unwrap();
+<a href=#271 id=271 data-nosnippet>271</a>
+<a href=#272 id=272 data-nosnippet>272</a>        <span class="kw">for </span>(i, <span class="kw">_</span>) <span class="kw">in </span>ns_table.iter().enumerate() {
+<a href=#273 id=273 data-nosnippet>273</a>            <span class="kw">let </span>proof =
+<a href=#274 id=274 data-nosnippet>274</a>                NsAvidMScheme::namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>payload, i, ns_table.clone()).unwrap();
+<a href=#275 id=275 data-nosnippet>275</a>            <span class="macro">assert!</span>(
+<a href=#276 id=276 data-nosnippet>276</a>                NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
+<a href=#277 id=277 data-nosnippet>277</a>                    .unwrap()
+<a href=#278 id=278 data-nosnippet>278</a>                    .is_ok()
+<a href=#279 id=279 data-nosnippet>279</a>            );
+<a href=#280 id=280 data-nosnippet>280</a>        }
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span><span class="kw-2">mut </span>proof =
+<a href=#282 id=282 data-nosnippet>282</a>            NsAvidMScheme::namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>payload, <span class="number">1</span>, ns_table.clone()).unwrap();
+<a href=#283 id=283 data-nosnippet>283</a>        proof.ns_index = <span class="number">0</span>;
+<a href=#284 id=284 data-nosnippet>284</a>        <span class="macro">assert!</span>(
+<a href=#285 id=285 data-nosnippet>285</a>            NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
+<a href=#286 id=286 data-nosnippet>286</a>                .unwrap()
+<a href=#287 id=287 data-nosnippet>287</a>                .is_err()
+<a href=#288 id=288 data-nosnippet>288</a>        );
+<a href=#289 id=289 data-nosnippet>289</a>        proof.ns_index = <span class="number">1</span>;
+<a href=#290 id=290 data-nosnippet>290</a>        proof.ns_payload[<span class="number">0</span>] = <span class="number">0u8</span>;
+<a href=#291 id=291 data-nosnippet>291</a>        <span class="macro">assert!</span>(
+<a href=#292 id=292 data-nosnippet>292</a>            NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
+<a href=#293 id=293 data-nosnippet>293</a>                .unwrap()
+<a href=#294 id=294 data-nosnippet>294</a>                .is_err()
+<a href=#295 id=295 data-nosnippet>295</a>        );
+<a href=#296 id=296 data-nosnippet>296</a>        proof.ns_index = <span class="number">100</span>;
+<a href=#297 id=297 data-nosnippet>297</a>        <span class="macro">assert!</span>(
+<a href=#298 id=298 data-nosnippet>298</a>            NsAvidMScheme::verify_namespace_proof(<span class="kw-2">&amp;</span>param, <span class="kw-2">&amp;</span>commit, <span class="kw-2">&amp;</span>proof)
+<a href=#299 id=299 data-nosnippet>299</a>                .unwrap()
+<a href=#300 id=300 data-nosnippet>300</a>                .is_err()
+<a href=#301 id=301 data-nosnippet>301</a>        );
+<a href=#302 id=302 data-nosnippet>302</a>    }
+<a href=#303 id=303 data-nosnippet>303</a>}</code></pre></div></section></main></body></html>

@@ -171,7 +171,7 @@
 <a href=#171 id=171 data-nosnippet>171</a>            payload
 <a href=#172 id=172 data-nosnippet>172</a>                .iter()
 <a href=#173 id=173 data-nosnippet>173</a>                .chain(iter::once(<span class="kw-2">&amp;</span><span class="number">1u8</span>))
-<a href=#174 id=174 data-nosnippet>174</a>                .chain(iter::repeat(<span class="kw-2">&amp;</span><span class="number">0u8</span>).take(pad_num_zeros)),
+<a href=#174 id=174 data-nosnippet>174</a>                .chain(iter::repeat_n(<span class="kw-2">&amp;</span><span class="number">0u8</span>, pad_num_zeros)),
 <a href=#175 id=175 data-nosnippet>175</a>        )
 <a href=#176 id=176 data-nosnippet>176</a>        .collect()
 <a href=#177 id=177 data-nosnippet>177</a>    }

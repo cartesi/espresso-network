@@ -114,7 +114,7 @@
 <a href=#114 id=114 data-nosnippet>114</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>st = StakeTable::&lt;BLSPubKey, StateVerKey, CircuitField&gt;::new(stake_table_capacity);
 <a href=#115 id=115 data-nosnippet>115</a>    st.batch_register(
 <a href=#116 id=116 data-nosnippet>116</a>        bls_keys.iter().cloned(),
-<a href=#117 id=117 data-nosnippet>117</a>        iter::repeat(U256::one()).take(bls_keys.len()),
+<a href=#117 id=117 data-nosnippet>117</a>        iter::repeat_n(U256::one(), bls_keys.len()),
 <a href=#118 id=118 data-nosnippet>118</a>        state_keys.iter().cloned(),
 <a href=#119 id=119 data-nosnippet>119</a>    )<span class="question-mark">?</span>;
 <a href=#120 id=120 data-nosnippet>120</a>    st.advance();
