@@ -39,7 +39,7 @@
 <a href=#39 id=39 data-nosnippet>39</a>
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="doccomment">/// Deployed ESP token contract address.
 <a href=#41 id=41 data-nosnippet>41</a>    </span><span class="attr">#[clap(long, env = <span class="string">"ESP_TOKEN_ADDRESS"</span>)]
-<a href=#42 id=42 data-nosnippet>42</a>    </span>token_address: Address,
+<a href=#42 id=42 data-nosnippet>42</a>    </span><span class="kw">pub </span>token_address: Address,
 <a href=#43 id=43 data-nosnippet>43</a>
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="doccomment">/// Deployed stake table contract address.
 <a href=#45 id=45 data-nosnippet>45</a>    </span><span class="attr">#[clap(long, env = <span class="string">"STAKE_TABLE_ADDRESS"</span>)]
@@ -83,37 +83,42 @@
 <a href=#83 id=83 data-nosnippet>83</a>    <span class="doccomment">/// Deregister a validator.
 <a href=#84 id=84 data-nosnippet>84</a>    </span>DeregisterValidator {},
 <a href=#85 id=85 data-nosnippet>85</a>    <span class="doccomment">/// Delegate funds to a validator.
-<a href=#86 id=86 data-nosnippet>86</a>    </span>Delegate {
-<a href=#87 id=87 data-nosnippet>87</a>        <span class="attr">#[clap(long)]
-<a href=#88 id=88 data-nosnippet>88</a>        </span>validator_address: Address,
-<a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a>        <span class="attr">#[clap(long)]
-<a href=#91 id=91 data-nosnippet>91</a>        </span>amount: U256,
-<a href=#92 id=92 data-nosnippet>92</a>    },
-<a href=#93 id=93 data-nosnippet>93</a>    <span class="doccomment">/// Initiate a withdrawal of delegated funds from a validator.
-<a href=#94 id=94 data-nosnippet>94</a>    </span>Undelegate {
+<a href=#86 id=86 data-nosnippet>86</a>    /// Approve stake table contract to move tokens
+<a href=#87 id=87 data-nosnippet>87</a>    </span>Approve {
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="attr">#[clap(long)]
+<a href=#89 id=89 data-nosnippet>89</a>        </span>amount: U256,
+<a href=#90 id=90 data-nosnippet>90</a>    },
+<a href=#91 id=91 data-nosnippet>91</a>    Delegate {
+<a href=#92 id=92 data-nosnippet>92</a>        <span class="attr">#[clap(long)]
+<a href=#93 id=93 data-nosnippet>93</a>        </span>validator_address: Address,
+<a href=#94 id=94 data-nosnippet>94</a>
 <a href=#95 id=95 data-nosnippet>95</a>        <span class="attr">#[clap(long)]
-<a href=#96 id=96 data-nosnippet>96</a>        </span>validator_address: Address,
-<a href=#97 id=97 data-nosnippet>97</a>
-<a href=#98 id=98 data-nosnippet>98</a>        <span class="attr">#[clap(long)]
-<a href=#99 id=99 data-nosnippet>99</a>        </span>amount: U256,
-<a href=#100 id=100 data-nosnippet>100</a>    },
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="doccomment">/// Claim withdrawal after an undelegation.
-<a href=#102 id=102 data-nosnippet>102</a>    </span>ClaimWithdrawal {
+<a href=#96 id=96 data-nosnippet>96</a>        </span>amount: U256,
+<a href=#97 id=97 data-nosnippet>97</a>    },
+<a href=#98 id=98 data-nosnippet>98</a>    <span class="doccomment">/// Initiate a withdrawal of delegated funds from a validator.
+<a href=#99 id=99 data-nosnippet>99</a>    </span>Undelegate {
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="attr">#[clap(long)]
+<a href=#101 id=101 data-nosnippet>101</a>        </span>validator_address: Address,
+<a href=#102 id=102 data-nosnippet>102</a>
 <a href=#103 id=103 data-nosnippet>103</a>        <span class="attr">#[clap(long)]
-<a href=#104 id=104 data-nosnippet>104</a>        </span>validator_address: Address,
+<a href=#104 id=104 data-nosnippet>104</a>        </span>amount: U256,
 <a href=#105 id=105 data-nosnippet>105</a>    },
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="doccomment">/// Claim withdrawal after validator exit.
-<a href=#107 id=107 data-nosnippet>107</a>    </span>ClaimValidatorExit {
+<a href=#106 id=106 data-nosnippet>106</a>    <span class="doccomment">/// Claim withdrawal after an undelegation.
+<a href=#107 id=107 data-nosnippet>107</a>    </span>ClaimWithdrawal {
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="attr">#[clap(long)]
 <a href=#109 id=109 data-nosnippet>109</a>        </span>validator_address: Address,
 <a href=#110 id=110 data-nosnippet>110</a>    },
-<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Register the validators and delegates for the local demo.
-<a href=#112 id=112 data-nosnippet>112</a>    </span>StakeForDemo {
-<a href=#113 id=113 data-nosnippet>113</a>        <span class="doccomment">/// The number of validators to register.
-<a href=#114 id=114 data-nosnippet>114</a>        ///
-<a href=#115 id=115 data-nosnippet>115</a>        /// The default (5) works for the local native and docker demos.
-<a href=#116 id=116 data-nosnippet>116</a>        </span><span class="attr">#[clap(long, default_value_t = <span class="number">5</span>)]
-<a href=#117 id=117 data-nosnippet>117</a>        </span>num_validators: u16,
-<a href=#118 id=118 data-nosnippet>118</a>    },
-<a href=#119 id=119 data-nosnippet>119</a>}</code></pre></div></section></main></body></html>
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Claim withdrawal after validator exit.
+<a href=#112 id=112 data-nosnippet>112</a>    </span>ClaimValidatorExit {
+<a href=#113 id=113 data-nosnippet>113</a>        <span class="attr">#[clap(long)]
+<a href=#114 id=114 data-nosnippet>114</a>        </span>validator_address: Address,
+<a href=#115 id=115 data-nosnippet>115</a>    },
+<a href=#116 id=116 data-nosnippet>116</a>    <span class="doccomment">/// Register the validators and delegates for the local demo.
+<a href=#117 id=117 data-nosnippet>117</a>    </span>StakeForDemo {
+<a href=#118 id=118 data-nosnippet>118</a>        <span class="doccomment">/// The number of validators to register.
+<a href=#119 id=119 data-nosnippet>119</a>        ///
+<a href=#120 id=120 data-nosnippet>120</a>        /// The default (5) works for the local native and docker demos.
+<a href=#121 id=121 data-nosnippet>121</a>        </span><span class="attr">#[clap(long, default_value_t = <span class="number">5</span>)]
+<a href=#122 id=122 data-nosnippet>122</a>        </span>num_validators: u16,
+<a href=#123 id=123 data-nosnippet>123</a>    },
+<a href=#124 id=124 data-nosnippet>124</a>}</code></pre></div></section></main></body></html>
