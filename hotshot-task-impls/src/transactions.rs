@@ -283,7 +283,25 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             .number_of_empty_blocks_proposed
             .add(1);
 
-        let Some(null_fee) = null_block::builder_fee::<TYPES, V>(version, *block_view) else {
+        let num_storage_nodes = match self
+            .membership_coordinator
+            .stake_table_for_epoch(block_epoch)
+            .await
+        {
+            Ok(epoch_stake_table) => epoch_stake_table.total_nodes().await,
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to get num_storage_nodes for epoch {:?}: {}",
+                    block_epoch,
+                    e
+                );
+                return;
+            },
+        };
+
+        let Some(null_fee) =
+            null_block::builder_fee::<TYPES, V>(num_storage_nodes, version, *block_view)
+        else {
             tracing::error!("Failed to get null fee");
             return;
         };
@@ -419,8 +437,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
         block_view: TYPES::View,
         block_epoch: Option<TYPES::Epoch>,
         version: Version,
+        num_storage_nodes: usize,
     ) -> Option<PackedBundle<TYPES>> {
-        let Some(null_fee) = null_block::builder_fee::<TYPES, V>(version, *block_view) else {
+        let Some(null_fee) =
+            null_block::builder_fee::<TYPES, V>(num_storage_nodes, version, *block_view)
+        else {
             tracing::error!("Failed to calculate null block fee.");
             return None;
         };
@@ -468,7 +489,16 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     e
                 );
 
-                let null_block = self.null_block(block_view, block_epoch, version).await?;
+                let num_storage_nodes = self
+                    .membership_coordinator
+                    .stake_table_for_epoch(block_epoch)
+                    .await
+                    .ok()?
+                    .total_nodes()
+                    .await;
+                let null_block = self
+                    .null_block(block_view, block_epoch, version, num_storage_nodes)
+                    .await?;
 
                 // Increment the metric for number of empty blocks proposed
                 self.consensus
