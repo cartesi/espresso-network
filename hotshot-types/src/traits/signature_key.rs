@@ -302,6 +302,21 @@ pub trait BuilderSignatureKey:
         Self::sign_builder_message(private_key, &aggregate_fee_data(fee_amount, metadata))
     }
 
+    /// sign sequencing fee offer, with the payload commitment included
+    /// # Errors
+    /// If unable to sign the data with the key
+    fn sign_fee_with_vid_commitment<Metadata: EncodeBytes>(
+        private_key: &Self::BuilderPrivateKey,
+        fee_amount: u64,
+        metadata: &Metadata,
+        vid_commitment: &VidCommitment,
+    ) -> Result<Self::BuilderSignature, Self::SignError> {
+        Self::sign_builder_message(
+            private_key,
+            &aggregate_fee_data_with_vid_commitment(fee_amount, metadata, vid_commitment),
+        )
+    }
+
     /// sign fee offer (marketplace version)
     /// # Errors
     /// If unable to sign the data with the key
