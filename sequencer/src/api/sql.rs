@@ -512,6 +512,11 @@ async fn reconstruct_state<Mode: TransactionMode>(
     }
 
     if let Some(accounts) = reward_accounts {
+        tracing::error!(
+            "reconstructing reward accounts for from height {} to view {}",
+            from_height,
+            to_view
+        );
         // TODO: don't think this is needed?
         // What if we are reconstructing a state from the leaf which is on pre-epoch version?
         // that is okie?

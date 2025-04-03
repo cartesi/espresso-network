@@ -233,7 +233,7 @@ where
                 },
             },
             Err(err) => {
-                tracing::error!("failed to fetch VID common {req:?}: {err}");
+                tracing::warn!("failed to fetch VID common {req:?}: {err}");
                 None
             },
         }

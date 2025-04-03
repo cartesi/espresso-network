@@ -850,7 +850,7 @@ impl ValidatedState {
 
         // Fetch missing fee state entries
         if !missing_accounts.is_empty() {
-            tracing::info!(
+            tracing::error!(
                 parent_height,
                 ?parent_view,
                 ?missing_accounts,
@@ -1083,9 +1083,9 @@ impl HotShotState<SeqTypes> for ValidatedState {
 
         let mut reward_merkle_tree = RewardMerkleTree::new(REWARD_MERKLE_TREE_HEIGHT);
         if let Some(root) = block_header.reward_merkle_tree_root() {
-            if !root.size() == 0 {
-                reward_merkle_tree = RewardMerkleTree::from_commitment(root);
-            }
+            reward_merkle_tree = RewardMerkleTree::from_commitment(root);
+        } else {
+            tracing::error!("no merkle tree root found on header");
         }
 
         Self {
