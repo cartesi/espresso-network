@@ -36,9 +36,11 @@ use hotshot_types::{
 use indexmap::IndexMap;
 use thiserror::Error;
 
+#[cfg(any(test, feature = "testing"))]
+use super::v0_3::DAMembers;
 use super::{
     traits::{MembershipPersistence, StateCatchup},
-    v0_3::{DAMembers, Validator},
+    v0_3::Validator,
     v0_99::ChainConfig,
     Header, L1Client, Leaf2, PubKey, SeqTypes,
 };
@@ -558,34 +560,22 @@ impl EpochCommittees {
     }
 
     /// Get the stake table by epoch. Try to load from DB and fall back to fetching from l1.
-    async fn get_stake_table_by_epoch(
+    async fn get_stake_table_from_l1(
         &self,
-        epoch: Epoch,
         contract_address: Address,
         l1_block: u64,
     ) -> Result<IndexMap<alloy::primitives::Address, Validator<BLSPubKey>>, GetStakeTablesError>
     {
-        if let Some(stake_tables) = self
-            .persistence
-            .load_stake(epoch)
+        self.l1_client
+            .get_stake_table(contract_address, l1_block)
             .await
-            .map_err(GetStakeTablesError::PersistenceLoadError)?
-        {
-            Ok(stake_tables)
-        } else {
-            self.l1_client
-                .get_stake_table(contract_address, l1_block)
-                .await
-                .map_err(GetStakeTablesError::L1ClientFetchError)
-        }
+            .map_err(GetStakeTablesError::L1ClientFetchError)
     }
 }
 
 #[derive(Error, Debug)]
 /// Error representing fail cases for retrieving the stake table.
 enum GetStakeTablesError {
-    #[error("Error loading from persistence: {0}")]
-    PersistenceLoadError(anyhow::Error),
     #[error("Error fetching from L1: {0}")]
     L1ClientFetchError(anyhow::Error),
 }
@@ -781,7 +771,7 @@ impl Membership<SeqTypes> for EpochCommittees {
         };
 
         let stake_tables = self
-            .get_stake_table_by_epoch(epoch, address.to_alloy(), l1_finalized_block_info.number())
+            .get_stake_table_from_l1(address.to_alloy(), l1_finalized_block_info.number())
             .await
             .inspect_err(|e| {
                 tracing::error!(?e, "`add_epoch_root`, error retrieving stake table");
