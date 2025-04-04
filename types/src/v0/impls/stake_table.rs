@@ -407,15 +407,6 @@ impl EpochCommittees {
             .collect();
         let eligible_leaders: Vec<PeerConfig<SeqTypes>> =
             stake_table.iter().map(|(_, l)| l.clone()).collect();
-        let randomized_committee = generate_stake_cdf(
-            stake_table
-                .iter()
-                .map(|(_, l)| l.stake_table_entry.clone())
-                .collect(),
-            [0u8; 32],
-        );
-        self.randomized_committees
-            .insert(epoch, randomized_committee);
 
         self.state.insert(
             epoch,
@@ -537,25 +528,15 @@ impl EpochCommittees {
             address_mapping: HashMap::new(),
         };
 
-        let randomized_committee = generate_stake_cdf(
-            eligible_leaders
-                .clone()
-                .into_iter()
-                .map(|l| l.stake_table_entry)
-                .collect(),
-            [0u8; 32],
-        );
-        let mut randomized_committees = BTreeMap::new();
         for epoch in Epoch::genesis().u64()..=2 {
             map.insert(Epoch::new(epoch), epoch_committee.clone());
-            randomized_committees.insert(Epoch::new(epoch), randomized_committee.clone());
         }
         Self {
             non_epoch_committee: members,
             state: map,
             l1_client,
             chain_config,
-            randomized_committees,
+            randomized_committees: BTreeMap::new(),
             peers,
             persistence: Arc::new(persistence),
             first_epoch: None,
