@@ -13,11 +13,14 @@ use hotshot_types::{
     data::VidDisperseShare,
     epoch_membership::EpochMembershipCoordinator,
     message::{Proposal, UpgradeLock},
+    simple_vote::HasEpoch,
     traits::{
+        block_contents::BlockHeader,
         network::DataRequest,
         node_implementation::{NodeType, Versions},
         signature_key::SignatureKey,
     },
+    utils::option_epoch_from_block_number,
 };
 use sha2::{Digest, Sha256};
 use tokio::{spawn, task::JoinHandle, time::sleep};
@@ -127,6 +130,22 @@ impl<TYPES: NodeType, V: Versions> NetworkResponseState<TYPES, V> {
                                 .get(&req.view_number)
                                 .cloned();
                             if let Some(quorum_proposal) = quorum_proposal_result {
+                                let epoch = option_epoch_from_block_number::<TYPES>(
+                                    quorum_proposal.data.epoch().is_some(),
+                                    quorum_proposal.data.block_header().block_number(),
+                                    self.membership.epoch_height,
+                                );
+                                let leader_key = self
+                                    .membership
+                                    .membership_for_epoch(epoch)
+                                    .await
+                                    .unwrap()
+                                    .leader(req.view_number)
+                                    .await;
+                                tracing::error!(
+                                    "Responding to fetch proposal, Leader key: {:?}",
+                                    leader_key
+                                );
                                 broadcast_event(
                                     HotShotEvent::QuorumProposalResponseSend(
                                         req.key.clone(),

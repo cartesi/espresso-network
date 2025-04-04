@@ -126,6 +126,8 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
                             epoch_height,
                         );
                         let epoch_membership = mem_coordinator.membership_for_epoch(proposal_epoch).await.ok()?;
+                        let leader_key = epoch_membership.leader(quorum_proposal.data.view_number()).await;
+                        tracing::error!("Leader key: {:?}", leader_key);
                         // Make sure that the quorum_proposal is valid
                         if quorum_proposal.validate_signature(&epoch_membership).await.inspect_err(|e| {
                             tracing::error!("Invalid signature for proposal: {:?}", e);
