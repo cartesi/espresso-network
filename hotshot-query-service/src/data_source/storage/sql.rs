@@ -952,7 +952,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 message: err.to_string(),
             })?;
 
-            query.execute(tx.as_mut()).await?;
+            query.execute(tx.as_mut()).await;
 
             tx.commit().await?;
 
