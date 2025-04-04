@@ -9,6 +9,7 @@ use std::{hash::Hash, marker::PhantomData};
 use hotshot_types::{
     traits::{node_implementation::NodeType, signature_key::BuilderSignatureKey, BlockPayload},
     utils::BuilderCommitment,
+    vid::advz::ADVZCommitment,
 };
 use serde::{Deserialize, Serialize};
 
@@ -69,6 +70,25 @@ impl<TYPES: NodeType> AvailableBlockHeaderInputV1<TYPES> {
 pub struct AvailableBlockHeaderInputV2<TYPES: NodeType> {
     // signature over vid_commitment, BlockPayload::Metadata, and offered_fee
     pub fee_signature:
+        <<TYPES as NodeType>::BuilderSignatureKey as BuilderSignatureKey>::BuilderSignature,
+    pub sender: <TYPES as NodeType>::BuilderSignatureKey,
+}
+
+/// legacy version of the AvailableBlockHeaderInputV2 type, used on git tag `20280228-patch3`
+///
+/// this was inadvertently changed to remove some deprecated fields,
+/// which resulted in a builder incompatibility.
+///
+/// This type can be removed after the builder is upgraded in deployment.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[serde(bound = "")]
+pub struct AvailableBlockHeaderInputV2Legacy<TYPES: NodeType> {
+    pub vid_commitment: ADVZCommitment,
+    // signature over vid_commitment, BlockPayload::Metadata, and offered_fee
+    pub fee_signature:
+        <<TYPES as NodeType>::BuilderSignatureKey as BuilderSignatureKey>::BuilderSignature,
+    // signature over the current response
+    pub message_signature:
         <<TYPES as NodeType>::BuilderSignatureKey as BuilderSignatureKey>::BuilderSignature,
     pub sender: <TYPES as NodeType>::BuilderSignatureKey,
 }

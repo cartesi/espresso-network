@@ -12,7 +12,9 @@ use std::{
 use async_broadcast::{Receiver, Sender};
 use async_trait::async_trait;
 use futures::{future::join_all, stream::FuturesUnordered, StreamExt};
-use hotshot_builder_api::v0_1::block_info::AvailableBlockInfo;
+use hotshot_builder_api::{
+    v0_1::block_info::AvailableBlockInfo, v0_2::block_info::AvailableBlockHeaderInputV2,
+};
 use hotshot_task::task::TaskState;
 use hotshot_types::{
     consensus::OuterConsensus,
@@ -829,9 +831,10 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
             let response = {
                 let client = &self.builder_clients[builder_idx];
 
-                let (block, header_input) = futures::join! {
+                let (block, header_input, legacy_header_input) = futures::join! {
                     client.claim_block(block_info.block_hash.clone(), view_number.u64(), self.public_key.clone(), &request_signature),
-                    client.claim_block_header_input(block_info.block_hash.clone(), view_number.u64(), self.public_key.clone(), &request_signature)
+                    client.claim_block_header_input(block_info.block_hash.clone(), view_number.u64(), self.public_key.clone(), &request_signature),
+                    client.claim_legacy_block_header_input(block_info.block_hash.clone(), view_number.u64(), self.public_key.clone(), &request_signature)
                 };
 
                 let block_data = match block {
@@ -842,10 +845,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     },
                 };
 
-                let header_input = match header_input {
-                    Ok(block_data) => block_data,
-                    Err(err) => {
-                        tracing::warn!(%err, "Error claiming header input");
+                let header_input = match (header_input, legacy_header_input) {
+                    (Ok(header_input), _) => header_input,
+                    (Err(_), Ok(legacy_header_input)) => AvailableBlockHeaderInputV2 {
+                        fee_signature: legacy_header_input.fee_signature,
+                        sender: legacy_header_input.sender,
+                    },
+                    (Err(err1), Err(err2)) => {
+                        tracing::warn!(%err1, %err2, "Error claiming header input");
                         continue;
                     },
                 };
