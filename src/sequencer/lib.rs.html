@@ -291,7 +291,7 @@
 <a href=#291 id=291 data-nosnippet>291</a>    <span class="kw">let </span>validator_config = ValidatorConfig {
 <a href=#292 id=292 data-nosnippet>292</a>        public_key: pub_key,
 <a href=#293 id=293 data-nosnippet>293</a>        private_key: network_params.private_staking_key,
-<a href=#294 id=294 data-nosnippet>294</a>        stake_value: <span class="number">1</span>,
+<a href=#294 id=294 data-nosnippet>294</a>        stake_value: primitive_types::U256::from(<span class="number">1</span>),
 <a href=#295 id=295 data-nosnippet>295</a>        state_public_key: state_key_pair.ver_key(),
 <a href=#296 id=296 data-nosnippet>296</a>        state_private_key: state_key_pair.sign_key(),
 <a href=#297 id=297 data-nosnippet>297</a>        is_da,
@@ -961,7 +961,7 @@
 <a href=#961 id=961 data-nosnippet>961</a>            </span><span class="kw">let </span>validator_config = ValidatorConfig {
 <a href=#962 id=962 data-nosnippet>962</a>                public_key: my_peer_config.stake_table_entry.stake_key,
 <a href=#963 id=963 data-nosnippet>963</a>                private_key: <span class="self">self</span>.priv_keys[i].clone(),
-<a href=#964 id=964 data-nosnippet>964</a>                stake_value: my_peer_config.stake_table_entry.stake_amount.as_u64(),
+<a href=#964 id=964 data-nosnippet>964</a>                stake_value: my_peer_config.stake_table_entry.stake_amount,
 <a href=#965 id=965 data-nosnippet>965</a>                state_public_key: <span class="self">self</span>.state_key_pairs[i].ver_key(),
 <a href=#966 id=966 data-nosnippet>966</a>                state_private_key: <span class="self">self</span>.state_key_pairs[i].sign_key(),
 <a href=#967 id=967 data-nosnippet>967</a>                is_da,
