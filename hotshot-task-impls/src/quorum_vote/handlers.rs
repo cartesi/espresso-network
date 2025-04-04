@@ -4,7 +4,7 @@
 // You should have received a copy of the MIT License
 // along with the HotShot repository. If not, see <https://mit-license.org/>.
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use async_broadcast::{InactiveReceiver, Sender};
 use async_lock::RwLock;
@@ -431,6 +431,7 @@ pub(crate) async fn update_shared_state<
 
     let version = upgrade_lock.version(view_number).await?;
 
+    let start = Instant::now();
     let (validated_state, state_delta) = parent_state
         .validate_and_apply_header(
             &instance_state,
@@ -443,6 +444,12 @@ pub(crate) async fn update_shared_state<
         .await
         .wrap()
         .context(error!("Block header doesn't extend the proposal!"))?;
+    let duration = start.elapsed();
+    tracing::info!(
+        "validate and apply header for view {:?} time: {:?}",
+        view_number,
+        duration
+    );
 
     // Now that we've rounded everyone up, we need to update the shared state
     let mut consensus_writer = consensus.write().await;
@@ -454,10 +461,6 @@ pub(crate) async fn update_shared_state<
     ) {
         tracing::trace!("{e:?}");
     }
-    tracing::debug!(
-        "Updated state using validate and applywith height {}",
-        proposed_leaf.height()
-    );
 
     drop(consensus_writer);
 
