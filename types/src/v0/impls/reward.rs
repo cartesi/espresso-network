@@ -417,13 +417,11 @@ pub async fn find_validator(
     view: u64,
     height: u64,
 ) -> anyhow::Result<Validator<BLSPubKey>> {
-    tracing::error!("view={view:?}, height={height:?}");
+    tracing::debug!("finding validator for rewards in view={view:?}, height={height:?}");
     let parent_view = leaf
         .block_header()
         .view()
         .unwrap_or_else(|| leaf.view_number());
-
-    // let parent_view = leaf.view_number();
 
     let epoch_height = instance_state.epoch_height;
     if epoch_height == 0 {
