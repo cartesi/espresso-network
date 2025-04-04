@@ -117,21 +117,30 @@ pub async fn validate_proposal_liveness<
         tracing::trace!("{e:?}");
     }
 
-    let liveness_check = proposal.data.justify_qc().view_number() > consensus_writer.locked_view();
+    let justify_qc = proposal.data.justify_qc();
+    let liveness_check = justify_qc.view_number() > consensus_writer.locked_view();
+    let epochs_enabled = validation_info
+        .upgrade_lock
+        .version(leaf.view_number())
+        .await
+        .is_ok_and(|v| v >= V::Epochs::VERSION);
     // if we are using HS2 we update our locked view for any QC from a leader greater than our current lock
-    if liveness_check
-        && validation_info
-            .upgrade_lock
-            .version(leaf.view_number())
-            .await
-            .is_ok_and(|v| v >= V::Epochs::VERSION)
-    {
+    if liveness_check && epochs_enabled {
         consensus_writer.update_locked_view(proposal.data.justify_qc().view_number())?;
     }
 
+    // if the proposal extends the high QC it's safe
+    let safety_check = if epochs_enabled {
+        let high_qc = consensus_writer.high_qc();
+        justify_qc.data.leaf_commit == high_qc.data.leaf_commit
+            && justify_qc.view_number() == high_qc.view_number()
+    } else {
+        false
+    };
+
     drop(consensus_writer);
 
-    if !liveness_check && !valid_epoch_transition {
+    if !liveness_check && !valid_epoch_transition && !safety_check {
         bail!("Quorum Proposal failed the liveness check");
     }
 
@@ -358,6 +367,24 @@ pub(crate) async fn handle_quorum_proposal_recv<
         None => None,
     };
     drop(consensus_reader);
+
+    if let Some((parent_leaf, _parent_state)) = parent {
+        // Validate the proposal
+        validate_proposal_safety_and_liveness::<TYPES, I, V>(
+            proposal.clone(),
+            parent_leaf,
+            &validation_info,
+            event_sender.clone(),
+            quorum_proposal_sender_key,
+        )
+        .await?;
+    } else {
+        tracing::warn!(
+            "Proposal's parent missing from storage with commitment: {:?}",
+            justify_qc.data.leaf_commit
+        );
+        validate_proposal_liveness(proposal, &validation_info).await?;
+    }
     if justify_qc.view_number()
         > validation_info
             .consensus
@@ -369,40 +396,6 @@ pub(crate) async fn handle_quorum_proposal_recv<
         update_high_qc(proposal, &validation_info).await?;
     }
 
-    let Some((parent_leaf, _parent_state)) = parent else {
-        tracing::warn!(
-            "Proposal's parent missing from storage with commitment: {:?}",
-            justify_qc.data.leaf_commit
-        );
-        validate_proposal_liveness(proposal, &validation_info).await?;
-        tracing::trace!(
-            "Sending ViewChange for view {} and epoch {:?}",
-            view_number,
-            proposal_epoch
-        );
-        validation_info
-            .consensus
-            .write()
-            .await
-            .update_highest_block(proposal_block_number);
-        broadcast_event(
-            Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
-            event_sender,
-        )
-        .await;
-        return Ok(());
-    };
-
-    // Validate the proposal
-    validate_proposal_safety_and_liveness::<TYPES, I, V>(
-        proposal.clone(),
-        parent_leaf,
-        &validation_info,
-        event_sender.clone(),
-        quorum_proposal_sender_key,
-    )
-    .await?;
-
     tracing::trace!(
         "Sending ViewChange for view {} and epoch {:?}",
         view_number,
@@ -413,9 +406,6 @@ pub(crate) async fn handle_quorum_proposal_recv<
         .write()
         .await
         .update_highest_block(proposal_block_number);
-    {
-        validation_info.consensus.write().await.highest_block = proposal_block_number;
-    }
     broadcast_event(
         Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
         event_sender,
