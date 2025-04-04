@@ -442,6 +442,8 @@ pub async fn find_validator(
         .get_validator_config(&epoch, leader)
         .context("validator not found")?;
 
+    drop(membership);
+
     let mut reward_accounts = HashSet::new();
     reward_accounts.insert(validator.account.to_ethers().into());
     let delegators = validator
