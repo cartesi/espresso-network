@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>    }
 <a href=#238 id=238 data-nosnippet>238</a>
 <a href=#239 id=239 data-nosnippet>239</a>    <span class="doccomment">/// Returns `Epoch` if possible
-<a href=#240 id=240 data-nosnippet>240</a>    /// #3967 REVIEW NOTE: This type is kinda ugly, should we Result&lt;Option&lt;Epoch&gt;&gt; instead?
+<a href=#240 id=240 data-nosnippet>240</a>    </span><span class="comment">// #3967 REVIEW NOTE: This type is kinda ugly, should we Result&lt;Option&lt;Epoch&gt;&gt; instead?
 <a href=#241 id=241 data-nosnippet>241</a>    </span><span class="kw">pub fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;&gt; {
 <a href=#242 id=242 data-nosnippet>242</a>        <span class="kw">match </span><span class="self">self </span>{
 <a href=#243 id=243 data-nosnippet>243</a>            <span class="self">Self</span>::Da { epoch, .. } | <span class="self">Self</span>::Leaf { epoch, .. } =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">*</span>epoch),
@@ -364,7 +364,7 @@
 <a href=#364 id=364 data-nosnippet>364</a>    </span>}
 <a href=#365 id=365 data-nosnippet>365</a>}
 <a href=#366 id=366 data-nosnippet>366</a>
-<a href=#367 id=367 data-nosnippet>367</a><span class="doccomment">/// Returns an Option&lt;Epoch&gt; based on a boolean condition of whether or not epochs are enabled, a block number,
+<a href=#367 id=367 data-nosnippet>367</a><span class="doccomment">/// Returns an `Option&lt;Epoch&gt;` based on a boolean condition of whether or not epochs are enabled, a block number,
 <a href=#368 id=368 data-nosnippet>368</a>/// and the epoch height. If epochs are disabled or the epoch height is zero, returns None.
 <a href=#369 id=369 data-nosnippet>369</a></span><span class="attr">#[must_use]
 <a href=#370 id=370 data-nosnippet>370</a></span><span class="kw">pub fn </span>option_epoch_from_block_number&lt;TYPES: NodeType&gt;(
