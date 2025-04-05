@@ -88,36 +88,18 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
     .await;
 
     let mem_coordinator = membership_coordinator.clone();
+    let mut rx = event_receiver.clone();
     // Make a background task to await the arrival of the event data.
     let Ok(Some(proposal)) =
         // We want to explicitly timeout here so we aren't waiting around for the data.
         timeout(REQUEST_TIMEOUT, async move {
             // We want to iterate until the proposal is not None, or until we reach the timeout.
-            let mut proposal = None;
-            while proposal.is_none() {
-                // First, capture the output from the event dependency
-                let event = EventDependency::new(
-                    event_receiver.clone(),
-                    Box::new(move |event| {
-                        let event = event.as_ref();
-                        if let HotShotEvent::QuorumProposalResponseRecv(
-                            quorum_proposal,
-                        ) = event
-                        {
-                            quorum_proposal.data.view_number() == view_number
-                        } else {
-                            false
-                        }
-                    }),
-                )
-                    .completed()
-                    .await;
+            while let Ok(event) = rx.recv_direct().await {
+                if let HotShotEvent::QuorumProposalResponseRecv(quorum_proposal) = event.as_ref() {
+                    if quorum_proposal.data.view_number() != view_number {
+                        continue;
+                    }
 
-                // Then, if it's `Some`, make sure that the data is correct
-                if let Some(hs_event) = event.as_ref() {
-                    if let HotShotEvent::QuorumProposalResponseRecv(quorum_proposal) =
-                        hs_event.as_ref()
-                    {
                         let proposal_epoch = option_epoch_from_block_number::<TYPES>(
                             quorum_proposal.data.proposal.epoch().is_some(),
                             quorum_proposal.data.block_header().block_number(),
@@ -125,17 +107,12 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
                         );
                         let epoch_membership = mem_coordinator.membership_for_epoch(proposal_epoch).await.ok()?;
                         // Make sure that the quorum_proposal is valid
-                        if quorum_proposal.validate_signature(&epoch_membership).await.is_ok() {
-                            proposal = Some(quorum_proposal.clone());
-                        }
-
+                    if quorum_proposal.validate_signature(&epoch_membership).await.is_ok() {
+                        return Some(quorum_proposal.clone());
                     }
-                } else {
-                    // If the dep returns early return none
-                    return None;
                 }
             }
-            proposal
+            None
         })
         .await
     else {
