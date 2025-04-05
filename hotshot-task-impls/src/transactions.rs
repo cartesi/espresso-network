@@ -847,9 +847,20 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
 
                 let header_input = match (header_input, legacy_header_input) {
                     (Ok(header_input), _) => header_input,
-                    (Err(_), Ok(legacy_header_input)) => AvailableBlockHeaderInputV2 {
-                        fee_signature: legacy_header_input.fee_signature,
-                        sender: legacy_header_input.sender,
+                    (Err(_), Ok(legacy_header_input)) => {
+                        // verify the message signature and the fee_signature
+                        if !legacy_header_input
+                            .validate_signature(block_info.offered_fee, &block_data.metadata)
+                        {
+                            tracing::warn!(
+                    "Failed to verify available legacy block header input data response message signature"
+                );
+                            continue;
+                        }
+                        AvailableBlockHeaderInputV2 {
+                            fee_signature: legacy_header_input.fee_signature,
+                            sender: legacy_header_input.sender,
+                        }
                     },
                     (Err(err1), Err(err2)) => {
                         tracing::warn!(%err1, %err2, "Error claiming header input");
