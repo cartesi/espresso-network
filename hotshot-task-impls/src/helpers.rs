@@ -55,7 +55,7 @@ use crate::{events::HotShotEvent, quorum_proposal_recv::ValidationInfo, request:
 #[instrument(skip_all)]
 #[allow(clippy::too_many_arguments)]
 pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
-    view_number: TYPES::View,
+    qc: &QuorumCertificate2<TYPES>,
     event_sender: Sender<Arc<HotShotEvent<TYPES>>>,
     event_receiver: Receiver<Arc<HotShotEvent<TYPES>>>,
     membership_coordinator: EpochMembershipCoordinator<TYPES>,
@@ -65,6 +65,8 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
     upgrade_lock: &UpgradeLock<TYPES, V>,
     epoch_height: u64,
 ) -> Result<(Leaf2<TYPES>, View<TYPES>)> {
+    let view_number = qc.view_number();
+    let leaf_commit = qc.data.leaf_commit;
     // We need to be able to sign this request before submitting it to the network. Compute the
     // payload first.
     let signed_proposal_request = ProposalRequestPayload {
@@ -89,7 +91,6 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
     )
     .await;
 
-    let mem_coordinator = membership_coordinator.clone();
     let mut rx = event_receiver.clone();
     // Make a background task to await the arrival of the event data.
     let Ok(Some(proposal)) =
@@ -98,18 +99,8 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
             // We want to iterate until the proposal is not None, or until we reach the timeout.
             while let Ok(event) = rx.recv_direct().await {
                 if let HotShotEvent::QuorumProposalResponseRecv(quorum_proposal) = event.as_ref() {
-                    if quorum_proposal.data.view_number() != view_number {
-                        continue;
-                    }
-
-                        let proposal_epoch = option_epoch_from_block_number::<TYPES>(
-                            quorum_proposal.data.proposal.epoch().is_some(),
-                            quorum_proposal.data.block_header().block_number(),
-                            epoch_height,
-                        );
-                        let epoch_membership = mem_coordinator.membership_for_epoch(proposal_epoch).await.ok()?;
-                        // Make sure that the quorum_proposal is valid
-                    if quorum_proposal.validate_signature(&epoch_membership).await.is_ok() {
+                    let leaf = Leaf2::from_quorum_proposal(&quorum_proposal.data);
+                    if leaf.view_number() == view_number && leaf.commit() == leaf_commit {
                         return Some(quorum_proposal.clone());
                     }
                 }
@@ -590,18 +581,18 @@ pub(crate) async fn parent_leaf_and_state<TYPES: NodeType, V: Versions>(
     private_key: <TYPES::SignatureKey as SignatureKey>::PrivateKey,
     consensus: OuterConsensus<TYPES>,
     upgrade_lock: &UpgradeLock<TYPES, V>,
-    parent_view_number: TYPES::View,
+    parent_qc: &QuorumCertificate2<TYPES>,
     epoch_height: u64,
 ) -> Result<(Leaf2<TYPES>, Arc<<TYPES as NodeType>::ValidatedState>)> {
     let consensus_reader = consensus.read().await;
     let vsm_contains_parent_view = consensus_reader
         .validated_state_map()
-        .contains_key(&parent_view_number);
+        .contains_key(&parent_qc.view_number());
     drop(consensus_reader);
 
     if !vsm_contains_parent_view {
         let _ = fetch_proposal(
-            parent_view_number,
+            parent_qc,
             event_sender.clone(),
             event_receiver.clone(),
             membership,
@@ -617,8 +608,8 @@ pub(crate) async fn parent_leaf_and_state<TYPES: NodeType, V: Versions>(
 
     let consensus_reader = consensus.read().await;
     //let parent_view_number = consensus_reader.high_qc().view_number();
-    let parent_view = consensus_reader.validated_state_map().get(&parent_view_number).context(
-        debug!("Couldn't find parent view in state map, waiting for replica to see proposal; parent_view_number: {}", *parent_view_number)
+    let parent_view = consensus_reader.validated_state_map().get(&parent_qc.view_number()).context(
+        debug!("Couldn't find parent view in state map, waiting for replica to see proposal; parent_view_number: {}", *parent_qc.view_number())
     )?;
 
     let (leaf_commitment, state) = parent_view.leaf_and_state().context(
