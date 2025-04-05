@@ -28,8 +28,8 @@ use vbs::version::StaticVersionType;
 use super::Provider;
 use crate::{
     availability::{
-        ADVZCommonQueryData, ADVZPayloadQueryData, LeafQueryData, PayloadQueryData,
-        VidCommonQueryData,
+        ADVZCommonQueryData, ADVZPayloadQueryData, LeafQueryData, LeafQueryDataLegacy,
+        PayloadQueryData, VidCommonQueryData,
     },
     fetching::request::{LeafRequest, PayloadRequest, VidCommonRequest},
     types::HeightIndexed,
@@ -128,6 +128,50 @@ impl<Ver: StaticVersionType> QueryServiceProvider<Ver> {
             },
             Err(err) => {
                 tracing::error!("failed to fetch VID common {req:?}: {err}");
+                None
+            },
+        }
+    }
+    async fn fetch_legacy_leaf<Types: NodeType>(
+        &self,
+        req: LeafRequest<Types>,
+    ) -> Option<LeafQueryData<Types>> {
+        match self
+            .client
+            .get::<LeafQueryDataLegacy<Types>>(&format!("availability/leaf/{}", req.height))
+            .send()
+            .await
+        {
+            Ok(mut leaf) => {
+                if leaf.height() != req.height {
+                    tracing::error!(?req, ?leaf, "received leaf with the wrong height");
+                    return None;
+                }
+
+                let expected_leaf_commit: [u8; 32] = req.expected_leaf.into();
+                let actual_leaf_commit: [u8; 32] = leaf.hash().into();
+                if actual_leaf_commit != expected_leaf_commit {
+                    tracing::error!(?req, ?leaf, hash = ?leaf.hash(), "received leaf with the wrong hash");
+                    return None;
+                }
+
+                let expected_qc_commit: [u8; 32] = req.expected_qc.into();
+                let actual_qc_commit: [u8; 32] = leaf.qc().commit().into();
+                if actual_qc_commit != expected_qc_commit {
+                    tracing::error!(?req, ?leaf, hash = ?leaf.qc().commit(), "received leaf with the wrong QC");
+                    return None;
+                }
+
+                // There is a potential DOS attack where the peer sends us a leaf with the full
+                // payload in it, which uses redundant resources in the database, since we fetch and
+                // store payloads separately. We can defend ourselves by simply dropping the payload
+                // if present.
+                leaf.leaf.unfill_block_payload();
+
+                Some(leaf.into())
+            },
+            Err(err) => {
+                tracing::error!("failed to fetch leaf {req:?}: {err}");
                 None
             },
         }
@@ -267,10 +311,7 @@ where
 
                 Some(leaf)
             },
-            Err(err) => {
-                tracing::error!("failed to fetch leaf {req:?}: {err}");
-                None
-            },
+            Err(err) => self.fetch_legacy_leaf(req).await,
         }
     }
 }
