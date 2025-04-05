@@ -846,15 +846,27 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                 };
 
                 let header_input = match (header_input, legacy_header_input) {
-                    (Ok(header_input), _) => header_input,
+                    (Ok(header_input), _) => {
+                        // verify the message signature and the fee_signature
+                        if !header_input
+                            .validate_signature(block_info.offered_fee, &block_data.metadata)
+                        {
+                            tracing::warn!(
+                              "Failed to verify available block header input data response message signature"
+                            );
+                            continue;
+                        }
+
+                        header_input
+                    },
                     (Err(_), Ok(legacy_header_input)) => {
                         // verify the message signature and the fee_signature
                         if !legacy_header_input
                             .validate_signature(block_info.offered_fee, &block_data.metadata)
                         {
                             tracing::warn!(
-                    "Failed to verify available legacy block header input data response message signature"
-                );
+                              "Failed to verify available legacy block header input data response message signature"
+                            );
                             continue;
                         }
                         AvailableBlockHeaderInputV2 {
@@ -873,14 +885,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> TransactionTask
                     tracing::warn!(
                         "Failed to verify available block data response message signature"
                     );
-                    continue;
-                }
-
-                // verify the message signature and the fee_signature
-                if !header_input.validate_signature(block_info.offered_fee, &block_data.metadata) {
-                    tracing::warn!(
-                    "Failed to verify available block header input data response message signature"
-                );
                     continue;
                 }
 
