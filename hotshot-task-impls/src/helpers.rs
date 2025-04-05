@@ -125,7 +125,9 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
                             quorum_proposal.data.block_header().block_number(),
                             epoch_height,
                         );
-                        let epoch_membership = mem_coordinator.membership_for_epoch(proposal_epoch).await.ok()?;
+                        let epoch_membership = mem_coordinator.membership_for_epoch(proposal_epoch).await.inspect_err(|e| {
+                            tracing::error!("Error getting membership for epoch: {:?}", e);
+                        }).ok()?;
                         let leader_key = epoch_membership.leader(quorum_proposal.data.view_number()).await;
                         tracing::error!("Leader key: {:?}", leader_key);
                         // Make sure that the quorum_proposal is valid

@@ -94,6 +94,10 @@ where
             return Ok(ret_val);
         }
         if self.catchup_map.lock().await.contains_key(&epoch) {
+            tracing::warn!(
+                "Randomized stake table for epoch {:?} unavailable. Catchup already in progress",
+                epoch
+            );
             return Err(warn!(
                 "Randomized stake table for epoch {:?} unavailable. Catchup already in progress",
                 epoch
@@ -125,6 +129,10 @@ where
             return Ok(ret_val);
         }
         if self.catchup_map.lock().await.contains_key(&epoch) {
+            tracing::warn!(
+                "Stake table for Epoch {:?} Unavailable. Catch up already in Progress",
+                epoch
+            );
             return Err(warn!(
                 "Stake table for Epoch {:?} Unavailable. Catch up already in Progress",
                 epoch
@@ -204,6 +212,10 @@ where
         {
             drb
         } else {
+            tracing::error!(
+                "failed to fetch DRB leaf, Computing DRB for epoch {:?}",
+                epoch
+            );
             let Ok(drb_seed_input_vec) = bincode::serialize(&root_leaf.justify_qc().signatures)
             else {
                 return Err(anytrace::error!("Failed to serialize the QC signature."));
@@ -217,6 +229,7 @@ where
                 .unwrap()
         };
 
+        tracing::error!("Adding DRB result for epoch {:?}", epoch);
         self.membership.write().await.add_drb_result(epoch, drb);
         Ok(EpochMembership {
             epoch: Some(epoch),
@@ -235,6 +248,10 @@ where
             return self.clone().catchup(epoch).await;
         };
         let Ok(Ok(mem)) = rx.recv_direct().await else {
+            tracing::error!(
+                "Failed to receive catchup for epoch {:?}, trying again",
+                epoch
+            );
             return self.clone().catchup(epoch).await;
         };
         Ok(mem)
