@@ -93,6 +93,23 @@ pub struct AvailableBlockHeaderInputV2Legacy<TYPES: NodeType> {
     pub sender: <TYPES as NodeType>::BuilderSignatureKey,
 }
 
+impl<TYPES: NodeType> AvailableBlockHeaderInputV2Legacy<TYPES> {
+    pub fn validate_signature(
+        &self,
+        offered_fee: u64,
+        metadata: &<TYPES::BlockPayload as BlockPayload<TYPES>>::Metadata,
+    ) -> bool {
+        self.sender
+            .validate_builder_signature(&self.message_signature, self.vid_commitment.as_ref())
+            && self.sender.validate_fee_signature_with_vid_commitment(
+                &self.fee_signature,
+                offered_fee,
+                metadata,
+                &hotshot_types::data::VidCommitment::V0(self.vid_commitment),
+            )
+    }
+}
+
 impl<TYPES: NodeType> AvailableBlockHeaderInputV2<TYPES> {
     pub fn validate_signature(
         &self,
