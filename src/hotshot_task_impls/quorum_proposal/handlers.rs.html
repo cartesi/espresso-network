@@ -425,7 +425,7 @@
 <a href=#425 id=425 data-nosnippet>425</a>            <span class="self">self</span>.private_key.clone(),
 <a href=#426 id=426 data-nosnippet>426</a>            OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span><span class="self">self</span>.consensus.inner_consensus)),
 <a href=#427 id=427 data-nosnippet>427</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.upgrade_lock,
-<a href=#428 id=428 data-nosnippet>428</a>            parent_qc.view_number(),
+<a href=#428 id=428 data-nosnippet>428</a>            <span class="kw-2">&amp;</span>parent_qc,
 <a href=#429 id=429 data-nosnippet>429</a>            <span class="self">self</span>.epoch_height,
 <a href=#430 id=430 data-nosnippet>430</a>        )
 <a href=#431 id=431 data-nosnippet>431</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
