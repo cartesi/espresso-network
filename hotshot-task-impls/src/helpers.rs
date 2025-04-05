@@ -118,7 +118,7 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
     let justify_qc_epoch = justify_qc.data.epoch();
 
     let epoch_membership = membership_coordinator
-        .membership_for_epoch(justify_qc_epoch)
+        .stake_table_for_epoch(justify_qc_epoch)
         .await?;
     let membership_stake_table = epoch_membership.stake_table().await;
     let membership_success_threshold = epoch_membership.success_threshold().await;
