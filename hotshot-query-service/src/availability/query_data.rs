@@ -398,6 +398,16 @@ impl<Types: NodeType> HeightIndexed for BlockQueryData<Types> {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(bound = "")]
+pub struct ADVZPayloadQueryData<Types: NodeType> {
+    pub(crate) height: u64,
+    pub(crate) block_hash: BlockHash<Types>,
+    pub(crate) hash: ADVZCommitment,
+    pub(crate) size: u64,
+    pub(crate) data: Payload<Types>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(bound = "")]
 pub struct PayloadQueryData<Types: NodeType> {
     pub(crate) height: u64,
     pub(crate) block_hash: BlockHash<Types>,
@@ -419,6 +429,20 @@ impl<Types: NodeType> From<BlockQueryData<Types>> for PayloadQueryData<Types> {
 }
 
 impl<Types: NodeType> PayloadQueryData<Types> {
+    pub fn to_legacy(&self) -> Option<ADVZPayloadQueryData<Types>> {
+        let VidCommitment::V0(advz_commit) = self.hash else {
+            return None;
+        };
+
+        Some(ADVZPayloadQueryData {
+            height: self.height,
+            block_hash: self.block_hash,
+            hash: advz_commit,
+            size: self.size,
+            data: self.data.clone(),
+        })
+    }
+
     pub async fn genesis<HsVer: Versions>(
         validated_state: &Types::ValidatedState,
         instance_state: &Types::InstanceState,

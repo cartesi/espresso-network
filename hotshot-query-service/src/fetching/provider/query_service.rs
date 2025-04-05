@@ -27,7 +27,10 @@ use vbs::version::StaticVersionType;
 
 use super::Provider;
 use crate::{
-    availability::{LeafQueryData, PayloadQueryData, VidCommonQueryData},
+    availability::{
+        ADVZCommonQueryData, ADVZPayloadQueryData, LeafQueryData, PayloadQueryData,
+        VidCommonQueryData,
+    },
     fetching::request::{LeafRequest, PayloadRequest, VidCommonRequest},
     types::HeightIndexed,
     Error, Header, Payload, VidCommon,
@@ -50,28 +53,104 @@ impl<Ver: StaticVersionType> QueryServiceProvider<Ver> {
     }
 }
 
+impl<Ver: StaticVersionType> QueryServiceProvider<Ver> {
+    async fn fetch_legacy_payload<Types: NodeType>(
+        &self,
+        req: PayloadRequest,
+    ) -> Option<Payload<Types>> {
+        let PayloadRequest(VidCommitment::V0(advz_commit)) = req else {
+            return None;
+        };
+
+        let res = try_join!(
+            self.client
+                .get::<ADVZPayloadQueryData<Types>>(&format!(
+                    "availability/payload/hash/{}",
+                    advz_commit
+                ))
+                .send(),
+            self.client
+                .get::<ADVZCommonQueryData<Types>>(&format!(
+                    "availability/vid/common/payload-hash/{}",
+                    advz_commit
+                ))
+                .send()
+        );
+        match res {
+            Ok((payload, common)) => {
+                let num_storage_nodes = ADVZScheme::get_num_storage_nodes(common.common()) as usize;
+                let bytes = payload.data.encode();
+                let commit = match advz_scheme(num_storage_nodes).commit_only(bytes) {
+                    Ok(commit) => commit,
+                    Err(err) => {
+                        tracing::error!(%err, "unable to compute VID commitment");
+                        return None;
+                    },
+                };
+                if commit != advz_commit {
+                    tracing::error!(?req, ?commit, "received inconsistent payload");
+                    return None;
+                }
+
+                Some(payload.data)
+            },
+            Err(err) => {
+                tracing::error!("failed to fetch payload {req:?}: {err}");
+                None
+            },
+        }
+    }
+
+    async fn fetch_legacy_vid_common<Types: NodeType>(
+        &self,
+        req: VidCommonRequest,
+    ) -> Option<VidCommon> {
+        let VidCommonRequest(VidCommitment::V0(advz_commit)) = req else {
+            return None;
+        };
+
+        match self
+            .client
+            .get::<ADVZCommonQueryData<Types>>(&format!(
+                "availability/vid/common/payload-hash/{}",
+                advz_commit
+            ))
+            .send()
+            .await
+        {
+            Ok(res) => {
+                if ADVZScheme::is_consistent(&advz_commit, &res.common).is_ok() {
+                    Some(VidCommon::V0(res.common))
+                } else {
+                    tracing::error!(?req, ?res.common, "fetched inconsistent VID common data");
+                    None
+                }
+            },
+            Err(err) => {
+                tracing::error!("failed to fetch VID common {req:?}: {err}");
+                None
+            },
+        }
+    }
+}
+
 #[async_trait]
 impl<Types, Ver: StaticVersionType> Provider<Types, PayloadRequest> for QueryServiceProvider<Ver>
 where
     Types: NodeType,
 {
     async fn fetch(&self, req: PayloadRequest) -> Option<Payload<Types>> {
-        let PayloadRequest(VidCommitment::V0(advz_commit)) = req else {
-          tracing::error!("we are requesting a V1 commitment. this should not happen.");
-
-          return None;
-        };
         // Fetch the payload and the VID common data. We need the common data to recompute the VID
         // commitment, to ensure the payload we received is consistent with the commitment we
         // requested.
         let res = try_join!(
             self.client
-                .get::<PayloadQueryData<Types>>(&format!("availability/payload/hash/{}", advz_commit))
+                .get::<PayloadQueryData<Types>>(&format!("availability/payload/hash/{}", req.0))
                 .send(),
             self.client
                 .get::<VidCommonQueryData<Types>>(&format!(
                     "availability/vid/common/payload-hash/{}",
-                    advz_commit
+                    req.0
                 ))
                 .send()
         );
@@ -148,10 +227,7 @@ where
 
                 Some(payload.data)
             },
-            Err(err) => {
-                tracing::error!("failed to fetch payload {req:?}: {err}");
-                None
-            },
+            Err(err) => self.fetch_legacy_payload::<Types>(req).await,
         }
     }
 }
@@ -205,17 +281,11 @@ where
     Types: NodeType,
 {
     async fn fetch(&self, req: VidCommonRequest) -> Option<VidCommon> {
-        let VidCommonRequest(VidCommitment::V0(advz_commit)) = req else {
-          tracing::error!("we are requesting a V1 commitment. this should not happen.");
-
-          return None;
-        };
-
         match self
             .client
             .get::<VidCommonQueryData<Types>>(&format!(
                 "availability/vid/common/payload-hash/{}",
-                advz_commit,
+                req.0
             ))
             .send()
             .await
@@ -243,10 +313,7 @@ where
                     }
                 },
             },
-            Err(err) => {
-                tracing::error!("failed to fetch VID common {req:?}: {err}");
-                None
-            },
+            Err(err) => self.fetch_legacy_vid_common::<Types>(req).await,
         }
     }
 }
