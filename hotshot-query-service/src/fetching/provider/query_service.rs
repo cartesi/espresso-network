@@ -56,17 +56,22 @@ where
     Types: NodeType,
 {
     async fn fetch(&self, req: PayloadRequest) -> Option<Payload<Types>> {
+        let PayloadRequest(VidCommitment::V0(advz_commit)) = req else {
+          tracing::error!("we are requesting a V1 commitment. this should not happen.");
+
+          return None;
+        };
         // Fetch the payload and the VID common data. We need the common data to recompute the VID
         // commitment, to ensure the payload we received is consistent with the commitment we
         // requested.
         let res = try_join!(
             self.client
-                .get::<PayloadQueryData<Types>>(&format!("availability/payload/hash/{}", req.0))
+                .get::<PayloadQueryData<Types>>(&format!("availability/payload/hash/{}", advz_commit))
                 .send(),
             self.client
                 .get::<VidCommonQueryData<Types>>(&format!(
                     "availability/vid/common/payload-hash/{}",
-                    req.0
+                    advz_commit
                 ))
                 .send()
         );
@@ -200,11 +205,17 @@ where
     Types: NodeType,
 {
     async fn fetch(&self, req: VidCommonRequest) -> Option<VidCommon> {
+        let VidCommonRequest(VidCommitment::V0(advz_commit)) = req else {
+          tracing::error!("we are requesting a V1 commitment. this should not happen.");
+
+          return None;
+        };
+
         match self
             .client
             .get::<VidCommonQueryData<Types>>(&format!(
                 "availability/vid/common/payload-hash/{}",
-                req.0
+                advz_commit,
             ))
             .send()
             .await
