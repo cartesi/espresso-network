@@ -754,16 +754,18 @@ fn validate_builder_fee(
         // transaction.
         if version >= MarketplaceVersion::VERSION {
             tracing::debug!("Validating sequencing fee signature.");
-            fee_info
+            if !fee_info
                 .account()
                 .validate_sequencing_fee_signature_marketplace(
                     &signature,
                     fee_info.amount().as_u64().unwrap(),
                     view_number,
                 )
-                .then_some(())
-                .ok_or(BuilderValidationError::InvalidBuilderSignature)?;
+            {
+                return Err(BuilderValidationError::InvalidBuilderSignature);
+            }
         } else {
+            tracing::debug!("Validating fee signature.");
             if !fee_info.account().validate_fee_signature(
                 &signature,
                 fee_info.amount().as_u64().unwrap(),

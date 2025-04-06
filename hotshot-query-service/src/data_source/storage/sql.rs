@@ -934,7 +934,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 message: err.to_string(),
             })?;
 
-            query.execute(tx.as_mut()).await;
+            let _ = query.execute(tx.as_mut()).await;
 
             tx.commit().await?;
             tracing::warn!("inserted {} rows into leaf2 table", offset);
@@ -952,7 +952,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 message: err.to_string(),
             })?;
 
-            query.execute(tx.as_mut()).await;
+            let _ = query.execute(tx.as_mut()).await;
 
             tx.commit().await?;
 

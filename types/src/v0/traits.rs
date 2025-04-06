@@ -971,11 +971,11 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
     async fn migrate_consensus(&self) -> anyhow::Result<()> {
         tracing::warn!("migrating consensus data...");
 
-        self.migrate_anchor_leaf().await;
-        self.migrate_da_proposals().await;
-        self.migrate_vid_shares().await;
-        self.migrate_quorum_proposals().await;
-        self.migrate_quorum_certificates().await;
+        let _ = self.migrate_anchor_leaf().await;
+        let _ = self.migrate_da_proposals().await;
+        let _ = self.migrate_vid_shares().await;
+        let _ = self.migrate_quorum_proposals().await;
+        let _ = self.migrate_quorum_certificates().await;
 
         tracing::warn!("consensus storage has been migrated to new types");
 

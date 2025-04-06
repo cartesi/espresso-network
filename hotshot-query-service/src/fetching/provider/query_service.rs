@@ -271,7 +271,7 @@ where
 
                 Some(payload.data)
             },
-            Err(err) => self.fetch_legacy_payload::<Types>(req).await,
+            Err(_) => self.fetch_legacy_payload::<Types>(req).await,
         }
     }
 }
@@ -311,7 +311,7 @@ where
 
                 Some(leaf)
             },
-            Err(err) => self.fetch_legacy_leaf(req).await,
+            Err(_) => self.fetch_legacy_leaf(req).await,
         }
     }
 }
@@ -354,7 +354,7 @@ where
                     }
                 },
             },
-            Err(err) => self.fetch_legacy_vid_common::<Types>(req).await,
+            Err(_) => self.fetch_legacy_vid_common::<Types>(req).await,
         }
     }
 }
