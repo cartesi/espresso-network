@@ -70,7 +70,6 @@ use hotshot_types::{
         node_implementation::{ConsensusTime, NodeType},
         signature_key::SignatureKey,
         states::ValidatedState,
-        storage::Storage,
     },
     utils::genesis_epoch_from_version,
     HotShotConfig,
