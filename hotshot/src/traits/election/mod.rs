@@ -24,3 +24,6 @@ pub mod two_static_committees;
 
 /// general helpers
 pub mod helpers;
+
+/// static (round robin leader for 3 consecutive views) committee election
+pub mod static_committee_leader_three_views;

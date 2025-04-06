@@ -14,6 +14,7 @@ use hotshot::traits::{
         dummy_catchup_membership::DummyCatchupCommittee, helpers::QuorumFilterConfig,
         randomized_committee::Committee, randomized_committee_members::RandomizedCommitteeMembers,
         static_committee::StaticCommittee,
+        static_committee_leader_three_views::StaticCommitteeLeaderForThreeViews,
         static_committee_leader_two_views::StaticCommitteeLeaderForTwoViews,
         two_static_committees::TwoStaticCommittees,
     },
@@ -200,6 +201,39 @@ impl NodeType for TestConsecutiveLeaderTypes {
     type ValidatedState = TestValidatedState;
     type InstanceState = TestInstanceState;
     type Membership = StaticCommitteeLeaderForTwoViews<TestConsecutiveLeaderTypes>;
+    type BuilderSignatureKey = BuilderKey;
+    type StateSignatureKey = SchnorrPubKey;
+}
+
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+/// filler struct to implement node type and allow us
+/// to select our traits
+pub struct TestTripleConsecutiveLeaderTypes;
+impl NodeType for TestTripleConsecutiveLeaderTypes {
+    const UPGRADE_CONSTANTS: UpgradeConstants = TEST_UPGRADE_CONSTANTS;
+
+    type AuctionResult = TestAuctionResult;
+    type View = ViewNumber;
+    type Epoch = EpochNumber;
+    type BlockHeader = TestBlockHeader;
+    type BlockPayload = TestBlockPayload;
+    type SignatureKey = BLSPubKey;
+    type Transaction = TestTransaction;
+    type ValidatedState = TestValidatedState;
+    type InstanceState = TestInstanceState;
+    type Membership = StaticCommitteeLeaderForThreeViews<TestTripleConsecutiveLeaderTypes>;
     type BuilderSignatureKey = BuilderKey;
     type StateSignatureKey = SchnorrPubKey;
 }

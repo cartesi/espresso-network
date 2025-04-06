@@ -166,6 +166,23 @@ cross_tests!(
 );
 
 cross_tests!(
+    TestName: test_with_triple_leader_no_failures_with_epochs,
+    Impls: [Libp2pImpl, PushCdnImpl, CombinedImpl],
+    Types: [hotshot_example_types::node_types::TestTripleConsecutiveLeaderTypes],
+    Versions: [EpochsTestVersions],
+    Ignore: false,
+    Metadata: {
+        let mut metadata = TestDescription::default_more_nodes().set_num_nodes(12,12);
+        metadata.test_config.num_bootstrap = 10;
+        metadata.test_config.epoch_height = 10;
+
+        metadata.view_sync_properties = ViewSyncTaskDescription::Threshold(0, 0);
+
+        metadata
+    }
+);
+
+cross_tests!(
     TestName: test_epoch_end,
     Impls: [CombinedImpl, Libp2pImpl, PushCdnImpl],
     Types: [TestTypes, TestTwoStakeTablesTypes],
