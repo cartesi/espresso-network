@@ -267,24 +267,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
 
         let is_vote_leaf_extended = is_last_block(leaf.height(), self.epoch_height);
         let is_vote_epoch_root = is_epoch_root(leaf.height(), self.epoch_height);
-        if current_epoch.is_none() || !is_vote_leaf_extended {
-            // We're voting for the proposal that will probably form the eQC. We don't want to change
-            // the view here because we will probably change it when we form the eQC.
-            // The main reason is to handle view change event only once in the transaction task.
-            tracing::trace!(
-                "Sending ViewChange for view {} and epoch {:?}",
-                leaf.view_number() + 1,
-                current_epoch
-            );
-            broadcast_event(
-                Arc::new(HotShotEvent::ViewChange(
-                    leaf.view_number() + 1,
-                    current_epoch,
-                )),
-                &self.sender,
-            )
-            .await;
-        }
 
         if let Err(e) = submit_vote::<TYPES, I, V>(
             self.sender.clone(),
@@ -304,6 +286,24 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
         .await
         {
             tracing::debug!("Failed to vote; error = {e:#}");
+        }
+        if current_epoch.is_none() || !is_vote_leaf_extended {
+            // We're voting for the proposal that will probably form the eQC. We don't want to change
+            // the view here because we will probably change it when we form the eQC.
+            // The main reason is to handle view change event only once in the transaction task.
+            tracing::trace!(
+                "Sending ViewChange for view {} and epoch {:?}",
+                leaf.view_number() + 1,
+                current_epoch
+            );
+            broadcast_event(
+                Arc::new(HotShotEvent::ViewChange(
+                    leaf.view_number() + 1,
+                    current_epoch,
+                )),
+                &self.sender,
+            )
+            .await;
         }
     }
 }
