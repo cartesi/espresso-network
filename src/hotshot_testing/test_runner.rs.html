@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>    data::Leaf2,
 <a href=#34 id=34 data-nosnippet>34</a>    drb::INITIAL_DRB_RESULT,
 <a href=#35 id=35 data-nosnippet>35</a>    epoch_membership::EpochMembershipCoordinator,
-<a href=#36 id=36 data-nosnippet>36</a>    simple_certificate::{LightClientStateUpdateCertificate, QuorumCertificate2},
+<a href=#36 id=36 data-nosnippet>36</a>    simple_certificate::QuorumCertificate2,
 <a href=#37 id=37 data-nosnippet>37</a>    traits::{
 <a href=#38 id=38 data-nosnippet>38</a>        election::Membership,
 <a href=#39 id=39 data-nosnippet>39</a>        network::ConnectedNetwork,
@@ -200,7 +200,7 @@
 <a href=#200 id=200 data-nosnippet>200</a>            async_delay_config: launcher.metadata.async_delay_config,
 <a href=#201 id=201 data-nosnippet>201</a>            restart_contexts: HashMap::new(),
 <a href=#202 id=202 data-nosnippet>202</a>            channel_generator: launcher.resource_generators.channel_generator,
-<a href=#203 id=203 data-nosnippet>203</a>            state_cert: LightClientStateUpdateCertificate::&lt;TYPES&gt;::genesis(),
+<a href=#203 id=203 data-nosnippet>203</a>            state_cert: <span class="prelude-val">None</span>,
 <a href=#204 id=204 data-nosnippet>204</a>        };
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span>spinning_task = TestTask::&lt;SpinningTask&lt;TYPES, N, I, V&gt;&gt;::new(
 <a href=#206 id=206 data-nosnippet>206</a>            spinning_task_state,

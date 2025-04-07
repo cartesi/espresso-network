@@ -240,7 +240,7 @@
 <a href=#240 id=240 data-nosnippet>240</a>        .block_number
 <a href=#241 id=241 data-nosnippet>241</a>        .is_some_and(|b| is_epoch_root(b, task_state.epoch_height));
 <a href=#242 id=242 data-nosnippet>242</a>    <span class="kw">let </span>state_cert = <span class="kw">if </span>is_epoch_root {
-<a href=#243 id=243 data-nosnippet>243</a>        <span class="prelude-val">Some</span>(consensus_reader.state_cert().clone())
+<a href=#243 id=243 data-nosnippet>243</a>        consensus_reader.state_cert().cloned()
 <a href=#244 id=244 data-nosnippet>244</a>    } <span class="kw">else </span>{
 <a href=#245 id=245 data-nosnippet>245</a>        <span class="prelude-val">None
 <a href=#246 id=246 data-nosnippet>246</a>    </span>};

@@ -1084,7 +1084,7 @@
 <a href=#1084 id=1084 data-nosnippet>1084</a>            <span class="kw">let </span>block = blocks.next().<span class="kw">await</span>.unwrap();
 <a href=#1085 id=1085 data-nosnippet>1085</a>
 <a href=#1086 id=1086 data-nosnippet>1086</a>            data_source
-<a href=#1087 id=1087 data-nosnippet>1087</a>                .append(BlockInfo::new(leaf, <span class="prelude-val">Some</span>(block.clone()), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>))
+<a href=#1087 id=1087 data-nosnippet>1087</a>                .append(BlockInfo::new(leaf, <span class="prelude-val">Some</span>(block.clone()), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>))
 <a href=#1088 id=1088 data-nosnippet>1088</a>                .<span class="kw">await
 <a href=#1089 id=1089 data-nosnippet>1089</a>                </span>.unwrap();
 <a href=#1090 id=1090 data-nosnippet>1090</a>
@@ -2150,7 +2150,7 @@
 <a href=#2150 id=2150 data-nosnippet>2150</a>        <span class="kw">let </span>block = network.data_source().get_block(<span class="number">1</span>).<span class="kw">await</span>.<span class="kw">await</span>;
 <a href=#2151 id=2151 data-nosnippet>2151</a>        <span class="kw">let </span>vid = network.data_source().get_vid_common(<span class="number">1</span>).<span class="kw">await</span>.<span class="kw">await</span>;
 <a href=#2152 id=2152 data-nosnippet>2152</a>        data_source
-<a href=#2153 id=2153 data-nosnippet>2153</a>            .append(BlockInfo::new(leaf, <span class="prelude-val">Some</span>(block), <span class="prelude-val">Some</span>(vid), <span class="prelude-val">None</span>))
+<a href=#2153 id=2153 data-nosnippet>2153</a>            .append(BlockInfo::new(leaf, <span class="prelude-val">Some</span>(block), <span class="prelude-val">Some</span>(vid), <span class="prelude-val">None</span>, <span class="prelude-val">None</span>))
 <a href=#2154 id=2154 data-nosnippet>2154</a>            .<span class="kw">await
 <a href=#2155 id=2155 data-nosnippet>2155</a>            </span>.unwrap();
 <a href=#2156 id=2156 data-nosnippet>2156</a>

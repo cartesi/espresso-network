@@ -62,139 +62,140 @@
 <a href=#62 id=62 data-nosnippet>62</a>        state: Default::default(),
 <a href=#63 id=63 data-nosnippet>63</a>        delta: <span class="prelude-val">None</span>,
 <a href=#64 id=64 data-nosnippet>64</a>        vid_share: <span class="prelude-val">None</span>,
-<a href=#65 id=65 data-nosnippet>65</a>    }])
-<a href=#66 id=66 data-nosnippet>66</a>}
-<a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a><span class="doccomment">/// Create mock pair of DA and Quorum proposals
-<a href=#69 id=69 data-nosnippet>69</a></span><span class="kw">pub async fn </span>proposals(view: u64) -&gt; (DaProposal2&lt;TestTypes&gt;, QuorumProposalWrapper&lt;TestTypes&gt;) {
-<a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>transaction = transaction();
-<a href=#71 id=71 data-nosnippet>71</a>    proposals_with_transactions(view, <span class="macro">vec!</span>[transaction]).<span class="kw">await
-<a href=#72 id=72 data-nosnippet>72</a></span>}
-<a href=#73 id=73 data-nosnippet>73</a>
-<a href=#74 id=74 data-nosnippet>74</a><span class="doccomment">/// Create mock pair of DA and Quorum proposals with given transactions
-<a href=#75 id=75 data-nosnippet>75</a></span><span class="kw">pub async fn </span>proposals_with_transactions(
-<a href=#76 id=76 data-nosnippet>76</a>    view: u64,
-<a href=#77 id=77 data-nosnippet>77</a>    transactions: Vec&lt;TestTransaction&gt;,
-<a href=#78 id=78 data-nosnippet>78</a>) -&gt; (DaProposal2&lt;TestTypes&gt;, QuorumProposalWrapper&lt;TestTypes&gt;) {
-<a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">let </span>epoch = <span class="prelude-val">None</span>;
-<a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">let </span>view_number = &lt;TestTypes <span class="kw">as </span>NodeType&gt;::View::new(view);
-<a href=#81 id=81 data-nosnippet>81</a>    <span class="kw">let </span>upgrade_lock = UpgradeLock::&lt;TestTypes, TestVersions&gt;::new();
-<a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">let </span>validated_state = TestValidatedState::default();
-<a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">let </span>instance_state = TestInstanceState::default();
-<a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">let </span>(payload, metadata) = &lt;TestBlockPayload <span class="kw">as </span>BlockPayload&lt;TestTypes&gt;&gt;::from_transactions(
-<a href=#86 id=86 data-nosnippet>86</a>        transactions.clone(),
-<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw-2">&amp;</span>validated_state,
-<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw-2">&amp;</span>instance_state,
-<a href=#89 id=89 data-nosnippet>89</a>    )
-<a href=#90 id=90 data-nosnippet>90</a>    .<span class="kw">await
-<a href=#91 id=91 data-nosnippet>91</a>    </span>.unwrap();
-<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">let </span>encoded_transactions = TestTransaction::encode(<span class="kw-2">&amp;</span>transactions);
-<a href=#93 id=93 data-nosnippet>93</a>
-<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">let </span>header = TestBlockHeader::new(
-<a href=#95 id=95 data-nosnippet>95</a>        <span class="kw-2">&amp;</span>Leaf::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>Default::default())
-<a href=#96 id=96 data-nosnippet>96</a>            .<span class="kw">await
-<a href=#97 id=97 data-nosnippet>97</a>            </span>.into(),
-<a href=#98 id=98 data-nosnippet>98</a>        vid_commitment::&lt;TestVersions&gt;(
-<a href=#99 id=99 data-nosnippet>99</a>            <span class="kw-2">&amp;</span>encoded_transactions,
-<a href=#100 id=100 data-nosnippet>100</a>            <span class="kw-2">&amp;</span>metadata.encode(),
-<a href=#101 id=101 data-nosnippet>101</a>            GENESIS_VID_NUM_STORAGE_NODES,
-<a href=#102 id=102 data-nosnippet>102</a>            &lt;TestVersions <span class="kw">as </span>Versions&gt;::Base::VERSION,
-<a href=#103 id=103 data-nosnippet>103</a>        ),
-<a href=#104 id=104 data-nosnippet>104</a>        &lt;TestBlockPayload <span class="kw">as </span>BlockPayload&lt;TestTypes&gt;&gt;::builder_commitment(<span class="kw-2">&amp;</span>payload, <span class="kw-2">&amp;</span>metadata),
-<a href=#105 id=105 data-nosnippet>105</a>        metadata,
-<a href=#106 id=106 data-nosnippet>106</a>    );
-<a href=#107 id=107 data-nosnippet>107</a>
-<a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">let </span>genesis_qc = QuorumCertificate::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(
-<a href=#109 id=109 data-nosnippet>109</a>        <span class="kw-2">&amp;</span>TestValidatedState::default(),
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="kw-2">&amp;</span>TestInstanceState::default(),
-<a href=#111 id=111 data-nosnippet>111</a>    )
-<a href=#112 id=112 data-nosnippet>112</a>    .<span class="kw">await
-<a href=#113 id=113 data-nosnippet>113</a>    </span>.to_qc2();
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">let </span>parent_proposal = QuorumProposalWrapper {
-<a href=#115 id=115 data-nosnippet>115</a>        proposal: QuorumProposal2 {
-<a href=#116 id=116 data-nosnippet>116</a>            block_header: header,
-<a href=#117 id=117 data-nosnippet>117</a>            view_number: ViewNumber::new(view_number.saturating_sub(<span class="number">1</span>)),
-<a href=#118 id=118 data-nosnippet>118</a>            justify_qc: genesis_qc,
-<a href=#119 id=119 data-nosnippet>119</a>            upgrade_certificate: <span class="prelude-val">None</span>,
-<a href=#120 id=120 data-nosnippet>120</a>            view_change_evidence: <span class="prelude-val">None</span>,
-<a href=#121 id=121 data-nosnippet>121</a>            next_drb_result: <span class="prelude-val">None</span>,
-<a href=#122 id=122 data-nosnippet>122</a>            next_epoch_justify_qc: <span class="prelude-val">None</span>,
-<a href=#123 id=123 data-nosnippet>123</a>            epoch,
-<a href=#124 id=124 data-nosnippet>124</a>            state_cert: <span class="prelude-val">None</span>,
-<a href=#125 id=125 data-nosnippet>125</a>        },
-<a href=#126 id=126 data-nosnippet>126</a>    };
-<a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>parent_proposal);
-<a href=#128 id=128 data-nosnippet>128</a>
-<a href=#129 id=129 data-nosnippet>129</a>    <span class="kw">let </span>quorum_data = QuorumData2 {
-<a href=#130 id=130 data-nosnippet>130</a>        leaf_commit: leaf.commit(),
-<a href=#131 id=131 data-nosnippet>131</a>        epoch,
-<a href=#132 id=132 data-nosnippet>132</a>        block_number: <span class="prelude-val">Some</span>(leaf.height()),
-<a href=#133 id=133 data-nosnippet>133</a>    };
-<a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">let </span>versioned_data = VersionedVoteData::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;::new_infallible(
-<a href=#136 id=136 data-nosnippet>136</a>        quorum_data.clone(),
-<a href=#137 id=137 data-nosnippet>137</a>        view_number,
-<a href=#138 id=138 data-nosnippet>138</a>        <span class="kw-2">&amp;</span>upgrade_lock,
-<a href=#139 id=139 data-nosnippet>139</a>    )
-<a href=#140 id=140 data-nosnippet>140</a>    .<span class="kw">await</span>;
-<a href=#141 id=141 data-nosnippet>141</a>
-<a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">let </span>commitment = Commitment::from_raw(versioned_data.commit().into());
-<a href=#143 id=143 data-nosnippet>143</a>
-<a href=#144 id=144 data-nosnippet>144</a>    <span class="kw">let </span>justify_qc =
-<a href=#145 id=145 data-nosnippet>145</a>        QuorumCertificate2::new(quorum_data, commitment, view_number, <span class="prelude-val">None</span>, PhantomData);
-<a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a>    (
-<a href=#148 id=148 data-nosnippet>148</a>        DaProposal2 {
-<a href=#149 id=149 data-nosnippet>149</a>            encoded_transactions: encoded_transactions.into(),
-<a href=#150 id=150 data-nosnippet>150</a>            metadata,
-<a href=#151 id=151 data-nosnippet>151</a>            view_number,
-<a href=#152 id=152 data-nosnippet>152</a>            epoch,
-<a href=#153 id=153 data-nosnippet>153</a>            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
-<a href=#154 id=154 data-nosnippet>154</a>        },
-<a href=#155 id=155 data-nosnippet>155</a>        QuorumProposalWrapper {
-<a href=#156 id=156 data-nosnippet>156</a>            proposal: QuorumProposal2 {
-<a href=#157 id=157 data-nosnippet>157</a>                block_header: leaf.block_header().clone(),
-<a href=#158 id=158 data-nosnippet>158</a>                view_number,
-<a href=#159 id=159 data-nosnippet>159</a>                justify_qc,
-<a href=#160 id=160 data-nosnippet>160</a>                upgrade_certificate: <span class="prelude-val">None</span>,
-<a href=#161 id=161 data-nosnippet>161</a>                view_change_evidence: <span class="prelude-val">None</span>,
-<a href=#162 id=162 data-nosnippet>162</a>                next_drb_result: <span class="prelude-val">None</span>,
-<a href=#163 id=163 data-nosnippet>163</a>                next_epoch_justify_qc: <span class="prelude-val">None</span>,
-<a href=#164 id=164 data-nosnippet>164</a>                epoch,
-<a href=#165 id=165 data-nosnippet>165</a>                state_cert: <span class="prelude-val">None</span>,
-<a href=#166 id=166 data-nosnippet>166</a>            },
-<a href=#167 id=167 data-nosnippet>167</a>        },
-<a href=#168 id=168 data-nosnippet>168</a>    )
-<a href=#169 id=169 data-nosnippet>169</a>}
-<a href=#170 id=170 data-nosnippet>170</a>
-<a href=#171 id=171 data-nosnippet>171</a><span class="kw">pub fn </span>builder_state(view: u64) -&gt; Arc&lt;BuilderState&lt;TestTypes&gt;&gt; {
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">let </span>references = parent_references(view);
-<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">let </span>(<span class="kw">_</span>, receiver) = broadcast(TEST_CHANNEL_BUFFER_SIZE);
-<a href=#174 id=174 data-nosnippet>174</a>    BuilderState::new(
-<a href=#175 id=175 data-nosnippet>175</a>        references,
-<a href=#176 id=176 data-nosnippet>176</a>        Duration::from_secs(<span class="number">1</span>),
-<a href=#177 id=177 data-nosnippet>177</a>        receiver,
-<a href=#178 id=178 data-nosnippet>178</a>        TestValidatedState::default(),
-<a href=#179 id=179 data-nosnippet>179</a>    )
-<a href=#180 id=180 data-nosnippet>180</a>}
-<a href=#181 id=181 data-nosnippet>181</a>
-<a href=#182 id=182 data-nosnippet>182</a><span class="doccomment">/// Generate references for given view number with random
-<a href=#183 id=183 data-nosnippet>183</a>/// commitments for use in testing code
-<a href=#184 id=184 data-nosnippet>184</a></span><span class="kw">pub fn </span>parent_references(view: u64) -&gt; ParentBlockReferences&lt;TestTypes&gt; {
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>thread_rng();
-<a href=#186 id=186 data-nosnippet>186</a>    ParentBlockReferences {
-<a href=#187 id=187 data-nosnippet>187</a>        view_number: &lt;TestTypes <span class="kw">as </span>NodeType&gt;::View::new(view),
-<a href=#188 id=188 data-nosnippet>188</a>        leaf_commit: random_commitment(rng),
-<a href=#189 id=189 data-nosnippet>189</a>        vid_commitment: hotshot_types::data::VidCommitment::V0(
-<a href=#190 id=190 data-nosnippet>190</a>            advz_scheme(TEST_NUM_NODES_IN_VID_COMPUTATION)
-<a href=#191 id=191 data-nosnippet>191</a>                .commit_only(rng.sample_iter(Standard).take(<span class="number">100</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
-<a href=#192 id=192 data-nosnippet>192</a>                .unwrap(),
-<a href=#193 id=193 data-nosnippet>193</a>        ),
-<a href=#194 id=194 data-nosnippet>194</a>        builder_commitment: BuilderCommitment::from_bytes(
-<a href=#195 id=195 data-nosnippet>195</a>            rng.sample_iter(Standard).take(<span class="number">32</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
-<a href=#196 id=196 data-nosnippet>196</a>        ),
-<a href=#197 id=197 data-nosnippet>197</a>        tx_count: rng.gen(),
-<a href=#198 id=198 data-nosnippet>198</a>        last_nonempty_view: <span class="prelude-val">None</span>,
-<a href=#199 id=199 data-nosnippet>199</a>    }
-<a href=#200 id=200 data-nosnippet>200</a>}</code></pre></div></section></main></body></html>
+<a href=#65 id=65 data-nosnippet>65</a>        state_cert: <span class="prelude-val">None</span>,
+<a href=#66 id=66 data-nosnippet>66</a>    }])
+<a href=#67 id=67 data-nosnippet>67</a>}
+<a href=#68 id=68 data-nosnippet>68</a>
+<a href=#69 id=69 data-nosnippet>69</a><span class="doccomment">/// Create mock pair of DA and Quorum proposals
+<a href=#70 id=70 data-nosnippet>70</a></span><span class="kw">pub async fn </span>proposals(view: u64) -&gt; (DaProposal2&lt;TestTypes&gt;, QuorumProposalWrapper&lt;TestTypes&gt;) {
+<a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">let </span>transaction = transaction();
+<a href=#72 id=72 data-nosnippet>72</a>    proposals_with_transactions(view, <span class="macro">vec!</span>[transaction]).<span class="kw">await
+<a href=#73 id=73 data-nosnippet>73</a></span>}
+<a href=#74 id=74 data-nosnippet>74</a>
+<a href=#75 id=75 data-nosnippet>75</a><span class="doccomment">/// Create mock pair of DA and Quorum proposals with given transactions
+<a href=#76 id=76 data-nosnippet>76</a></span><span class="kw">pub async fn </span>proposals_with_transactions(
+<a href=#77 id=77 data-nosnippet>77</a>    view: u64,
+<a href=#78 id=78 data-nosnippet>78</a>    transactions: Vec&lt;TestTransaction&gt;,
+<a href=#79 id=79 data-nosnippet>79</a>) -&gt; (DaProposal2&lt;TestTypes&gt;, QuorumProposalWrapper&lt;TestTypes&gt;) {
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">let </span>epoch = <span class="prelude-val">None</span>;
+<a href=#81 id=81 data-nosnippet>81</a>    <span class="kw">let </span>view_number = &lt;TestTypes <span class="kw">as </span>NodeType&gt;::View::new(view);
+<a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">let </span>upgrade_lock = UpgradeLock::&lt;TestTypes, TestVersions&gt;::new();
+<a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">let </span>validated_state = TestValidatedState::default();
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">let </span>instance_state = TestInstanceState::default();
+<a href=#85 id=85 data-nosnippet>85</a>
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span>(payload, metadata) = &lt;TestBlockPayload <span class="kw">as </span>BlockPayload&lt;TestTypes&gt;&gt;::from_transactions(
+<a href=#87 id=87 data-nosnippet>87</a>        transactions.clone(),
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw-2">&amp;</span>validated_state,
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw-2">&amp;</span>instance_state,
+<a href=#90 id=90 data-nosnippet>90</a>    )
+<a href=#91 id=91 data-nosnippet>91</a>    .<span class="kw">await
+<a href=#92 id=92 data-nosnippet>92</a>    </span>.unwrap();
+<a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">let </span>encoded_transactions = TestTransaction::encode(<span class="kw-2">&amp;</span>transactions);
+<a href=#94 id=94 data-nosnippet>94</a>
+<a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">let </span>header = TestBlockHeader::new(
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw-2">&amp;</span>Leaf::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(<span class="kw-2">&amp;</span>Default::default(), <span class="kw-2">&amp;</span>Default::default())
+<a href=#97 id=97 data-nosnippet>97</a>            .<span class="kw">await
+<a href=#98 id=98 data-nosnippet>98</a>            </span>.into(),
+<a href=#99 id=99 data-nosnippet>99</a>        vid_commitment::&lt;TestVersions&gt;(
+<a href=#100 id=100 data-nosnippet>100</a>            <span class="kw-2">&amp;</span>encoded_transactions,
+<a href=#101 id=101 data-nosnippet>101</a>            <span class="kw-2">&amp;</span>metadata.encode(),
+<a href=#102 id=102 data-nosnippet>102</a>            GENESIS_VID_NUM_STORAGE_NODES,
+<a href=#103 id=103 data-nosnippet>103</a>            &lt;TestVersions <span class="kw">as </span>Versions&gt;::Base::VERSION,
+<a href=#104 id=104 data-nosnippet>104</a>        ),
+<a href=#105 id=105 data-nosnippet>105</a>        &lt;TestBlockPayload <span class="kw">as </span>BlockPayload&lt;TestTypes&gt;&gt;::builder_commitment(<span class="kw-2">&amp;</span>payload, <span class="kw-2">&amp;</span>metadata),
+<a href=#106 id=106 data-nosnippet>106</a>        metadata,
+<a href=#107 id=107 data-nosnippet>107</a>    );
+<a href=#108 id=108 data-nosnippet>108</a>
+<a href=#109 id=109 data-nosnippet>109</a>    <span class="kw">let </span>genesis_qc = QuorumCertificate::&lt;TestTypes&gt;::genesis::&lt;TestVersions&gt;(
+<a href=#110 id=110 data-nosnippet>110</a>        <span class="kw-2">&amp;</span>TestValidatedState::default(),
+<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw-2">&amp;</span>TestInstanceState::default(),
+<a href=#112 id=112 data-nosnippet>112</a>    )
+<a href=#113 id=113 data-nosnippet>113</a>    .<span class="kw">await
+<a href=#114 id=114 data-nosnippet>114</a>    </span>.to_qc2();
+<a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">let </span>parent_proposal = QuorumProposalWrapper {
+<a href=#116 id=116 data-nosnippet>116</a>        proposal: QuorumProposal2 {
+<a href=#117 id=117 data-nosnippet>117</a>            block_header: header,
+<a href=#118 id=118 data-nosnippet>118</a>            view_number: ViewNumber::new(view_number.saturating_sub(<span class="number">1</span>)),
+<a href=#119 id=119 data-nosnippet>119</a>            justify_qc: genesis_qc,
+<a href=#120 id=120 data-nosnippet>120</a>            upgrade_certificate: <span class="prelude-val">None</span>,
+<a href=#121 id=121 data-nosnippet>121</a>            view_change_evidence: <span class="prelude-val">None</span>,
+<a href=#122 id=122 data-nosnippet>122</a>            next_drb_result: <span class="prelude-val">None</span>,
+<a href=#123 id=123 data-nosnippet>123</a>            next_epoch_justify_qc: <span class="prelude-val">None</span>,
+<a href=#124 id=124 data-nosnippet>124</a>            epoch,
+<a href=#125 id=125 data-nosnippet>125</a>            state_cert: <span class="prelude-val">None</span>,
+<a href=#126 id=126 data-nosnippet>126</a>        },
+<a href=#127 id=127 data-nosnippet>127</a>    };
+<a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">let </span>leaf = Leaf2::from_quorum_proposal(<span class="kw-2">&amp;</span>parent_proposal);
+<a href=#129 id=129 data-nosnippet>129</a>
+<a href=#130 id=130 data-nosnippet>130</a>    <span class="kw">let </span>quorum_data = QuorumData2 {
+<a href=#131 id=131 data-nosnippet>131</a>        leaf_commit: leaf.commit(),
+<a href=#132 id=132 data-nosnippet>132</a>        epoch,
+<a href=#133 id=133 data-nosnippet>133</a>        block_number: <span class="prelude-val">Some</span>(leaf.height()),
+<a href=#134 id=134 data-nosnippet>134</a>    };
+<a href=#135 id=135 data-nosnippet>135</a>
+<a href=#136 id=136 data-nosnippet>136</a>    <span class="kw">let </span>versioned_data = VersionedVoteData::&lt;<span class="kw">_</span>, <span class="kw">_</span>, <span class="kw">_</span>&gt;::new_infallible(
+<a href=#137 id=137 data-nosnippet>137</a>        quorum_data.clone(),
+<a href=#138 id=138 data-nosnippet>138</a>        view_number,
+<a href=#139 id=139 data-nosnippet>139</a>        <span class="kw-2">&amp;</span>upgrade_lock,
+<a href=#140 id=140 data-nosnippet>140</a>    )
+<a href=#141 id=141 data-nosnippet>141</a>    .<span class="kw">await</span>;
+<a href=#142 id=142 data-nosnippet>142</a>
+<a href=#143 id=143 data-nosnippet>143</a>    <span class="kw">let </span>commitment = Commitment::from_raw(versioned_data.commit().into());
+<a href=#144 id=144 data-nosnippet>144</a>
+<a href=#145 id=145 data-nosnippet>145</a>    <span class="kw">let </span>justify_qc =
+<a href=#146 id=146 data-nosnippet>146</a>        QuorumCertificate2::new(quorum_data, commitment, view_number, <span class="prelude-val">None</span>, PhantomData);
+<a href=#147 id=147 data-nosnippet>147</a>
+<a href=#148 id=148 data-nosnippet>148</a>    (
+<a href=#149 id=149 data-nosnippet>149</a>        DaProposal2 {
+<a href=#150 id=150 data-nosnippet>150</a>            encoded_transactions: encoded_transactions.into(),
+<a href=#151 id=151 data-nosnippet>151</a>            metadata,
+<a href=#152 id=152 data-nosnippet>152</a>            view_number,
+<a href=#153 id=153 data-nosnippet>153</a>            epoch,
+<a href=#154 id=154 data-nosnippet>154</a>            epoch_transition_indicator: EpochTransitionIndicator::NotInTransition,
+<a href=#155 id=155 data-nosnippet>155</a>        },
+<a href=#156 id=156 data-nosnippet>156</a>        QuorumProposalWrapper {
+<a href=#157 id=157 data-nosnippet>157</a>            proposal: QuorumProposal2 {
+<a href=#158 id=158 data-nosnippet>158</a>                block_header: leaf.block_header().clone(),
+<a href=#159 id=159 data-nosnippet>159</a>                view_number,
+<a href=#160 id=160 data-nosnippet>160</a>                justify_qc,
+<a href=#161 id=161 data-nosnippet>161</a>                upgrade_certificate: <span class="prelude-val">None</span>,
+<a href=#162 id=162 data-nosnippet>162</a>                view_change_evidence: <span class="prelude-val">None</span>,
+<a href=#163 id=163 data-nosnippet>163</a>                next_drb_result: <span class="prelude-val">None</span>,
+<a href=#164 id=164 data-nosnippet>164</a>                next_epoch_justify_qc: <span class="prelude-val">None</span>,
+<a href=#165 id=165 data-nosnippet>165</a>                epoch,
+<a href=#166 id=166 data-nosnippet>166</a>                state_cert: <span class="prelude-val">None</span>,
+<a href=#167 id=167 data-nosnippet>167</a>            },
+<a href=#168 id=168 data-nosnippet>168</a>        },
+<a href=#169 id=169 data-nosnippet>169</a>    )
+<a href=#170 id=170 data-nosnippet>170</a>}
+<a href=#171 id=171 data-nosnippet>171</a>
+<a href=#172 id=172 data-nosnippet>172</a><span class="kw">pub fn </span>builder_state(view: u64) -&gt; Arc&lt;BuilderState&lt;TestTypes&gt;&gt; {
+<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">let </span>references = parent_references(view);
+<a href=#174 id=174 data-nosnippet>174</a>    <span class="kw">let </span>(<span class="kw">_</span>, receiver) = broadcast(TEST_CHANNEL_BUFFER_SIZE);
+<a href=#175 id=175 data-nosnippet>175</a>    BuilderState::new(
+<a href=#176 id=176 data-nosnippet>176</a>        references,
+<a href=#177 id=177 data-nosnippet>177</a>        Duration::from_secs(<span class="number">1</span>),
+<a href=#178 id=178 data-nosnippet>178</a>        receiver,
+<a href=#179 id=179 data-nosnippet>179</a>        TestValidatedState::default(),
+<a href=#180 id=180 data-nosnippet>180</a>    )
+<a href=#181 id=181 data-nosnippet>181</a>}
+<a href=#182 id=182 data-nosnippet>182</a>
+<a href=#183 id=183 data-nosnippet>183</a><span class="doccomment">/// Generate references for given view number with random
+<a href=#184 id=184 data-nosnippet>184</a>/// commitments for use in testing code
+<a href=#185 id=185 data-nosnippet>185</a></span><span class="kw">pub fn </span>parent_references(view: u64) -&gt; ParentBlockReferences&lt;TestTypes&gt; {
+<a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">let </span>rng = <span class="kw-2">&amp;mut </span>thread_rng();
+<a href=#187 id=187 data-nosnippet>187</a>    ParentBlockReferences {
+<a href=#188 id=188 data-nosnippet>188</a>        view_number: &lt;TestTypes <span class="kw">as </span>NodeType&gt;::View::new(view),
+<a href=#189 id=189 data-nosnippet>189</a>        leaf_commit: random_commitment(rng),
+<a href=#190 id=190 data-nosnippet>190</a>        vid_commitment: hotshot_types::data::VidCommitment::V0(
+<a href=#191 id=191 data-nosnippet>191</a>            advz_scheme(TEST_NUM_NODES_IN_VID_COMPUTATION)
+<a href=#192 id=192 data-nosnippet>192</a>                .commit_only(rng.sample_iter(Standard).take(<span class="number">100</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
+<a href=#193 id=193 data-nosnippet>193</a>                .unwrap(),
+<a href=#194 id=194 data-nosnippet>194</a>        ),
+<a href=#195 id=195 data-nosnippet>195</a>        builder_commitment: BuilderCommitment::from_bytes(
+<a href=#196 id=196 data-nosnippet>196</a>            rng.sample_iter(Standard).take(<span class="number">32</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;(),
+<a href=#197 id=197 data-nosnippet>197</a>        ),
+<a href=#198 id=198 data-nosnippet>198</a>        tx_count: rng.gen(),
+<a href=#199 id=199 data-nosnippet>199</a>        last_nonempty_view: <span class="prelude-val">None</span>,
+<a href=#200 id=200 data-nosnippet>200</a>    }
+<a href=#201 id=201 data-nosnippet>201</a>}</code></pre></div></section></main></body></html>

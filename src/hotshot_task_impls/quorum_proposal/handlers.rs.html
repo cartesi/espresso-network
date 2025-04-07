@@ -309,7 +309,7 @@
 <a href=#309 id=309 data-nosnippet>309</a>            .block_number
 <a href=#310 id=310 data-nosnippet>310</a>            .is_some_and(|bn| is_epoch_root(bn, <span class="self">self</span>.epoch_height))
 <a href=#311 id=311 data-nosnippet>311</a>        {
-<a href=#312 id=312 data-nosnippet>312</a>            <span class="prelude-val">Some</span>(consensus_reader.state_cert().clone())
+<a href=#312 id=312 data-nosnippet>312</a>            consensus_reader.state_cert().cloned()
 <a href=#313 id=313 data-nosnippet>313</a>        } <span class="kw">else </span>{
 <a href=#314 id=314 data-nosnippet>314</a>            <span class="prelude-val">None
 <a href=#315 id=315 data-nosnippet>315</a>        </span>};
