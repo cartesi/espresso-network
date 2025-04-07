@@ -1144,11 +1144,13 @@ impl SequencerPersistence for Persistence {
     ) -> anyhow::Result<()> {
         let view = proposal.data.view_number.u64();
         let payload_hash = proposal.data.payload_commitment;
-        let data_bytes = bincode::serialize(proposal).unwrap();
+        let proposal: Proposal<SeqTypes, VidDisperseShare<SeqTypes>> =
+            convert_proposal(proposal.clone());
+        let data_bytes = bincode::serialize(&proposal).unwrap();
 
         let mut tx = self.db.write().await?;
         tx.upsert(
-            "vid_share",
+            "vid_share2",
             ["view", "data", "payload_hash"],
             ["view"],
             [(view as i64, data_bytes, payload_hash.to_string())],
