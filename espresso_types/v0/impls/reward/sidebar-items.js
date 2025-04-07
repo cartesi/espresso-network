@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["apply_rewards","catchup_missing_accounts","compute_rewards","first_two_epochs"]};
+window.SIDEBAR_ITEMS = {"fn":["apply_rewards","compute_rewards","find_validator_info","first_two_epochs"]};
