@@ -164,7 +164,7 @@
 <a href=#164 id=164 data-nosnippet>164</a>                <span class="kw">let </span><span class="prelude-val">Ok</span>(epoch_membership) =
 <a href=#165 id=165 data-nosnippet>165</a>                    <span class="self">self</span>.membership.membership_for_epoch(proposal_epoch).<span class="kw">await
 <a href=#166 id=166 data-nosnippet>166</a>                else </span>{
-<a href=#167 id=167 data-nosnippet>167</a>                    <span class="macro">tracing::warn!</span>(<span class="string">"No Stake table for epoch = {:?}"</span>, proposal_epoch);
+<a href=#167 id=167 data-nosnippet>167</a>                    <span class="macro">tracing::warn!</span>(<span class="string">"No Stake table for epoch = {proposal_epoch:?}"</span>);
 <a href=#168 id=168 data-nosnippet>168</a>                    <span class="kw">return</span>;
 <a href=#169 id=169 data-nosnippet>169</a>                };
 <a href=#170 id=170 data-nosnippet>170</a>                <span class="kw">let </span>validation_info = ValidationInfo::&lt;TYPES, I, V&gt; {

@@ -717,12 +717,12 @@
 <a href=#717 id=717 data-nosnippet>717</a>                .<span class="kw">await
 <a href=#718 id=718 data-nosnippet>718</a>            </span>{
 <a href=#719 id=719 data-nosnippet>719</a>                <span class="macro">tracing::warn!</span>(
-<a href=#720 id=720 data-nosnippet>720</a>                    <span class="string">"Error {e} sending get_available_blocks request for parent {state_id}"</span>,
-<a href=#721 id=721 data-nosnippet>721</a>                );
+<a href=#720 id=720 data-nosnippet>720</a>                    <span class="string">"Error {e} sending get_available_blocks request for parent {state_id}"
+<a href=#721 id=721 data-nosnippet>721</a>                </span>);
 <a href=#722 id=722 data-nosnippet>722</a>            }
 <a href=#723 id=723 data-nosnippet>723</a>        }
 <a href=#724 id=724 data-nosnippet>724</a>
-<a href=#725 id=725 data-nosnippet>725</a>        <span class="macro">tracing::debug!</span>(<span class="string">"Waiting for response for get_available_blocks with parent {state_id}"</span>,);
+<a href=#725 id=725 data-nosnippet>725</a>        <span class="macro">tracing::debug!</span>(<span class="string">"Waiting for response for get_available_blocks with parent {state_id}"</span>);
 <a href=#726 id=726 data-nosnippet>726</a>
 <a href=#727 id=727 data-nosnippet>727</a>        <span class="kw">let </span>response_received = <span class="kw">loop </span>{
 <a href=#728 id=728 data-nosnippet>728</a>            <span class="kw">match </span>timeout(check_duration, response_receiver.recv()).<span class="kw">await </span>{
@@ -737,7 +737,7 @@
 <a href=#737 id=737 data-nosnippet>737</a>                            </span>.builder_state_to_last_built_block
 <a href=#738 id=738 data-nosnippet>738</a>                            .get(<span class="kw-2">&amp;</span>state_id)
 <a href=#739 id=739 data-nosnippet>739</a>                        {
-<a href=#740 id=740 data-nosnippet>740</a>                            <span class="macro">tracing::info!</span>(<span class="string">"Returning last built block for parent {state_id}"</span>,);
+<a href=#740 id=740 data-nosnippet>740</a>                            <span class="macro">tracing::info!</span>(<span class="string">"Returning last built block for parent {state_id}"</span>);
 <a href=#741 id=741 data-nosnippet>741</a>                            <span class="kw">break </span><span class="prelude-val">Ok</span>(last_built_block.clone());
 <a href=#742 id=742 data-nosnippet>742</a>                        }
 <a href=#743 id=743 data-nosnippet>743</a>                        <span class="kw">break </span><span class="prelude-val">Err</span>(AvailableBlocksError::NoBlocksAvailable);

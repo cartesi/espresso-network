@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">match </span>event.as_ref() {
 <a href=#109 id=109 data-nosnippet>109</a>            HotShotEvent::UpgradeProposalRecv(proposal, sender) =&gt; {
-<a href=#110 id=110 data-nosnippet>110</a>                <span class="macro">tracing::info!</span>(<span class="string">"Received upgrade proposal: {:?}"</span>, proposal);
+<a href=#110 id=110 data-nosnippet>110</a>                <span class="macro">tracing::info!</span>(<span class="string">"Received upgrade proposal: {proposal:?}"</span>);
 <a href=#111 id=111 data-nosnippet>111</a>
 <a href=#112 id=112 data-nosnippet>112</a>                <span class="kw">let </span>view = <span class="kw-2">*</span>proposal.data.view_number();
 <a href=#113 id=113 data-nosnippet>113</a>
@@ -311,7 +311,7 @@
 <a href=#311 id=311 data-nosnippet>311</a>                    )
 <a href=#312 id=312 data-nosnippet>312</a>                    .expect(<span class="string">"Failed to sign upgrade proposal commitment!"</span>);
 <a href=#313 id=313 data-nosnippet>313</a>
-<a href=#314 id=314 data-nosnippet>314</a>                    <span class="macro">tracing::warn!</span>(<span class="string">"Sending upgrade proposal:\n\n {:?}"</span>, upgrade_proposal);
+<a href=#314 id=314 data-nosnippet>314</a>                    <span class="macro">tracing::warn!</span>(<span class="string">"Sending upgrade proposal:\n\n {upgrade_proposal:?}"</span>);
 <a href=#315 id=315 data-nosnippet>315</a>
 <a href=#316 id=316 data-nosnippet>316</a>                    <span class="kw">let </span>message = Proposal {
 <a href=#317 id=317 data-nosnippet>317</a>                        data: upgrade_proposal,

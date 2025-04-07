@@ -569,7 +569,7 @@
 <a href=#569 id=569 data-nosnippet>569</a>                    </span>.membership_coordinator
 <a href=#570 id=570 data-nosnippet>570</a>                    .stake_table_for_epoch(epoch_number)
 <a href=#571 id=571 data-nosnippet>571</a>                    .<span class="kw">await
-<a href=#572 id=572 data-nosnippet>572</a>                    </span>.context(<span class="macro">warn!</span>(<span class="string">"No Stake Table for Epoch = {:?}"</span>, epoch_number))<span class="question-mark">?</span>;
+<a href=#572 id=572 data-nosnippet>572</a>                    </span>.context(<span class="macro">warn!</span>(<span class="string">"No Stake Table for Epoch = {epoch_number:?}"</span>))<span class="question-mark">?</span>;
 <a href=#573 id=573 data-nosnippet>573</a>
 <a href=#574 id=574 data-nosnippet>574</a>                <span class="kw">let </span>membership_stake_table = epoch_membership.stake_table().<span class="kw">await</span>;
 <a href=#575 id=575 data-nosnippet>575</a>                <span class="kw">let </span>membership_success_threshold = epoch_membership.success_threshold().<span class="kw">await</span>;
