@@ -477,6 +477,7 @@ pub(crate) async fn submit_vote<TYPES: NodeType, I: NodeImplementation<TYPES>, V
     epoch_root_vote: bool,
     epoch_height: u64,
     state_private_key: &<TYPES::StateSignatureKey as StateSignatureKey>::StatePrivateKey,
+    id: u64,
 ) -> Result<()> {
     let committee_member_in_current_epoch = membership.has_stake(&public_key).await;
     // If the proposed leaf is for the last block in the epoch and the node is part of the quorum committee
@@ -567,9 +568,10 @@ pub(crate) async fn submit_vote<TYPES: NodeType, I: NodeImplementation<TYPES>, V
         )
         .await;
     } else {
-        tracing::debug!(
-            "sending vote to next quorum leader {:?}",
-            vote.view_number() + 1
+        tracing::error!(
+            "sending vote to next quorum leader {:?}, my id is {}",
+            vote.view_number() + 1,
+            id
         );
         broadcast_event(Arc::new(HotShotEvent::QuorumVoteSend(vote)), &sender).await;
     }

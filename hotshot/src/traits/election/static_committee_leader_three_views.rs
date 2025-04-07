@@ -179,7 +179,7 @@ impl<TYPES: NodeType> Membership<TYPES> for StaticCommitteeLeaderForThreeViews<T
         _epoch: Option<<TYPES as NodeType>::Epoch>,
     ) -> Result<TYPES::SignatureKey> {
         let index =
-            usize::try_from((*view_number / 3) % self.eligible_leaders.len() as u64).unwrap();
+            usize::try_from((*view_number / 10) % self.eligible_leaders.len() as u64).unwrap();
         let res = self.eligible_leaders[index].clone();
 
         Ok(TYPES::SignatureKey::public_key(&res.stake_table_entry))
@@ -197,7 +197,7 @@ impl<TYPES: NodeType> Membership<TYPES> for StaticCommitteeLeaderForThreeViews<T
 
     /// Get the voting success threshold for the committee
     fn success_threshold(&self, _epoch: Option<<TYPES as NodeType>::Epoch>) -> U256 {
-        U256::from(((self.stake_table.len() as u64 * 2) / 3) + 1)
+        U256::from(self.stake_table.len() as u64)
     }
 
     /// Get the voting success threshold for the committee

@@ -300,6 +300,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
             is_vote_epoch_root,
             self.epoch_height,
             &self.state_private_key,
+            self.id,
         )
         .await
         {
