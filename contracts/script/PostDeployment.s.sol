@@ -31,7 +31,7 @@ contract PostDeploymentEsp is Script {
         address initialGrantRecipient,
         string memory name,
         string memory symbol
-    ) external {
+    ) external view {
         EspToken token = EspToken(proxyAddress);
 
         if (keccak256(bytes(token.name())) != keccak256(bytes(name))) {
@@ -82,7 +82,7 @@ contract PostDeploymentStakeTable is Script {
         address owner,
         address lightClientAddress,
         uint256 exitEscrowPeriod
-    ) external {
+    ) external view {
         StakeTable stakeTable = StakeTable(proxyAddress);
         EspToken token = EspToken(tokenProxyAddress);
 
@@ -124,7 +124,7 @@ contract GnosisSafeCheck is Script {
     error InvalidOwnersLength(uint256 length);
     error InvalidThreshold(uint256 threshold);
 
-    function run(address safeAddress) external {
+    function run(address safeAddress) external view {
         IGnosisSafe safe = IGnosisSafe(safeAddress);
         address[] memory owners = safe.getOwners();
         uint256 threshold = safe.getThreshold();
