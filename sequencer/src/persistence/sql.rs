@@ -735,6 +735,24 @@ impl Persistence {
                 })
                 .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
 
+            // Collect state certs for the decide event.
+            let state_certs = tx
+                .fetch_all(
+                    query(
+                        "SELECT view, state_cert FROM state_cert WHERE view >= $1 AND view <= $2",
+                    )
+                    .bind(from_view.u64() as i64)
+                    .bind(to_view.u64() as i64),
+                )
+                .await?
+                .into_iter()
+                .map(|row| {
+                    let data: Vec<u8> = row.get("state_cert");
+                    let state_cert =
+                        bincode::deserialize::<LightClientStateUpdateCertificate<SeqTypes>>(&data)?;
+                    Ok((state_cert.epoch.u64(), state_cert))
+                })
+                .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
             drop(tx);
 
             // Collate all the information by view number and construct a chain of leaves.
@@ -764,9 +782,14 @@ impl Persistence {
                         tracing::debug!(?view, "DA proposal not available at decide");
                     }
 
+                    let state_cert = state_certs
+                        .get(&view)
+                        .cloned();
+
                     LeafInfo {
                         leaf,
                         vid_share,
+                        state_cert,
                         // Note: the following fields are not used in Decide event processing, and
                         // should be removed. For now, we just default them.
                         state: Default::default(),
@@ -803,6 +826,18 @@ impl Persistence {
             )
             .await?;
 
+            // Store all the finalized state certs
+            for (epoch, state_cert) in state_certs {
+                let state_cert_bytes = bincode::serialize(&state_cert)?;
+                tx.upsert(
+                    "finalized_state_cert",
+                    ["epoch", "state_cert"],
+                    ["epoch"],
+                    [(epoch as i64, state_cert_bytes)],
+                )
+                .await?;
+            }
+
             // Delete the data that has been fully processed.
             tx.execute(
                 query("DELETE FROM vid_share2 where view >= $1 AND view <= $2")
@@ -824,6 +859,12 @@ impl Persistence {
             .await?;
             tx.execute(
                 query("DELETE FROM quorum_certificate2 where view >= $1 AND view <= $2")
+                    .bind(from_view.u64() as i64)
+                    .bind(to_view.u64() as i64),
+            )
+            .await?;
+            tx.execute(
+                query("DELETE FROM state_cert where view >= $1 AND view <= $2")
                     .bind(from_view.u64() as i64)
                     .bind(to_view.u64() as i64),
             )
@@ -1158,7 +1199,6 @@ impl SequencerPersistence for Persistence {
         .await?;
         tx.commit().await
     }
-
     async fn append_vid2(
         &self,
         proposal: &Proposal<SeqTypes, VidDisperseShare2<SeqTypes>>,
@@ -1362,7 +1402,7 @@ impl SequencerPersistence for Persistence {
             let mut tx = self.db.write().await?;
             query.execute(tx.as_mut()).await?;
 
-            offset += batch_size;
+            offset += rows.len() as i64 as i64;
 
             tx.upsert(
                 "epoch_migration",
@@ -1461,7 +1501,7 @@ impl SequencerPersistence for Persistence {
             let mut tx = self.db.write().await?;
             query.execute(tx.as_mut()).await?;
 
-            offset += batch_size;
+            offset += rows.len() as i64;
             tx.upsert(
                 "epoch_migration",
                 ["table_name", "completed", "migrated_rows"],
@@ -1557,7 +1597,7 @@ impl SequencerPersistence for Persistence {
             let mut tx = self.db.write().await?;
             query.execute(tx.as_mut()).await?;
 
-            offset += batch_size;
+            offset += rows.len() as i64;
             tx.upsert(
                 "epoch_migration",
                 ["table_name", "completed", "migrated_rows"],
@@ -1657,7 +1697,7 @@ impl SequencerPersistence for Persistence {
             let mut tx = self.db.write().await?;
             query.execute(tx.as_mut()).await?;
 
-            offset += batch_size;
+            offset += rows.len() as i64;
             tx.upsert(
                 "epoch_migration",
                 ["table_name", "completed", "migrated_rows"],
@@ -1752,7 +1792,7 @@ impl SequencerPersistence for Persistence {
             let mut tx = self.db.write().await?;
             query.execute(tx.as_mut()).await?;
 
-            offset += batch_size;
+            offset += rows.len() as i64;
             tx.upsert(
                 "epoch_migration",
                 ["table_name", "completed", "migrated_rows"],
@@ -1889,9 +1929,12 @@ impl SequencerPersistence for Persistence {
         let mut tx = self.db.write().await?;
         tx.upsert(
             "state_cert",
-            ["epoch", "state_cert"],
-            ["epoch"],
-            [(state_cert.epoch.u64() as i64, state_cert_bytes)],
+            ["view", "state_cert"],
+            ["view"],
+            [(
+                state_cert.light_client_state.view_number as i64,
+                state_cert_bytes,
+            )],
         )
         .await?;
         tx.commit().await
@@ -1904,7 +1947,9 @@ impl SequencerPersistence for Persistence {
             .db
             .read()
             .await?
-            .fetch_optional("SELECT state_cert from state_cert ORDER BY epoch DESC LIMIT 1")
+            .fetch_optional(
+                "SELECT state_cert FROM finalized_state_cert ORDER BY epoch DESC LIMIT 1",
+            )
             .await?
         else {
             return Ok(None);
@@ -2670,13 +2715,6 @@ mod test {
                 metadata,
             );
 
-            let state_cert = LightClientStateUpdateCertificate::<SeqTypes> {
-                epoch: EpochNumber::new(i),
-                light_client_state: Default::default(), // filling arbitrary value
-                signatures: vec![],                     // filling arbitrary value
-            };
-            assert!(storage.add_state_cert(state_cert).await.is_ok());
-
             let null_quorum_data = QuorumData {
                 leaf_commit: Commitment::<Leaf>::default_commitment_no_preimage(),
             };
@@ -2732,6 +2770,24 @@ mod test {
             )
             .await
             .unwrap();
+
+            let state_cert = LightClientStateUpdateCertificate::<SeqTypes> {
+                epoch: EpochNumber::new(i),
+                light_client_state: Default::default(), // filling arbitrary value
+                next_stake_table_state: Default::default(), // filling arbitrary value
+                signatures: vec![],                     // filling arbitrary value
+            };
+            // manually upsert the state cert to the finalized database
+            let state_cert_bytes = bincode::serialize(&state_cert).unwrap();
+            tx.upsert(
+                "finalized_state_cert",
+                ["epoch", "state_cert"],
+                ["epoch"],
+                [(i as i64, state_cert_bytes)],
+            )
+            .await
+            .unwrap();
+
             tx.commit().await.unwrap();
 
             let disperse = advz_scheme(4).disperse(payload_bytes.clone()).unwrap();
@@ -2854,7 +2910,7 @@ mod test {
             "quorum certificates count does not match rows",
         );
 
-        let (state_cert_count,) = query_as::<(i64,)>("SELECT COUNT(*) from state_cert")
+        let (state_cert_count,) = query_as::<(i64,)>("SELECT COUNT(*) from finalized_state_cert")
             .fetch_one(tx.as_mut())
             .await
             .unwrap();
@@ -2867,6 +2923,7 @@ mod test {
             LightClientStateUpdateCertificate::<SeqTypes> {
                 epoch: EpochNumber::new(rows - 1),
                 light_client_state: Default::default(),
+                next_stake_table_state: Default::default(),
                 signatures: vec![]
             },
             "Wrong light client state update certificate in the storage",

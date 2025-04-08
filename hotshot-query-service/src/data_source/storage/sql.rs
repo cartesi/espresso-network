@@ -905,17 +905,6 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 let new_vid_common_bytes = bincode::serialize(&VidCommon::V0(vid_common))
                     .context("failed to serialize vid_common")?;
 
-                let vid_share_bytes: Result<Vec<u8>, _> = row.try_get("vid_share");
-                let new_vid_share_bytes = if let Ok(bytes) = vid_share_bytes {
-                    let vid_share: ADVZShare =
-                        bincode::deserialize(&bytes).context("failed to deserialize vid_share")?;
-
-                    bincode::serialize(&VidShare::V0(vid_share))
-                        .context("failed to serialize vid_share")?
-                } else {
-                    vec![]
-                };
-
                 vid_rows.push((
                     leaf2.height() as i64,
                     new_vid_common_bytes,
@@ -952,7 +941,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 message: err.to_string(),
             })?;
 
-            query.execute(tx.as_mut()).await;
+            let _ = query.execute(tx.as_mut()).await;
 
             // update migrated_rows column with the offset
             tx.upsert(
