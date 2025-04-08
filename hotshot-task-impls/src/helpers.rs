@@ -257,6 +257,8 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         let write_callback = {
             tracing::debug!("Calling add_epoch_root for epoch {:?}", next_epoch_number);
             let membership_reader = membership.read().await;
+            // @audit-issue: this can be expensive and may cause a failure if it overloads
+            // the infura endpoint.
             membership_reader
                 .add_epoch_root(next_epoch_number, decided_leaf.block_header().clone())
                 .await
