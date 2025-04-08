@@ -128,7 +128,7 @@
 <a href=#128 id=128 data-nosnippet>128</a>///   is strictly smaller than the cdf entry
 <a href=#129 id=129 data-nosnippet>129</a>/// - return the corresponding node as the leader for that view
 <a href=#130 id=130 data-nosnippet>130</a></span><span class="kw">pub mod </span>election {
-<a href=#131 id=131 data-nosnippet>131</a>    <span class="kw">use </span>primitive_types::{U256, U512};
+<a href=#131 id=131 data-nosnippet>131</a>    <span class="kw">use </span>alloy::primitives::{U256, U512};
 <a href=#132 id=132 data-nosnippet>132</a>    <span class="kw">use </span>sha2::{Digest, Sha256, Sha512};
 <a href=#133 id=133 data-nosnippet>133</a>
 <a href=#134 id=134 data-nosnippet>134</a>    <span class="kw">use </span><span class="kw">crate</span>::traits::signature_key::{SignatureKey, StakeTableEntryType};
@@ -204,10 +204,10 @@
 <a href=#204 id=204 data-nosnippet>204</a>
 <a href=#205 id=205 data-nosnippet>205</a>        <span class="comment">// then calculate the remainder modulo the total stake as a U512
 <a href=#206 id=206 data-nosnippet>206</a>        </span><span class="kw">let </span>remainder: U512 =
-<a href=#207 id=207 data-nosnippet>207</a>            U512::from_little_endian(<span class="kw-2">&amp;</span>raw_breakpoint) % U512::from(cdf.last().unwrap().<span class="number">1</span>);
+<a href=#207 id=207 data-nosnippet>207</a>            U512::from_le_bytes(raw_breakpoint) % U512::from(cdf.last().unwrap().<span class="number">1</span>);
 <a href=#208 id=208 data-nosnippet>208</a>
 <a href=#209 id=209 data-nosnippet>209</a>        <span class="comment">// and drop the top 32 bytes, downcasting to a U256
-<a href=#210 id=210 data-nosnippet>210</a>        </span><span class="kw">let </span>breakpoint: U256 = U256::try_from(remainder).unwrap();
+<a href=#210 id=210 data-nosnippet>210</a>        </span><span class="kw">let </span>breakpoint: U256 = U256::from_le_slice(<span class="kw-2">&amp;</span>remainder.to_le_bytes_vec()[<span class="number">32</span>..]);
 <a href=#211 id=211 data-nosnippet>211</a>
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="comment">// now find the first index where the breakpoint is strictly smaller than the cdf
 <a href=#213 id=213 data-nosnippet>213</a>        //

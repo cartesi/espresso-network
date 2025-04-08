@@ -6,12 +6,12 @@
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="doccomment">//! Utilities and internals for maintaining a local stake table
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span>ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>ark_std::{hash::Hash, sync::Arc, vec, vec::Vec};
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>hotshot_types::traits::stake_table::StakeTableError;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>jf_crhf::CRHF;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>jf_utils::canonical;
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>primitive_types::U256;
+<a href=#9 id=9 data-nosnippet>9</a></span><span class="kw">use </span>alloy::primitives::U256;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>ark_std::{hash::Hash, sync::Arc, vec, vec::Vec};
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>hotshot_types::traits::stake_table::StakeTableError;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>jf_crhf::CRHF;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>jf_utils::canonical;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>serde::{Deserialize, Serialize};
 <a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>tagged_base64::tagged;
 <a href=#17 id=17 data-nosnippet>17</a>
@@ -249,7 +249,7 @@
 <a href=#249 id=249 data-nosnippet>249</a>    <span class="doccomment">/// Returns the total stakes in this subtree
 <a href=#250 id=250 data-nosnippet>250</a>    </span><span class="kw">pub fn </span>total_stakes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; U256 {
 <a href=#251 id=251 data-nosnippet>251</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#252 id=252 data-nosnippet>252</a>            PersistentMerkleNode::Empty =&gt; U256::zero(),
+<a href=#252 id=252 data-nosnippet>252</a>            PersistentMerkleNode::Empty =&gt; U256::ZERO,
 <a href=#253 id=253 data-nosnippet>253</a>            PersistentMerkleNode::Branch {
 <a href=#254 id=254 data-nosnippet>254</a>                comm: <span class="kw">_</span>,
 <a href=#255 id=255 data-nosnippet>255</a>                children: <span class="kw">_</span>,
@@ -391,7 +391,7 @@
 <a href=#391 id=391 data-nosnippet>391</a>            <span class="kw">let </span>total_stakes = children
 <a href=#392 id=392 data-nosnippet>392</a>                .iter()
 <a href=#393 id=393 data-nosnippet>393</a>                .map(|child| child.total_stakes())
-<a href=#394 id=394 data-nosnippet>394</a>                .fold(U256::zero(), |sum, val| sum + val);
+<a href=#394 id=394 data-nosnippet>394</a>                .fold(U256::ZERO, |sum, val| sum + val);
 <a href=#395 id=395 data-nosnippet>395</a>            <span class="kw">let </span>comm = Digest::evaluate(children.clone().map(|child| child.commitment()))
 <a href=#396 id=396 data-nosnippet>396</a>                .map_err(|<span class="kw">_</span>| StakeTableError::RescueError)<span class="question-mark">?</span>[<span class="number">0</span>];
 <a href=#397 id=397 data-nosnippet>397</a>            <span class="prelude-val">Ok</span>(Arc::new(PersistentMerkleNode::Branch {
@@ -429,7 +429,7 @@
 <a href=#429 id=429 data-nosnippet>429</a>                <span class="kw">let </span>total_stakes = children
 <a href=#430 id=430 data-nosnippet>430</a>                    .iter()
 <a href=#431 id=431 data-nosnippet>431</a>                    .map(|child| child.total_stakes())
-<a href=#432 id=432 data-nosnippet>432</a>                    .fold(U256::zero(), |sum, val| sum + val);
+<a href=#432 id=432 data-nosnippet>432</a>                    .fold(U256::ZERO, |sum, val| sum + val);
 <a href=#433 id=433 data-nosnippet>433</a>                <span class="kw">let </span>comm = Digest::evaluate(children.clone().map(|child| child.commitment()))
 <a href=#434 id=434 data-nosnippet>434</a>                    .map_err(|<span class="kw">_</span>| StakeTableError::RescueError)<span class="question-mark">?</span>[<span class="number">0</span>];
 <a href=#435 id=435 data-nosnippet>435</a>                <span class="prelude-val">Ok</span>((
@@ -505,7 +505,7 @@
 <a href=#505 id=505 data-nosnippet>505</a>                    <span class="kw">let </span>total_stakes = children
 <a href=#506 id=506 data-nosnippet>506</a>                        .iter()
 <a href=#507 id=507 data-nosnippet>507</a>                        .map(|child| child.total_stakes())
-<a href=#508 id=508 data-nosnippet>508</a>                        .fold(U256::zero(), |sum, val| sum + val);
+<a href=#508 id=508 data-nosnippet>508</a>                        .fold(U256::ZERO, |sum, val| sum + val);
 <a href=#509 id=509 data-nosnippet>509</a>                    <span class="kw">let </span>comm = Digest::evaluate(children.clone().map(|child| child.commitment()))
 <a href=#510 id=510 data-nosnippet>510</a>                        .map_err(|<span class="kw">_</span>| StakeTableError::RescueError)<span class="question-mark">?</span>[<span class="number">0</span>];
 <a href=#511 id=511 data-nosnippet>511</a>                    <span class="prelude-val">Ok</span>((
@@ -625,14 +625,14 @@
 <a href=#625 id=625 data-nosnippet>625</a>
 <a href=#626 id=626 data-nosnippet>626</a><span class="attr">#[cfg(test)]
 <a href=#627 id=627 data-nosnippet>627</a></span><span class="kw">mod </span>tests {
-<a href=#628 id=628 data-nosnippet>628</a>    <span class="kw">use </span>ark_std::{
-<a href=#629 id=629 data-nosnippet>629</a>        rand::{Rng, RngCore},
-<a href=#630 id=630 data-nosnippet>630</a>        sync::Arc,
-<a href=#631 id=631 data-nosnippet>631</a>        vec,
-<a href=#632 id=632 data-nosnippet>632</a>        vec::Vec,
-<a href=#633 id=633 data-nosnippet>633</a>    };
-<a href=#634 id=634 data-nosnippet>634</a>    <span class="kw">use </span>jf_utils::test_rng;
-<a href=#635 id=635 data-nosnippet>635</a>    <span class="kw">use </span>primitive_types::U256;
+<a href=#628 id=628 data-nosnippet>628</a>    <span class="kw">use </span>alloy::primitives::U256;
+<a href=#629 id=629 data-nosnippet>629</a>    <span class="kw">use </span>ark_std::{
+<a href=#630 id=630 data-nosnippet>630</a>        rand::{Rng, RngCore},
+<a href=#631 id=631 data-nosnippet>631</a>        sync::Arc,
+<a href=#632 id=632 data-nosnippet>632</a>        vec,
+<a href=#633 id=633 data-nosnippet>633</a>        vec::Vec,
+<a href=#634 id=634 data-nosnippet>634</a>    };
+<a href=#635 id=635 data-nosnippet>635</a>    <span class="kw">use </span>jf_utils::test_rng;
 <a href=#636 id=636 data-nosnippet>636</a>
 <a href=#637 id=637 data-nosnippet>637</a>    <span class="kw">use super</span>::{<span class="kw">super</span>::config, to_merkle_path, PersistentMerkleNode};
 <a href=#638 id=638 data-nosnippet>638</a>

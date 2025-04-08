@@ -9,39 +9,39 @@
 <a href=#9 id=9 data-nosnippet>9</a>    sync::Arc,
 <a href=#10 id=10 data-nosnippet>10</a>};
 <a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>async_broadcast::broadcast;
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>async_lock::RwLock;
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>async_trait::async_trait;
-<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>futures::future::join_all;
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>hotshot::{
-<a href=#17 id=17 data-nosnippet>17</a>    traits::TestableNodeImplementation, types::EventType, HotShotInitializer, InitializerEpochInfo,
-<a href=#18 id=18 data-nosnippet>18</a>    SystemContext,
-<a href=#19 id=19 data-nosnippet>19</a>};
-<a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span>hotshot_example_types::{
-<a href=#21 id=21 data-nosnippet>21</a>    auction_results_provider_types::TestAuctionResultsProvider,
-<a href=#22 id=22 data-nosnippet>22</a>    block_types::TestBlockHeader,
-<a href=#23 id=23 data-nosnippet>23</a>    state_types::{TestInstanceState, TestValidatedState},
-<a href=#24 id=24 data-nosnippet>24</a>    storage_types::TestStorage,
-<a href=#25 id=25 data-nosnippet>25</a>    testable_delay::DelayConfig,
-<a href=#26 id=26 data-nosnippet>26</a>};
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>hotshot_types::{
-<a href=#28 id=28 data-nosnippet>28</a>    constants::EVENT_CHANNEL_SIZE,
-<a href=#29 id=29 data-nosnippet>29</a>    data::Leaf2,
-<a href=#30 id=30 data-nosnippet>30</a>    event::Event,
-<a href=#31 id=31 data-nosnippet>31</a>    message::convert_proposal,
-<a href=#32 id=32 data-nosnippet>32</a>    simple_certificate::{
-<a href=#33 id=33 data-nosnippet>33</a>        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate2,
-<a href=#34 id=34 data-nosnippet>34</a>    },
-<a href=#35 id=35 data-nosnippet>35</a>    traits::{
-<a href=#36 id=36 data-nosnippet>36</a>        network::{AsyncGenerator, ConnectedNetwork},
-<a href=#37 id=37 data-nosnippet>37</a>        node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
-<a href=#38 id=38 data-nosnippet>38</a>    },
-<a href=#39 id=39 data-nosnippet>39</a>    utils::genesis_epoch_from_version,
-<a href=#40 id=40 data-nosnippet>40</a>    vote::HasViewNumber,
-<a href=#41 id=41 data-nosnippet>41</a>    ValidatorConfig,
-<a href=#42 id=42 data-nosnippet>42</a>};
-<a href=#43 id=43 data-nosnippet>43</a><span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
-<a href=#44 id=44 data-nosnippet>44</a><span class="kw">use </span>primitive_types::U256;
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>alloy::primitives::U256;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>async_broadcast::broadcast;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>async_lock::RwLock;
+<a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>async_trait::async_trait;
+<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>futures::future::join_all;
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span>hotshot::{
+<a href=#18 id=18 data-nosnippet>18</a>    traits::TestableNodeImplementation, types::EventType, HotShotInitializer, InitializerEpochInfo,
+<a href=#19 id=19 data-nosnippet>19</a>    SystemContext,
+<a href=#20 id=20 data-nosnippet>20</a>};
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>hotshot_example_types::{
+<a href=#22 id=22 data-nosnippet>22</a>    auction_results_provider_types::TestAuctionResultsProvider,
+<a href=#23 id=23 data-nosnippet>23</a>    block_types::TestBlockHeader,
+<a href=#24 id=24 data-nosnippet>24</a>    state_types::{TestInstanceState, TestValidatedState},
+<a href=#25 id=25 data-nosnippet>25</a>    storage_types::TestStorage,
+<a href=#26 id=26 data-nosnippet>26</a>    testable_delay::DelayConfig,
+<a href=#27 id=27 data-nosnippet>27</a>};
+<a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>hotshot_types::{
+<a href=#29 id=29 data-nosnippet>29</a>    constants::EVENT_CHANNEL_SIZE,
+<a href=#30 id=30 data-nosnippet>30</a>    data::Leaf2,
+<a href=#31 id=31 data-nosnippet>31</a>    event::Event,
+<a href=#32 id=32 data-nosnippet>32</a>    message::convert_proposal,
+<a href=#33 id=33 data-nosnippet>33</a>    simple_certificate::{
+<a href=#34 id=34 data-nosnippet>34</a>        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate2,
+<a href=#35 id=35 data-nosnippet>35</a>    },
+<a href=#36 id=36 data-nosnippet>36</a>    traits::{
+<a href=#37 id=37 data-nosnippet>37</a>        network::{AsyncGenerator, ConnectedNetwork},
+<a href=#38 id=38 data-nosnippet>38</a>        node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
+<a href=#39 id=39 data-nosnippet>39</a>    },
+<a href=#40 id=40 data-nosnippet>40</a>    utils::genesis_epoch_from_version,
+<a href=#41 id=41 data-nosnippet>41</a>    vote::HasViewNumber,
+<a href=#42 id=42 data-nosnippet>42</a>    ValidatorConfig,
+<a href=#43 id=43 data-nosnippet>43</a>};
+<a href=#44 id=44 data-nosnippet>44</a><span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <a href=#45 id=45 data-nosnippet>45</a>
 <a href=#46 id=46 data-nosnippet>46</a><span class="kw">use crate</span>::{
 <a href=#47 id=47 data-nosnippet>47</a>    test_launcher::Network,

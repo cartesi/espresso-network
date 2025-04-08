@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["u256_to_field"],"trait":["ToFields"]};
+window.SIDEBAR_ITEMS = {"fn":["one_honest_threshold","u256_to_field"],"trait":["ToFields"]};

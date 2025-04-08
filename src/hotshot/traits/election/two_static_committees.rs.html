@@ -9,17 +9,17 @@
 <a href=#9 id=9 data-nosnippet>9</a>    collections::{BTreeMap, BTreeSet},
 <a href=#10 id=10 data-nosnippet>10</a>};
 <a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>hotshot_types::{
-<a href=#13 id=13 data-nosnippet>13</a>    drb::DrbResult,
-<a href=#14 id=14 data-nosnippet>14</a>    traits::{
-<a href=#15 id=15 data-nosnippet>15</a>        election::Membership,
-<a href=#16 id=16 data-nosnippet>16</a>        node_implementation::NodeType,
-<a href=#17 id=17 data-nosnippet>17</a>        signature_key::{SignatureKey, StakeTableEntryType},
-<a href=#18 id=18 data-nosnippet>18</a>    },
-<a href=#19 id=19 data-nosnippet>19</a>    PeerConfig,
-<a href=#20 id=20 data-nosnippet>20</a>};
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>hotshot_utils::anytrace::Result;
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>primitive_types::U256;
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>alloy::primitives::U256;
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>hotshot_types::{
+<a href=#14 id=14 data-nosnippet>14</a>    drb::DrbResult,
+<a href=#15 id=15 data-nosnippet>15</a>    traits::{
+<a href=#16 id=16 data-nosnippet>16</a>        election::Membership,
+<a href=#17 id=17 data-nosnippet>17</a>        node_implementation::NodeType,
+<a href=#18 id=18 data-nosnippet>18</a>        signature_key::{SignatureKey, StakeTableEntryType},
+<a href=#19 id=19 data-nosnippet>19</a>    },
+<a href=#20 id=20 data-nosnippet>20</a>    PeerConfig,
+<a href=#21 id=21 data-nosnippet>21</a>};
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>hotshot_utils::anytrace::Result;
 <a href=#23 id=23 data-nosnippet>23</a>
 <a href=#24 id=24 data-nosnippet>24</a><span class="doccomment">/// Tuple type for eligible leaders
 <a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">type </span>EligibleLeaders&lt;T&gt; = (Vec&lt;PeerConfig&lt;T&gt;&gt;, Vec&lt;PeerConfig&lt;T&gt;&gt;);
@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>        </span><span class="kw">let </span>eligible_leaders: Vec&lt;PeerConfig&lt;TYPES&gt;&gt; = committee_members
 <a href=#63 id=63 data-nosnippet>63</a>            .clone()
 <a href=#64 id=64 data-nosnippet>64</a>            .into_iter()
-<a href=#65 id=65 data-nosnippet>65</a>            .filter(|member| member.stake_table_entry.stake() &gt; U256::zero())
+<a href=#65 id=65 data-nosnippet>65</a>            .filter(|member| member.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#66 id=66 data-nosnippet>66</a>            .collect();
 <a href=#67 id=67 data-nosnippet>67</a>
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>eligible_leaders1 = eligible_leaders
@@ -82,7 +82,7 @@
 <a href=#82 id=82 data-nosnippet>82</a>        </span><span class="kw">let </span>members: Vec&lt;PeerConfig&lt;TYPES&gt;&gt; = committee_members
 <a href=#83 id=83 data-nosnippet>83</a>            .clone()
 <a href=#84 id=84 data-nosnippet>84</a>            .into_iter()
-<a href=#85 id=85 data-nosnippet>85</a>            .filter(|member| member.stake_table_entry.stake() &gt; U256::zero())
+<a href=#85 id=85 data-nosnippet>85</a>            .filter(|member| member.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#86 id=86 data-nosnippet>86</a>            .collect();
 <a href=#87 id=87 data-nosnippet>87</a>
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>members1: Vec&lt;PeerConfig&lt;TYPES&gt;&gt; = members
@@ -102,7 +102,7 @@
 <a href=#102 id=102 data-nosnippet>102</a>        </span><span class="kw">let </span>da_members: Vec&lt;PeerConfig&lt;TYPES&gt;&gt; = da_members
 <a href=#103 id=103 data-nosnippet>103</a>            .clone()
 <a href=#104 id=104 data-nosnippet>104</a>            .into_iter()
-<a href=#105 id=105 data-nosnippet>105</a>            .filter(|member| member.stake_table_entry.stake() &gt; U256::zero())
+<a href=#105 id=105 data-nosnippet>105</a>            .filter(|member| member.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#106 id=106 data-nosnippet>106</a>            .collect();
 <a href=#107 id=107 data-nosnippet>107</a>
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>da_members1: Vec&lt;PeerConfig&lt;TYPES&gt;&gt; = da_members
@@ -274,12 +274,12 @@
 <a href=#274 id=274 data-nosnippet>274</a>            <span class="self">self</span>.indexed_stake_table
 <a href=#275 id=275 data-nosnippet>275</a>                .<span class="number">0
 <a href=#276 id=276 data-nosnippet>276</a>                </span>.get(pub_key)
-<a href=#277 id=277 data-nosnippet>277</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
+<a href=#277 id=277 data-nosnippet>277</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#278 id=278 data-nosnippet>278</a>        } <span class="kw">else </span>{
 <a href=#279 id=279 data-nosnippet>279</a>            <span class="self">self</span>.indexed_stake_table
 <a href=#280 id=280 data-nosnippet>280</a>                .<span class="number">1
 <a href=#281 id=281 data-nosnippet>281</a>                </span>.get(pub_key)
-<a href=#282 id=282 data-nosnippet>282</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
+<a href=#282 id=282 data-nosnippet>282</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#283 id=283 data-nosnippet>283</a>        }
 <a href=#284 id=284 data-nosnippet>284</a>    }
 <a href=#285 id=285 data-nosnippet>285</a>    <span class="doccomment">/// Check if a node has stake in the committee
@@ -293,12 +293,12 @@
 <a href=#293 id=293 data-nosnippet>293</a>            <span class="self">self</span>.indexed_da_stake_table
 <a href=#294 id=294 data-nosnippet>294</a>                .<span class="number">0
 <a href=#295 id=295 data-nosnippet>295</a>                </span>.get(pub_key)
-<a href=#296 id=296 data-nosnippet>296</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
+<a href=#296 id=296 data-nosnippet>296</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#297 id=297 data-nosnippet>297</a>        } <span class="kw">else </span>{
 <a href=#298 id=298 data-nosnippet>298</a>            <span class="self">self</span>.indexed_da_stake_table
 <a href=#299 id=299 data-nosnippet>299</a>                .<span class="number">1
 <a href=#300 id=300 data-nosnippet>300</a>                </span>.get(pub_key)
-<a href=#301 id=301 data-nosnippet>301</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::zero())
+<a href=#301 id=301 data-nosnippet>301</a>                .is_some_and(|x| x.stake_table_entry.stake() &gt; U256::ZERO)
 <a href=#302 id=302 data-nosnippet>302</a>        }
 <a href=#303 id=303 data-nosnippet>303</a>    }
 <a href=#304 id=304 data-nosnippet>304</a>

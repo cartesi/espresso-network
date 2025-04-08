@@ -12,7 +12,7 @@
         retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
         instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+        view: ViewNumber,
         fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
         account: &amp;'life2 [<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>],
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.FeeMerkleTree.html" title="type espresso_types::v0::v0_1::FeeMerkleTree">FeeMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
@@ -25,7 +25,7 @@
         retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
         instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+        view: ViewNumber,
         mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
        <span class="where">where Self: 'async_trait,
@@ -44,7 +44,7 @@
         retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
         instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+        view: ViewNumber,
         reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
         account: &amp;'life2 [<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>],
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.RewardMerkleTree.html" title="type espresso_types::v0::v0_1::RewardMerkleTree">RewardMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
@@ -59,7 +59,7 @@
     fn <a href="#method.fetch_leaf" class="fn">fetch_leaf</a>&lt;'life0, 'async_trait&gt;(
         &amp;'life0 self,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../../hotshot_types/struct.PeerConfig.html" title="struct hotshot_types::PeerConfig">PeerConfig</a>&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
+        stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;PeerConfig&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
         success_threshold: U256,
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../type.Leaf2.html" title="type espresso_types::v0::Leaf2">Leaf2</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
        <span class="where">where Self: 'async_trait,
@@ -68,7 +68,7 @@
         &amp;'life0 self,
         instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+        view: ViewNumber,
         fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
         accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>&gt;,
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccountProof.html" title="struct espresso_types::v0::v0_1::FeeAccountProof">FeeAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
@@ -79,7 +79,7 @@
         &amp;'life0 self,
         instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+        view: ViewNumber,
         mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
        <span class="where">where Self: 'async_trait,
@@ -96,7 +96,7 @@
         &amp;'life0 self,
         instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
         height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-        view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+        view: ViewNumber,
         reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
         accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>&gt;,
     ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccountProof.html" title="struct espresso_types::v0::v0_1::RewardAccountProof">RewardAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;
@@ -114,7 +114,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     account: &amp;'life2 [<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.FeeMerkleTree.html" title="type espresso_types::v0::v0_1::FeeMerkleTree">FeeMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -127,7 +127,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -145,7 +145,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     account: &amp;'life2 [<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.RewardMerkleTree.html" title="type espresso_types::v0::v0_1::RewardMerkleTree">RewardMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -156,7 +156,7 @@
 </div></details><section id="tymethod.backoff" class="method"><a class="src rightside" href="../../../src/espresso_types/v0/traits.rs.html#231">Source</a><h4 class="code-header">fn <a href="#tymethod.backoff" class="fn">backoff</a>(&amp;self) -&gt; &amp;<a class="struct" href="../struct.BackoffParams.html" title="struct espresso_types::v0::BackoffParams">BackoffParams</a></h4></section><section id="tymethod.name" class="method"><a class="src rightside" href="../../../src/espresso_types/v0/traits.rs.html#232">Source</a><h4 class="code-header">fn <a href="#tymethod.name" class="fn">name</a>(&amp;self) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/string/struct.String.html" title="struct alloc::string::String">String</a></h4></section></div><h2 id="provided-methods" class="section-header">Provided Methods<a href="#provided-methods" class="anchor">§</a></h2><div class="methods"><section id="method.fetch_leaf" class="method"><a class="src rightside" href="../../../src/espresso_types/v0/traits.rs.html#55-76">Source</a><h4 class="code-header">fn <a href="#method.fetch_leaf" class="fn">fetch_leaf</a>&lt;'life0, 'async_trait&gt;(
     &amp;'life0 self,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../../hotshot_types/struct.PeerConfig.html" title="struct hotshot_types::PeerConfig">PeerConfig</a>&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
+    stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;PeerConfig&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
     success_threshold: U256,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../type.Leaf2.html" title="type espresso_types::v0::Leaf2">Leaf2</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -164,7 +164,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>&gt;,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccountProof.html" title="struct espresso_types::v0::v0_1::FeeAccountProof">FeeAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -175,7 +175,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -191,7 +191,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>&gt;,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccountProof.html" title="struct espresso_types::v0::v0_1::RewardAccountProof">RewardAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -207,7 +207,7 @@
     'life0: 'async_trait,</div></h4></section><section id="method.fetch_leaf-1" class="method trait-impl"><a class="src rightside" href="../../../src/espresso_types/v0/traits.rs.html#241-250">Source</a><a href="#method.fetch_leaf-1" class="anchor">§</a><h4 class="code-header">fn <a href="#method.fetch_leaf" class="fn">fetch_leaf</a>&lt;'life0, 'async_trait&gt;(
     &amp;'life0 self,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../../hotshot_types/struct.PeerConfig.html" title="struct hotshot_types::PeerConfig">PeerConfig</a>&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
+    stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;PeerConfig&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
     success_threshold: U256,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../type.Leaf2.html" title="type espresso_types::v0::Leaf2">Leaf2</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -216,7 +216,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     accounts: &amp;'life2 [<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.FeeMerkleTree.html" title="type espresso_types::v0::v0_1::FeeMerkleTree">FeeMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -227,7 +227,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>&gt;,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccountProof.html" title="struct espresso_types::v0::v0_1::FeeAccountProof">FeeAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -238,7 +238,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -248,7 +248,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -270,7 +270,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     accounts: &amp;'life2 [<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.RewardMerkleTree.html" title="type espresso_types::v0::v0_1::RewardMerkleTree">RewardMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -281,7 +281,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>&gt;,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccountProof.html" title="struct espresso_types::v0::v0_1::RewardAccountProof">RewardAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -296,7 +296,7 @@
     'life0: 'async_trait,</div></h4></section><section id="method.fetch_leaf-2" class="method trait-impl"><a class="src rightside" href="../../../src/espresso_types/v0/traits.rs.html#374-383">Source</a><a href="#method.fetch_leaf-2" class="anchor">§</a><h4 class="code-header">fn <a href="#method.fetch_leaf" class="fn">fetch_leaf</a>&lt;'life0, 'async_trait&gt;(
     &amp;'life0 self,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../../hotshot_types/struct.PeerConfig.html" title="struct hotshot_types::PeerConfig">PeerConfig</a>&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
+    stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;PeerConfig&lt;<a class="struct" href="../struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
     success_threshold: U256,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../type.Leaf2.html" title="type espresso_types::v0::Leaf2">Leaf2</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -305,7 +305,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     accounts: &amp;'life2 [<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.FeeMerkleTree.html" title="type espresso_types::v0::v0_1::FeeMerkleTree">FeeMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -316,7 +316,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>&gt;,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.FeeAccountProof.html" title="struct espresso_types::v0::v0_1::FeeAccountProof">FeeAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -327,7 +327,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -337,7 +337,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -359,7 +359,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     accounts: &amp;'life2 [<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.RewardMerkleTree.html" title="type espresso_types::v0::v0_1::RewardMerkleTree">RewardMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -370,7 +370,7 @@
     &amp;'life0 self,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     accounts: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>&gt;,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../v0_1/struct.RewardAccountProof.html" title="struct espresso_types::v0::v0_1::RewardAccountProof">RewardAccountProof</a>&gt;&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -388,7 +388,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     fee_merkle_tree_root: <a class="type" href="../v0_1/type.FeeMerkleCommitment.html" title="type espresso_types::v0::v0_1::FeeMerkleCommitment">FeeMerkleCommitment</a>,
     accounts: &amp;'life2 [<a class="struct" href="../v0_1/struct.FeeAccount.html" title="struct espresso_types::v0::v0_1::FeeAccount">FeeAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.FeeMerkleTree.html" title="type espresso_types::v0::v0_1::FeeMerkleTree">FeeMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
@@ -400,7 +400,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     mt: &amp;'life2 mut <a class="type" href="../v0_1/type.BlockMerkleTree.html" title="type espresso_types::v0::v0_1::BlockMerkleTree">BlockMerkleTree</a>,
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where
     Self: 'async_trait,
@@ -417,7 +417,7 @@
     retry: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     instance: &amp;'life1 <a class="struct" href="../struct.NodeState.html" title="struct espresso_types::v0::NodeState">NodeState</a>,
     height: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    view: <a class="struct" href="../../../hotshot_types/data/struct.ViewNumber.html" title="struct hotshot_types::data::ViewNumber">ViewNumber</a>,
+    view: ViewNumber,
     reward_merkle_tree_root: <a class="type" href="../v0_1/type.RewardMerkleCommitment.html" title="type espresso_types::v0::v0_1::RewardMerkleCommitment">RewardMerkleCommitment</a>,
     accounts: &amp;'life2 [<a class="struct" href="../v0_1/struct.RewardAccount.html" title="struct espresso_types::v0::v0_1::RewardAccount">RewardAccount</a>],
 ) -&gt; <a class="struct" href="https://doc.rust-lang.org/1.86.0/core/pin/struct.Pin.html" title="struct core::pin::Pin">Pin</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/boxed/struct.Box.html" title="struct alloc::boxed::Box">Box</a>&lt;dyn <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/future/future/trait.Future.html" title="trait core::future::future::Future">Future</a>&lt;Output = <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="type" href="../v0_1/type.RewardMerkleTree.html" title="type espresso_types::v0::v0_1::RewardMerkleTree">RewardMerkleTree</a>&gt;&gt; + <a class="trait" href="https://doc.rust-lang.org/1.86.0/core/marker/trait.Send.html" title="trait core::marker::Send">Send</a> + 'async_trait&gt;&gt;<div class="where">where

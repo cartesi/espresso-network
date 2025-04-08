@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build","build_for_preprocessing","u256_to_field"],"struct":["LightClientStateVar","StakeTableEntryVar","StakeTableVar"]};
+window.SIDEBAR_ITEMS = {"fn":["build","build_for_preprocessing"],"struct":["LightClientStateVar","StakeTableEntryVar","StakeTableVar"]};

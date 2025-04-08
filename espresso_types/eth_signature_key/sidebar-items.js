@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["EthKeyPair","SigningError"],"type":["BuilderSignature"]};
+window.SIDEBAR_ITEMS = {"struct":["BuilderSignature","EthKeyPair","SigningError"]};

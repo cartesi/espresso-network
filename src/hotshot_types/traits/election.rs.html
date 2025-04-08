@@ -7,9 +7,9 @@
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="doccomment">//! The election trait, used to decide which node is the leader and determine if a vote is valid.
 <a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">use </span>std::{collections::BTreeSet, fmt::Debug, sync::Arc};
 <a href=#9 id=9 data-nosnippet>9</a>
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>async_lock::RwLock;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>hotshot_utils::anytrace::Result;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>primitive_types::U256;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>alloy::primitives::U256;
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>async_lock::RwLock;
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>hotshot_utils::anytrace::Result;
 <a href=#13 id=13 data-nosnippet>13</a>
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">super</span>::node_implementation::NodeType;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use crate</span>::{data::Leaf2, drb::DrbResult, traits::signature_key::StakeTableEntryType, PeerConfig};
@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">fn </span>total_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
 <a href=#30 id=30 data-nosnippet>30</a>        <span class="self">self</span>.stake_table(epoch)
 <a href=#31 id=31 data-nosnippet>31</a>            .iter()
-<a href=#32 id=32 data-nosnippet>32</a>            .fold(U256::zero(), |acc, entry| {
+<a href=#32 id=32 data-nosnippet>32</a>            .fold(U256::ZERO, |acc, entry| {
 <a href=#33 id=33 data-nosnippet>33</a>                acc + entry.stake_table_entry.stake()
 <a href=#34 id=34 data-nosnippet>34</a>            })
 <a href=#35 id=35 data-nosnippet>35</a>    }
@@ -37,7 +37,7 @@
 <a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">fn </span>total_da_stake(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;) -&gt; U256 {
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="self">self</span>.da_stake_table(epoch)
 <a href=#39 id=39 data-nosnippet>39</a>            .iter()
-<a href=#40 id=40 data-nosnippet>40</a>            .fold(U256::zero(), |acc, entry| {
+<a href=#40 id=40 data-nosnippet>40</a>            .fold(U256::ZERO, |acc, entry| {
 <a href=#41 id=41 data-nosnippet>41</a>                acc + entry.stake_table_entry.stake()
 <a href=#42 id=42 data-nosnippet>42</a>            })
 <a href=#43 id=43 data-nosnippet>43</a>    }

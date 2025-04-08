@@ -6,10 +6,10 @@
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>std::{fs, ops::Range, path::Path, time::Duration, vec};
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>clap::ValueEnum;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>libp2p_identity::PeerId;
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>multiaddr::Multiaddr;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>primitive_types::U256;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>alloy::primitives::U256;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>clap::ValueEnum;
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>libp2p_identity::PeerId;
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>multiaddr::Multiaddr;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>serde_inline_default::serde_inline_default;
 <a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>thiserror::Error;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>tracing::error;
@@ -71,7 +71,7 @@
 <a href=#71 id=71 data-nosnippet>71</a>}
 <a href=#72 id=72 data-nosnippet>72</a>
 <a href=#73 id=73 data-nosnippet>73</a><span class="doccomment">/// Node PeerConfig keys
-<a href=#74 id=74 data-nosnippet>74</a></span><span class="attr">#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+<a href=#74 id=74 data-nosnippet>74</a></span><span class="attr">#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq)]
 <a href=#75 id=75 data-nosnippet>75</a>#[serde(bound(deserialize = <span class="string">""</span>))]
 <a href=#76 id=76 data-nosnippet>76</a></span><span class="kw">pub struct </span>PeerConfigKeys&lt;TYPES: NodeType&gt; {
 <a href=#77 id=77 data-nosnippet>77</a>    <span class="doccomment">/// The peer's public key

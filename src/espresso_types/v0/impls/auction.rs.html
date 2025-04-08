@@ -39,7 +39,7 @@
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">fn </span>commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Commitment&lt;<span class="self">Self</span>&gt; {
 <a href=#40 id=40 data-nosnippet>40</a>        <span class="kw">let </span>comm = committable::RawCommitmentBuilder::new(<span class="kw-2">&amp;</span><span class="self">Self</span>::tag())
 <a href=#41 id=41 data-nosnippet>41</a>            .field(<span class="string">"body"</span>, <span class="self">self</span>.body.commit())
-<a href=#42 id=42 data-nosnippet>42</a>            .fixed_size_field(<span class="string">"signature"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.signature.into());
+<a href=#42 id=42 data-nosnippet>42</a>            .fixed_size_field(<span class="string">"signature"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.signature.as_bytes());
 <a href=#43 id=43 data-nosnippet>43</a>        comm.finalize()
 <a href=#44 id=44 data-nosnippet>44</a>    }
 <a href=#45 id=45 data-nosnippet>45</a>}

@@ -6,25 +6,25 @@
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">use </span>std::{collections::HashMap, num::NonZeroUsize, rc::Rc, sync::Arc, time::Duration};
 <a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>async_lock::RwLock;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>hotshot::{
-<a href=#11 id=11 data-nosnippet>11</a>    tasks::EventTransformerState,
-<a href=#12 id=12 data-nosnippet>12</a>    traits::{NetworkReliability, NodeImplementation, TestableNodeImplementation},
-<a href=#13 id=13 data-nosnippet>13</a>    types::SystemContextHandle,
-<a href=#14 id=14 data-nosnippet>14</a>    HotShotInitializer, MarketplaceConfig, SystemContext, TwinsHandlerState,
-<a href=#15 id=15 data-nosnippet>15</a>};
-<a href=#16 id=16 data-nosnippet>16</a><span class="kw">use </span>hotshot_example_types::{
-<a href=#17 id=17 data-nosnippet>17</a>    auction_results_provider_types::TestAuctionResultsProvider, node_types::TestTypes,
-<a href=#18 id=18 data-nosnippet>18</a>    state_types::TestInstanceState, storage_types::TestStorage, testable_delay::DelayConfig,
-<a href=#19 id=19 data-nosnippet>19</a>};
-<a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span>hotshot_types::{
-<a href=#21 id=21 data-nosnippet>21</a>    consensus::ConsensusMetricsValue,
-<a href=#22 id=22 data-nosnippet>22</a>    epoch_membership::EpochMembershipCoordinator,
-<a href=#23 id=23 data-nosnippet>23</a>    traits::node_implementation::{NodeType, Versions},
-<a href=#24 id=24 data-nosnippet>24</a>    HotShotConfig, PeerConfig, ValidatorConfig,
-<a href=#25 id=25 data-nosnippet>25</a>};
-<a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>primitive_types::U256;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>alloy::primitives::U256;
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>async_lock::RwLock;
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>hotshot::{
+<a href=#12 id=12 data-nosnippet>12</a>    tasks::EventTransformerState,
+<a href=#13 id=13 data-nosnippet>13</a>    traits::{NetworkReliability, NodeImplementation, TestableNodeImplementation},
+<a href=#14 id=14 data-nosnippet>14</a>    types::SystemContextHandle,
+<a href=#15 id=15 data-nosnippet>15</a>    HotShotInitializer, MarketplaceConfig, SystemContext, TwinsHandlerState,
+<a href=#16 id=16 data-nosnippet>16</a>};
+<a href=#17 id=17 data-nosnippet>17</a><span class="kw">use </span>hotshot_example_types::{
+<a href=#18 id=18 data-nosnippet>18</a>    auction_results_provider_types::TestAuctionResultsProvider, node_types::TestTypes,
+<a href=#19 id=19 data-nosnippet>19</a>    state_types::TestInstanceState, storage_types::TestStorage, testable_delay::DelayConfig,
+<a href=#20 id=20 data-nosnippet>20</a>};
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span>hotshot_types::{
+<a href=#22 id=22 data-nosnippet>22</a>    consensus::ConsensusMetricsValue,
+<a href=#23 id=23 data-nosnippet>23</a>    epoch_membership::EpochMembershipCoordinator,
+<a href=#24 id=24 data-nosnippet>24</a>    traits::node_implementation::{NodeType, Versions},
+<a href=#25 id=25 data-nosnippet>25</a>    HotShotConfig, PeerConfig, ValidatorConfig,
+<a href=#26 id=26 data-nosnippet>26</a>};
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>tide_disco::Url;
 <a href=#29 id=29 data-nosnippet>29</a><span class="kw">use </span>vec1::Vec1;
 <a href=#30 id=30 data-nosnippet>30</a>

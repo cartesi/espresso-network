@@ -2,38 +2,38 @@
 <a href=#2 id=2 data-nosnippet>2</a>//! It also includes some trait implementations that cannot be implemented in an external crate.
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span>std::{cmp::max, collections::BTreeMap, fmt::Debug, ops::Range, sync::Arc};
 <a href=#4 id=4 data-nosnippet>4</a>
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>anyhow::{bail, ensure, Context};
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>async_trait::async_trait;
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>committable::Commitment;
-<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>futures::{FutureExt, TryFutureExt};
-<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>hotshot::{
-<a href=#10 id=10 data-nosnippet>10</a>    types::{BLSPubKey, EventType},
-<a href=#11 id=11 data-nosnippet>11</a>    HotShotInitializer, InitializerEpochInfo,
-<a href=#12 id=12 data-nosnippet>12</a>};
-<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>hotshot_types::{
-<a href=#14 id=14 data-nosnippet>14</a>    data::{
-<a href=#15 id=15 data-nosnippet>15</a>        vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
-<a href=#16 id=16 data-nosnippet>16</a>        DaProposal, DaProposal2, EpochNumber, QuorumProposal, QuorumProposal2,
-<a href=#17 id=17 data-nosnippet>17</a>        QuorumProposalWrapper, VidCommitment, VidDisperseShare, ViewNumber,
-<a href=#18 id=18 data-nosnippet>18</a>    },
-<a href=#19 id=19 data-nosnippet>19</a>    drb::DrbResult,
-<a href=#20 id=20 data-nosnippet>20</a>    event::{HotShotAction, LeafInfo},
-<a href=#21 id=21 data-nosnippet>21</a>    message::{convert_proposal, Proposal, UpgradeLock},
-<a href=#22 id=22 data-nosnippet>22</a>    simple_certificate::{
-<a href=#23 id=23 data-nosnippet>23</a>        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
-<a href=#24 id=24 data-nosnippet>24</a>        QuorumCertificate2, UpgradeCertificate,
-<a href=#25 id=25 data-nosnippet>25</a>    },
-<a href=#26 id=26 data-nosnippet>26</a>    traits::{
-<a href=#27 id=27 data-nosnippet>27</a>        node_implementation::{ConsensusTime, NodeType, Versions},
-<a href=#28 id=28 data-nosnippet>28</a>        storage::Storage,
-<a href=#29 id=29 data-nosnippet>29</a>        ValidatedState <span class="kw">as </span>HotShotState,
-<a href=#30 id=30 data-nosnippet>30</a>    },
-<a href=#31 id=31 data-nosnippet>31</a>    utils::{genesis_epoch_from_version, verify_leaf_chain},
-<a href=#32 id=32 data-nosnippet>32</a>    PeerConfig,
-<a href=#33 id=33 data-nosnippet>33</a>};
-<a href=#34 id=34 data-nosnippet>34</a><span class="kw">use </span>indexmap::IndexMap;
-<a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>itertools::Itertools;
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>primitive_types::U256;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>alloy::primitives::U256;
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>anyhow::{bail, ensure, Context};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>async_trait::async_trait;
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>committable::Commitment;
+<a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>futures::{FutureExt, TryFutureExt};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>hotshot::{
+<a href=#11 id=11 data-nosnippet>11</a>    types::{BLSPubKey, EventType},
+<a href=#12 id=12 data-nosnippet>12</a>    HotShotInitializer, InitializerEpochInfo,
+<a href=#13 id=13 data-nosnippet>13</a>};
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>hotshot_types::{
+<a href=#15 id=15 data-nosnippet>15</a>    data::{
+<a href=#16 id=16 data-nosnippet>16</a>        vid_disperse::{ADVZDisperseShare, VidDisperseShare2},
+<a href=#17 id=17 data-nosnippet>17</a>        DaProposal, DaProposal2, EpochNumber, QuorumProposal, QuorumProposal2,
+<a href=#18 id=18 data-nosnippet>18</a>        QuorumProposalWrapper, VidCommitment, VidDisperseShare, ViewNumber,
+<a href=#19 id=19 data-nosnippet>19</a>    },
+<a href=#20 id=20 data-nosnippet>20</a>    drb::DrbResult,
+<a href=#21 id=21 data-nosnippet>21</a>    event::{HotShotAction, LeafInfo},
+<a href=#22 id=22 data-nosnippet>22</a>    message::{convert_proposal, Proposal, UpgradeLock},
+<a href=#23 id=23 data-nosnippet>23</a>    simple_certificate::{
+<a href=#24 id=24 data-nosnippet>24</a>        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
+<a href=#25 id=25 data-nosnippet>25</a>        QuorumCertificate2, UpgradeCertificate,
+<a href=#26 id=26 data-nosnippet>26</a>    },
+<a href=#27 id=27 data-nosnippet>27</a>    traits::{
+<a href=#28 id=28 data-nosnippet>28</a>        node_implementation::{ConsensusTime, NodeType, Versions},
+<a href=#29 id=29 data-nosnippet>29</a>        storage::Storage,
+<a href=#30 id=30 data-nosnippet>30</a>        ValidatedState <span class="kw">as </span>HotShotState,
+<a href=#31 id=31 data-nosnippet>31</a>    },
+<a href=#32 id=32 data-nosnippet>32</a>    utils::{genesis_epoch_from_version, verify_leaf_chain},
+<a href=#33 id=33 data-nosnippet>33</a>    PeerConfig,
+<a href=#34 id=34 data-nosnippet>34</a>};
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>indexmap::IndexMap;
+<a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>itertools::Itertools;
 <a href=#37 id=37 data-nosnippet>37</a><span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">use super</span>::{

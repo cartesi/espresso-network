@@ -489,15 +489,15 @@
 <a href=#489 id=489 data-nosnippet>489</a></span><span class="kw">mod </span>test {
 <a href=#490 id=490 data-nosnippet>490</a>    <span class="kw">use </span>std::sync::Arc;
 <a href=#491 id=491 data-nosnippet>491</a>
-<a href=#492 id=492 data-nosnippet>492</a>    <span class="kw">use </span>hotshot_example_types::node_types::TestTypes;
-<a href=#493 id=493 data-nosnippet>493</a>    <span class="kw">use </span>hotshot_types::{
-<a href=#494 id=494 data-nosnippet>494</a>        light_client::StateVerKey,
-<a href=#495 id=495 data-nosnippet>495</a>        signature_key::BLSPubKey,
-<a href=#496 id=496 data-nosnippet>496</a>        traits::{election::Membership, signature_key::SignatureKey},
-<a href=#497 id=497 data-nosnippet>497</a>        PeerConfig,
-<a href=#498 id=498 data-nosnippet>498</a>    };
-<a href=#499 id=499 data-nosnippet>499</a>    <span class="kw">use </span>libp2p::{core::transport::dummy::DummyTransport, quic::Connection};
-<a href=#500 id=500 data-nosnippet>500</a>    <span class="kw">use </span>primitive_types::U256;
+<a href=#492 id=492 data-nosnippet>492</a>    <span class="kw">use </span>alloy::primitives::U256;
+<a href=#493 id=493 data-nosnippet>493</a>    <span class="kw">use </span>hotshot_example_types::node_types::TestTypes;
+<a href=#494 id=494 data-nosnippet>494</a>    <span class="kw">use </span>hotshot_types::{
+<a href=#495 id=495 data-nosnippet>495</a>        light_client::StateVerKey,
+<a href=#496 id=496 data-nosnippet>496</a>        signature_key::BLSPubKey,
+<a href=#497 id=497 data-nosnippet>497</a>        traits::{election::Membership, signature_key::SignatureKey},
+<a href=#498 id=498 data-nosnippet>498</a>        PeerConfig,
+<a href=#499 id=499 data-nosnippet>499</a>    };
+<a href=#500 id=500 data-nosnippet>500</a>    <span class="kw">use </span>libp2p::{core::transport::dummy::DummyTransport, quic::Connection};
 <a href=#501 id=501 data-nosnippet>501</a>    <span class="kw">use </span>rand::Rng;
 <a href=#502 id=502 data-nosnippet>502</a>
 <a href=#503 id=503 data-nosnippet>503</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
