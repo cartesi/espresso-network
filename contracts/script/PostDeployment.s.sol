@@ -10,8 +10,8 @@ import "../src/StakeTable.sol";
 /// forge script contracts/script/PostDeployment.s.sol:PostDeploymentEsp \
 ///     --rpc-url $RPC_URL \
 ///     --sig "run(address,address,uint256,address,string,string)" \
-///     $ESPRESSO_SEQUENCER_ESP_TOKEN_PROXY_ADDRESS \
-///     $ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ADDRESS \
+///     $ESP_TOKEN_PROXY_ADDRESS \
+///     $ESP_TOKEN_OWNER \
 ///     $TOTAL_SUPPLY \
 ///     $ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ADDRESS \
 ///     $TOKEN_NAME \
