@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["SIGNATURE_STORAGE_CAPACITY"],"fn":["compute_stake_table_commitment"],"mod":["relay_server"],"struct":["StateSignatureMemStorage","StateSigner"]};
+window.SIDEBAR_ITEMS = {"constant":["SIGNATURE_STORAGE_CAPACITY"],"mod":["relay_server"],"struct":["StateSignatureMemStorage","StateSigner"]};

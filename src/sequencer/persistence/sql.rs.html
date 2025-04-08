@@ -2726,192 +2726,194 @@
 <a href=#2726 id=2726 data-nosnippet>2726</a>            <span class="kw">let </span>state_cert = LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
 <a href=#2727 id=2727 data-nosnippet>2727</a>                epoch: EpochNumber::new(i),
 <a href=#2728 id=2728 data-nosnippet>2728</a>                light_client_state: Default::default(), <span class="comment">// filling arbitrary value
-<a href=#2729 id=2729 data-nosnippet>2729</a>                </span>signatures: <span class="macro">vec!</span>[],                     <span class="comment">// filling arbitrary value
-<a href=#2730 id=2730 data-nosnippet>2730</a>            </span>};
-<a href=#2731 id=2731 data-nosnippet>2731</a>            <span class="comment">// manually upsert the state cert to the finalized database
-<a href=#2732 id=2732 data-nosnippet>2732</a>            </span><span class="kw">let </span>state_cert_bytes = bincode::serialize(<span class="kw-2">&amp;</span>state_cert).unwrap();
-<a href=#2733 id=2733 data-nosnippet>2733</a>            tx.upsert(
-<a href=#2734 id=2734 data-nosnippet>2734</a>                <span class="string">"finalized_state_cert"</span>,
-<a href=#2735 id=2735 data-nosnippet>2735</a>                [<span class="string">"epoch"</span>, <span class="string">"state_cert"</span>],
-<a href=#2736 id=2736 data-nosnippet>2736</a>                [<span class="string">"epoch"</span>],
-<a href=#2737 id=2737 data-nosnippet>2737</a>                [(i <span class="kw">as </span>i64, state_cert_bytes)],
-<a href=#2738 id=2738 data-nosnippet>2738</a>            )
-<a href=#2739 id=2739 data-nosnippet>2739</a>            .<span class="kw">await
-<a href=#2740 id=2740 data-nosnippet>2740</a>            </span>.unwrap();
-<a href=#2741 id=2741 data-nosnippet>2741</a>
-<a href=#2742 id=2742 data-nosnippet>2742</a>            tx.commit().<span class="kw">await</span>.unwrap();
-<a href=#2743 id=2743 data-nosnippet>2743</a>
-<a href=#2744 id=2744 data-nosnippet>2744</a>            <span class="kw">let </span>disperse = advz_scheme(<span class="number">4</span>).disperse(payload_bytes.clone()).unwrap();
-<a href=#2745 id=2745 data-nosnippet>2745</a>
-<a href=#2746 id=2746 data-nosnippet>2746</a>            <span class="kw">let </span>vid = ADVZDisperseShare::&lt;SeqTypes&gt; {
-<a href=#2747 id=2747 data-nosnippet>2747</a>                view_number: ViewNumber::new(i),
-<a href=#2748 id=2748 data-nosnippet>2748</a>                payload_commitment: Default::default(),
-<a href=#2749 id=2749 data-nosnippet>2749</a>                share: disperse.shares[<span class="number">0</span>].clone(),
-<a href=#2750 id=2750 data-nosnippet>2750</a>                common: disperse.common,
-<a href=#2751 id=2751 data-nosnippet>2751</a>                recipient_key: pubkey,
-<a href=#2752 id=2752 data-nosnippet>2752</a>            };
-<a href=#2753 id=2753 data-nosnippet>2753</a>
-<a href=#2754 id=2754 data-nosnippet>2754</a>            <span class="kw">let </span>(payload, metadata) =
-<a href=#2755 id=2755 data-nosnippet>2755</a>                Payload::from_transactions([], <span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::default())
-<a href=#2756 id=2756 data-nosnippet>2756</a>                    .<span class="kw">await
-<a href=#2757 id=2757 data-nosnippet>2757</a>                    </span>.unwrap();
-<a href=#2758 id=2758 data-nosnippet>2758</a>
-<a href=#2759 id=2759 data-nosnippet>2759</a>            <span class="kw">let </span>da = DaProposal::&lt;SeqTypes&gt; {
-<a href=#2760 id=2760 data-nosnippet>2760</a>                encoded_transactions: payload.encode(),
-<a href=#2761 id=2761 data-nosnippet>2761</a>                metadata,
-<a href=#2762 id=2762 data-nosnippet>2762</a>                view_number: ViewNumber::new(i),
-<a href=#2763 id=2763 data-nosnippet>2763</a>            };
-<a href=#2764 id=2764 data-nosnippet>2764</a>
-<a href=#2765 id=2765 data-nosnippet>2765</a>            <span class="kw">let </span>block_payload_signature =
-<a href=#2766 id=2766 data-nosnippet>2766</a>                BLSPubKey::sign(<span class="kw-2">&amp;</span>privkey, <span class="kw-2">&amp;</span>payload_bytes).expect(<span class="string">"Failed to sign block payload"</span>);
-<a href=#2767 id=2767 data-nosnippet>2767</a>
-<a href=#2768 id=2768 data-nosnippet>2768</a>            <span class="kw">let </span>da_proposal = Proposal {
-<a href=#2769 id=2769 data-nosnippet>2769</a>                data: da,
-<a href=#2770 id=2770 data-nosnippet>2770</a>                signature: block_payload_signature,
-<a href=#2771 id=2771 data-nosnippet>2771</a>                _pd: Default::default(),
-<a href=#2772 id=2772 data-nosnippet>2772</a>            };
-<a href=#2773 id=2773 data-nosnippet>2773</a>
-<a href=#2774 id=2774 data-nosnippet>2774</a>            storage
-<a href=#2775 id=2775 data-nosnippet>2775</a>                .append_vid(<span class="kw-2">&amp;</span>vid.to_proposal(<span class="kw-2">&amp;</span>privkey).unwrap())
-<a href=#2776 id=2776 data-nosnippet>2776</a>                .<span class="kw">await
-<a href=#2777 id=2777 data-nosnippet>2777</a>                </span>.unwrap();
-<a href=#2778 id=2778 data-nosnippet>2778</a>            storage
-<a href=#2779 id=2779 data-nosnippet>2779</a>                .append_da(<span class="kw-2">&amp;</span>da_proposal, VidCommitment::V0(disperse.commit))
-<a href=#2780 id=2780 data-nosnippet>2780</a>                .<span class="kw">await
-<a href=#2781 id=2781 data-nosnippet>2781</a>                </span>.unwrap();
-<a href=#2782 id=2782 data-nosnippet>2782</a>
-<a href=#2783 id=2783 data-nosnippet>2783</a>            <span class="kw">let </span>leaf_hash = Committable::commit(<span class="kw-2">&amp;</span>leaf);
-<a href=#2784 id=2784 data-nosnippet>2784</a>            <span class="kw">let </span><span class="kw-2">mut </span>tx = storage.db.write().<span class="kw">await</span>.expect(<span class="string">"failed to start write tx"</span>);
-<a href=#2785 id=2785 data-nosnippet>2785</a>            tx.upsert(
-<a href=#2786 id=2786 data-nosnippet>2786</a>                <span class="string">"quorum_proposals"</span>,
-<a href=#2787 id=2787 data-nosnippet>2787</a>                [<span class="string">"view"</span>, <span class="string">"leaf_hash"</span>, <span class="string">"data"</span>],
-<a href=#2788 id=2788 data-nosnippet>2788</a>                [<span class="string">"view"</span>],
-<a href=#2789 id=2789 data-nosnippet>2789</a>                [(i <span class="kw">as </span>i64, leaf_hash.to_string(), proposal_bytes)],
-<a href=#2790 id=2790 data-nosnippet>2790</a>            )
-<a href=#2791 id=2791 data-nosnippet>2791</a>            .<span class="kw">await
-<a href=#2792 id=2792 data-nosnippet>2792</a>            </span>.expect(<span class="string">"failed to upsert quorum proposal"</span>);
-<a href=#2793 id=2793 data-nosnippet>2793</a>
-<a href=#2794 id=2794 data-nosnippet>2794</a>            <span class="kw">let </span>justify_qc = <span class="kw-2">&amp;</span>proposal.data.justify_qc;
-<a href=#2795 id=2795 data-nosnippet>2795</a>            <span class="kw">let </span>justify_qc_bytes = bincode::serialize(<span class="kw-2">&amp;</span>justify_qc)
-<a href=#2796 id=2796 data-nosnippet>2796</a>                .context(<span class="string">"serializing QC"</span>)
-<a href=#2797 id=2797 data-nosnippet>2797</a>                .unwrap();
-<a href=#2798 id=2798 data-nosnippet>2798</a>            tx.upsert(
-<a href=#2799 id=2799 data-nosnippet>2799</a>                <span class="string">"quorum_certificate"</span>,
-<a href=#2800 id=2800 data-nosnippet>2800</a>                [<span class="string">"view"</span>, <span class="string">"leaf_hash"</span>, <span class="string">"data"</span>],
-<a href=#2801 id=2801 data-nosnippet>2801</a>                [<span class="string">"view"</span>],
-<a href=#2802 id=2802 data-nosnippet>2802</a>                [(
-<a href=#2803 id=2803 data-nosnippet>2803</a>                    justify_qc.view_number.u64() <span class="kw">as </span>i64,
-<a href=#2804 id=2804 data-nosnippet>2804</a>                    justify_qc.data.leaf_commit.to_string(),
-<a href=#2805 id=2805 data-nosnippet>2805</a>                    <span class="kw-2">&amp;</span>justify_qc_bytes,
-<a href=#2806 id=2806 data-nosnippet>2806</a>                )],
-<a href=#2807 id=2807 data-nosnippet>2807</a>            )
-<a href=#2808 id=2808 data-nosnippet>2808</a>            .<span class="kw">await
-<a href=#2809 id=2809 data-nosnippet>2809</a>            </span>.expect(<span class="string">"failed to upsert qc"</span>);
-<a href=#2810 id=2810 data-nosnippet>2810</a>
-<a href=#2811 id=2811 data-nosnippet>2811</a>            tx.commit().<span class="kw">await</span>.expect(<span class="string">"failed to commit"</span>);
-<a href=#2812 id=2812 data-nosnippet>2812</a>        }
-<a href=#2813 id=2813 data-nosnippet>2813</a>
-<a href=#2814 id=2814 data-nosnippet>2814</a>        storage.migrate_consensus().<span class="kw">await</span>.unwrap();
-<a href=#2815 id=2815 data-nosnippet>2815</a>
-<a href=#2816 id=2816 data-nosnippet>2816</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx = storage.db.read().<span class="kw">await</span>.unwrap();
-<a href=#2817 id=2817 data-nosnippet>2817</a>        <span class="kw">let </span>(anchor_leaf2_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from anchor_leaf2"</span>)
-<a href=#2818 id=2818 data-nosnippet>2818</a>            .fetch_one(tx.as_mut())
-<a href=#2819 id=2819 data-nosnippet>2819</a>            .<span class="kw">await
-<a href=#2820 id=2820 data-nosnippet>2820</a>            </span>.unwrap();
-<a href=#2821 id=2821 data-nosnippet>2821</a>        <span class="macro">assert_eq!</span>(
-<a href=#2822 id=2822 data-nosnippet>2822</a>            anchor_leaf2_count, rows <span class="kw">as </span>i64,
-<a href=#2823 id=2823 data-nosnippet>2823</a>            <span class="string">"anchor leaf count does not match rows"</span>,
-<a href=#2824 id=2824 data-nosnippet>2824</a>        );
-<a href=#2825 id=2825 data-nosnippet>2825</a>
-<a href=#2826 id=2826 data-nosnippet>2826</a>        <span class="kw">let </span>(da_proposal_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from da_proposal2"</span>)
-<a href=#2827 id=2827 data-nosnippet>2827</a>            .fetch_one(tx.as_mut())
-<a href=#2828 id=2828 data-nosnippet>2828</a>            .<span class="kw">await
-<a href=#2829 id=2829 data-nosnippet>2829</a>            </span>.unwrap();
-<a href=#2830 id=2830 data-nosnippet>2830</a>        <span class="macro">assert_eq!</span>(
-<a href=#2831 id=2831 data-nosnippet>2831</a>            da_proposal_count, rows <span class="kw">as </span>i64,
-<a href=#2832 id=2832 data-nosnippet>2832</a>            <span class="string">"da proposal count does not match rows"</span>,
-<a href=#2833 id=2833 data-nosnippet>2833</a>        );
-<a href=#2834 id=2834 data-nosnippet>2834</a>
-<a href=#2835 id=2835 data-nosnippet>2835</a>        <span class="kw">let </span>(vid_share_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from vid_share2"</span>)
-<a href=#2836 id=2836 data-nosnippet>2836</a>            .fetch_one(tx.as_mut())
-<a href=#2837 id=2837 data-nosnippet>2837</a>            .<span class="kw">await
-<a href=#2838 id=2838 data-nosnippet>2838</a>            </span>.unwrap();
-<a href=#2839 id=2839 data-nosnippet>2839</a>        <span class="macro">assert_eq!</span>(
-<a href=#2840 id=2840 data-nosnippet>2840</a>            vid_share_count, rows <span class="kw">as </span>i64,
-<a href=#2841 id=2841 data-nosnippet>2841</a>            <span class="string">"vid share count does not match rows"
-<a href=#2842 id=2842 data-nosnippet>2842</a>        </span>);
-<a href=#2843 id=2843 data-nosnippet>2843</a>
-<a href=#2844 id=2844 data-nosnippet>2844</a>        <span class="kw">let </span>(quorum_proposals_count,) =
-<a href=#2845 id=2845 data-nosnippet>2845</a>            query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from quorum_proposals2"</span>)
-<a href=#2846 id=2846 data-nosnippet>2846</a>                .fetch_one(tx.as_mut())
-<a href=#2847 id=2847 data-nosnippet>2847</a>                .<span class="kw">await
-<a href=#2848 id=2848 data-nosnippet>2848</a>                </span>.unwrap();
-<a href=#2849 id=2849 data-nosnippet>2849</a>        <span class="macro">assert_eq!</span>(
-<a href=#2850 id=2850 data-nosnippet>2850</a>            quorum_proposals_count, rows <span class="kw">as </span>i64,
-<a href=#2851 id=2851 data-nosnippet>2851</a>            <span class="string">"quorum proposals count does not match rows"</span>,
-<a href=#2852 id=2852 data-nosnippet>2852</a>        );
-<a href=#2853 id=2853 data-nosnippet>2853</a>
-<a href=#2854 id=2854 data-nosnippet>2854</a>        <span class="kw">let </span>(quorum_certificates_count,) =
-<a href=#2855 id=2855 data-nosnippet>2855</a>            query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from quorum_certificate2"</span>)
-<a href=#2856 id=2856 data-nosnippet>2856</a>                .fetch_one(tx.as_mut())
-<a href=#2857 id=2857 data-nosnippet>2857</a>                .<span class="kw">await
-<a href=#2858 id=2858 data-nosnippet>2858</a>                </span>.unwrap();
-<a href=#2859 id=2859 data-nosnippet>2859</a>        <span class="macro">assert_eq!</span>(
-<a href=#2860 id=2860 data-nosnippet>2860</a>            quorum_certificates_count, rows <span class="kw">as </span>i64,
-<a href=#2861 id=2861 data-nosnippet>2861</a>            <span class="string">"quorum certificates count does not match rows"</span>,
-<a href=#2862 id=2862 data-nosnippet>2862</a>        );
-<a href=#2863 id=2863 data-nosnippet>2863</a>
-<a href=#2864 id=2864 data-nosnippet>2864</a>        <span class="kw">let </span>(state_cert_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from finalized_state_cert"</span>)
-<a href=#2865 id=2865 data-nosnippet>2865</a>            .fetch_one(tx.as_mut())
-<a href=#2866 id=2866 data-nosnippet>2866</a>            .<span class="kw">await
-<a href=#2867 id=2867 data-nosnippet>2867</a>            </span>.unwrap();
-<a href=#2868 id=2868 data-nosnippet>2868</a>        <span class="macro">assert_eq!</span>(
-<a href=#2869 id=2869 data-nosnippet>2869</a>            state_cert_count, rows <span class="kw">as </span>i64,
-<a href=#2870 id=2870 data-nosnippet>2870</a>            <span class="string">"Light client state update certificates count does not match rows"</span>,
-<a href=#2871 id=2871 data-nosnippet>2871</a>        );
-<a href=#2872 id=2872 data-nosnippet>2872</a>        <span class="macro">assert_eq!</span>(
-<a href=#2873 id=2873 data-nosnippet>2873</a>            storage.load_state_cert().<span class="kw">await</span>.unwrap().unwrap(),
-<a href=#2874 id=2874 data-nosnippet>2874</a>            LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
-<a href=#2875 id=2875 data-nosnippet>2875</a>                epoch: EpochNumber::new(rows - <span class="number">1</span>),
-<a href=#2876 id=2876 data-nosnippet>2876</a>                light_client_state: Default::default(),
-<a href=#2877 id=2877 data-nosnippet>2877</a>                signatures: <span class="macro">vec!</span>[]
-<a href=#2878 id=2878 data-nosnippet>2878</a>            },
-<a href=#2879 id=2879 data-nosnippet>2879</a>            <span class="string">"Wrong light client state update certificate in the storage"</span>,
-<a href=#2880 id=2880 data-nosnippet>2880</a>        )
-<a href=#2881 id=2881 data-nosnippet>2881</a>    }
-<a href=#2882 id=2882 data-nosnippet>2882</a>
-<a href=#2883 id=2883 data-nosnippet>2883</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
-<a href=#2884 id=2884 data-nosnippet>2884</a>    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
-<a href=#2885 id=2885 data-nosnippet>2885</a>        setup_test();
-<a href=#2886 id=2886 data-nosnippet>2886</a>
-<a href=#2887 id=2887 data-nosnippet>2887</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
-<a href=#2888 id=2888 data-nosnippet>2888</a>        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
-<a href=#2889 id=2889 data-nosnippet>2889</a>
-<a href=#2890 id=2890 data-nosnippet>2890</a>        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
+<a href=#2729 id=2729 data-nosnippet>2729</a>                </span>next_stake_table_state: Default::default(), <span class="comment">// filling arbitrary value
+<a href=#2730 id=2730 data-nosnippet>2730</a>                </span>signatures: <span class="macro">vec!</span>[],                     <span class="comment">// filling arbitrary value
+<a href=#2731 id=2731 data-nosnippet>2731</a>            </span>};
+<a href=#2732 id=2732 data-nosnippet>2732</a>            <span class="comment">// manually upsert the state cert to the finalized database
+<a href=#2733 id=2733 data-nosnippet>2733</a>            </span><span class="kw">let </span>state_cert_bytes = bincode::serialize(<span class="kw-2">&amp;</span>state_cert).unwrap();
+<a href=#2734 id=2734 data-nosnippet>2734</a>            tx.upsert(
+<a href=#2735 id=2735 data-nosnippet>2735</a>                <span class="string">"finalized_state_cert"</span>,
+<a href=#2736 id=2736 data-nosnippet>2736</a>                [<span class="string">"epoch"</span>, <span class="string">"state_cert"</span>],
+<a href=#2737 id=2737 data-nosnippet>2737</a>                [<span class="string">"epoch"</span>],
+<a href=#2738 id=2738 data-nosnippet>2738</a>                [(i <span class="kw">as </span>i64, state_cert_bytes)],
+<a href=#2739 id=2739 data-nosnippet>2739</a>            )
+<a href=#2740 id=2740 data-nosnippet>2740</a>            .<span class="kw">await
+<a href=#2741 id=2741 data-nosnippet>2741</a>            </span>.unwrap();
+<a href=#2742 id=2742 data-nosnippet>2742</a>
+<a href=#2743 id=2743 data-nosnippet>2743</a>            tx.commit().<span class="kw">await</span>.unwrap();
+<a href=#2744 id=2744 data-nosnippet>2744</a>
+<a href=#2745 id=2745 data-nosnippet>2745</a>            <span class="kw">let </span>disperse = advz_scheme(<span class="number">4</span>).disperse(payload_bytes.clone()).unwrap();
+<a href=#2746 id=2746 data-nosnippet>2746</a>
+<a href=#2747 id=2747 data-nosnippet>2747</a>            <span class="kw">let </span>vid = ADVZDisperseShare::&lt;SeqTypes&gt; {
+<a href=#2748 id=2748 data-nosnippet>2748</a>                view_number: ViewNumber::new(i),
+<a href=#2749 id=2749 data-nosnippet>2749</a>                payload_commitment: Default::default(),
+<a href=#2750 id=2750 data-nosnippet>2750</a>                share: disperse.shares[<span class="number">0</span>].clone(),
+<a href=#2751 id=2751 data-nosnippet>2751</a>                common: disperse.common,
+<a href=#2752 id=2752 data-nosnippet>2752</a>                recipient_key: pubkey,
+<a href=#2753 id=2753 data-nosnippet>2753</a>            };
+<a href=#2754 id=2754 data-nosnippet>2754</a>
+<a href=#2755 id=2755 data-nosnippet>2755</a>            <span class="kw">let </span>(payload, metadata) =
+<a href=#2756 id=2756 data-nosnippet>2756</a>                Payload::from_transactions([], <span class="kw-2">&amp;</span>ValidatedState::default(), <span class="kw-2">&amp;</span>NodeState::default())
+<a href=#2757 id=2757 data-nosnippet>2757</a>                    .<span class="kw">await
+<a href=#2758 id=2758 data-nosnippet>2758</a>                    </span>.unwrap();
+<a href=#2759 id=2759 data-nosnippet>2759</a>
+<a href=#2760 id=2760 data-nosnippet>2760</a>            <span class="kw">let </span>da = DaProposal::&lt;SeqTypes&gt; {
+<a href=#2761 id=2761 data-nosnippet>2761</a>                encoded_transactions: payload.encode(),
+<a href=#2762 id=2762 data-nosnippet>2762</a>                metadata,
+<a href=#2763 id=2763 data-nosnippet>2763</a>                view_number: ViewNumber::new(i),
+<a href=#2764 id=2764 data-nosnippet>2764</a>            };
+<a href=#2765 id=2765 data-nosnippet>2765</a>
+<a href=#2766 id=2766 data-nosnippet>2766</a>            <span class="kw">let </span>block_payload_signature =
+<a href=#2767 id=2767 data-nosnippet>2767</a>                BLSPubKey::sign(<span class="kw-2">&amp;</span>privkey, <span class="kw-2">&amp;</span>payload_bytes).expect(<span class="string">"Failed to sign block payload"</span>);
+<a href=#2768 id=2768 data-nosnippet>2768</a>
+<a href=#2769 id=2769 data-nosnippet>2769</a>            <span class="kw">let </span>da_proposal = Proposal {
+<a href=#2770 id=2770 data-nosnippet>2770</a>                data: da,
+<a href=#2771 id=2771 data-nosnippet>2771</a>                signature: block_payload_signature,
+<a href=#2772 id=2772 data-nosnippet>2772</a>                _pd: Default::default(),
+<a href=#2773 id=2773 data-nosnippet>2773</a>            };
+<a href=#2774 id=2774 data-nosnippet>2774</a>
+<a href=#2775 id=2775 data-nosnippet>2775</a>            storage
+<a href=#2776 id=2776 data-nosnippet>2776</a>                .append_vid(<span class="kw-2">&amp;</span>vid.to_proposal(<span class="kw-2">&amp;</span>privkey).unwrap())
+<a href=#2777 id=2777 data-nosnippet>2777</a>                .<span class="kw">await
+<a href=#2778 id=2778 data-nosnippet>2778</a>                </span>.unwrap();
+<a href=#2779 id=2779 data-nosnippet>2779</a>            storage
+<a href=#2780 id=2780 data-nosnippet>2780</a>                .append_da(<span class="kw-2">&amp;</span>da_proposal, VidCommitment::V0(disperse.commit))
+<a href=#2781 id=2781 data-nosnippet>2781</a>                .<span class="kw">await
+<a href=#2782 id=2782 data-nosnippet>2782</a>                </span>.unwrap();
+<a href=#2783 id=2783 data-nosnippet>2783</a>
+<a href=#2784 id=2784 data-nosnippet>2784</a>            <span class="kw">let </span>leaf_hash = Committable::commit(<span class="kw-2">&amp;</span>leaf);
+<a href=#2785 id=2785 data-nosnippet>2785</a>            <span class="kw">let </span><span class="kw-2">mut </span>tx = storage.db.write().<span class="kw">await</span>.expect(<span class="string">"failed to start write tx"</span>);
+<a href=#2786 id=2786 data-nosnippet>2786</a>            tx.upsert(
+<a href=#2787 id=2787 data-nosnippet>2787</a>                <span class="string">"quorum_proposals"</span>,
+<a href=#2788 id=2788 data-nosnippet>2788</a>                [<span class="string">"view"</span>, <span class="string">"leaf_hash"</span>, <span class="string">"data"</span>],
+<a href=#2789 id=2789 data-nosnippet>2789</a>                [<span class="string">"view"</span>],
+<a href=#2790 id=2790 data-nosnippet>2790</a>                [(i <span class="kw">as </span>i64, leaf_hash.to_string(), proposal_bytes)],
+<a href=#2791 id=2791 data-nosnippet>2791</a>            )
+<a href=#2792 id=2792 data-nosnippet>2792</a>            .<span class="kw">await
+<a href=#2793 id=2793 data-nosnippet>2793</a>            </span>.expect(<span class="string">"failed to upsert quorum proposal"</span>);
+<a href=#2794 id=2794 data-nosnippet>2794</a>
+<a href=#2795 id=2795 data-nosnippet>2795</a>            <span class="kw">let </span>justify_qc = <span class="kw-2">&amp;</span>proposal.data.justify_qc;
+<a href=#2796 id=2796 data-nosnippet>2796</a>            <span class="kw">let </span>justify_qc_bytes = bincode::serialize(<span class="kw-2">&amp;</span>justify_qc)
+<a href=#2797 id=2797 data-nosnippet>2797</a>                .context(<span class="string">"serializing QC"</span>)
+<a href=#2798 id=2798 data-nosnippet>2798</a>                .unwrap();
+<a href=#2799 id=2799 data-nosnippet>2799</a>            tx.upsert(
+<a href=#2800 id=2800 data-nosnippet>2800</a>                <span class="string">"quorum_certificate"</span>,
+<a href=#2801 id=2801 data-nosnippet>2801</a>                [<span class="string">"view"</span>, <span class="string">"leaf_hash"</span>, <span class="string">"data"</span>],
+<a href=#2802 id=2802 data-nosnippet>2802</a>                [<span class="string">"view"</span>],
+<a href=#2803 id=2803 data-nosnippet>2803</a>                [(
+<a href=#2804 id=2804 data-nosnippet>2804</a>                    justify_qc.view_number.u64() <span class="kw">as </span>i64,
+<a href=#2805 id=2805 data-nosnippet>2805</a>                    justify_qc.data.leaf_commit.to_string(),
+<a href=#2806 id=2806 data-nosnippet>2806</a>                    <span class="kw-2">&amp;</span>justify_qc_bytes,
+<a href=#2807 id=2807 data-nosnippet>2807</a>                )],
+<a href=#2808 id=2808 data-nosnippet>2808</a>            )
+<a href=#2809 id=2809 data-nosnippet>2809</a>            .<span class="kw">await
+<a href=#2810 id=2810 data-nosnippet>2810</a>            </span>.expect(<span class="string">"failed to upsert qc"</span>);
+<a href=#2811 id=2811 data-nosnippet>2811</a>
+<a href=#2812 id=2812 data-nosnippet>2812</a>            tx.commit().<span class="kw">await</span>.expect(<span class="string">"failed to commit"</span>);
+<a href=#2813 id=2813 data-nosnippet>2813</a>        }
+<a href=#2814 id=2814 data-nosnippet>2814</a>
+<a href=#2815 id=2815 data-nosnippet>2815</a>        storage.migrate_consensus().<span class="kw">await</span>.unwrap();
+<a href=#2816 id=2816 data-nosnippet>2816</a>
+<a href=#2817 id=2817 data-nosnippet>2817</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx = storage.db.read().<span class="kw">await</span>.unwrap();
+<a href=#2818 id=2818 data-nosnippet>2818</a>        <span class="kw">let </span>(anchor_leaf2_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from anchor_leaf2"</span>)
+<a href=#2819 id=2819 data-nosnippet>2819</a>            .fetch_one(tx.as_mut())
+<a href=#2820 id=2820 data-nosnippet>2820</a>            .<span class="kw">await
+<a href=#2821 id=2821 data-nosnippet>2821</a>            </span>.unwrap();
+<a href=#2822 id=2822 data-nosnippet>2822</a>        <span class="macro">assert_eq!</span>(
+<a href=#2823 id=2823 data-nosnippet>2823</a>            anchor_leaf2_count, rows <span class="kw">as </span>i64,
+<a href=#2824 id=2824 data-nosnippet>2824</a>            <span class="string">"anchor leaf count does not match rows"</span>,
+<a href=#2825 id=2825 data-nosnippet>2825</a>        );
+<a href=#2826 id=2826 data-nosnippet>2826</a>
+<a href=#2827 id=2827 data-nosnippet>2827</a>        <span class="kw">let </span>(da_proposal_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from da_proposal2"</span>)
+<a href=#2828 id=2828 data-nosnippet>2828</a>            .fetch_one(tx.as_mut())
+<a href=#2829 id=2829 data-nosnippet>2829</a>            .<span class="kw">await
+<a href=#2830 id=2830 data-nosnippet>2830</a>            </span>.unwrap();
+<a href=#2831 id=2831 data-nosnippet>2831</a>        <span class="macro">assert_eq!</span>(
+<a href=#2832 id=2832 data-nosnippet>2832</a>            da_proposal_count, rows <span class="kw">as </span>i64,
+<a href=#2833 id=2833 data-nosnippet>2833</a>            <span class="string">"da proposal count does not match rows"</span>,
+<a href=#2834 id=2834 data-nosnippet>2834</a>        );
+<a href=#2835 id=2835 data-nosnippet>2835</a>
+<a href=#2836 id=2836 data-nosnippet>2836</a>        <span class="kw">let </span>(vid_share_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from vid_share2"</span>)
+<a href=#2837 id=2837 data-nosnippet>2837</a>            .fetch_one(tx.as_mut())
+<a href=#2838 id=2838 data-nosnippet>2838</a>            .<span class="kw">await
+<a href=#2839 id=2839 data-nosnippet>2839</a>            </span>.unwrap();
+<a href=#2840 id=2840 data-nosnippet>2840</a>        <span class="macro">assert_eq!</span>(
+<a href=#2841 id=2841 data-nosnippet>2841</a>            vid_share_count, rows <span class="kw">as </span>i64,
+<a href=#2842 id=2842 data-nosnippet>2842</a>            <span class="string">"vid share count does not match rows"
+<a href=#2843 id=2843 data-nosnippet>2843</a>        </span>);
+<a href=#2844 id=2844 data-nosnippet>2844</a>
+<a href=#2845 id=2845 data-nosnippet>2845</a>        <span class="kw">let </span>(quorum_proposals_count,) =
+<a href=#2846 id=2846 data-nosnippet>2846</a>            query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from quorum_proposals2"</span>)
+<a href=#2847 id=2847 data-nosnippet>2847</a>                .fetch_one(tx.as_mut())
+<a href=#2848 id=2848 data-nosnippet>2848</a>                .<span class="kw">await
+<a href=#2849 id=2849 data-nosnippet>2849</a>                </span>.unwrap();
+<a href=#2850 id=2850 data-nosnippet>2850</a>        <span class="macro">assert_eq!</span>(
+<a href=#2851 id=2851 data-nosnippet>2851</a>            quorum_proposals_count, rows <span class="kw">as </span>i64,
+<a href=#2852 id=2852 data-nosnippet>2852</a>            <span class="string">"quorum proposals count does not match rows"</span>,
+<a href=#2853 id=2853 data-nosnippet>2853</a>        );
+<a href=#2854 id=2854 data-nosnippet>2854</a>
+<a href=#2855 id=2855 data-nosnippet>2855</a>        <span class="kw">let </span>(quorum_certificates_count,) =
+<a href=#2856 id=2856 data-nosnippet>2856</a>            query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from quorum_certificate2"</span>)
+<a href=#2857 id=2857 data-nosnippet>2857</a>                .fetch_one(tx.as_mut())
+<a href=#2858 id=2858 data-nosnippet>2858</a>                .<span class="kw">await
+<a href=#2859 id=2859 data-nosnippet>2859</a>                </span>.unwrap();
+<a href=#2860 id=2860 data-nosnippet>2860</a>        <span class="macro">assert_eq!</span>(
+<a href=#2861 id=2861 data-nosnippet>2861</a>            quorum_certificates_count, rows <span class="kw">as </span>i64,
+<a href=#2862 id=2862 data-nosnippet>2862</a>            <span class="string">"quorum certificates count does not match rows"</span>,
+<a href=#2863 id=2863 data-nosnippet>2863</a>        );
+<a href=#2864 id=2864 data-nosnippet>2864</a>
+<a href=#2865 id=2865 data-nosnippet>2865</a>        <span class="kw">let </span>(state_cert_count,) = query_as::&lt;(i64,)&gt;(<span class="string">"SELECT COUNT(*) from finalized_state_cert"</span>)
+<a href=#2866 id=2866 data-nosnippet>2866</a>            .fetch_one(tx.as_mut())
+<a href=#2867 id=2867 data-nosnippet>2867</a>            .<span class="kw">await
+<a href=#2868 id=2868 data-nosnippet>2868</a>            </span>.unwrap();
+<a href=#2869 id=2869 data-nosnippet>2869</a>        <span class="macro">assert_eq!</span>(
+<a href=#2870 id=2870 data-nosnippet>2870</a>            state_cert_count, rows <span class="kw">as </span>i64,
+<a href=#2871 id=2871 data-nosnippet>2871</a>            <span class="string">"Light client state update certificates count does not match rows"</span>,
+<a href=#2872 id=2872 data-nosnippet>2872</a>        );
+<a href=#2873 id=2873 data-nosnippet>2873</a>        <span class="macro">assert_eq!</span>(
+<a href=#2874 id=2874 data-nosnippet>2874</a>            storage.load_state_cert().<span class="kw">await</span>.unwrap().unwrap(),
+<a href=#2875 id=2875 data-nosnippet>2875</a>            LightClientStateUpdateCertificate::&lt;SeqTypes&gt; {
+<a href=#2876 id=2876 data-nosnippet>2876</a>                epoch: EpochNumber::new(rows - <span class="number">1</span>),
+<a href=#2877 id=2877 data-nosnippet>2877</a>                light_client_state: Default::default(),
+<a href=#2878 id=2878 data-nosnippet>2878</a>                next_stake_table_state: Default::default(),
+<a href=#2879 id=2879 data-nosnippet>2879</a>                signatures: <span class="macro">vec!</span>[]
+<a href=#2880 id=2880 data-nosnippet>2880</a>            },
+<a href=#2881 id=2881 data-nosnippet>2881</a>            <span class="string">"Wrong light client state update certificate in the storage"</span>,
+<a href=#2882 id=2882 data-nosnippet>2882</a>        )
+<a href=#2883 id=2883 data-nosnippet>2883</a>    }
+<a href=#2884 id=2884 data-nosnippet>2884</a>
+<a href=#2885 id=2885 data-nosnippet>2885</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+<a href=#2886 id=2886 data-nosnippet>2886</a>    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
+<a href=#2887 id=2887 data-nosnippet>2887</a>        setup_test();
+<a href=#2888 id=2888 data-nosnippet>2888</a>
+<a href=#2889 id=2889 data-nosnippet>2889</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
+<a href=#2890 id=2890 data-nosnippet>2890</a>        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
 <a href=#2891 id=2891 data-nosnippet>2891</a>
-<a href=#2892 id=2892 data-nosnippet>2892</a>        <span class="kw">let </span>validator = Validator::mock();
-<a href=#2893 id=2893 data-nosnippet>2893</a>        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
-<a href=#2894 id=2894 data-nosnippet>2894</a>        st.insert(validator.account, validator);
-<a href=#2895 id=2895 data-nosnippet>2895</a>        storage
-<a href=#2896 id=2896 data-nosnippet>2896</a>            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
-<a href=#2897 id=2897 data-nosnippet>2897</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#2898 id=2898 data-nosnippet>2898</a>
-<a href=#2899 id=2899 data-nosnippet>2899</a>        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-<a href=#2900 id=2900 data-nosnippet>2900</a>        <span class="macro">assert_eq!</span>(st, table);
-<a href=#2901 id=2901 data-nosnippet>2901</a>
-<a href=#2902 id=2902 data-nosnippet>2902</a>        <span class="kw">let </span>val2 = Validator::mock();
-<a href=#2903 id=2903 data-nosnippet>2903</a>        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
-<a href=#2904 id=2904 data-nosnippet>2904</a>        st2.insert(val2.account, val2);
-<a href=#2905 id=2905 data-nosnippet>2905</a>        storage
-<a href=#2906 id=2906 data-nosnippet>2906</a>            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
-<a href=#2907 id=2907 data-nosnippet>2907</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#2908 id=2908 data-nosnippet>2908</a>
-<a href=#2909 id=2909 data-nosnippet>2909</a>        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-<a href=#2910 id=2910 data-nosnippet>2910</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
-<a href=#2911 id=2911 data-nosnippet>2911</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
-<a href=#2912 id=2912 data-nosnippet>2912</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
-<a href=#2913 id=2913 data-nosnippet>2913</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
-<a href=#2914 id=2914 data-nosnippet>2914</a>
-<a href=#2915 id=2915 data-nosnippet>2915</a>        <span class="prelude-val">Ok</span>(())
-<a href=#2916 id=2916 data-nosnippet>2916</a>    }
-<a href=#2917 id=2917 data-nosnippet>2917</a>}</code></pre></div></section></main></body></html>
+<a href=#2892 id=2892 data-nosnippet>2892</a>        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
+<a href=#2893 id=2893 data-nosnippet>2893</a>
+<a href=#2894 id=2894 data-nosnippet>2894</a>        <span class="kw">let </span>validator = Validator::mock();
+<a href=#2895 id=2895 data-nosnippet>2895</a>        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
+<a href=#2896 id=2896 data-nosnippet>2896</a>        st.insert(validator.account, validator);
+<a href=#2897 id=2897 data-nosnippet>2897</a>        storage
+<a href=#2898 id=2898 data-nosnippet>2898</a>            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
+<a href=#2899 id=2899 data-nosnippet>2899</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#2900 id=2900 data-nosnippet>2900</a>
+<a href=#2901 id=2901 data-nosnippet>2901</a>        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+<a href=#2902 id=2902 data-nosnippet>2902</a>        <span class="macro">assert_eq!</span>(st, table);
+<a href=#2903 id=2903 data-nosnippet>2903</a>
+<a href=#2904 id=2904 data-nosnippet>2904</a>        <span class="kw">let </span>val2 = Validator::mock();
+<a href=#2905 id=2905 data-nosnippet>2905</a>        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
+<a href=#2906 id=2906 data-nosnippet>2906</a>        st2.insert(val2.account, val2);
+<a href=#2907 id=2907 data-nosnippet>2907</a>        storage
+<a href=#2908 id=2908 data-nosnippet>2908</a>            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
+<a href=#2909 id=2909 data-nosnippet>2909</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#2910 id=2910 data-nosnippet>2910</a>
+<a href=#2911 id=2911 data-nosnippet>2911</a>        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
+<a href=#2912 id=2912 data-nosnippet>2912</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
+<a href=#2913 id=2913 data-nosnippet>2913</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
+<a href=#2914 id=2914 data-nosnippet>2914</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
+<a href=#2915 id=2915 data-nosnippet>2915</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
+<a href=#2916 id=2916 data-nosnippet>2916</a>
+<a href=#2917 id=2917 data-nosnippet>2917</a>        <span class="prelude-val">Ok</span>(())
+<a href=#2918 id=2918 data-nosnippet>2918</a>    }
+<a href=#2919 id=2919 data-nosnippet>2919</a>}</code></pre></div></section></main></body></html>

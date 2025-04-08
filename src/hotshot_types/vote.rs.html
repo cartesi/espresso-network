@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a>
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use crate</span>::{
 <a href=#22 id=22 data-nosnippet>22</a>    epoch_membership::EpochMembership,
-<a href=#23 id=23 data-nosnippet>23</a>    light_client::LightClientState,
+<a href=#23 id=23 data-nosnippet>23</a>    light_client::{LightClientState, StakeTableState},
 <a href=#24 id=24 data-nosnippet>24</a>    message::UpgradeLock,
 <a href=#25 id=25 data-nosnippet>25</a>    simple_certificate::{LightClientStateUpdateCertificate, Threshold},
 <a href=#26 id=26 data-nosnippet>26</a>    simple_vote::{LightClientStateUpdateVote, VersionedVoteData, Voteable},
@@ -246,7 +246,7 @@
 <a href=#246 id=246 data-nosnippet>246</a></span><span class="attr">#[allow(clippy::type_complexity)]
 <a href=#247 id=247 data-nosnippet>247</a></span><span class="kw">pub struct </span>LightClientStateUpdateVoteAccumulator&lt;TYPES: NodeType&gt; {
 <a href=#248 id=248 data-nosnippet>248</a>    <span class="kw">pub </span>vote_outcomes: HashMap&lt;
-<a href=#249 id=249 data-nosnippet>249</a>        LightClientState,
+<a href=#249 id=249 data-nosnippet>249</a>        (LightClientState, StakeTableState),
 <a href=#250 id=250 data-nosnippet>250</a>        (
 <a href=#251 id=251 data-nosnippet>251</a>            U256,
 <a href=#252 id=252 data-nosnippet>252</a>            HashMap&lt;
@@ -274,32 +274,36 @@
 <a href=#274 id=274 data-nosnippet>274</a>            state_ver_key,
 <a href=#275 id=275 data-nosnippet>275</a>        } = membership.stake(key).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#276 id=276 data-nosnippet>276</a>
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="kw">let </span>state_msg = (<span class="kw-2">&amp;</span>vote.light_client_state).into();
-<a href=#278 id=278 data-nosnippet>278</a>        <span class="kw">if </span>!state_ver_key.verify_state_sig(<span class="kw-2">&amp;</span>vote.signature, <span class="kw-2">&amp;</span>state_msg) {
-<a href=#279 id=279 data-nosnippet>279</a>            <span class="macro">error!</span>(<span class="string">"Invalid light client state update vote {:?}"</span>, vote);
-<a href=#280 id=280 data-nosnippet>280</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
-<a href=#281 id=281 data-nosnippet>281</a>        }
-<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>(total_stake_casted, vote_map) = <span class="self">self
-<a href=#283 id=283 data-nosnippet>283</a>            </span>.vote_outcomes
-<a href=#284 id=284 data-nosnippet>284</a>            .entry(vote.light_client_state.clone())
-<a href=#285 id=285 data-nosnippet>285</a>            .or_insert_with(|| (U256::from(<span class="number">0</span>), HashMap::new()));
-<a href=#286 id=286 data-nosnippet>286</a>
-<a href=#287 id=287 data-nosnippet>287</a>        <span class="comment">// Check for duplicate vote
-<a href=#288 id=288 data-nosnippet>288</a>        </span><span class="kw">if </span>vote_map.contains_key(<span class="kw-2">&amp;</span>state_ver_key) {
-<a href=#289 id=289 data-nosnippet>289</a>            <span class="macro">tracing::warn!</span>(<span class="string">"Duplicate vote (key: {:?}, vote: {:?})"</span>, key, vote);
-<a href=#290 id=290 data-nosnippet>290</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
-<a href=#291 id=291 data-nosnippet>291</a>        }
-<a href=#292 id=292 data-nosnippet>292</a>
-<a href=#293 id=293 data-nosnippet>293</a>        <span class="kw-2">*</span>total_stake_casted += stake_table_entry.stake();
-<a href=#294 id=294 data-nosnippet>294</a>        vote_map.insert(state_ver_key.clone(), vote.signature.clone());
+<a href=#277 id=277 data-nosnippet>277</a>        <span class="kw">if </span>!state_ver_key.verify_state_sig(
+<a href=#278 id=278 data-nosnippet>278</a>            <span class="kw-2">&amp;</span>vote.signature,
+<a href=#279 id=279 data-nosnippet>279</a>            <span class="kw-2">&amp;</span>vote.light_client_state,
+<a href=#280 id=280 data-nosnippet>280</a>            <span class="kw-2">&amp;</span>vote.next_stake_table_state,
+<a href=#281 id=281 data-nosnippet>281</a>        ) {
+<a href=#282 id=282 data-nosnippet>282</a>            <span class="macro">error!</span>(<span class="string">"Invalid light client state update vote {:?}"</span>, vote);
+<a href=#283 id=283 data-nosnippet>283</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#284 id=284 data-nosnippet>284</a>        }
+<a href=#285 id=285 data-nosnippet>285</a>        <span class="kw">let </span>(total_stake_casted, vote_map) = <span class="self">self
+<a href=#286 id=286 data-nosnippet>286</a>            </span>.vote_outcomes
+<a href=#287 id=287 data-nosnippet>287</a>            .entry((vote.light_client_state.clone(), vote.next_stake_table_state))
+<a href=#288 id=288 data-nosnippet>288</a>            .or_insert_with(|| (U256::from(<span class="number">0</span>), HashMap::new()));
+<a href=#289 id=289 data-nosnippet>289</a>
+<a href=#290 id=290 data-nosnippet>290</a>        <span class="comment">// Check for duplicate vote
+<a href=#291 id=291 data-nosnippet>291</a>        </span><span class="kw">if </span>vote_map.contains_key(<span class="kw-2">&amp;</span>state_ver_key) {
+<a href=#292 id=292 data-nosnippet>292</a>            <span class="macro">tracing::warn!</span>(<span class="string">"Duplicate vote (key: {:?}, vote: {:?})"</span>, key, vote);
+<a href=#293 id=293 data-nosnippet>293</a>            <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#294 id=294 data-nosnippet>294</a>        }
 <a href=#295 id=295 data-nosnippet>295</a>
-<a href=#296 id=296 data-nosnippet>296</a>        <span class="kw">if </span><span class="kw-2">*</span>total_stake_casted &gt;= threshold {
-<a href=#297 id=297 data-nosnippet>297</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(LightClientStateUpdateCertificate {
-<a href=#298 id=298 data-nosnippet>298</a>                epoch,
-<a href=#299 id=299 data-nosnippet>299</a>                light_client_state: vote.light_client_state.clone(),
-<a href=#300 id=300 data-nosnippet>300</a>                signatures: Vec::from_iter(vote_map.iter().map(|(k, v)| (k.clone(), v.clone()))),
-<a href=#301 id=301 data-nosnippet>301</a>            });
-<a href=#302 id=302 data-nosnippet>302</a>        }
-<a href=#303 id=303 data-nosnippet>303</a>        <span class="prelude-val">None
-<a href=#304 id=304 data-nosnippet>304</a>    </span>}
-<a href=#305 id=305 data-nosnippet>305</a>}</code></pre></div></section></main></body></html>
+<a href=#296 id=296 data-nosnippet>296</a>        <span class="kw-2">*</span>total_stake_casted += stake_table_entry.stake();
+<a href=#297 id=297 data-nosnippet>297</a>        vote_map.insert(state_ver_key.clone(), vote.signature.clone());
+<a href=#298 id=298 data-nosnippet>298</a>
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">if </span><span class="kw-2">*</span>total_stake_casted &gt;= threshold {
+<a href=#300 id=300 data-nosnippet>300</a>            <span class="kw">return </span><span class="prelude-val">Some</span>(LightClientStateUpdateCertificate {
+<a href=#301 id=301 data-nosnippet>301</a>                epoch,
+<a href=#302 id=302 data-nosnippet>302</a>                light_client_state: vote.light_client_state.clone(),
+<a href=#303 id=303 data-nosnippet>303</a>                next_stake_table_state: vote.next_stake_table_state,
+<a href=#304 id=304 data-nosnippet>304</a>                signatures: Vec::from_iter(vote_map.iter().map(|(k, v)| (k.clone(), v.clone()))),
+<a href=#305 id=305 data-nosnippet>305</a>            });
+<a href=#306 id=306 data-nosnippet>306</a>        }
+<a href=#307 id=307 data-nosnippet>307</a>        <span class="prelude-val">None
+<a href=#308 id=308 data-nosnippet>308</a>    </span>}
+<a href=#309 id=309 data-nosnippet>309</a>}</code></pre></div></section></main></body></html>
