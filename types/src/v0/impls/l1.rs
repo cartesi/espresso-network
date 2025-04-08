@@ -443,6 +443,8 @@ impl L1Client {
 
         let span = tracing::warn_span!("L1 client update");
         async move {
+            // Q: could this be one of those cases where a node overwhelms so we need to add backoff?
+            // 
             for i in 0.. {
                 let ws;
 
@@ -466,6 +468,7 @@ impl L1Client {
                             ws.subscribe_blocks().await.map(|stream| stream.into_stream().boxed())
                         }
                         None => {
+                            // if we have no ws_urls we fallback to try http
                            rpc
                             .watch_blocks()
                             .await
@@ -502,6 +505,7 @@ impl L1Client {
                         }
                     };
                     match res {
+                        // we have connected to the block stream
                         Ok(stream) => stream,
                         Err(err) => {
                             tracing::error!("Error subscribing to L1 blocks: {err:#}");
@@ -516,8 +520,10 @@ impl L1Client {
                     // Wait for a block, timing out if we don't get one soon enough
                     let block_timeout = tokio::time::timeout(subscription_timeout, block_stream.next()).await;
                     match block_timeout {
-                        // We got a block
+                        // @audit - We wait for a new block in the block stream but we dont need when there is new block rather when there is a new finalized block?
                         Ok(Some(head)) => {
+
+                            // this is the head of the latest polled block
                             let head = head.number;
                             tracing::debug!(head, "Received L1 block");
 
@@ -535,6 +541,7 @@ impl L1Client {
 
                             // Update the state snapshot;
                             let mut state = state.lock().await;
+                            // if the lasted polled is newer then our stored head update and broadcast new head
                             if head > state.snapshot.head {
                                 tracing::debug!(head, old_head = state.snapshot.head, "L1 head updated");
                                 metrics.head.set(head as usize);
@@ -547,6 +554,7 @@ impl L1Client {
                                     .ok();
                             }
                             if let Some(finalized) = finalized {
+                                // if the lasted polled finalzed block is newer then our finalized stored update and broadcast new finalized
                                 if Some(finalized.info) > state.snapshot.finalized {
                                     tracing::info!(
                                         ?finalized,
@@ -560,6 +568,8 @@ impl L1Client {
                                         .await
                                         .ok();
                                 }
+                                // @audit - what happens in a case where we have update too slowly so we skip over 1 block 
+                                // head 4 new head 8 we update it but we dont broadcast new head with the rest of them
                             }
                             tracing::debug!("Updated L1 snapshot to {:?}", state.snapshot);
                         }

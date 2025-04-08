@@ -217,13 +217,14 @@ fn select_validators(
     // Find the maximum stake
     // @audit - is this based on the events we have just processed?
     // if so this will not be the max stake it will be the max stake for the newst events?!
+    // A: this works in our current implementation because every single time we reconstrcut the stake table from start to now so it would have the entire history
     let maximum_stake = validators
         .values()
         .map(|v| v.stake)
         .max()
         .context("Failed to determine max stake")?;
 
-    // min is determined based on the max stake
+    // min is determined based on the max stake which is based on the full history
     let minimum_stake = maximum_stake
         .checked_div(U256::from(VID_TARGET_TOTAL_STAKE))
         .context("div err")?;
@@ -244,7 +245,7 @@ fn select_validators(
         valid_stakers.truncate(100);
     }
 
-    // Retain only the selected validators
+    // Retain only the selected validators ie the top 100
     let selected_addresses: HashSet<_> = valid_stakers.iter().map(|(addr, _)| *addr).collect();
     validators.retain(|address, _| selected_addresses.contains(address));
 
@@ -409,12 +410,16 @@ impl EpochCommittees {
         validators: IndexMap<Address, Validator<BLSPubKey>>,
     ) {
         let mut address_mapping = HashMap::new();
+        // this will insert the validator into the address mapping along with the address and the bls key
+        // as well as take the stake table key and make it the stake table entry with the peer config composed of the stake table key and the stake (total delegated stake)
         let stake_table = validators
             .values()
             .map(|v| {
                 address_mapping.insert(v.stake_table_key, v.account);
                 (
                     v.stake_table_key,
+                    // Fill address_mapping with stake_table_key and account (peer address) for each validator
+                    // Build stake_table with stake_table_key and PeerConfig (stake entry + state key) for each validator
                     PeerConfig {
                         stake_table_entry: BLSPubKey::stake_table_entry(
                             &v.stake_table_key,
@@ -426,9 +431,12 @@ impl EpochCommittees {
             })
             .collect();
 
+        // insert the new stakeTable into our state 
         self.state.insert(
             epoch,
             EpochCommittee {
+                // @audit - what is this eligible_leaders in this context since we dont actually change 
+                // is this non_epoch_committee inserted into the leaders every time? then we need to know how does it get updated?
                 eligible_leaders: self.non_epoch_committee.eligible_leaders.clone(),
                 stake_table,
                 validators,
@@ -441,6 +449,7 @@ impl EpochCommittees {
         &self,
         epoch: &Epoch,
     ) -> anyhow::Result<IndexMap<Address, Validator<BLSPubKey>>> {
+        // grabs validators from state at epoch
         Ok(self
             .state
             .get(epoch)
@@ -450,6 +459,7 @@ impl EpochCommittees {
     }
 
     pub fn address(&self, epoch: &Epoch, bls_key: BLSPubKey) -> anyhow::Result<Address> {
+        // grabs the address mapping from state at epoch
         let mapping = self
             .state
             .get(epoch)
@@ -466,7 +476,9 @@ impl EpochCommittees {
         &self,
         epoch: &Epoch,
         key: BLSPubKey,
-    ) -> anyhow::Result<Validator<BLSPubKey>> {
+    ) -> anyhow::Result<Validator<BLSPubKey>> 
+    {
+        // get the address_mapping which is v.stake_table_key, v.account
         let address = self.address(epoch, key)?;
         let validators = self.validators(epoch)?;
         Ok(validators.get(&address).unwrap().clone())
@@ -483,10 +495,13 @@ impl EpochCommittees {
         peers: Arc<dyn StateCatchup>,
         persistence: impl MembershipPersistence,
     ) -> Self {
+        // @audit - we have eligible_leaders and stake_table which are the same thing
         // For each eligible leader, get the stake table entry
+        // should eligible_leaders here be from the eligible_leaders in the EpochCommittee?
         let eligible_leaders: Vec<_> = committee_members
             .iter()
             .filter(|&peer_config| {
+                // get all committee members with non-zero stake
                 peer_config.stake_table_entry.stake() > ethers::types::U256::zero()
             })
             .cloned()
@@ -496,6 +511,7 @@ impl EpochCommittees {
         let stake_table: Vec<_> = committee_members
             .iter()
             .filter(|&peer_config| {
+                // get all validators with non-zero stake
                 peer_config.stake_table_entry.stake() > ethers::types::U256::zero()
             })
             .cloned()
@@ -532,6 +548,7 @@ impl EpochCommittees {
             })
             .collect();
 
+            // Q: member is the nonEpochCommittee, is this set once we initialize the stake table? or do we update it?
         let members = NonEpochCommittee {
             eligible_leaders,
             stake_table,
@@ -542,7 +559,8 @@ impl EpochCommittees {
 
         let mut map = HashMap::new();
         let epoch_committee = EpochCommittee {
-            eligible_leaders: members.eligible_leaders.clone(),
+            eligible_leaders: 
+            members.eligible_leaders.clone(),
             stake_table: members
                 .stake_table
                 .iter()
@@ -551,6 +569,9 @@ impl EpochCommittees {
             validators: Default::default(),
             address_mapping: HashMap::new(),
         };
+        // Q: this would mean that we always insert the genesis epoch and the first epoch everytime we call this and nothing else 
+        // PA: this might only be on initilization
+        // A: This will be prefilled
         map.insert(Epoch::genesis(), epoch_committee.clone());
         // TODO: remove this, workaround for hotshot asking for stake tables from epoch 1
         map.insert(Epoch::genesis() + 1u64, epoch_committee.clone());
@@ -566,12 +587,16 @@ impl EpochCommittees {
             first_epoch: Epoch::genesis(),
         }
     }
+
     fn get_stake_table(&self, epoch: &Option<Epoch>) -> Option<Vec<PeerConfig<SeqTypes>>> {
+        // Q: this will only grab from state so where do we increament state to hold the new stake table?
+        // A: we do this when updating the stake table
         if let Some(epoch) = epoch {
             self.state
                 .get(epoch)
                 .map(|committee| committee.stake_table.clone().into_values().collect())
         } else {
+            // A: will this just return the genesis we got from the new_stake function? since I am not sure if we change non_epoch_committee anywhere else
             Some(self.non_epoch_committee.stake_table.clone())
         }
     }
@@ -594,6 +619,7 @@ impl EpochCommittees {
         {
             Ok(stake_tables)
         } else {
+            // @audit-issue - CRITICAL - this is passed in as l1_block but its atucally just the block number
             self.l1_client
                 .get_stake_table(contract_address, l1_block)
                 .await
@@ -629,6 +655,7 @@ impl Membership<SeqTypes> for EpochCommittees {
     }
 
     /// Get the stake table for the current view
+    /// @audit - the comment says for the current view but its an epoch that is passed in?
     fn stake_table(&self, epoch: Option<Epoch>) -> Vec<PeerConfig<SeqTypes>> {
         self.get_stake_table(&epoch).unwrap_or_default()
     }
@@ -743,6 +770,8 @@ impl Membership<SeqTypes> for EpochCommittees {
     /// Get the voting success threshold for the committee
     fn success_threshold(&self, epoch: Option<Epoch>) -> primitive_types::U256 {
         let total_stake = self.total_stake(epoch);
+        // gets 2/3 but uses separate order of operations to avoid overflow
+        // @note this is rounded up which works as a threshold ensuring that we have enough 
         if total_stake < primitive_types::U256::max_value() / 2 {
             ((total_stake * 2) / 3) + 1
         } else {
@@ -754,6 +783,8 @@ impl Membership<SeqTypes> for EpochCommittees {
     fn da_success_threshold(&self, epoch: Option<Epoch>) -> primitive_types::U256 {
         let total_stake = self.total_da_stake(epoch);
         if total_stake < primitive_types::U256::max_value() / 2 {
+        // gets 2/3 but uses separate order of operations to avoid overflow
+        // @note this is rounded up which works as a threshold ensuring that we have enough 
             ((total_stake * 2) / 3) + 1
         } else {
             ((total_stake / 3) * 2) + 2
@@ -763,21 +794,26 @@ impl Membership<SeqTypes> for EpochCommittees {
     /// Get the voting failure threshold for the committee
     fn failure_threshold(&self, epoch: Option<Epoch>) -> primitive_types::U256 {
         let total_stake = self.total_stake(epoch);
-
+            // @audit - should this not be showing the lowest bound for failure ie 1/3 without the +1?
+            // if 100 stake, 1/3 is 33.333333333333333333 so 33 is the lowest bound for failure
+            // I guess this can work in two cases if we we check < to the + 1 case or if we check <= to the case without the + 1
+            // it seems like it works in our case for now 
+            // aanother question that arieses in viewsync why is the first ViewSyncPreCommitCertificateRecv done with the failure threshold?
+            // PA: If we have 100 stake, 1/3 is 33.333333333333333333 so 34 failed we want to start a view sync would make sense
         (total_stake / 3) + 1
     }
 
     /// Get the voting upgrade threshold for the committee
     fn upgrade_threshold(&self, epoch: Option<Epoch>) -> primitive_types::U256 {
         let total_stake = self.total_stake(epoch);
-
+        
         let normal_threshold = self.success_threshold(epoch);
         let higher_threshold = if total_stake < primitive_types::U256::max_value() / 9 {
             (total_stake * 9) / 10
         } else {
             (total_stake / 10) * 9
         };
-
+        // ugrade threshold is 90% and if the normal threshold is higher that would be rough
         max(higher_threshold, normal_threshold)
     }
 
@@ -808,6 +844,7 @@ impl Membership<SeqTypes> for EpochCommittees {
             tracing::error!(?e, "`add_epoch_root`, error storing stake table");
         }
 
+        // @audit - could we avoid calling this every time we dont call l1_client.get_stake_table
         Some(Box::new(move |committee: &mut Self| {
             committee.update_stake_table(epoch, stake_tables);
         }))

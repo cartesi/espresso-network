@@ -316,8 +316,8 @@ impl From<(RewardAccountProof, U256)> for RewardAccountQueryData {
 }
 
 pub fn apply_rewards(
-    mut reward_state: RewardMerkleTree,
-    validator: Validator<BLSPubKey>,
+    mut reward_state: RewardMerkleTree, // rewards merkle tree
+    validator: Validator<BLSPubKey>, // leader the view in which rewards are being calculated for
 ) -> anyhow::Result<RewardMerkleTree> {
     let mut update_balance = |account: &RewardAccount, amount: RewardAmount| {
         let mut err = None;
@@ -356,13 +356,37 @@ pub fn compute_rewards(
 
     let mut rewards = Vec::new();
 
+    // we get the block rewards every node has specified 
     let total_reward = block_reward().0;
+    // delegation ratio is COMMISSION_BASIS_POINTS what the validator has set in the contract 
+    // if they set 100% this will be 0 which seems strange
+    // the ratio/% that is left over from the 100% after the validator takes there commission 
+
+    // @audit-issue - if commission is non zero there is a chance all rewards get rounded to zero 
+    // if this happens all rewards will go to the leader which means the validator has an insentive to do this
+    // 1e18
+    // 
     let delegators_ratio_basis_points = U256::from(COMMISSION_BASIS_POINTS)
         .checked_sub(U256::from(validator.commission))
         .context("overflow")?;
+    // how much of the total rewards are going to the delegators 
+    // delegators_reward needs to be / by the COMMISSION_BASIS_POINTS
     let delegators_reward = delegators_ratio_basis_points
         .checked_mul(total_reward)
         .context("overflow")?;
+
+    // @audit-issue - double-dipping is as a leader since if you have a comition you will still get your delegated rewards as well
+    // a = d=10 
+    // b = d=10
+    // leader = d=10
+    // com = 1000 = 10%
+    // block reward = 30
+
+    // com from delegators = (10+10+10)10%  = 3
+
+    // leader = + 3 + 9 = 12
+    // a = 9
+    // b = 9
 
     // Distribute delegator rewards
     let total_stake = validator.stake.to_ethers();
@@ -417,21 +441,26 @@ pub async fn catchup_missing_accounts(
     let epoch_height = instance_state
         .epoch_height
         .context("epoch height not found")?;
+    // @note that we will start in epoch besed on what the current block number is not 1,2,3 etc more like 400, 401, 402.
     let epoch = EpochNumber::new(epoch_from_block_number(height, epoch_height));
     let coordinator = instance_state.coordinator.clone();
 
     let epoch_membership = coordinator.membership_for_epoch(Some(epoch)).await?;
     let membership = epoch_membership.coordinator.membership().read().await;
 
+    // look up the leader of view in epoch
     let leader: BLSPubKey = membership
         .leader(view, Some(epoch))
         .context(format!("leader for epoch {epoch:?} not found"))?;
 
+    // this if give us v.stake_table_key, v.account
     let validator = membership
         .get_validator_config(&epoch, leader)
         .context("validator not found")?;
     let mut reward_accounts = HashSet::new();
+    // our new set starts with the validators account
     reward_accounts.insert(validator.account.to_ethers().into());
+    // get all the delegators that have stake in the validator
     let delegators = validator
         .delegators
         .keys()
@@ -439,7 +468,9 @@ pub async fn catchup_missing_accounts(
         .map(|a| a.to_ethers().into())
         .collect::<Vec<RewardAccount>>();
 
+        // we extend it to fit all of the delegators 
     reward_accounts.extend(delegators.clone());
+    // find all the reward accounts that are not in the validated state 
     let missing_reward_accts = validated_state.forgotten_reward_accounts(reward_accounts);
 
     if !missing_reward_accts.is_empty() {

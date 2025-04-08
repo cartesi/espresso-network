@@ -525,6 +525,7 @@ impl Header {
         // when we deploy the permissionless contract in native demo
         // so that marketplace version also supports this,
         // and the marketplace integration test passes
+        // @audit - are we updating the validators before we call this or after?
         if let Some(validator) = validator {
             let reward_state = apply_rewards(state.reward_merkle_tree.clone(), validator)?;
             state.reward_merkle_tree = reward_state;

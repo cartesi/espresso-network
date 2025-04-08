@@ -350,6 +350,9 @@ pub fn root_block_in_epoch(epoch: u64, epoch_height: u64) -> u64 {
     if epoch_height == 0 || epoch < 1 {
         0
     } else {
+        // @audit - this will be the block number?
+        // epoch height is a fixed number which represents the number of blocks in an epoch
+        // this will return us the block number of the epoch's estimated root but I dont understand the -5 here
         epoch_height * epoch - 5
     }
 }
