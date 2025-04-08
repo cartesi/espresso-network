@@ -278,7 +278,7 @@
 <a href=#278 id=278 data-nosnippet>278</a>
 <a href=#279 id=279 data-nosnippet>279</a><span class="kw">pub fn </span>hash_bytes_to_field&lt;F: RescueParameter&gt;(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;F, RescueError&gt; {
 <a href=#280 id=280 data-nosnippet>280</a>    <span class="comment">// make sure that `mod_order` won't happen.
-<a href=#281 id=281 data-nosnippet>281</a>    </span><span class="kw">let </span>bytes_len = &lt;F <span class="kw">as </span>PrimeField&gt;::MODULUS_BIT_SIZE.div_ceil(<span class="number">8</span>) <span class="kw">as </span>usize;
+<a href=#281 id=281 data-nosnippet>281</a>    </span><span class="kw">let </span>bytes_len = (&lt;F <span class="kw">as </span>PrimeField&gt;::MODULUS_BIT_SIZE.div_ceil(<span class="number">8</span>) - <span class="number">1</span>) <span class="kw">as </span>usize;
 <a href=#282 id=282 data-nosnippet>282</a>    <span class="kw">let </span>elem = bytes
 <a href=#283 id=283 data-nosnippet>283</a>        .chunks(bytes_len)
 <a href=#284 id=284 data-nosnippet>284</a>        .map(F::from_le_bytes_mod_order)
