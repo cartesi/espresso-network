@@ -107,3 +107,32 @@ contract PostDeploymentStakeTable is Script {
         }
     }
 }
+
+interface IGnosisSafe {
+    function getOwners() external view returns (address[] memory);
+    function getThreshold() external view returns (uint256);
+}
+
+/// @notice Use this script to check if an address is a Gnosis Safe.
+/// @notice It expects the safe to have at least 2 owners and a threshold of at least 2.
+/// @dev how to run this script:
+/// forge script contracts/script/PostDeployment.s.sol:GnosisSafeCheck \
+///     --rpc-url $RPC_URL \
+///     --sig "run(address)" \
+///     $SAFE_ADDRESS
+contract GnosisSafeCheck is Script {
+    error InvalidOwnersLength(uint256 length);
+    error InvalidThreshold(uint256 threshold);
+
+    function run(address safeAddress) external {
+        IGnosisSafe safe = IGnosisSafe(safeAddress);
+        address[] memory owners = safe.getOwners();
+        uint256 threshold = safe.getThreshold();
+        if (owners.length < 2) {
+            revert InvalidOwnersLength(owners.length);
+        }
+        if (threshold < 2) {
+            revert InvalidThreshold(threshold);
+        }
+    }
+}
