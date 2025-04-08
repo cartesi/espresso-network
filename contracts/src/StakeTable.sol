@@ -198,6 +198,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     /// Delegations held in escrow that are to be unlocked at a later time.
     //
     // @dev these are stored indexed by validator so we can keep track of them for slashing later
+    mapping(address validator => address[] delegators) public validatorToDelegators;
     mapping(address validator => mapping(address delegator => Undelegation)) undelegations;
 
     /// The time the contract will hold funds after undelegations are requested.
