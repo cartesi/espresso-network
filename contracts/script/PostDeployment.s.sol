@@ -68,6 +68,7 @@ contract PostDeploymentEsp is Script {
 ///     $STAKE_TABLE_OWNER \
 ///     $LIGHT_CLIENT_ADDRESS \
 ///     $EXIT_ESCROW_PERIOD
+///     TODO verify that the token and light client addresses are proxies
 contract PostDeploymentStakeTable is Script {
     error InvalidOwner(address expected, address actual);
     error InvalidTokenProxyAddress(address expected, address actual);
