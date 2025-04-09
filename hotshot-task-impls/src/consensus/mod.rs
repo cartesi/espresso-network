@@ -181,16 +181,36 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                 };
                 let cert_epoch = epoch_from_block_number(cert_block_number, self.epoch_height);
                 tracing::error!(
-                    "Formed Extended QC for view {cert_view:?} and epoch {cert_epoch:?}."
+                    "Formed Extended QC for view {:?} and epoch {:?}.",
+                    cert_view,
+                    cert_epoch
                 );
                 // Transition to the new epoch by sending ViewChange
                 let next_epoch = TYPES::Epoch::new(cert_epoch + 1);
-                tracing::info!("Entering new epoch: {:?}", next_epoch);
                 broadcast_event(
                     Arc::new(HotShotEvent::ViewChange(cert_view + 1, Some(next_epoch))),
                     &sender,
                 )
                 .await;
+                tracing::info!("Entering new epoch: {:?}", next_epoch);
+                tracing::info!(
+                    "Stake table for epoch {:?}:\n\n{:?}",
+                    next_epoch,
+                    self.membership_coordinator
+                        .stake_table_for_epoch(Some(next_epoch))
+                        .await?
+                        .stake_table()
+                        .await
+                );
+                tracing::info!(
+                    "Stake table for epoch {:?}:\n\n{:?}",
+                    next_epoch + 1,
+                    self.membership_coordinator
+                        .stake_table_for_epoch(Some(next_epoch + 1))
+                        .await?
+                        .stake_table()
+                        .await
+                );
             },
             HotShotEvent::ExtendedQcRecv(high_qc, next_epoch_high_qc, _) => {
                 if !high_qc
@@ -211,7 +231,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                 )
                 .await
                 {
-                    tracing::error!("Received invalid extended QC: {e}");
+                    tracing::error!("Received invalid extended QC: {}", e);
                     return Ok(());
                 }
 
