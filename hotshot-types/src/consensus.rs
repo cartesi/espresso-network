@@ -1196,6 +1196,14 @@ impl<TYPES: NodeType> Consensus<TYPES> {
         })
     }
 
+    /// Returns true if the high qc is an extended qc
+    pub fn is_high_qc_extended(&self) -> bool {
+        self.high_qc()
+            .data
+            .block_number
+            .is_some_and(|block_number| is_last_block(block_number, self.epoch_height))
+    }
+
     /// Returns true if our high QC is for the last block in the epoch
     pub fn is_high_qc_for_last_block(&self) -> bool {
         let Some(leaf) = self.saved_leaves.get(&self.high_qc().data.leaf_commit) else {

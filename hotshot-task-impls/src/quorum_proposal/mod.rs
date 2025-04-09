@@ -24,11 +24,14 @@ use hotshot_types::{
         QuorumCertificate2, UpgradeCertificate,
     },
     traits::{
+        block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
         signature_key::SignatureKey,
         storage::Storage,
     },
-    utils::{is_epoch_transition, EpochTransitionIndicator},
+    utils::{
+        epoch_from_block_number, is_epoch_transition, is_last_block, EpochTransitionIndicator,
+    },
     vote::{Certificate, HasViewNumber},
     StakeTableEntries,
 };
@@ -444,7 +447,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
         event_sender: Sender<Arc<HotShotEvent<TYPES>>>,
     ) -> Result<()> {
         let epoch_number = self.cur_epoch;
-        let epoch_transition_indicator = if self.consensus.read().await.is_high_qc_in_transition() {
+        let mut epoch_transition_indicator = if self.consensus.read().await.is_high_qc_extended()
+            || self.consensus.read().await.high_qc().data.epoch == self.cur_epoch
+        {
             EpochTransitionIndicator::InTransition
         } else {
             EpochTransitionIndicator::NotInTransition
@@ -462,50 +467,57 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     self.formed_upgrade_certificate = Some(cert.clone());
                 }
             },
-            HotShotEvent::Qc2Formed(cert) => match cert.clone() {
-                either::Right(timeout_cert) => {
-                    let view_number = timeout_cert.view_number + 1;
-                    self.create_dependency_task_if_new(
-                        view_number,
-                        epoch_number,
-                        event_receiver,
-                        event_sender,
-                        Arc::clone(&event),
-                        epoch_transition_indicator,
-                    )
-                    .await?;
-                },
-                either::Left(qc) => {
-                    // Only update if the qc is from a newer view
-                    if qc.view_number <= self.consensus.read().await.high_qc().view_number {
-                        tracing::trace!(
-                            "Received a QC for a view that was not > than our current high QC"
-                        );
-                    }
+            HotShotEvent::Qc2Formed(cert) => {
+                match cert.clone() {
+                    either::Right(timeout_cert) => {
+                        let view_number = timeout_cert.view_number + 1;
+                        self.create_dependency_task_if_new(
+                            view_number,
+                            epoch_number,
+                            event_receiver,
+                            event_sender,
+                            Arc::clone(&event),
+                            epoch_transition_indicator,
+                        )
+                        .await?;
+                    },
+                    either::Left(qc) => {
+                        // Only update if the qc is from a newer view
+                        if qc.view_number <= self.consensus.read().await.high_qc().view_number {
+                            tracing::trace!(
+                                "Received a QC for a view that was not > than our current high QC"
+                            );
+                        }
+                        if qc.data.block_number.is_some_and(|block_number| {
+                            is_last_block(block_number, self.epoch_height)
+                        }) {
+                            epoch_transition_indicator = EpochTransitionIndicator::InTransition;
+                        }
 
-                    self.formed_quorum_certificates
-                        .insert(qc.view_number(), qc.clone());
+                        self.formed_quorum_certificates
+                            .insert(qc.view_number(), qc.clone());
 
-                    handle_eqc_formed(
-                        qc.view_number(),
-                        qc.data.leaf_commit,
-                        qc.data.block_number,
-                        self,
-                        &event_sender,
-                    )
-                    .await;
+                        handle_eqc_formed(
+                            qc.view_number(),
+                            qc.data.leaf_commit,
+                            qc.data.block_number,
+                            self,
+                            &event_sender,
+                        )
+                        .await;
 
-                    let view_number = qc.view_number() + 1;
-                    self.create_dependency_task_if_new(
-                        view_number,
-                        epoch_number,
-                        event_receiver,
-                        event_sender,
-                        Arc::clone(&event),
-                        epoch_transition_indicator,
-                    )
-                    .await?;
-                },
+                        let view_number = qc.view_number() + 1;
+                        self.create_dependency_task_if_new(
+                            view_number,
+                            epoch_number,
+                            event_receiver,
+                            event_sender,
+                            Arc::clone(&event),
+                            epoch_transition_indicator,
+                        )
+                        .await?;
+                    },
+                }
             },
 
             HotShotEvent::EpochRootQcFormed(EpochRootQuorumCertificate { qc, state_cert }) => {
@@ -538,7 +550,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     event_receiver,
                     event_sender,
                     Arc::clone(&event),
-                    epoch_transition_indicator,
+                    EpochTransitionIndicator::NotInTransition,
                 )
                 .await?;
             },
@@ -596,11 +608,22 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     event_receiver,
                     event_sender,
                     event,
-                    EpochTransitionIndicator::NotInTransition,
+                    epoch_transition_indicator,
                 )
                 .await?;
             },
             HotShotEvent::QuorumProposalPreliminarilyValidated(proposal) => {
+                let proposal_block_number = proposal.data.proposal.block_header.block_number();
+                if is_last_block(proposal_block_number, self.epoch_height)
+                    && Some(TYPES::Epoch::new(epoch_from_block_number(
+                        proposal_block_number,
+                        self.epoch_height,
+                    ))) == self.cur_epoch
+                {
+                    epoch_transition_indicator = EpochTransitionIndicator::InTransition;
+                } else {
+                    epoch_transition_indicator = EpochTransitionIndicator::NotInTransition;
+                }
                 let view_number = proposal.data.view_number();
                 // All nodes get the latest proposed view as a proxy of `cur_view` of old.
                 if !self.update_latest_proposed_view(view_number).await {
@@ -649,6 +672,13 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 self.cancel_tasks(keep_view);
             },
             HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) => {
+                if next_epoch_qc
+                    .data
+                    .block_number
+                    .is_some_and(|block_number| is_last_block(block_number, self.epoch_height))
+                {
+                    epoch_transition_indicator = EpochTransitionIndicator::InTransition;
+                }
                 // Only update if the qc is from a newer view
                 let current_next_epoch_qc =
                     self.consensus.read().await.next_epoch_high_qc().cloned();
