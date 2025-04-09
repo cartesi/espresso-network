@@ -253,7 +253,7 @@
 <a href=#253 id=253 data-nosnippet>253</a>            <span class="comment">// fetch epoch length from HotShot config
 <a href=#254 id=254 data-nosnippet>254</a>            </span><span class="kw">let </span>config_url = opt.sequencer_url.join(<span class="string">"/config/hotshot"</span>)<span class="question-mark">?</span>;
 <a href=#255 id=255 data-nosnippet>255</a>            <span class="comment">// Request the configuration until it is successful
-<a href=#256 id=256 data-nosnippet>256</a>            </span><span class="kw">let </span><span class="kw-2">mut </span>blocks_per_epoch = <span class="kw">loop </span>{
+<a href=#256 id=256 data-nosnippet>256</a>            </span><span class="kw">let </span>(<span class="kw-2">mut </span>blocks_per_epoch, epoch_start_block) = <span class="kw">loop </span>{
 <a href=#257 id=257 data-nosnippet>257</a>                <span class="kw">match </span>surf_disco::Client::&lt;ServerError, StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;&gt;::new(
 <a href=#258 id=258 data-nosnippet>258</a>                    config_url.clone(),
 <a href=#259 id=259 data-nosnippet>259</a>                )
@@ -261,106 +261,110 @@
 <a href=#261 id=261 data-nosnippet>261</a>                .send()
 <a href=#262 id=262 data-nosnippet>262</a>                .<span class="kw">await
 <a href=#263 id=263 data-nosnippet>263</a>                </span>{
-<a href=#264 id=264 data-nosnippet>264</a>                    <span class="prelude-val">Ok</span>(resp) =&gt; <span class="kw">break </span>resp.hotshot_config().blocks_per_epoch(),
-<a href=#265 id=265 data-nosnippet>265</a>                    <span class="prelude-val">Err</span>(e) =&gt; {
-<a href=#266 id=266 data-nosnippet>266</a>                        <span class="macro">tracing::error!</span>(<span class="string">"Failed to fetch the network config: {e}"</span>);
-<a href=#267 id=267 data-nosnippet>267</a>                        sleep(Duration::from_secs(<span class="number">5</span>));
-<a href=#268 id=268 data-nosnippet>268</a>                    },
-<a href=#269 id=269 data-nosnippet>269</a>                }
-<a href=#270 id=270 data-nosnippet>270</a>            };
-<a href=#271 id=271 data-nosnippet>271</a>
-<a href=#272 id=272 data-nosnippet>272</a>            <span class="comment">// TEST-ONLY: if this config is not yet set, we use a large default value
-<a href=#273 id=273 data-nosnippet>273</a>            // to avoid contract complaining about invalid zero-valued blocks_per_epoch.
-<a href=#274 id=274 data-nosnippet>274</a>            // This large value will act as if we are always in epoch 1, which won't conflict
-<a href=#275 id=275 data-nosnippet>275</a>            // with the effective purpose of the real `PublicNetworkConfig`.
-<a href=#276 id=276 data-nosnippet>276</a>            </span><span class="kw">if </span>opt.use_mock &amp;&amp; blocks_per_epoch == <span class="number">0 </span>{
-<a href=#277 id=277 data-nosnippet>277</a>                blocks_per_epoch = u64::MAX;
-<a href=#278 id=278 data-nosnippet>278</a>            }
-<a href=#279 id=279 data-nosnippet>279</a>            <span class="macro">tracing::info!</span>(%blocks_per_epoch, <span class="string">"Upgrading LightClientV2 with "</span>);
-<a href=#280 id=280 data-nosnippet>280</a>
-<a href=#281 id=281 data-nosnippet>281</a>            deployer::upgrade_light_client_v2(
-<a href=#282 id=282 data-nosnippet>282</a>                <span class="kw-2">&amp;</span>provider,
-<a href=#283 id=283 data-nosnippet>283</a>                <span class="kw-2">&amp;mut </span>contracts,
-<a href=#284 id=284 data-nosnippet>284</a>                opt.use_mock,
-<a href=#285 id=285 data-nosnippet>285</a>                blocks_per_epoch,
-<a href=#286 id=286 data-nosnippet>286</a>            )
-<a href=#287 id=287 data-nosnippet>287</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#288 id=288 data-nosnippet>288</a>        }
-<a href=#289 id=289 data-nosnippet>289</a>
-<a href=#290 id=290 data-nosnippet>290</a>        <span class="comment">// NOTE: see the comment during LC V1 deployment, we defer ownership transfer to multisig here.
-<a href=#291 id=291 data-nosnippet>291</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(multisig) = opt.multisig_address {
-<a href=#292 id=292 data-nosnippet>292</a>            transfer_ownership(
-<a href=#293 id=293 data-nosnippet>293</a>                <span class="kw-2">&amp;</span>provider,
-<a href=#294 id=294 data-nosnippet>294</a>                Contract::LightClientProxy,
-<a href=#295 id=295 data-nosnippet>295</a>                lc_proxy_addr,
-<a href=#296 id=296 data-nosnippet>296</a>                multisig,
-<a href=#297 id=297 data-nosnippet>297</a>            )
-<a href=#298 id=298 data-nosnippet>298</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#299 id=299 data-nosnippet>299</a>        }
-<a href=#300 id=300 data-nosnippet>300</a>    }
-<a href=#301 id=301 data-nosnippet>301</a>
-<a href=#302 id=302 data-nosnippet>302</a>    <span class="kw">if </span>opt.deploy_esp_token {
-<a href=#303 id=303 data-nosnippet>303</a>        <span class="kw">let </span>recipient = <span class="kw">match </span>opt.initial_token_grant_recipient {
-<a href=#304 id=304 data-nosnippet>304</a>            <span class="prelude-val">Some</span>(r) =&gt; r,
-<a href=#305 id=305 data-nosnippet>305</a>            <span class="prelude-val">None </span>=&gt; deployer,
-<a href=#306 id=306 data-nosnippet>306</a>        };
-<a href=#307 id=307 data-nosnippet>307</a>        <span class="kw">let </span>token_proxy_addr =
-<a href=#308 id=308 data-nosnippet>308</a>            deployer::deploy_token_proxy(<span class="kw-2">&amp;</span>provider, <span class="kw-2">&amp;mut </span>contracts, deployer, recipient).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#309 id=309 data-nosnippet>309</a>
-<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(multisig) = opt.multisig_address {
-<a href=#311 id=311 data-nosnippet>311</a>            transfer_ownership(
-<a href=#312 id=312 data-nosnippet>312</a>                <span class="kw-2">&amp;</span>provider,
-<a href=#313 id=313 data-nosnippet>313</a>                Contract::EspTokenProxy,
-<a href=#314 id=314 data-nosnippet>314</a>                token_proxy_addr,
-<a href=#315 id=315 data-nosnippet>315</a>                multisig,
-<a href=#316 id=316 data-nosnippet>316</a>            )
-<a href=#317 id=317 data-nosnippet>317</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#318 id=318 data-nosnippet>318</a>        }
-<a href=#319 id=319 data-nosnippet>319</a>    }
-<a href=#320 id=320 data-nosnippet>320</a>
-<a href=#321 id=321 data-nosnippet>321</a>    <span class="kw">if </span>opt.deploy_stake_table {
-<a href=#322 id=322 data-nosnippet>322</a>        <span class="kw">let </span>token_addr = contracts
-<a href=#323 id=323 data-nosnippet>323</a>            .address(Contract::EspTokenProxy)
-<a href=#324 id=324 data-nosnippet>324</a>            .context(<span class="string">"no ESP token proxy address"</span>)<span class="question-mark">?</span>;
-<a href=#325 id=325 data-nosnippet>325</a>        <span class="kw">let </span>lc_addr = contracts
-<a href=#326 id=326 data-nosnippet>326</a>            .address(Contract::LightClientProxy)
-<a href=#327 id=327 data-nosnippet>327</a>            .context(<span class="string">"no LightClient proxy address"</span>)<span class="question-mark">?</span>;
-<a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">let </span>escrow_period = U256::from(
-<a href=#329 id=329 data-nosnippet>329</a>            opt.exit_escrow_period
-<a href=#330 id=330 data-nosnippet>330</a>                .context(<span class="string">"no exit escrow period"</span>)<span class="question-mark">?
-<a href=#331 id=331 data-nosnippet>331</a>                </span>.as_secs(),
-<a href=#332 id=332 data-nosnippet>332</a>        );
-<a href=#333 id=333 data-nosnippet>333</a>        <span class="kw">let </span>stake_table_proxy_addr = deployer::deploy_stake_table_proxy(
-<a href=#334 id=334 data-nosnippet>334</a>            <span class="kw-2">&amp;</span>provider,
-<a href=#335 id=335 data-nosnippet>335</a>            <span class="kw-2">&amp;mut </span>contracts,
-<a href=#336 id=336 data-nosnippet>336</a>            token_addr,
-<a href=#337 id=337 data-nosnippet>337</a>            lc_addr,
-<a href=#338 id=338 data-nosnippet>338</a>            escrow_period,
-<a href=#339 id=339 data-nosnippet>339</a>            deployer,
-<a href=#340 id=340 data-nosnippet>340</a>        )
-<a href=#341 id=341 data-nosnippet>341</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#342 id=342 data-nosnippet>342</a>
-<a href=#343 id=343 data-nosnippet>343</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(multisig) = opt.multisig_address {
-<a href=#344 id=344 data-nosnippet>344</a>            transfer_ownership(
-<a href=#345 id=345 data-nosnippet>345</a>                <span class="kw-2">&amp;</span>provider,
-<a href=#346 id=346 data-nosnippet>346</a>                Contract::StakeTableProxy,
-<a href=#347 id=347 data-nosnippet>347</a>                stake_table_proxy_addr,
-<a href=#348 id=348 data-nosnippet>348</a>                multisig,
-<a href=#349 id=349 data-nosnippet>349</a>            )
-<a href=#350 id=350 data-nosnippet>350</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#351 id=351 data-nosnippet>351</a>        }
-<a href=#352 id=352 data-nosnippet>352</a>    }
-<a href=#353 id=353 data-nosnippet>353</a>
-<a href=#354 id=354 data-nosnippet>354</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(out) = <span class="kw-2">&amp;</span>opt.out {
-<a href=#355 id=355 data-nosnippet>355</a>        <span class="kw">let </span>file = File::options()
-<a href=#356 id=356 data-nosnippet>356</a>            .create(<span class="bool-val">true</span>)
-<a href=#357 id=357 data-nosnippet>357</a>            .truncate(<span class="bool-val">true</span>)
-<a href=#358 id=358 data-nosnippet>358</a>            .write(<span class="bool-val">true</span>)
-<a href=#359 id=359 data-nosnippet>359</a>            .open(out)<span class="question-mark">?</span>;
-<a href=#360 id=360 data-nosnippet>360</a>        contracts.write(file)<span class="question-mark">?</span>;
-<a href=#361 id=361 data-nosnippet>361</a>    } <span class="kw">else </span>{
-<a href=#362 id=362 data-nosnippet>362</a>        contracts.write(stdout())<span class="question-mark">?</span>;
-<a href=#363 id=363 data-nosnippet>363</a>    }
-<a href=#364 id=364 data-nosnippet>364</a>
-<a href=#365 id=365 data-nosnippet>365</a>    <span class="prelude-val">Ok</span>(())
-<a href=#366 id=366 data-nosnippet>366</a>}</code></pre></div></section></main></body></html>
+<a href=#264 id=264 data-nosnippet>264</a>                    <span class="prelude-val">Ok</span>(resp) =&gt; {
+<a href=#265 id=265 data-nosnippet>265</a>                        <span class="kw">let </span>config = resp.hotshot_config();
+<a href=#266 id=266 data-nosnippet>266</a>                        <span class="kw">break </span>(config.blocks_per_epoch(), config.epoch_start_block());
+<a href=#267 id=267 data-nosnippet>267</a>                    },
+<a href=#268 id=268 data-nosnippet>268</a>                    <span class="prelude-val">Err</span>(e) =&gt; {
+<a href=#269 id=269 data-nosnippet>269</a>                        <span class="macro">tracing::error!</span>(<span class="string">"Failed to fetch the network config: {e}"</span>);
+<a href=#270 id=270 data-nosnippet>270</a>                        sleep(Duration::from_secs(<span class="number">5</span>));
+<a href=#271 id=271 data-nosnippet>271</a>                    },
+<a href=#272 id=272 data-nosnippet>272</a>                }
+<a href=#273 id=273 data-nosnippet>273</a>            };
+<a href=#274 id=274 data-nosnippet>274</a>
+<a href=#275 id=275 data-nosnippet>275</a>            <span class="comment">// TEST-ONLY: if this config is not yet set, we use a large default value
+<a href=#276 id=276 data-nosnippet>276</a>            // to avoid contract complaining about invalid zero-valued blocks_per_epoch.
+<a href=#277 id=277 data-nosnippet>277</a>            // This large value will act as if we are always in epoch 1, which won't conflict
+<a href=#278 id=278 data-nosnippet>278</a>            // with the effective purpose of the real `PublicNetworkConfig`.
+<a href=#279 id=279 data-nosnippet>279</a>            </span><span class="kw">if </span>opt.use_mock &amp;&amp; blocks_per_epoch == <span class="number">0 </span>{
+<a href=#280 id=280 data-nosnippet>280</a>                blocks_per_epoch = u64::MAX;
+<a href=#281 id=281 data-nosnippet>281</a>            }
+<a href=#282 id=282 data-nosnippet>282</a>            <span class="macro">tracing::info!</span>(%blocks_per_epoch, <span class="string">"Upgrading LightClientV2 with "</span>);
+<a href=#283 id=283 data-nosnippet>283</a>
+<a href=#284 id=284 data-nosnippet>284</a>            deployer::upgrade_light_client_v2(
+<a href=#285 id=285 data-nosnippet>285</a>                <span class="kw-2">&amp;</span>provider,
+<a href=#286 id=286 data-nosnippet>286</a>                <span class="kw-2">&amp;mut </span>contracts,
+<a href=#287 id=287 data-nosnippet>287</a>                opt.use_mock,
+<a href=#288 id=288 data-nosnippet>288</a>                blocks_per_epoch,
+<a href=#289 id=289 data-nosnippet>289</a>                epoch_start_block,
+<a href=#290 id=290 data-nosnippet>290</a>            )
+<a href=#291 id=291 data-nosnippet>291</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#292 id=292 data-nosnippet>292</a>        }
+<a href=#293 id=293 data-nosnippet>293</a>
+<a href=#294 id=294 data-nosnippet>294</a>        <span class="comment">// NOTE: see the comment during LC V1 deployment, we defer ownership transfer to multisig here.
+<a href=#295 id=295 data-nosnippet>295</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(multisig) = opt.multisig_address {
+<a href=#296 id=296 data-nosnippet>296</a>            transfer_ownership(
+<a href=#297 id=297 data-nosnippet>297</a>                <span class="kw-2">&amp;</span>provider,
+<a href=#298 id=298 data-nosnippet>298</a>                Contract::LightClientProxy,
+<a href=#299 id=299 data-nosnippet>299</a>                lc_proxy_addr,
+<a href=#300 id=300 data-nosnippet>300</a>                multisig,
+<a href=#301 id=301 data-nosnippet>301</a>            )
+<a href=#302 id=302 data-nosnippet>302</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#303 id=303 data-nosnippet>303</a>        }
+<a href=#304 id=304 data-nosnippet>304</a>    }
+<a href=#305 id=305 data-nosnippet>305</a>
+<a href=#306 id=306 data-nosnippet>306</a>    <span class="kw">if </span>opt.deploy_esp_token {
+<a href=#307 id=307 data-nosnippet>307</a>        <span class="kw">let </span>recipient = <span class="kw">match </span>opt.initial_token_grant_recipient {
+<a href=#308 id=308 data-nosnippet>308</a>            <span class="prelude-val">Some</span>(r) =&gt; r,
+<a href=#309 id=309 data-nosnippet>309</a>            <span class="prelude-val">None </span>=&gt; deployer,
+<a href=#310 id=310 data-nosnippet>310</a>        };
+<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">let </span>token_proxy_addr =
+<a href=#312 id=312 data-nosnippet>312</a>            deployer::deploy_token_proxy(<span class="kw-2">&amp;</span>provider, <span class="kw-2">&amp;mut </span>contracts, deployer, recipient).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#313 id=313 data-nosnippet>313</a>
+<a href=#314 id=314 data-nosnippet>314</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(multisig) = opt.multisig_address {
+<a href=#315 id=315 data-nosnippet>315</a>            transfer_ownership(
+<a href=#316 id=316 data-nosnippet>316</a>                <span class="kw-2">&amp;</span>provider,
+<a href=#317 id=317 data-nosnippet>317</a>                Contract::EspTokenProxy,
+<a href=#318 id=318 data-nosnippet>318</a>                token_proxy_addr,
+<a href=#319 id=319 data-nosnippet>319</a>                multisig,
+<a href=#320 id=320 data-nosnippet>320</a>            )
+<a href=#321 id=321 data-nosnippet>321</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#322 id=322 data-nosnippet>322</a>        }
+<a href=#323 id=323 data-nosnippet>323</a>    }
+<a href=#324 id=324 data-nosnippet>324</a>
+<a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">if </span>opt.deploy_stake_table {
+<a href=#326 id=326 data-nosnippet>326</a>        <span class="kw">let </span>token_addr = contracts
+<a href=#327 id=327 data-nosnippet>327</a>            .address(Contract::EspTokenProxy)
+<a href=#328 id=328 data-nosnippet>328</a>            .context(<span class="string">"no ESP token proxy address"</span>)<span class="question-mark">?</span>;
+<a href=#329 id=329 data-nosnippet>329</a>        <span class="kw">let </span>lc_addr = contracts
+<a href=#330 id=330 data-nosnippet>330</a>            .address(Contract::LightClientProxy)
+<a href=#331 id=331 data-nosnippet>331</a>            .context(<span class="string">"no LightClient proxy address"</span>)<span class="question-mark">?</span>;
+<a href=#332 id=332 data-nosnippet>332</a>        <span class="kw">let </span>escrow_period = U256::from(
+<a href=#333 id=333 data-nosnippet>333</a>            opt.exit_escrow_period
+<a href=#334 id=334 data-nosnippet>334</a>                .context(<span class="string">"no exit escrow period"</span>)<span class="question-mark">?
+<a href=#335 id=335 data-nosnippet>335</a>                </span>.as_secs(),
+<a href=#336 id=336 data-nosnippet>336</a>        );
+<a href=#337 id=337 data-nosnippet>337</a>        <span class="kw">let </span>stake_table_proxy_addr = deployer::deploy_stake_table_proxy(
+<a href=#338 id=338 data-nosnippet>338</a>            <span class="kw-2">&amp;</span>provider,
+<a href=#339 id=339 data-nosnippet>339</a>            <span class="kw-2">&amp;mut </span>contracts,
+<a href=#340 id=340 data-nosnippet>340</a>            token_addr,
+<a href=#341 id=341 data-nosnippet>341</a>            lc_addr,
+<a href=#342 id=342 data-nosnippet>342</a>            escrow_period,
+<a href=#343 id=343 data-nosnippet>343</a>            deployer,
+<a href=#344 id=344 data-nosnippet>344</a>        )
+<a href=#345 id=345 data-nosnippet>345</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#346 id=346 data-nosnippet>346</a>
+<a href=#347 id=347 data-nosnippet>347</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(multisig) = opt.multisig_address {
+<a href=#348 id=348 data-nosnippet>348</a>            transfer_ownership(
+<a href=#349 id=349 data-nosnippet>349</a>                <span class="kw-2">&amp;</span>provider,
+<a href=#350 id=350 data-nosnippet>350</a>                Contract::StakeTableProxy,
+<a href=#351 id=351 data-nosnippet>351</a>                stake_table_proxy_addr,
+<a href=#352 id=352 data-nosnippet>352</a>                multisig,
+<a href=#353 id=353 data-nosnippet>353</a>            )
+<a href=#354 id=354 data-nosnippet>354</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#355 id=355 data-nosnippet>355</a>        }
+<a href=#356 id=356 data-nosnippet>356</a>    }
+<a href=#357 id=357 data-nosnippet>357</a>
+<a href=#358 id=358 data-nosnippet>358</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(out) = <span class="kw-2">&amp;</span>opt.out {
+<a href=#359 id=359 data-nosnippet>359</a>        <span class="kw">let </span>file = File::options()
+<a href=#360 id=360 data-nosnippet>360</a>            .create(<span class="bool-val">true</span>)
+<a href=#361 id=361 data-nosnippet>361</a>            .truncate(<span class="bool-val">true</span>)
+<a href=#362 id=362 data-nosnippet>362</a>            .write(<span class="bool-val">true</span>)
+<a href=#363 id=363 data-nosnippet>363</a>            .open(out)<span class="question-mark">?</span>;
+<a href=#364 id=364 data-nosnippet>364</a>        contracts.write(file)<span class="question-mark">?</span>;
+<a href=#365 id=365 data-nosnippet>365</a>    } <span class="kw">else </span>{
+<a href=#366 id=366 data-nosnippet>366</a>        contracts.write(stdout())<span class="question-mark">?</span>;
+<a href=#367 id=367 data-nosnippet>367</a>    }
+<a href=#368 id=368 data-nosnippet>368</a>
+<a href=#369 id=369 data-nosnippet>369</a>    <span class="prelude-val">Ok</span>(())
+<a href=#370 id=370 data-nosnippet>370</a>}</code></pre></div></section></main></body></html>
