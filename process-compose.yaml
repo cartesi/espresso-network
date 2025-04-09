@@ -238,6 +238,7 @@ processes:
       restart: exit_on_failure
 
   sequencer2:
+    log_location: seq2.log
     command: sequencer -- http
     environment:
       - ESPRESSO_SEQUENCER_API_PORT=$ESPRESSO_SEQUENCER2_API_PORT

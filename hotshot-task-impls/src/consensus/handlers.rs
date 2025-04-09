@@ -89,12 +89,18 @@ pub(crate) async fn handle_quorum_vote_recv<
             .is_some_and(|b| is_epoch_transition(b, task_state.epoch_height))
     {
         // If the vote sender belongs to the next epoch, collect it separately to form the second QC
+        tracing::error!(
+            "Received a quorum vote for an epoch transition block epoch {:?} view {:?}",
+            vote.epoch(),
+            vote.view_number()
+        );
         let has_stake = epoch_membership
             .next_epoch_stake_table()
             .await?
             .has_stake(&vote.signing_key())
             .await;
         if has_stake {
+            tracing::error!("vote has stake");
             handle_vote(
                 &mut task_state.next_epoch_vote_collectors,
                 &vote.clone().into(),

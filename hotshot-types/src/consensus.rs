@@ -1187,12 +1187,10 @@ impl<TYPES: NodeType> Consensus<TYPES> {
 
     /// Returns true if our high QC is for the last block in the epoch
     pub fn is_high_qc_for_last_block(&self) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&self.high_qc().data.leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the high QC");
-            return false;
-        };
-        let block_height = leaf.height();
-        is_epoch_transition(block_height, self.epoch_height)
+        self.high_qc()
+            .data
+            .block_number
+            .is_some_and(|bn| is_epoch_transition(bn, self.epoch_height))
     }
 
     /// Returns true if the `parent_leaf` formed an eQC for the previous epoch to the `proposed_leaf`
@@ -1208,12 +1206,10 @@ impl<TYPES: NodeType> Consensus<TYPES> {
 
     /// Returns true if our high QC is for the block equal or greater than the root epoch block
     pub fn is_high_qc_ge_root_block(&self) -> bool {
-        let Some(leaf) = self.saved_leaves.get(&self.high_qc().data.leaf_commit) else {
-            tracing::trace!("We don't have a leaf corresponding to the high QC");
-            return false;
-        };
-        let block_height = leaf.height();
-        is_ge_epoch_root(block_height, self.epoch_height)
+        self.high_qc()
+            .data
+            .block_number
+            .is_some_and(|bn| is_ge_epoch_root(bn, self.epoch_height))
     }
 }
 

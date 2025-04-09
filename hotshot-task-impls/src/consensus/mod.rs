@@ -129,7 +129,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                 if let Err(e) =
                     handle_quorum_vote_recv(vote, Arc::clone(&event), &sender, self).await
                 {
-                    tracing::debug!("Failed to handle QuorumVoteRecv event; error = {e}");
+                    tracing::error!("Failed to handle QuorumVoteRecv event; error = {e}");
                 }
             },
             HotShotEvent::EpochRootQuorumVoteRecv(ref vote) => {
@@ -137,14 +137,14 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> ConsensusTaskSt
                     handle_epoch_root_quorum_vote_recv(vote, Arc::clone(&event), &sender, self)
                         .await
                 {
-                    tracing::debug!("Failed to handle EpochRootQuorumVoteRecv event; error = {e}");
+                    tracing::error!("Failed to handle EpochRootQuorumVoteRecv event; error = {e}");
                 }
             },
             HotShotEvent::TimeoutVoteRecv(ref vote) => {
                 if let Err(e) =
                     handle_timeout_vote_recv(vote, Arc::clone(&event), &sender, self).await
                 {
-                    tracing::debug!("Failed to handle TimeoutVoteRecv event; error = {e}");
+                    tracing::error!("Failed to handle TimeoutVoteRecv event; error = {e}");
                 }
             },
             HotShotEvent::SetFirstEpoch(view, epoch) => {

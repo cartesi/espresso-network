@@ -237,7 +237,7 @@ pub(crate) async fn handle_quorum_proposal_validated<
                 epoch_height,
             ));
 
-            tracing::debug!("Calling set_first_epoch for epoch {:?}", first_epoch_number);
+            tracing::error!("Calling set_first_epoch for epoch {:?}", first_epoch_number);
             task_state
                 .membership
                 .membership()

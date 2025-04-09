@@ -653,9 +653,18 @@ impl Membership<SeqTypes> for EpochCommittees {
 
     /// Check if a node has stake in the committee
     fn has_stake(&self, pub_key: &PubKey, epoch: Option<Epoch>) -> bool {
-        self.stake(pub_key, epoch)
+        let entry = self.stake(pub_key, epoch);
+        if entry.is_none() {
+            tracing::error!("Node {:?} has no stake in epoch {:?}", pub_key, epoch);
+            return false;
+        }
+        let ret = entry
             .map(|x| x.stake_table_entry.stake() > U256::ZERO)
-            .unwrap_or_default()
+            .unwrap_or_default();
+        if !ret {
+            tracing::error!("Node {:?} has ZERO stake in epoch {:?}", pub_key, epoch);
+        }
+        ret
     }
 
     /// Check if a node has stake in the committee
@@ -790,6 +799,12 @@ impl Membership<SeqTypes> for EpochCommittees {
         {
             tracing::error!(?e, "`add_epoch_root`, error storing stake table");
         }
+
+        tracing::error!(
+            "Adding epoch root for epoch {:?} new stake table:\n{:?}",
+            epoch,
+            stake_tables
+        );
 
         Some(Box::new(move |committee: &mut Self| {
             committee.update_stake_table(epoch, stake_tables);

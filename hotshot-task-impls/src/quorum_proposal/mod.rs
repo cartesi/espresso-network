@@ -650,6 +650,10 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 self.cancel_tasks(keep_view);
             },
             HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) => {
+                tracing::error!(
+                    "Received a next epoch QC for view {:?}",
+                    next_epoch_qc.view_number()
+                );
                 // Only update if the qc is from a newer view
                 let current_next_epoch_qc =
                     self.consensus.read().await.next_epoch_high_qc().cloned();
