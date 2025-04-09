@@ -7,12 +7,12 @@
 //! The election trait, used to decide which node is the leader and determine if a vote is valid.
 use std::{collections::BTreeSet, fmt::Debug, sync::Arc};
 
+use alloy::primitives::U256;
 use async_lock::RwLock;
 use hotshot_utils::anytrace::Result;
-use primitive_types::U256;
 
 use super::node_implementation::NodeType;
-use crate::{drb::DrbResult, traits::signature_key::StakeTableEntryType, PeerConfig};
+use crate::{data::Leaf2, drb::DrbResult, traits::signature_key::StakeTableEntryType, PeerConfig};
 
 /// A protocol for determining membership in and participating in a committee.
 pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
@@ -29,7 +29,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
     fn total_stake(&self, epoch: Option<TYPES::Epoch>) -> U256 {
         self.stake_table(epoch)
             .iter()
-            .fold(U256::zero(), |acc, entry| {
+            .fold(U256::ZERO, |acc, entry| {
                 acc + entry.stake_table_entry.stake()
             })
     }
@@ -37,7 +37,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
     fn total_da_stake(&self, epoch: Option<TYPES::Epoch>) -> U256 {
         self.da_stake_table(epoch)
             .iter()
-            .fold(U256::zero(), |acc, entry| {
+            .fold(U256::ZERO, |acc, entry| {
                 acc + entry.stake_table_entry.stake()
             })
     }
@@ -99,7 +99,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
         use hotshot_utils::anytrace::*;
 
         self.lookup_leader(view, epoch).wrap().context(info!(
-            "Failed to get leader for view {view} in epoch {epoch}"
+            "Failed to get leader for view {view} in epoch {epoch:?}"
         ))
     }
 
@@ -146,7 +146,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
         _membership: Arc<RwLock<Self>>,
         _block_height: u64,
         _epoch: TYPES::Epoch,
-    ) -> impl std::future::Future<Output = anyhow::Result<TYPES::BlockHeader>> + Send {
+    ) -> impl std::future::Future<Output = anyhow::Result<Leaf2<TYPES>>> + Send {
         async move { anyhow::bail!("Not implemented") }
     }
 

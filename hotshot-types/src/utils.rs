@@ -12,6 +12,7 @@ use std::{
     sync::Arc,
 };
 
+use alloy::primitives::U256;
 use anyhow::{anyhow, ensure};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use bincode::{
@@ -23,7 +24,6 @@ use bincode::{
 };
 use committable::{Commitment, Committable};
 use digest::OutputSizeUser;
-use primitive_types::U256;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use tagged_base64::tagged;
@@ -237,7 +237,7 @@ impl<TYPES: NodeType> ViewInner<TYPES> {
     }
 
     /// Returns `Epoch` if possible
-    /// #3967 REVIEW NOTE: This type is kinda ugly, should we Result<Option<Epoch>> instead?
+    // #3967 REVIEW NOTE: This type is kinda ugly, should we Result<Option<Epoch>> instead?
     pub fn epoch(&self) -> Option<Option<TYPES::Epoch>> {
         match self {
             Self::Da { epoch, .. } | Self::Leaf { epoch, .. } => Some(*epoch),
@@ -364,7 +364,7 @@ pub fn transition_block_for_epoch(epoch: u64, epoch_height: u64) -> u64 {
     }
 }
 
-/// Returns an Option<Epoch> based on a boolean condition of whether or not epochs are enabled, a block number,
+/// Returns an `Option<Epoch>` based on a boolean condition of whether or not epochs are enabled, a block number,
 /// and the epoch height. If epochs are disabled or the epoch height is zero, returns None.
 #[must_use]
 pub fn option_epoch_from_block_number<TYPES: NodeType>(
@@ -375,6 +375,8 @@ pub fn option_epoch_from_block_number<TYPES: NodeType>(
     if with_epoch {
         if epoch_height == 0 {
             None
+        } else if block_number == 0 {
+            Some(1u64)
         } else if block_number % epoch_height == 0 {
             Some(block_number / epoch_height)
         } else {
@@ -386,7 +388,7 @@ pub fn option_epoch_from_block_number<TYPES: NodeType>(
     }
 }
 
-/// Returns Some(0) if epochs are enabled by V::Base, otherwise returns None
+/// Returns Some(1) if epochs are enabled by V::Base, otherwise returns None
 #[must_use]
 pub fn genesis_epoch_from_version<V: Versions, TYPES: NodeType>() -> Option<TYPES::Epoch> {
     (V::Base::VERSION >= V::Epochs::VERSION).then(|| TYPES::Epoch::new(1))

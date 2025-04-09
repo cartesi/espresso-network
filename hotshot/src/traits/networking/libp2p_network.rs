@@ -27,12 +27,14 @@ use async_lock::RwLock;
 use async_trait::async_trait;
 use bimap::BiHashMap;
 use futures::future::join_all;
+#[cfg(feature = "hotshot-testing")]
+use hotshot_libp2p_networking::network::behaviours::dht::store::persistent::DhtNoPersistence;
 pub use hotshot_libp2p_networking::network::{GossipConfig, RequestResponseConfig};
 use hotshot_libp2p_networking::{
     network::{
         behaviours::dht::{
             record::{Namespace, RecordKey, RecordValue},
-            store::persistent::{DhtNoPersistence, DhtPersistentStorage},
+            store::persistent::DhtPersistentStorage,
         },
         spawn_network_node,
         transport::construct_auth_message,
@@ -860,13 +862,7 @@ impl<T: NodeType> ConnectedNetwork<T::SignatureKey> for Libp2pNetwork<T> {
             .map(|r| self.direct_message(message.clone(), r));
         let results = join_all(future_results).await;
 
-        let errors: Vec<_> = results
-            .into_iter()
-            .filter_map(|r| match r {
-                Err(err) => Some(err),
-                _ => None,
-            })
-            .collect();
+        let errors: Vec<_> = results.into_iter().filter_map(|r| r.err()).collect();
 
         if errors.is_empty() {
             Ok(())

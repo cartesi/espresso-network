@@ -27,7 +27,7 @@ use hotshot_types::{
         ValidatedState,
     },
     utils::{
-        epoch_from_block_number, is_epoch_transition, is_transition_block,
+        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_transition_block,
         option_epoch_from_block_number, View, ViewInner,
     },
     vote::{Certificate, HasViewNumber},
@@ -41,7 +41,8 @@ use super::{QuorumProposalRecvTaskState, ValidationInfo};
 use crate::{
     events::HotShotEvent,
     helpers::{
-        broadcast_event, fetch_proposal, update_high_qc, validate_epoch_transition_qc,
+        broadcast_event, check_qc_state_cert_correspondence, fetch_proposal, update_high_qc,
+        validate_epoch_transition_qc, validate_light_client_state_update_certificate,
         validate_proposal_safety_and_liveness, validate_proposal_view_and_certs,
         validate_qc_and_next_epoch_qc,
     },
@@ -51,7 +52,7 @@ use crate::{
 /// Spawn a task which will fire a request to get a proposal, and store it.
 #[allow(clippy::too_many_arguments)]
 fn spawn_fetch_proposal<TYPES: NodeType, V: Versions>(
-    view: TYPES::View,
+    qc: &QuorumCertificate2<TYPES>,
     event_sender: Sender<Arc<HotShotEvent<TYPES>>>,
     event_receiver: Receiver<Arc<HotShotEvent<TYPES>>>,
     membership: EpochMembershipCoordinator<TYPES>,
@@ -61,11 +62,12 @@ fn spawn_fetch_proposal<TYPES: NodeType, V: Versions>(
     upgrade_lock: UpgradeLock<TYPES, V>,
     epoch_height: u64,
 ) {
+    let qc = qc.clone();
     spawn(async move {
         let lock = upgrade_lock;
 
         let _ = fetch_proposal(
-            view,
+            &qc,
             event_sender,
             event_receiver,
             membership,
@@ -276,6 +278,29 @@ pub(crate) async fn handle_quorum_proposal_recv<
         validation_info.epoch_height,
     );
 
+    if justify_qc
+        .data
+        .block_number
+        .is_some_and(|bn| is_epoch_root(bn, validation_info.epoch_height))
+    {
+        let Some(state_cert) = proposal.data.state_cert() else {
+            bail!("Epoch root QC has no state cert");
+        };
+        ensure!(
+            check_qc_state_cert_correspondence(
+                &justify_qc,
+                state_cert,
+                validation_info.epoch_height
+            ),
+            "Epoch root QC has no corresponding state cert"
+        );
+        validate_light_client_state_update_certificate(
+            state_cert,
+            &validation_info.membership.coordinator,
+        )
+        .await?;
+    }
+
     validate_epoch_transition_block(proposal, &validation_info).await?;
 
     validate_qc_and_next_epoch_qc(
@@ -307,7 +332,7 @@ pub(crate) async fn handle_quorum_proposal_recv<
 
     if parent_leaf.is_none() {
         spawn_fetch_proposal(
-            justify_qc.view_number(),
+            &justify_qc,
             event_sender.clone(),
             event_receiver.clone(),
             validation_info.membership.coordinator.clone(),
@@ -351,11 +376,7 @@ pub(crate) async fn handle_quorum_proposal_recv<
             justify_qc.data.leaf_commit
         );
         validate_proposal_liveness(proposal, &validation_info).await?;
-        tracing::trace!(
-            "Sending ViewChange for view {} and epoch {:?}",
-            view_number,
-            proposal_epoch
-        );
+        tracing::trace!("Sending ViewChange for view {view_number} and epoch {proposal_epoch:?}");
         validation_info
             .consensus
             .write()
@@ -379,11 +400,7 @@ pub(crate) async fn handle_quorum_proposal_recv<
     )
     .await?;
 
-    tracing::trace!(
-        "Sending ViewChange for view {} and epoch {:?}",
-        view_number,
-        proposal_epoch
-    );
+    tracing::trace!("Sending ViewChange for view {view_number} and epoch {proposal_epoch:?}");
     validation_info
         .consensus
         .write()

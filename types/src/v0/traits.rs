@@ -2,6 +2,7 @@
 //! It also includes some trait implementations that cannot be implemented in an external crate.
 use std::{cmp::max, collections::BTreeMap, fmt::Debug, ops::Range, sync::Arc};
 
+use alloy::primitives::U256;
 use anyhow::{bail, ensure, Context};
 use async_trait::async_trait;
 use committable::Commitment;
@@ -33,7 +34,6 @@ use hotshot_types::{
 };
 use indexmap::IndexMap;
 use itertools::Itertools;
-use primitive_types::U256;
 use serde::{de::DeserializeOwned, Serialize};
 
 use super::{
@@ -829,8 +829,7 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
         let state_cert = self
             .load_state_cert()
             .await
-            .context("loading light client state update certificate")?
-            .unwrap_or(LightClientStateUpdateCertificate::genesis());
+            .context("loading light client state update certificate")?;
 
         tracing::info!(
             ?leaf,

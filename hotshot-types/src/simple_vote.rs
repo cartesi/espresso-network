@@ -20,7 +20,7 @@ use vbs::version::Version;
 
 use crate::{
     data::{Leaf, Leaf2, VidCommitment},
-    light_client::LightClientState,
+    light_client::{LightClientState, StakeTableState},
     message::UpgradeLock,
     traits::{
         node_implementation::{ConsensusTime, NodeType, Versions},
@@ -948,6 +948,8 @@ pub struct LightClientStateUpdateVote<TYPES: NodeType> {
     pub epoch: TYPES::Epoch,
     /// The light client state
     pub light_client_state: LightClientState,
+    /// The next stake table state
+    pub next_stake_table_state: StakeTableState,
     /// The signature to the light client state
     pub signature: <TYPES::StateSignatureKey as StateSignatureKey>::StateSignature,
 }
@@ -961,5 +963,24 @@ impl<TYPES: NodeType> HasViewNumber<TYPES> for LightClientStateUpdateVote<TYPES>
 impl<TYPES: NodeType> HasEpoch<TYPES> for LightClientStateUpdateVote<TYPES> {
     fn epoch(&self) -> Option<TYPES::Epoch> {
         Some(self.epoch)
+    }
+}
+
+#[derive(Serialize, Deserialize, Eq, Hash, PartialEq, Debug, Clone)]
+#[serde(bound(deserialize = "QuorumVote2<TYPES>:for<'a> Deserialize<'a>"))]
+pub struct EpochRootQuorumVote<TYPES: NodeType> {
+    pub vote: QuorumVote2<TYPES>,
+    pub state_vote: LightClientStateUpdateVote<TYPES>,
+}
+
+impl<TYPES: NodeType> HasViewNumber<TYPES> for EpochRootQuorumVote<TYPES> {
+    fn view_number(&self) -> TYPES::View {
+        self.vote.view_number()
+    }
+}
+
+impl<TYPES: NodeType> HasEpoch<TYPES> for EpochRootQuorumVote<TYPES> {
+    fn epoch(&self) -> Option<TYPES::Epoch> {
+        self.vote.epoch()
     }
 }

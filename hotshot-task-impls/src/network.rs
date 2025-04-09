@@ -324,6 +324,24 @@ impl<TYPES: NodeType, V: Versions> NetworkMessageTaskState<TYPES, V> {
                         GeneralConsensusMessage::ExtendedQc(qc, next_epoch_qc) => {
                             HotShotEvent::ExtendedQcRecv(qc, next_epoch_qc, sender)
                         },
+                        GeneralConsensusMessage::EpochRootQuorumVote(vote) => {
+                            if !self.upgrade_lock.epochs_enabled(vote.view_number()).await {
+                                tracing::warn!("received GeneralConsensusMessage::EpochRootVote for view {} but epochs are not enabled for that view", vote.view_number());
+                                return;
+                            }
+                            HotShotEvent::EpochRootQuorumVoteRecv(vote)
+                        },
+                        GeneralConsensusMessage::EpochRootQc(root_qc) => {
+                            if !self
+                                .upgrade_lock
+                                .epochs_enabled(root_qc.view_number())
+                                .await
+                            {
+                                tracing::warn!("received GeneralConsensusMessage::EpochRootQc for view {} but epochs are not enabled for that view", root_qc.view_number());
+                                return;
+                            }
+                            HotShotEvent::EpochRootQcRecv(root_qc, sender)
+                        },
                     },
                     SequencingMessage::Da(da_message) => match da_message {
                         DaConsensusMessage::DaProposal(proposal) => {
@@ -618,7 +636,7 @@ impl<
             let serialized_message = match self.upgrade_lock.serialize(&message).await {
                 Ok(serialized) => serialized,
                 Err(e) => {
-                    tracing::error!("Failed to serialize message: {}", e);
+                    tracing::error!("Failed to serialize message: {e}");
                     continue;
                 },
             };
@@ -644,7 +662,7 @@ impl<
             }
             match net.vid_broadcast_message(messages).await {
                 Ok(()) => {},
-                Err(e) => tracing::warn!("Failed to send message from network task: {:?}", e),
+                Err(e) => tracing::warn!("Failed to send message from network task: {e:?}"),
             }
         });
 
@@ -676,7 +694,7 @@ impl<
             {
                 Ok(()) => Ok(()),
                 Err(e) => {
-                    tracing::warn!("Not Sending {:?} because of storage error: {:?}", action, e);
+                    tracing::warn!("Not Sending {action:?} because of storage error: {e:?}");
                     Err(())
                 },
             }
@@ -747,11 +765,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -767,6 +781,44 @@ impl<
                 };
 
                 Some((vote.signing_key(), message, TransmitType::Direct(leader)))
+            },
+            HotShotEvent::EpochRootQuorumVoteSend(vote) => {
+                *maybe_action = Some(HotShotAction::Vote);
+                let view_number = vote.view_number() + 1;
+                let leader = match self
+                    .membership_coordinator
+                    .membership_for_epoch(vote.epoch())
+                    .await
+                    .ok()?
+                    .leader(view_number)
+                    .await
+                {
+                    Ok(l) => l,
+                    Err(e) => {
+                        tracing::warn!(
+                            "Failed to calculate leader for view number {:?}. Error: {:?}",
+                            view_number,
+                            e
+                        );
+                        return None;
+                    },
+                };
+
+                let message = if self.upgrade_lock.epochs_enabled(vote.view_number()).await {
+                    MessageKind::<TYPES>::from_consensus_message(SequencingMessage::General(
+                        GeneralConsensusMessage::EpochRootQuorumVote(vote.clone()),
+                    ))
+                } else {
+                    MessageKind::<TYPES>::from_consensus_message(SequencingMessage::General(
+                        GeneralConsensusMessage::Vote(vote.vote.clone().to_vote()),
+                    ))
+                };
+
+                Some((
+                    vote.vote.signing_key(),
+                    message,
+                    TransmitType::Direct(leader),
+                ))
             },
             HotShotEvent::ExtendedQuorumVoteSend(vote) => {
                 *maybe_action = Some(HotShotAction::Vote);
@@ -846,11 +898,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -897,11 +945,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -930,11 +974,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -963,11 +1003,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number:?}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -1038,11 +1074,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -1078,11 +1110,7 @@ impl<
                 {
                     Ok(l) => l,
                     Err(e) => {
-                        tracing::warn!(
-                            "Failed to calculate leader for view number {:?}. Error: {:?}",
-                            view_number,
-                            e
-                        );
+                        tracing::warn!("Failed to calculate leader for view number {view_number}. Error: {e:?}");
                         return None;
                     },
                 };
@@ -1169,6 +1197,13 @@ impl<
                 )),
                 TransmitType::Direct(leader),
             )),
+            HotShotEvent::EpochRootQcSend(epoch_root_qc, sender, leader) => Some((
+                sender,
+                MessageKind::Consensus(SequencingMessage::General(
+                    GeneralConsensusMessage::EpochRootQc(epoch_root_qc),
+                )),
+                TransmitType::Direct(leader),
+            )),
             HotShotEvent::ExtendedQcSend(quorum_cert, next_epoch_qc, sender) => Some((
                 sender,
                 MessageKind::Consensus(SequencingMessage::General(
@@ -1245,7 +1280,7 @@ impl<
             let serialized_message = match upgrade_lock.serialize(&message).await {
                 Ok(serialized) => serialized,
                 Err(e) => {
-                    tracing::error!("Failed to serialize message: {}", e);
+                    tracing::error!("Failed to serialize message: {e}");
                     return;
                 },
             };
@@ -1272,7 +1307,7 @@ impl<
 
             match transmit_result {
                 Ok(()) => {},
-                Err(e) => tracing::warn!("Failed to send message task: {:?}", e),
+                Err(e) => tracing::warn!("Failed to send message task: {e:?}"),
             }
         });
         self.transmit_tasks
