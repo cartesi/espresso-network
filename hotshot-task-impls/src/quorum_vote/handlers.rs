@@ -319,7 +319,7 @@ pub(crate) async fn handle_quorum_proposal_validated<
                 event: EventType::Decide {
                     leaf_chain: Arc::new(leaf_views.clone()),
                     // This is never none if we've reached a new decide, so this is safe to unwrap.
-                    qc: Arc::new(new_decide_qc.unwrap()),
+                    qc: Arc::new(new_decide_qc.clone().unwrap()),
                     block_size: included_txns.map(|txns| txns.len().try_into().unwrap()),
                 },
             },
