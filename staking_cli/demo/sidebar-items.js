@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["stake_for_demo"]};
+window.SIDEBAR_ITEMS = {"fn":["stake_for_demo","stake_in_contract_for_test"]};

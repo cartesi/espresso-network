@@ -380,7 +380,7 @@
 <a href=#380 id=380 data-nosnippet>380</a>    <span class="kw">let </span>state_cert =
 <a href=#381 id=381 data-nosnippet>381</a>        surf_disco::Client::&lt;tide_disco::error::ServerError, StaticVersion&lt;<span class="number">0</span>, <span class="number">1</span>&gt;&gt;::new(
 <a href=#382 id=382 data-nosnippet>382</a>            sequencer_url
-<a href=#383 id=383 data-nosnippet>383</a>                .join(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"availability/state-cert/{}"</span>, epoch))
+<a href=#383 id=383 data-nosnippet>383</a>                .join(<span class="string">"availability"</span>)
 <a href=#384 id=384 data-nosnippet>384</a>                .with_context(|| <span class="string">"Invalid Url"</span>)
 <a href=#385 id=385 data-nosnippet>385</a>                .map_err(ProverError::NetworkError)<span class="question-mark">?</span>,
 <a href=#386 id=386 data-nosnippet>386</a>        )
