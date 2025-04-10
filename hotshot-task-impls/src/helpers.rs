@@ -200,26 +200,21 @@ fn start_drb_task<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         drb_result
     });
 }
-/// Handles calling add_epoch_root and sync_l1 on Membership if necessary.
-async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
-    decided_leaf: &Leaf2<TYPES>,
-    epoch_height: u64,
-    membership: &Arc<RwLock<TYPES::Membership>>,
-    storage: &Arc<RwLock<I::Storage>>,
-    consensus: &OuterConsensus<TYPES>,
+
+fn spawn_epoch_root_task<TYPES: NodeType, I: NodeImplementation<TYPES>>(
+    header: TYPES::BlockHeader,
+    membership: Arc<RwLock<TYPES::Membership>>,
+    storage: Arc<RwLock<I::Storage>>,
+    consensus: OuterConsensus<TYPES>,
+    next_epoch_number: TYPES::Epoch,
+    drb_seed_input: [u8; 32],
 ) {
-    let decided_block_number = decided_leaf.block_header().block_number();
-
-    // Skip if this is not the expected block.
-    if epoch_height != 0 && is_epoch_root(decided_block_number, epoch_height) {
-        let next_epoch_number =
-            TYPES::Epoch::new(epoch_from_block_number(decided_block_number, epoch_height) + 2);
-
+    tokio::spawn(async move {
         let mut start = Instant::now();
         if let Err(e) = storage
             .write()
             .await
-            .add_epoch_root(next_epoch_number, decided_leaf.block_header().clone())
+            .add_epoch_root(next_epoch_number, header.clone())
             .await
         {
             tracing::error!(
@@ -235,21 +230,51 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
             tracing::debug!("Calling add_epoch_root for epoch {:?}", next_epoch_number);
             let membership_reader = membership.read().await;
             membership_reader
-                .add_epoch_root(next_epoch_number, decided_leaf.block_header().clone())
+                .add_epoch_root(next_epoch_number, header.clone())
                 .await
         };
+        tracing::info!("Time taken to add epoch root: {:?}", start.elapsed());
+
+        start = Instant::now();
         if let Some(write_callback) = write_callback {
             let mut membership_writer = membership.write().await;
             write_callback(&mut *membership_writer);
         }
-        tracing::info!("Time taken to add epoch root: {:?}", start.elapsed());
+        tracing::info!("Time write to membership: {:?}", start.elapsed());
 
+        start = Instant::now();
         let mut consensus_writer = consensus.write().await;
         consensus_writer
             .drb_results
             .garbage_collect(next_epoch_number);
         drop(consensus_writer);
+        tracing::info!(
+            "Time taken to garbage collect DRB results: {:?}",
+            start.elapsed()
+        );
+        start_drb_task::<TYPES, I>(
+            drb_seed_input,
+            next_epoch_number,
+            &membership,
+            &storage,
+            &consensus,
+        );
+    });
+}
+/// Handles calling add_epoch_root and sync_l1 on Membership if necessary.
+async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
+    decided_leaf: &Leaf2<TYPES>,
+    epoch_height: u64,
+    membership: &Arc<RwLock<TYPES::Membership>>,
+    storage: &Arc<RwLock<I::Storage>>,
+    consensus: &OuterConsensus<TYPES>,
+) {
+    let decided_block_number = decided_leaf.block_header().block_number();
 
+    // Skip if this is not the expected block.
+    if epoch_height != 0 && is_epoch_root(decided_block_number, epoch_height) {
+        let next_epoch_number =
+            TYPES::Epoch::new(epoch_from_block_number(decided_block_number, epoch_height) + 2);
         let Ok(drb_seed_input_vec) = bincode::serialize(&decided_leaf.justify_qc().signatures)
         else {
             tracing::error!("Failed to serialize the QC signature.");
@@ -260,12 +285,13 @@ async fn decide_epoch_root<TYPES: NodeType, I: NodeImplementation<TYPES>>(
         let len = drb_seed_input_vec.len().min(32);
         drb_seed_input[..len].copy_from_slice(&drb_seed_input_vec[..len]);
 
-        start_drb_task::<TYPES, I>(
-            drb_seed_input,
+        spawn_epoch_root_task::<TYPES, I>(
+            decided_leaf.block_header().clone(),
+            membership.clone(),
+            storage.clone(),
+            consensus.clone(),
             next_epoch_number,
-            membership,
-            storage,
-            consensus,
+            drb_seed_input,
         );
     }
 }
