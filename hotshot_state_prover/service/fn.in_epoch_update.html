@@ -2,8 +2,8 @@
     state: &amp;mut <a class="struct" href="struct.ProverServiceState.html" title="struct hotshot_state_prover::service::ProverServiceState">ProverServiceState</a>,
     provider: impl Provider,
     light_client_address: Address,
-    bundle: StateSignaturesBundle,
-    voting_st_state: StakeTableState,
+    bundle: <a class="struct" href="../../hotshot_types/light_client/struct.StateSignaturesBundle.html" title="struct hotshot_types::light_client::StateSignaturesBundle">StateSignaturesBundle</a>,
+    voting_st_state: <a class="type" href="../../hotshot_types/light_client/type.StakeTableState.html" title="type hotshot_types::light_client::StakeTableState">StakeTableState</a>,
     proving_key: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;<a class="type" href="../snark/type.ProvingKey.html" title="type hotshot_state_prover::snark::ProvingKey">ProvingKey</a>&gt;,
 ) -&gt; <a class="type" href="https://docs.rs/anyhow/1.0.97/anyhow/type.Result.html" title="type anyhow::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>, <a class="enum" href="enum.ProverError.html" title="enum hotshot_state_prover::service::ProverError">ProverError</a>&gt;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>submit a light client update within the same epoch AND the new update state is not epoch state</p>
 </div></details></section></div></main></body></html>
