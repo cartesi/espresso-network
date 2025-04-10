@@ -307,7 +307,7 @@
 <a href=#307 id=307 data-nosnippet>307</a>    <span class="prelude-val">Ok</span>((
 <a href=#308 id=308 data-nosnippet>308</a>        circuit,
 <a href=#309 id=309 data-nosnippet>309</a>        GenericPublicInput::new(
-<a href=#310 id=310 data-nosnippet>310</a>            lightclient_state.clone(),
+<a href=#310 id=310 data-nosnippet>310</a>            <span class="kw-2">*</span>lightclient_state,
 <a href=#311 id=311 data-nosnippet>311</a>            <span class="kw-2">*</span>stake_table_state,
 <a href=#312 id=312 data-nosnippet>312</a>            <span class="kw-2">*</span>next_stake_table_state,
 <a href=#313 id=313 data-nosnippet>313</a>        ),
@@ -494,7 +494,7 @@
 <a href=#494 id=494 data-nosnippet>494</a>            .is_err());
 <a href=#495 id=495 data-nosnippet>495</a>
 <a href=#496 id=496 data-nosnippet>496</a>        <span class="comment">// bad path: bad stake table commitment
-<a href=#497 id=497 data-nosnippet>497</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>bad_lightclient_state = lightclient_state.clone();
+<a href=#497 id=497 data-nosnippet>497</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>bad_lightclient_state = lightclient_state;
 <a href=#498 id=498 data-nosnippet>498</a>        bad_lightclient_state.view_number += <span class="number">1</span>;
 <a href=#499 id=499 data-nosnippet>499</a>
 <a href=#500 id=500 data-nosnippet>500</a>        <span class="kw">let </span>(bad_circuit, public_inputs) = build(

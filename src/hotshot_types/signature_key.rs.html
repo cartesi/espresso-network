@@ -222,7 +222,7 @@
 <a href=#222 id=222 data-nosnippet>222</a>        next_stake_table_state: <span class="kw-2">&amp;</span>StakeTableState,
 <a href=#223 id=223 data-nosnippet>223</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::StateSignature, <span class="self">Self</span>::SignError&gt; {
 <a href=#224 id=224 data-nosnippet>224</a>        <span class="kw">let </span><span class="kw-2">mut </span>msg = Vec::with_capacity(<span class="number">7</span>);
-<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>state_msg: [<span class="kw">_</span>; <span class="number">3</span>] = light_client_state.clone().into();
+<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>state_msg: [<span class="kw">_</span>; <span class="number">3</span>] = light_client_state.into();
 <a href=#226 id=226 data-nosnippet>226</a>        msg.extend_from_slice(<span class="kw-2">&amp;</span>state_msg);
 <a href=#227 id=227 data-nosnippet>227</a>        <span class="kw">let </span>adv_st_state_msg: [<span class="kw">_</span>; <span class="number">4</span>] = (<span class="kw-2">*</span>next_stake_table_state).into();
 <a href=#228 id=228 data-nosnippet>228</a>        msg.extend_from_slice(<span class="kw-2">&amp;</span>adv_st_state_msg);
@@ -236,7 +236,7 @@
 <a href=#236 id=236 data-nosnippet>236</a>        next_stake_table_state: <span class="kw-2">&amp;</span>StakeTableState,
 <a href=#237 id=237 data-nosnippet>237</a>    ) -&gt; bool {
 <a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">let </span><span class="kw-2">mut </span>msg = Vec::with_capacity(<span class="number">7</span>);
-<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>state_msg: [<span class="kw">_</span>; <span class="number">3</span>] = light_client_state.clone().into();
+<a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span>state_msg: [<span class="kw">_</span>; <span class="number">3</span>] = light_client_state.into();
 <a href=#240 id=240 data-nosnippet>240</a>        msg.extend_from_slice(<span class="kw-2">&amp;</span>state_msg);
 <a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span>adv_st_state_msg: [<span class="kw">_</span>; <span class="number">4</span>] = (<span class="kw-2">*</span>next_stake_table_state).into();
 <a href=#242 id=242 data-nosnippet>242</a>        msg.extend_from_slice(<span class="kw-2">&amp;</span>adv_st_state_msg);
