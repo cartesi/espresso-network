@@ -23,6 +23,7 @@ use hotshot_types::{
         EpochRootQuorumCertificate, LightClientStateUpdateCertificate, NextEpochQuorumCertificate2,
         QuorumCertificate2, UpgradeCertificate,
     },
+    simple_vote::HasEpoch,
     traits::{
         block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
@@ -347,7 +348,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
         // If we are in the epoch transition and we are the leader in the next epoch,
         // we might want to start collecting dependencies for our next epoch proposal.
 
-        let leader_in_next_epoch = epoch_number.is_some()
+        let leader_in_next_epoch = !leader_in_current_epoch
+            && epoch_number.is_some()
             && matches!(
                 epoch_transition_indicator,
                 EpochTransitionIndicator::InTransition
@@ -447,13 +449,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
         event_sender: Sender<Arc<HotShotEvent<TYPES>>>,
     ) -> Result<()> {
         let epoch_number = self.cur_epoch;
-        let mut epoch_transition_indicator = if self.consensus.read().await.is_high_qc_extended()
-            || self.consensus.read().await.high_qc().data.epoch == self.cur_epoch
-        {
-            EpochTransitionIndicator::InTransition
-        } else {
-            EpochTransitionIndicator::NotInTransition
-        };
         match event.as_ref() {
             HotShotEvent::UpgradeCertificateFormed(cert) => {
                 tracing::debug!(
@@ -477,7 +472,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                             event_receiver,
                             event_sender,
                             Arc::clone(&event),
-                            epoch_transition_indicator,
+                            EpochTransitionIndicator::NotInTransition,
                         )
                         .await?;
                     },
@@ -488,12 +483,15 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                                 "Received a QC for a view that was not > than our current high QC"
                             );
                         }
-                        if qc.data.block_number.is_some_and(|block_number| {
-                            is_last_block(block_number, self.epoch_height)
-                        }) {
-                            epoch_transition_indicator = EpochTransitionIndicator::InTransition;
-                        }
-
+                        let epoch_transition_indicator =
+                            if qc.data.block_number.is_some_and(|block_number| {
+                                is_last_block(block_number, self.epoch_height)
+                                    && qc.epoch() == self.cur_epoch
+                            }) {
+                                EpochTransitionIndicator::InTransition
+                            } else {
+                                EpochTransitionIndicator::NotInTransition
+                            };
                         self.formed_quorum_certificates
                             .insert(qc.view_number(), qc.clone());
 
@@ -608,22 +606,23 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                     event_receiver,
                     event_sender,
                     event,
-                    epoch_transition_indicator,
+                    EpochTransitionIndicator::NotInTransition,
                 )
                 .await?;
             },
             HotShotEvent::QuorumProposalPreliminarilyValidated(proposal) => {
                 let proposal_block_number = proposal.data.proposal.block_header.block_number();
-                if is_last_block(proposal_block_number, self.epoch_height)
-                    && Some(TYPES::Epoch::new(epoch_from_block_number(
-                        proposal_block_number,
-                        self.epoch_height,
-                    ))) == self.cur_epoch
-                {
-                    epoch_transition_indicator = EpochTransitionIndicator::InTransition;
-                } else {
-                    epoch_transition_indicator = EpochTransitionIndicator::NotInTransition;
-                }
+                let epoch_transition_indicator =
+                    if is_last_block(proposal_block_number, self.epoch_height)
+                        && Some(TYPES::Epoch::new(epoch_from_block_number(
+                            proposal_block_number,
+                            self.epoch_height,
+                        ))) == self.cur_epoch
+                    {
+                        EpochTransitionIndicator::InTransition
+                    } else {
+                        EpochTransitionIndicator::NotInTransition
+                    };
                 let view_number = proposal.data.view_number();
                 // All nodes get the latest proposed view as a proxy of `cur_view` of old.
                 if !self.update_latest_proposed_view(view_number).await {
@@ -672,13 +671,16 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions>
                 self.cancel_tasks(keep_view);
             },
             HotShotEvent::NextEpochQc2Formed(Either::Left(next_epoch_qc)) => {
-                if next_epoch_qc
+                let epoch_transition_indicator = if next_epoch_qc
                     .data
                     .block_number
                     .is_some_and(|block_number| is_last_block(block_number, self.epoch_height))
+                    && next_epoch_qc.epoch() == self.cur_epoch
                 {
-                    epoch_transition_indicator = EpochTransitionIndicator::InTransition;
-                }
+                    EpochTransitionIndicator::InTransition
+                } else {
+                    EpochTransitionIndicator::NotInTransition
+                };
                 // Only update if the qc is from a newer view
                 let current_next_epoch_qc =
                     self.consensus.read().await.next_epoch_high_qc().cloned();
