@@ -104,6 +104,12 @@ impl ProverServiceState {
     }
 
     pub async fn from_epoch(config: StateProverConfig, epoch: u64) -> Result<Self> {
+        // If the epoch upgrade is not yet there, use the genesis stake table
+        let epoch = if epoch < config.start_epoch() {
+            0
+        } else {
+            epoch
+        };
         let stake_table = fetch_stake_table_from_sequencer(
             &config.sequencer_url,
             epoch,
@@ -119,6 +125,12 @@ impl ProverServiceState {
     }
 
     pub async fn sync_with_epoch(&mut self, epoch: u64) -> Result<()> {
+        // If the epoch upgrade is not yet there, use the genesis stake table
+        let epoch = if epoch < self.config.start_epoch() {
+            0
+        } else {
+            epoch
+        };
         if epoch != self.epoch {
             self.stake_table = fetch_stake_table_from_sequencer(
                 &self.config.sequencer_url,
@@ -146,21 +158,21 @@ impl StateProverConfig {
 
         Ok(())
     }
+
+    pub fn start_epoch(&self) -> u64 {
+        epoch_from_block_number(self.epoch_start_block, self.blocks_per_epoch)
+    }
 }
 
 /// Get the epoch-related  from the sequencer's `PublicHotShotConfig` struct
 /// return (blocks_per_epoch, epoch_start_block)
 pub async fn fetch_epoch_config_from_sequencer(sequencer_url: &Url) -> anyhow::Result<(u64, u64)> {
-    let config_url = sequencer_url
-        .join("/config/hotshot")
-        .with_context(|| "Invalid URL")?;
-
     // Request the configuration until it is successful
     let epoch_config = loop {
         match surf_disco::Client::<tide_disco::error::ServerError, StaticVersion<0, 1>>::new(
-            config_url.clone(),
+            sequencer_url.clone(),
         )
-        .get::<PublicNetworkConfig>(config_url.as_str())
+        .get::<PublicNetworkConfig>("config/hotshot")
         .send()
         .await
         {
@@ -187,17 +199,12 @@ pub async fn fetch_stake_table_from_sequencer(
 ) -> Result<StakeTable<BLSPubKey, StateVerKey, CircuitField>> {
     tracing::info!("Initializing stake table from node at {sequencer_url}");
 
-    // Construct the URL to fetch the network config
-    let config_url = sequencer_url
-        .join(&format!("/node/stake-table/{epoch}"))
-        .with_context(|| "Invalid URL")?;
-
     // Request the configuration until it is successful
     let peer_configs = loop {
         match surf_disco::Client::<tide_disco::error::ServerError, StaticVersion<0, 1>>::new(
-            config_url.clone(),
+            sequencer_url.clone(),
         )
-        .get::<Vec<PeerConfig<SeqTypes>>>(config_url.as_str())
+        .get::<Vec<PeerConfig<SeqTypes>>>(&format!("node/stake-table/{epoch}"))
         .send()
         .await
         {
@@ -379,12 +386,9 @@ async fn fetch_epoch_state_from_sequencer(
 ) -> Result<LightClientStateUpdateCertificate<SeqTypes>, ProverError> {
     let state_cert =
         surf_disco::Client::<tide_disco::error::ServerError, StaticVersion<0, 1>>::new(
-            sequencer_url
-                .join(&format!("availability/state-cert/{}", epoch))
-                .with_context(|| "Invalid Url")
-                .map_err(ProverError::NetworkError)?,
+            sequencer_url.clone(),
         )
-        .get::<StateCertQueryData<SeqTypes>>(&format!("/state-cert/{}", epoch))
+        .get::<StateCertQueryData<SeqTypes>>(&format!("availability/state-cert/{}", epoch))
         .send()
         .await?;
     Ok(state_cert.0)
@@ -466,6 +470,8 @@ async fn advance_epoch(
     contract_epoch: u64,
     target_epoch: u64,
 ) -> Result<(), ProverError> {
+    // Ignore the "epochs" before the epoch upgrade
+    let contract_epoch = contract_epoch.max(state.config.start_epoch());
     // First sync the local stake table if necessary.
     if state.epoch != contract_epoch {
         state
@@ -544,6 +550,9 @@ pub async fn sync_state<ApiVer: StaticVersionType>(
     }
     tracing::debug!("Old state: {contract_state:?}");
     tracing::debug!("New state: {:?}", bundle.state);
+
+    tracing::debug!("contract stake table state: {st_state}");
+    tracing::debug!("bundle stake table state: {}", bundle.next_stake);
 
     let epoch_enabled = bundle.state.block_height >= epoch_start_block;
 
@@ -762,7 +771,8 @@ mod test {
 
     use super::*;
     use crate::mock_ledger::{
-        MockLedger, MockSystemParam, EPOCH_HEIGHT_FOR_TEST, STAKE_TABLE_CAPACITY_FOR_TEST,
+        MockLedger, MockSystemParam, EPOCH_HEIGHT_FOR_TEST, EPOCH_START_BLOCK_FOR_TEST,
+        STAKE_TABLE_CAPACITY_FOR_TEST,
     };
 
     // const MAX_HISTORY_SECONDS: u32 = 864000;
@@ -794,7 +804,14 @@ mod test {
         .await?;
 
         // upgrade to V2
-        upgrade_light_client_v2(&provider, contracts, is_mock_v2, EPOCH_HEIGHT_FOR_TEST).await?;
+        upgrade_light_client_v2(
+            &provider,
+            contracts,
+            is_mock_v2,
+            EPOCH_HEIGHT_FOR_TEST,
+            EPOCH_START_BLOCK_FOR_TEST,
+        )
+        .await?;
 
         Ok(lc_proxy_addr)
     }
@@ -877,14 +894,22 @@ mod test {
         .await?;
         let lc_v2 = LightClientV2Mock::new(lc_proxy_addr, &provider);
 
-        // simulate some block elapsing
-        for _ in 0..EPOCH_HEIGHT_FOR_TEST - 6 {
+        // update first epoch root (in numerical 2nd epoch)
+        // there will be new key registration but the effect only take place on the second epoch root update
+        while ledger.light_client_state().block_height < 2 * EPOCH_HEIGHT_FOR_TEST - 5 {
             ledger.elapse_with_block();
         }
-        ledger.sync_stake_table(5, 2); // update the stake table, some register, some exit
-        ledger.elapse_with_block(); // the last block in the first epoch, thus updating the `next_stake_table`
-        assert_eq!(ledger.state.block_height, EPOCH_HEIGHT_FOR_TEST - 5);
 
+        let (pi, proof) = ledger.gen_state_proof();
+        tracing::info!("Successfully generated proof for new state.");
+
+        super::submit_state_and_proof(&provider, lc_proxy_addr, proof, pi).await?;
+        tracing::info!("Successfully submitted new finalized state to L1.");
+
+        // second epoch root update
+        while ledger.light_client_state().block_height < 3 * EPOCH_HEIGHT_FOR_TEST - 5 {
+            ledger.elapse_with_block();
+        }
         let (pi, proof) = ledger.gen_state_proof();
         tracing::info!("Successfully generated proof for new state.");
 
