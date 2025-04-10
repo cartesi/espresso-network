@@ -354,7 +354,10 @@ where
                     }
                 },
             },
-            Err(_err) => self.fetch_legacy_vid_common::<Types>(req).await,
+            Err(err) => {
+                tracing::warn!("error fetching v1 vid common {err}");
+                self.fetch_legacy_vid_common::<Types>(req).await
+            },
         }
     }
 }
