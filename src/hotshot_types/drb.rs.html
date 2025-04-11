@@ -207,7 +207,7 @@
 <a href=#207 id=207 data-nosnippet>207</a>            U512::from_le_bytes(raw_breakpoint) % U512::from(cdf.last().unwrap().<span class="number">1</span>);
 <a href=#208 id=208 data-nosnippet>208</a>
 <a href=#209 id=209 data-nosnippet>209</a>        <span class="comment">// and drop the top 32 bytes, downcasting to a U256
-<a href=#210 id=210 data-nosnippet>210</a>        </span><span class="kw">let </span>breakpoint: U256 = U256::from_le_slice(<span class="kw-2">&amp;</span>remainder.to_le_bytes_vec()[<span class="number">32</span>..]);
+<a href=#210 id=210 data-nosnippet>210</a>        </span><span class="kw">let </span>breakpoint: U256 = U256::from_le_slice(<span class="kw-2">&amp;</span>remainder.to_le_bytes_vec()[<span class="number">0</span>..<span class="number">32</span>]);
 <a href=#211 id=211 data-nosnippet>211</a>
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="comment">// now find the first index where the breakpoint is strictly smaller than the cdf
 <a href=#213 id=213 data-nosnippet>213</a>        //
