@@ -786,12 +786,12 @@
 <a href=#786 id=786 data-nosnippet>786</a>        };
 <a href=#787 id=787 data-nosnippet>787</a>        <span class="kw">let </span>validated_state = <span class="kw">if </span>leaf.block_header().height() == <span class="number">0 </span>{
 <a href=#788 id=788 data-nosnippet>788</a>            <span class="comment">// If we are starting from genesis, we can provide the full state.
-<a href=#789 id=789 data-nosnippet>789</a>            </span><span class="prelude-val">Some</span>(Arc::new(genesis_validated_state))
+<a href=#789 id=789 data-nosnippet>789</a>            </span>genesis_validated_state
 <a href=#790 id=790 data-nosnippet>790</a>        } <span class="kw">else </span>{
 <a href=#791 id=791 data-nosnippet>791</a>            <span class="comment">// Otherwise, we will have to construct a sparse state and fetch missing data during
 <a href=#792 id=792 data-nosnippet>792</a>            // catchup.
-<a href=#793 id=793 data-nosnippet>793</a>            </span><span class="prelude-val">None
-<a href=#794 id=794 data-nosnippet>794</a>        </span>};
+<a href=#793 id=793 data-nosnippet>793</a>            </span>ValidatedState::from_header(leaf.block_header())
+<a href=#794 id=794 data-nosnippet>794</a>        };
 <a href=#795 id=795 data-nosnippet>795</a>
 <a href=#796 id=796 data-nosnippet>796</a>        <span class="comment">// If we are not starting from genesis, we start from the view following the maximum view
 <a href=#797 id=797 data-nosnippet>797</a>        // between `highest_voted_view` and `leaf.view_number`. This prevents double votes from
@@ -847,7 +847,7 @@
 <a href=#847 id=847 data-nosnippet>847</a>                epoch_height,
 <a href=#848 id=848 data-nosnippet>848</a>                epoch_start_block,
 <a href=#849 id=849 data-nosnippet>849</a>                anchor_leaf: leaf,
-<a href=#850 id=850 data-nosnippet>850</a>                anchor_state: validated_state.unwrap_or_default(),
+<a href=#850 id=850 data-nosnippet>850</a>                anchor_state: Arc::new(validated_state),
 <a href=#851 id=851 data-nosnippet>851</a>                anchor_state_delta: <span class="prelude-val">None</span>,
 <a href=#852 id=852 data-nosnippet>852</a>                start_view: view,
 <a href=#853 id=853 data-nosnippet>853</a>                start_epoch: epoch,
