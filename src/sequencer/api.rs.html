@@ -697,7 +697,7 @@
 <a href=#697 id=697 data-nosnippet>697</a>    };
 <a href=#698 id=698 data-nosnippet>698</a>    <span class="kw">use </span>hotshot::types::{Event, EventType};
 <a href=#699 id=699 data-nosnippet>699</a>    <span class="kw">use </span>hotshot_contract_adapter::sol_types::{LightClientStateSol, StakeTableStateSol};
-<a href=#700 id=700 data-nosnippet>700</a>    <span class="kw">use </span>hotshot_state_prover::service::light_client_genesis_from_stake_table;
+<a href=#700 id=700 data-nosnippet>700</a>    <span class="kw">use </span>hotshot_state_prover::service::legacy_light_client_genesis_from_stake_table;
 <a href=#701 id=701 data-nosnippet>701</a>    <span class="kw">use </span>hotshot_types::{
 <a href=#702 id=702 data-nosnippet>702</a>        event::LeafInfo,
 <a href=#703 id=703 data-nosnippet>703</a>        traits::{metrics::NoMetrics, node_implementation::ConsensusTime},
@@ -863,7 +863,7 @@
 <a href=#863 id=863 data-nosnippet>863</a>            <span class="kw">let </span>epoch_start_block = network_config.hotshot_config().epoch_start_block;
 <a href=#864 id=864 data-nosnippet>864</a>            <span class="kw">let </span>initial_stake_table = network_config.stake_table();
 <a href=#865 id=865 data-nosnippet>865</a>            <span class="kw">let </span>(genesis_state, genesis_stake) =
-<a href=#866 id=866 data-nosnippet>866</a>                light_client_genesis_from_stake_table(initial_stake_table.clone())<span class="question-mark">?</span>;
+<a href=#866 id=866 data-nosnippet>866</a>                legacy_light_client_genesis_from_stake_table(initial_stake_table.clone())<span class="question-mark">?</span>;
 <a href=#867 id=867 data-nosnippet>867</a>
 <a href=#868 id=868 data-nosnippet>868</a>            <span class="comment">// deploy EspToken, proxy
 <a href=#869 id=869 data-nosnippet>869</a>            </span><span class="kw">let </span>token_proxy_addr =
@@ -1078,7 +1078,7 @@
 <a href=#1078 id=1078 data-nosnippet>1078</a>
 <a href=#1079 id=1079 data-nosnippet>1079</a>        <span class="kw">pub fn </span>light_client_genesis(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (LightClientStateSol, StakeTableStateSol) {
 <a href=#1080 id=1080 data-nosnippet>1080</a>            <span class="kw">let </span>st = <span class="self">self</span>.cfg.stake_table();
-<a href=#1081 id=1081 data-nosnippet>1081</a>            light_client_genesis_from_stake_table(st).unwrap()
+<a href=#1081 id=1081 data-nosnippet>1081</a>            legacy_light_client_genesis_from_stake_table(st).unwrap()
 <a href=#1082 id=1082 data-nosnippet>1082</a>        }
 <a href=#1083 id=1083 data-nosnippet>1083</a>
 <a href=#1084 id=1084 data-nosnippet>1084</a>        <span class="kw">pub async fn </span>stop_consensus(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
