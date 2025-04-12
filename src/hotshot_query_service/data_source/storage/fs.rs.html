@@ -151,7 +151,7 @@
 <a href=#151 id=151 data-nosnippet>151</a><span class="kw">where
 <a href=#152 id=152 data-nosnippet>152</a>    </span>Payload&lt;Types&gt;: QueryablePayload&lt;Types&gt;,
 <a href=#153 id=153 data-nosnippet>153</a>{
-<a href=#154 id=154 data-nosnippet>154</a>    <span class="kw">async fn </span>migrate_types(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;()&gt; {
+<a href=#154 id=154 data-nosnippet>154</a>    <span class="kw">async fn </span>migrate_types(<span class="kw-2">&amp;</span><span class="self">self</span>, _batch_size: u64) -&gt; anyhow::Result&lt;()&gt; {
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="prelude-val">Ok</span>(())
 <a href=#156 id=156 data-nosnippet>156</a>    }
 <a href=#157 id=157 data-nosnippet>157</a>}
