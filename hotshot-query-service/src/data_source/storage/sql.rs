@@ -856,8 +856,9 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
 
             let rows = QueryBuilder::default()
                 .query(&format!(
-                    "SELECT leaf, qc, common as vid_common, share as vid_share FROM leaf INNER JOIN vid on leaf.height = vid.height ORDER BY leaf.height LIMIT {} OFFSET {}",
-                    limit, offset
+                    "SELECT leaf, qc, common as vid_common, share as vid_share 
+                    FROM leaf INNER JOIN vid on leaf.height = vid.height 
+                    WHERE leaf.height >= {offset} ORDER BY leaf.height LIMIT {limit}",
                 ))
                 .fetch_all(tx.as_mut())
                 .await?;
@@ -925,6 +926,10 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 "INSERT INTO leaf2 (height, view, hash, block_hash, leaf, qc) ",
             );
 
+            // Advance the `offset` to the highest `leaf.height` processed in this batch.
+            // This ensures the next iteration starts from the next unseen leaf
+            offset = leaf_rows.last().context("last leaf row")?.0;
+
             query_builder.push_values(leaf_rows.into_iter(), |mut b, row| {
                 b.push_bind(row.0)
                     .push_bind(row.1)
@@ -941,7 +946,7 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 message: err.to_string(),
             })?;
 
-            let _ = query.execute(tx.as_mut()).await;
+            query.execute(tx.as_mut()).await?;
 
             // update migrated_rows column with the offset
             tx.upsert(
@@ -951,8 +956,8 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
                 [(0_i64, false, offset)],
             )
             .await?;
-
-            tracing::warn!("inserted {} rows into leaf2 table", offset);
+            let total_rows = rows.len();
+            tracing::warn!("Leaf2: inserted {total_rows}");
             // migrate vid
             let mut query_builder: sqlx::QueryBuilder<Db> =
                 sqlx::QueryBuilder::new("INSERT INTO vid2 (height, common, share) ");
@@ -967,13 +972,12 @@ impl<Types: NodeType> MigrateTypes<Types> for SqlStorage {
 
             tx.commit().await?;
 
-            tracing::warn!("inserted {} rows into vid2 table", offset);
+            tracing::warn!("VID2: inserted {total_rows}");
 
+            tracing::info!("offset={offset}");
             if rows.len() < limit {
                 break;
             }
-
-            offset += limit as i64;
         }
 
         let mut tx = self.write().await.map_err(|err| QueryError::Error {
