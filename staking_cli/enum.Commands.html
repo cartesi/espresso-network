@@ -9,8 +9,8 @@
         compact: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.bool.html">bool</a>,
     },
     RegisterValidator {
-        consensus_private_key: <a class="type" href="../hotshot_types/signature_key/type.BLSPrivKey.html" title="type hotshot_types::signature_key::BLSPrivKey">BLSPrivKey</a>,
-        state_private_key: <a class="type" href="../hotshot_types/light_client/type.StateSignKey.html" title="type hotshot_types::light_client::StateSignKey">StateSignKey</a>,
+        consensus_private_key: BLSPrivKey,
+        state_private_key: StateSignKey,
         commission: <a class="struct" href="parse/struct.Commission.html" title="struct staking_cli::parse::Commission">Commission</a>,
     },
     DeregisterValidator {},
@@ -52,8 +52,8 @@
 <p>Defaults to the latest block for convenience.</p>
 </div></div><div class="sub-variant-field"><span id="variant.Info.field.compact" class="section-header"><a href="#variant.Info.field.compact" class="anchor field">§</a><code>compact: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.bool.html">bool</a></code></span><div class="docblock"><p>Abbreviate the very long BLS public keys.</p>
 </div></div></div><section id="variant.RegisterValidator" class="variant"><a href="#variant.RegisterValidator" class="anchor">§</a><h3 class="code-header">RegisterValidator</h3></section><div class="docblock"><p>Register to become a validator.</p>
-</div><div class="sub-variant" id="variant.RegisterValidator.fields"><h4>Fields</h4><div class="sub-variant-field"><span id="variant.RegisterValidator.field.consensus_private_key" class="section-header"><a href="#variant.RegisterValidator.field.consensus_private_key" class="anchor field">§</a><code>consensus_private_key: <a class="type" href="../hotshot_types/signature_key/type.BLSPrivKey.html" title="type hotshot_types::signature_key::BLSPrivKey">BLSPrivKey</a></code></span><div class="docblock"><p>The consensus signing key. Used to sign a message to prove ownership of the key.</p>
-</div></div><div class="sub-variant-field"><span id="variant.RegisterValidator.field.state_private_key" class="section-header"><a href="#variant.RegisterValidator.field.state_private_key" class="anchor field">§</a><code>state_private_key: <a class="type" href="../hotshot_types/light_client/type.StateSignKey.html" title="type hotshot_types::light_client::StateSignKey">StateSignKey</a></code></span><div class="docblock"><p>The state signing key.</p>
+</div><div class="sub-variant" id="variant.RegisterValidator.fields"><h4>Fields</h4><div class="sub-variant-field"><span id="variant.RegisterValidator.field.consensus_private_key" class="section-header"><a href="#variant.RegisterValidator.field.consensus_private_key" class="anchor field">§</a><code>consensus_private_key: BLSPrivKey</code></span><div class="docblock"><p>The consensus signing key. Used to sign a message to prove ownership of the key.</p>
+</div></div><div class="sub-variant-field"><span id="variant.RegisterValidator.field.state_private_key" class="section-header"><a href="#variant.RegisterValidator.field.state_private_key" class="anchor field">§</a><code>state_private_key: StateSignKey</code></span><div class="docblock"><p>The state signing key.</p>
 <p>TODO: Used to sign a message to prove ownership of the key.</p>
 </div></div><div class="sub-variant-field"><span id="variant.RegisterValidator.field.commission" class="section-header"><a href="#variant.RegisterValidator.field.commission" class="anchor field">§</a><code>commission: <a class="struct" href="parse/struct.Commission.html" title="struct staking_cli::parse::Commission">Commission</a></code></span><div class="docblock"><p>The commission to charge delegators</p>
 </div></div></div><section id="variant.DeregisterValidator" class="variant"><a href="#variant.DeregisterValidator" class="anchor">§</a><h3 class="code-header">DeregisterValidator</h3></section><div class="docblock"><p>Deregister a validator.</p>
