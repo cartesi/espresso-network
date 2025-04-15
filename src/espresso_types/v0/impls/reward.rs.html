@@ -409,7 +409,7 @@
 <a href=#409 id=409 data-nosnippet>409</a>        </span>.first_epoch()
 <a href=#410 id=410 data-nosnippet>410</a>        .context(<span class="string">"The first epoch was not set."</span>)<span class="question-mark">?</span>;
 <a href=#411 id=411 data-nosnippet>411</a>
-<a href=#412 id=412 data-nosnippet>412</a>    <span class="prelude-val">Ok</span>(epoch == first_epoch || epoch == first_epoch + <span class="number">1 </span>|| epoch == EpochNumber::new(<span class="number">0</span>))
+<a href=#412 id=412 data-nosnippet>412</a>    <span class="prelude-val">Ok</span>(epoch &lt;= first_epoch + <span class="number">1</span>)
 <a href=#413 id=413 data-nosnippet>413</a>}
 <a href=#414 id=414 data-nosnippet>414</a>
 <a href=#415 id=415 data-nosnippet>415</a><span class="kw">pub async fn </span>find_validator_info(

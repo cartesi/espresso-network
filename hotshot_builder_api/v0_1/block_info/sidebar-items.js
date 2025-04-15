@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AvailableBlockData","AvailableBlockHeaderInputV1","AvailableBlockHeaderInputV2","AvailableBlockInfo"]};
+window.SIDEBAR_ITEMS = {"struct":["AvailableBlockData","AvailableBlockHeaderInputV1","AvailableBlockHeaderInputV2","AvailableBlockHeaderInputV2Legacy","AvailableBlockInfo"]};

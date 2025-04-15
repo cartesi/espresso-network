@@ -182,238 +182,248 @@
 <a href=#182 id=182 data-nosnippet>182</a>    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
 <a href=#183 id=183 data-nosnippet>183</a>    validation_info: <span class="kw-2">&amp;</span>ValidationInfo&lt;TYPES, I, V&gt;,
 <a href=#184 id=184 data-nosnippet>184</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">if </span>!validation_info
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">let </span>upgrade_view = validation_info
 <a href=#186 id=186 data-nosnippet>186</a>        .upgrade_lock
-<a href=#187 id=187 data-nosnippet>187</a>        .epochs_enabled(proposal.data.view_number())
+<a href=#187 id=187 data-nosnippet>187</a>        .upgrade_view()
 <a href=#188 id=188 data-nosnippet>188</a>        .<span class="kw">await
-<a href=#189 id=189 data-nosnippet>189</a>        </span>|| proposal.data.justify_qc().view_number()
-<a href=#190 id=190 data-nosnippet>190</a>            &lt;= validation_info
-<a href=#191 id=191 data-nosnippet>191</a>                .upgrade_lock
-<a href=#192 id=192 data-nosnippet>192</a>                .upgrade_view()
-<a href=#193 id=193 data-nosnippet>193</a>                .<span class="kw">await
-<a href=#194 id=194 data-nosnippet>194</a>                </span>.unwrap_or(TYPES::View::new(<span class="number">0</span>))
+<a href=#189 id=189 data-nosnippet>189</a>        </span>.unwrap_or(TYPES::View::new(<span class="number">0</span>));
+<a href=#190 id=190 data-nosnippet>190</a>    <span class="kw">if </span>!validation_info
+<a href=#191 id=191 data-nosnippet>191</a>        .upgrade_lock
+<a href=#192 id=192 data-nosnippet>192</a>        .epochs_enabled(proposal.data.view_number())
+<a href=#193 id=193 data-nosnippet>193</a>        .<span class="kw">await
+<a href=#194 id=194 data-nosnippet>194</a>        </span>|| proposal.data.justify_qc().view_number() &lt;= upgrade_view
 <a href=#195 id=195 data-nosnippet>195</a>    {
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
 <a href=#197 id=197 data-nosnippet>197</a>    }
-<a href=#198 id=198 data-nosnippet>198</a>
-<a href=#199 id=199 data-nosnippet>199</a>    <span class="kw">let </span>block_number = proposal.data.block_header().block_number();
-<a href=#200 id=200 data-nosnippet>200</a>
-<a href=#201 id=201 data-nosnippet>201</a>    <span class="kw">let </span><span class="prelude-val">Some</span>(high_block_number) = validation_info
-<a href=#202 id=202 data-nosnippet>202</a>        .consensus
-<a href=#203 id=203 data-nosnippet>203</a>        .read()
-<a href=#204 id=204 data-nosnippet>204</a>        .<span class="kw">await
-<a href=#205 id=205 data-nosnippet>205</a>        </span>.high_qc()
-<a href=#206 id=206 data-nosnippet>206</a>        .data
-<a href=#207 id=207 data-nosnippet>207</a>        .block_number
-<a href=#208 id=208 data-nosnippet>208</a>    <span class="kw">else </span>{
-<a href=#209 id=209 data-nosnippet>209</a>        <span class="macro">bail!</span>(<span class="string">"High QC has no block number"</span>);
-<a href=#210 id=210 data-nosnippet>210</a>    };
-<a href=#211 id=211 data-nosnippet>211</a>
-<a href=#212 id=212 data-nosnippet>212</a>    <span class="macro">ensure!</span>(
-<a href=#213 id=213 data-nosnippet>213</a>        epoch_from_block_number(block_number, validation_info.epoch_height)
-<a href=#214 id=214 data-nosnippet>214</a>            &gt;= epoch_from_block_number(high_block_number + <span class="number">1</span>, validation_info.epoch_height),
-<a href=#215 id=215 data-nosnippet>215</a>        <span class="string">"Quorum proposal has an inconsistent epoch"
-<a href=#216 id=216 data-nosnippet>216</a>    </span>);
-<a href=#217 id=217 data-nosnippet>217</a>
-<a href=#218 id=218 data-nosnippet>218</a>    <span class="prelude-val">Ok</span>(())
-<a href=#219 id=219 data-nosnippet>219</a>}
-<a href=#220 id=220 data-nosnippet>220</a>
-<a href=#221 id=221 data-nosnippet>221</a><span class="doccomment">/// Validate that the proposal's block height is one greater than the justification QC's block height.
-<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">async fn </span>validate_block_height&lt;TYPES: NodeType&gt;(
-<a href=#223 id=223 data-nosnippet>223</a>    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
-<a href=#224 id=224 data-nosnippet>224</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#225 id=225 data-nosnippet>225</a>    <span class="kw">let </span><span class="prelude-val">Some</span>(qc_block_number) = proposal.data.justify_qc().data.block_number <span class="kw">else </span>{
-<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-<a href=#227 id=227 data-nosnippet>227</a>    };
-<a href=#228 id=228 data-nosnippet>228</a>    <span class="macro">ensure!</span>(
-<a href=#229 id=229 data-nosnippet>229</a>        qc_block_number + <span class="number">1 </span>== proposal.data.block_header().block_number(),
-<a href=#230 id=230 data-nosnippet>230</a>        <span class="string">"Quorum proposal has an inconsistent block height"
-<a href=#231 id=231 data-nosnippet>231</a>    </span>);
-<a href=#232 id=232 data-nosnippet>232</a>    <span class="prelude-val">Ok</span>(())
-<a href=#233 id=233 data-nosnippet>233</a>}
-<a href=#234 id=234 data-nosnippet>234</a>
-<a href=#235 id=235 data-nosnippet>235</a><span class="doccomment">/// Handles the `QuorumProposalRecv` event by first validating the cert itself for the view, and then
-<a href=#236 id=236 data-nosnippet>236</a>/// updating the states, which runs when the proposal cannot be found in the internal state map.
-<a href=#237 id=237 data-nosnippet>237</a>///
-<a href=#238 id=238 data-nosnippet>238</a>/// This code can fail when:
-<a href=#239 id=239 data-nosnippet>239</a>/// - The justify qc is invalid.
-<a href=#240 id=240 data-nosnippet>240</a>/// - The task is internally inconsistent.
-<a href=#241 id=241 data-nosnippet>241</a>/// - The sequencer storage update fails.
-<a href=#242 id=242 data-nosnippet>242</a></span><span class="attr">#[allow(clippy::too_many_lines)]
-<a href=#243 id=243 data-nosnippet>243</a>#[instrument(skip_all)]
-<a href=#244 id=244 data-nosnippet>244</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_quorum_proposal_recv&lt;
-<a href=#245 id=245 data-nosnippet>245</a>    TYPES: NodeType,
-<a href=#246 id=246 data-nosnippet>246</a>    I: NodeImplementation&lt;TYPES&gt;,
-<a href=#247 id=247 data-nosnippet>247</a>    V: Versions,
-<a href=#248 id=248 data-nosnippet>248</a>&gt;(
-<a href=#249 id=249 data-nosnippet>249</a>    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
-<a href=#250 id=250 data-nosnippet>250</a>    quorum_proposal_sender_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
-<a href=#251 id=251 data-nosnippet>251</a>    event_sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
-<a href=#252 id=252 data-nosnippet>252</a>    event_receiver: <span class="kw-2">&amp;</span>Receiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
-<a href=#253 id=253 data-nosnippet>253</a>    validation_info: ValidationInfo&lt;TYPES, I, V&gt;,
-<a href=#254 id=254 data-nosnippet>254</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#255 id=255 data-nosnippet>255</a>    proposal
-<a href=#256 id=256 data-nosnippet>256</a>        .data
-<a href=#257 id=257 data-nosnippet>257</a>        .validate_epoch(<span class="kw-2">&amp;</span>validation_info.upgrade_lock, validation_info.epoch_height)
-<a href=#258 id=258 data-nosnippet>258</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#259 id=259 data-nosnippet>259</a>    <span class="comment">// validate the proposal's epoch matches ours
-<a href=#260 id=260 data-nosnippet>260</a>    </span>validate_current_epoch(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#261 id=261 data-nosnippet>261</a>    <span class="kw">let </span>quorum_proposal_sender_key = quorum_proposal_sender_key.clone();
-<a href=#262 id=262 data-nosnippet>262</a>
-<a href=#263 id=263 data-nosnippet>263</a>    validate_proposal_view_and_certs(proposal, <span class="kw-2">&amp;</span>validation_info)
-<a href=#264 id=264 data-nosnippet>264</a>        .<span class="kw">await
-<a href=#265 id=265 data-nosnippet>265</a>        </span>.context(<span class="macro">warn!</span>(<span class="string">"Failed to validate proposal view or attached certs"</span>))<span class="question-mark">?</span>;
-<a href=#266 id=266 data-nosnippet>266</a>
-<a href=#267 id=267 data-nosnippet>267</a>    validate_block_height(proposal).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#268 id=268 data-nosnippet>268</a>
-<a href=#269 id=269 data-nosnippet>269</a>    <span class="kw">let </span>view_number = proposal.data.view_number();
-<a href=#270 id=270 data-nosnippet>270</a>
-<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>justify_qc = proposal.data.justify_qc().clone();
-<a href=#272 id=272 data-nosnippet>272</a>    <span class="kw">let </span>maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc().clone();
-<a href=#273 id=273 data-nosnippet>273</a>
-<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">let </span>proposal_block_number = proposal.data.block_header().block_number();
-<a href=#275 id=275 data-nosnippet>275</a>    <span class="kw">let </span>proposal_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
-<a href=#276 id=276 data-nosnippet>276</a>        proposal.data.epoch().is_some(),
-<a href=#277 id=277 data-nosnippet>277</a>        proposal_block_number,
-<a href=#278 id=278 data-nosnippet>278</a>        validation_info.epoch_height,
-<a href=#279 id=279 data-nosnippet>279</a>    );
+<a href=#198 id=198 data-nosnippet>198</a>    <span class="kw">if </span>validation_info
+<a href=#199 id=199 data-nosnippet>199</a>        .consensus
+<a href=#200 id=200 data-nosnippet>200</a>        .read()
+<a href=#201 id=201 data-nosnippet>201</a>        .<span class="kw">await
+<a href=#202 id=202 data-nosnippet>202</a>        </span>.high_qc()
+<a href=#203 id=203 data-nosnippet>203</a>        .view_number()
+<a href=#204 id=204 data-nosnippet>204</a>        &lt;= upgrade_view
+<a href=#205 id=205 data-nosnippet>205</a>    {
+<a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+<a href=#207 id=207 data-nosnippet>207</a>    }
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a>    <span class="kw">let </span>block_number = proposal.data.block_header().block_number();
+<a href=#210 id=210 data-nosnippet>210</a>
+<a href=#211 id=211 data-nosnippet>211</a>    <span class="kw">let </span><span class="prelude-val">Some</span>(high_block_number) = validation_info
+<a href=#212 id=212 data-nosnippet>212</a>        .consensus
+<a href=#213 id=213 data-nosnippet>213</a>        .read()
+<a href=#214 id=214 data-nosnippet>214</a>        .<span class="kw">await
+<a href=#215 id=215 data-nosnippet>215</a>        </span>.high_qc()
+<a href=#216 id=216 data-nosnippet>216</a>        .data
+<a href=#217 id=217 data-nosnippet>217</a>        .block_number
+<a href=#218 id=218 data-nosnippet>218</a>    <span class="kw">else </span>{
+<a href=#219 id=219 data-nosnippet>219</a>        <span class="macro">bail!</span>(<span class="string">"High QC has no block number"</span>);
+<a href=#220 id=220 data-nosnippet>220</a>    };
+<a href=#221 id=221 data-nosnippet>221</a>
+<a href=#222 id=222 data-nosnippet>222</a>    <span class="macro">ensure!</span>(
+<a href=#223 id=223 data-nosnippet>223</a>        epoch_from_block_number(block_number, validation_info.epoch_height)
+<a href=#224 id=224 data-nosnippet>224</a>            &gt;= epoch_from_block_number(high_block_number + <span class="number">1</span>, validation_info.epoch_height),
+<a href=#225 id=225 data-nosnippet>225</a>        <span class="string">"Quorum proposal has an inconsistent epoch"
+<a href=#226 id=226 data-nosnippet>226</a>    </span>);
+<a href=#227 id=227 data-nosnippet>227</a>
+<a href=#228 id=228 data-nosnippet>228</a>    <span class="prelude-val">Ok</span>(())
+<a href=#229 id=229 data-nosnippet>229</a>}
+<a href=#230 id=230 data-nosnippet>230</a>
+<a href=#231 id=231 data-nosnippet>231</a><span class="doccomment">/// Validate that the proposal's block height is one greater than the justification QC's block height.
+<a href=#232 id=232 data-nosnippet>232</a></span><span class="kw">async fn </span>validate_block_height&lt;TYPES: NodeType&gt;(
+<a href=#233 id=233 data-nosnippet>233</a>    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
+<a href=#234 id=234 data-nosnippet>234</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#235 id=235 data-nosnippet>235</a>    <span class="kw">let </span><span class="prelude-val">Some</span>(qc_block_number) = proposal.data.justify_qc().data.block_number <span class="kw">else </span>{
+<a href=#236 id=236 data-nosnippet>236</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+<a href=#237 id=237 data-nosnippet>237</a>    };
+<a href=#238 id=238 data-nosnippet>238</a>    <span class="macro">ensure!</span>(
+<a href=#239 id=239 data-nosnippet>239</a>        qc_block_number + <span class="number">1 </span>== proposal.data.block_header().block_number(),
+<a href=#240 id=240 data-nosnippet>240</a>        <span class="string">"Quorum proposal has an inconsistent block height"
+<a href=#241 id=241 data-nosnippet>241</a>    </span>);
+<a href=#242 id=242 data-nosnippet>242</a>    <span class="prelude-val">Ok</span>(())
+<a href=#243 id=243 data-nosnippet>243</a>}
+<a href=#244 id=244 data-nosnippet>244</a>
+<a href=#245 id=245 data-nosnippet>245</a><span class="doccomment">/// Handles the `QuorumProposalRecv` event by first validating the cert itself for the view, and then
+<a href=#246 id=246 data-nosnippet>246</a>/// updating the states, which runs when the proposal cannot be found in the internal state map.
+<a href=#247 id=247 data-nosnippet>247</a>///
+<a href=#248 id=248 data-nosnippet>248</a>/// This code can fail when:
+<a href=#249 id=249 data-nosnippet>249</a>/// - The justify qc is invalid.
+<a href=#250 id=250 data-nosnippet>250</a>/// - The task is internally inconsistent.
+<a href=#251 id=251 data-nosnippet>251</a>/// - The sequencer storage update fails.
+<a href=#252 id=252 data-nosnippet>252</a></span><span class="attr">#[allow(clippy::too_many_lines)]
+<a href=#253 id=253 data-nosnippet>253</a>#[instrument(skip_all)]
+<a href=#254 id=254 data-nosnippet>254</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_quorum_proposal_recv&lt;
+<a href=#255 id=255 data-nosnippet>255</a>    TYPES: NodeType,
+<a href=#256 id=256 data-nosnippet>256</a>    I: NodeImplementation&lt;TYPES&gt;,
+<a href=#257 id=257 data-nosnippet>257</a>    V: Versions,
+<a href=#258 id=258 data-nosnippet>258</a>&gt;(
+<a href=#259 id=259 data-nosnippet>259</a>    proposal: <span class="kw-2">&amp;</span>Proposal&lt;TYPES, QuorumProposalWrapper&lt;TYPES&gt;&gt;,
+<a href=#260 id=260 data-nosnippet>260</a>    quorum_proposal_sender_key: <span class="kw-2">&amp;</span>TYPES::SignatureKey,
+<a href=#261 id=261 data-nosnippet>261</a>    event_sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
+<a href=#262 id=262 data-nosnippet>262</a>    event_receiver: <span class="kw-2">&amp;</span>Receiver&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
+<a href=#263 id=263 data-nosnippet>263</a>    validation_info: ValidationInfo&lt;TYPES, I, V&gt;,
+<a href=#264 id=264 data-nosnippet>264</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#265 id=265 data-nosnippet>265</a>    proposal
+<a href=#266 id=266 data-nosnippet>266</a>        .data
+<a href=#267 id=267 data-nosnippet>267</a>        .validate_epoch(<span class="kw-2">&amp;</span>validation_info.upgrade_lock, validation_info.epoch_height)
+<a href=#268 id=268 data-nosnippet>268</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#269 id=269 data-nosnippet>269</a>    <span class="comment">// validate the proposal's epoch matches ours
+<a href=#270 id=270 data-nosnippet>270</a>    </span>validate_current_epoch(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#271 id=271 data-nosnippet>271</a>    <span class="kw">let </span>quorum_proposal_sender_key = quorum_proposal_sender_key.clone();
+<a href=#272 id=272 data-nosnippet>272</a>
+<a href=#273 id=273 data-nosnippet>273</a>    validate_proposal_view_and_certs(proposal, <span class="kw-2">&amp;</span>validation_info)
+<a href=#274 id=274 data-nosnippet>274</a>        .<span class="kw">await
+<a href=#275 id=275 data-nosnippet>275</a>        </span>.context(<span class="macro">warn!</span>(<span class="string">"Failed to validate proposal view or attached certs"</span>))<span class="question-mark">?</span>;
+<a href=#276 id=276 data-nosnippet>276</a>
+<a href=#277 id=277 data-nosnippet>277</a>    validate_block_height(proposal).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#278 id=278 data-nosnippet>278</a>
+<a href=#279 id=279 data-nosnippet>279</a>    <span class="kw">let </span>view_number = proposal.data.view_number();
 <a href=#280 id=280 data-nosnippet>280</a>
-<a href=#281 id=281 data-nosnippet>281</a>    <span class="kw">if </span>justify_qc
-<a href=#282 id=282 data-nosnippet>282</a>        .data
-<a href=#283 id=283 data-nosnippet>283</a>        .block_number
-<a href=#284 id=284 data-nosnippet>284</a>        .is_some_and(|bn| is_epoch_root(bn, validation_info.epoch_height))
-<a href=#285 id=285 data-nosnippet>285</a>    {
-<a href=#286 id=286 data-nosnippet>286</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(state_cert) = proposal.data.state_cert() <span class="kw">else </span>{
-<a href=#287 id=287 data-nosnippet>287</a>            <span class="macro">bail!</span>(<span class="string">"Epoch root QC has no state cert"</span>);
-<a href=#288 id=288 data-nosnippet>288</a>        };
-<a href=#289 id=289 data-nosnippet>289</a>        <span class="macro">ensure!</span>(
-<a href=#290 id=290 data-nosnippet>290</a>            check_qc_state_cert_correspondence(
-<a href=#291 id=291 data-nosnippet>291</a>                <span class="kw-2">&amp;</span>justify_qc,
-<a href=#292 id=292 data-nosnippet>292</a>                state_cert,
-<a href=#293 id=293 data-nosnippet>293</a>                validation_info.epoch_height
-<a href=#294 id=294 data-nosnippet>294</a>            ),
-<a href=#295 id=295 data-nosnippet>295</a>            <span class="string">"Epoch root QC has no corresponding state cert"
-<a href=#296 id=296 data-nosnippet>296</a>        </span>);
-<a href=#297 id=297 data-nosnippet>297</a>        validate_light_client_state_update_certificate(
-<a href=#298 id=298 data-nosnippet>298</a>            state_cert,
-<a href=#299 id=299 data-nosnippet>299</a>            <span class="kw-2">&amp;</span>validation_info.membership.coordinator,
-<a href=#300 id=300 data-nosnippet>300</a>        )
-<a href=#301 id=301 data-nosnippet>301</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#302 id=302 data-nosnippet>302</a>    }
-<a href=#303 id=303 data-nosnippet>303</a>
-<a href=#304 id=304 data-nosnippet>304</a>    validate_epoch_transition_block(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#305 id=305 data-nosnippet>305</a>
-<a href=#306 id=306 data-nosnippet>306</a>    validate_qc_and_next_epoch_qc(
-<a href=#307 id=307 data-nosnippet>307</a>        <span class="kw-2">&amp;</span>justify_qc,
-<a href=#308 id=308 data-nosnippet>308</a>        maybe_next_epoch_justify_qc.as_ref(),
-<a href=#309 id=309 data-nosnippet>309</a>        <span class="kw-2">&amp;</span>validation_info.consensus,
-<a href=#310 id=310 data-nosnippet>310</a>        <span class="kw-2">&amp;</span>validation_info.membership.coordinator,
-<a href=#311 id=311 data-nosnippet>311</a>        <span class="kw-2">&amp;</span>validation_info.upgrade_lock,
-<a href=#312 id=312 data-nosnippet>312</a>        validation_info.epoch_height,
-<a href=#313 id=313 data-nosnippet>313</a>    )
-<a href=#314 id=314 data-nosnippet>314</a>    .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#281 id=281 data-nosnippet>281</a>    <span class="kw">let </span>justify_qc = proposal.data.justify_qc().clone();
+<a href=#282 id=282 data-nosnippet>282</a>    <span class="kw">let </span>maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc().clone();
+<a href=#283 id=283 data-nosnippet>283</a>
+<a href=#284 id=284 data-nosnippet>284</a>    <span class="kw">let </span>proposal_block_number = proposal.data.block_header().block_number();
+<a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">let </span>proposal_epoch = option_epoch_from_block_number::&lt;TYPES&gt;(
+<a href=#286 id=286 data-nosnippet>286</a>        proposal.data.epoch().is_some(),
+<a href=#287 id=287 data-nosnippet>287</a>        proposal_block_number,
+<a href=#288 id=288 data-nosnippet>288</a>        validation_info.epoch_height,
+<a href=#289 id=289 data-nosnippet>289</a>    );
+<a href=#290 id=290 data-nosnippet>290</a>
+<a href=#291 id=291 data-nosnippet>291</a>    <span class="kw">if </span>justify_qc
+<a href=#292 id=292 data-nosnippet>292</a>        .data
+<a href=#293 id=293 data-nosnippet>293</a>        .block_number
+<a href=#294 id=294 data-nosnippet>294</a>        .is_some_and(|bn| is_epoch_root(bn, validation_info.epoch_height))
+<a href=#295 id=295 data-nosnippet>295</a>    {
+<a href=#296 id=296 data-nosnippet>296</a>        <span class="kw">let </span><span class="prelude-val">Some</span>(state_cert) = proposal.data.state_cert() <span class="kw">else </span>{
+<a href=#297 id=297 data-nosnippet>297</a>            <span class="macro">bail!</span>(<span class="string">"Epoch root QC has no state cert"</span>);
+<a href=#298 id=298 data-nosnippet>298</a>        };
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="macro">ensure!</span>(
+<a href=#300 id=300 data-nosnippet>300</a>            check_qc_state_cert_correspondence(
+<a href=#301 id=301 data-nosnippet>301</a>                <span class="kw-2">&amp;</span>justify_qc,
+<a href=#302 id=302 data-nosnippet>302</a>                state_cert,
+<a href=#303 id=303 data-nosnippet>303</a>                validation_info.epoch_height
+<a href=#304 id=304 data-nosnippet>304</a>            ),
+<a href=#305 id=305 data-nosnippet>305</a>            <span class="string">"Epoch root QC has no corresponding state cert"
+<a href=#306 id=306 data-nosnippet>306</a>        </span>);
+<a href=#307 id=307 data-nosnippet>307</a>        validate_light_client_state_update_certificate(
+<a href=#308 id=308 data-nosnippet>308</a>            state_cert,
+<a href=#309 id=309 data-nosnippet>309</a>            <span class="kw-2">&amp;</span>validation_info.membership.coordinator,
+<a href=#310 id=310 data-nosnippet>310</a>        )
+<a href=#311 id=311 data-nosnippet>311</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#312 id=312 data-nosnippet>312</a>    }
+<a href=#313 id=313 data-nosnippet>313</a>
+<a href=#314 id=314 data-nosnippet>314</a>    validate_epoch_transition_block(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#315 id=315 data-nosnippet>315</a>
-<a href=#316 id=316 data-nosnippet>316</a>    broadcast_event(
-<a href=#317 id=317 data-nosnippet>317</a>        Arc::new(HotShotEvent::QuorumProposalPreliminarilyValidated(
-<a href=#318 id=318 data-nosnippet>318</a>            proposal.clone(),
-<a href=#319 id=319 data-nosnippet>319</a>        )),
-<a href=#320 id=320 data-nosnippet>320</a>        event_sender,
-<a href=#321 id=321 data-nosnippet>321</a>    )
-<a href=#322 id=322 data-nosnippet>322</a>    .<span class="kw">await</span>;
-<a href=#323 id=323 data-nosnippet>323</a>
-<a href=#324 id=324 data-nosnippet>324</a>    <span class="comment">// Get the parent leaf and state.
-<a href=#325 id=325 data-nosnippet>325</a>    </span><span class="kw">let </span>parent_leaf = validation_info
-<a href=#326 id=326 data-nosnippet>326</a>        .consensus
-<a href=#327 id=327 data-nosnippet>327</a>        .read()
-<a href=#328 id=328 data-nosnippet>328</a>        .<span class="kw">await
-<a href=#329 id=329 data-nosnippet>329</a>        </span>.saved_leaves()
-<a href=#330 id=330 data-nosnippet>330</a>        .get(<span class="kw-2">&amp;</span>justify_qc.data.leaf_commit)
-<a href=#331 id=331 data-nosnippet>331</a>        .cloned();
-<a href=#332 id=332 data-nosnippet>332</a>
-<a href=#333 id=333 data-nosnippet>333</a>    <span class="kw">if </span>parent_leaf.is_none() {
-<a href=#334 id=334 data-nosnippet>334</a>        spawn_fetch_proposal(
-<a href=#335 id=335 data-nosnippet>335</a>            <span class="kw-2">&amp;</span>justify_qc,
-<a href=#336 id=336 data-nosnippet>336</a>            event_sender.clone(),
-<a href=#337 id=337 data-nosnippet>337</a>            event_receiver.clone(),
-<a href=#338 id=338 data-nosnippet>338</a>            validation_info.membership.coordinator.clone(),
-<a href=#339 id=339 data-nosnippet>339</a>            OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>validation_info.consensus.inner_consensus)),
-<a href=#340 id=340 data-nosnippet>340</a>            <span class="comment">// Note that we explicitly use the node key here instead of the provided key in the signature.
-<a href=#341 id=341 data-nosnippet>341</a>            // This is because the key that we receive is for the prior leader, so the payload would be routed
-<a href=#342 id=342 data-nosnippet>342</a>            // incorrectly.
-<a href=#343 id=343 data-nosnippet>343</a>            </span>validation_info.public_key.clone(),
-<a href=#344 id=344 data-nosnippet>344</a>            validation_info.private_key.clone(),
-<a href=#345 id=345 data-nosnippet>345</a>            validation_info.upgrade_lock.clone(),
-<a href=#346 id=346 data-nosnippet>346</a>            validation_info.epoch_height,
-<a href=#347 id=347 data-nosnippet>347</a>        );
-<a href=#348 id=348 data-nosnippet>348</a>    }
-<a href=#349 id=349 data-nosnippet>349</a>    <span class="kw">let </span>consensus_reader = validation_info.consensus.read().<span class="kw">await</span>;
-<a href=#350 id=350 data-nosnippet>350</a>
-<a href=#351 id=351 data-nosnippet>351</a>    <span class="kw">let </span>parent = <span class="kw">match </span>parent_leaf {
-<a href=#352 id=352 data-nosnippet>352</a>        <span class="prelude-val">Some</span>(leaf) =&gt; {
-<a href=#353 id=353 data-nosnippet>353</a>            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(state), <span class="kw">_</span>) = consensus_reader.state_and_delta(leaf.view_number()) {
-<a href=#354 id=354 data-nosnippet>354</a>                <span class="prelude-val">Some</span>((leaf, Arc::clone(<span class="kw-2">&amp;</span>state)))
-<a href=#355 id=355 data-nosnippet>355</a>            } <span class="kw">else </span>{
-<a href=#356 id=356 data-nosnippet>356</a>                <span class="macro">bail!</span>(<span class="string">"Parent state not found! Consensus internally inconsistent"</span>);
-<a href=#357 id=357 data-nosnippet>357</a>            }
-<a href=#358 id=358 data-nosnippet>358</a>        },
-<a href=#359 id=359 data-nosnippet>359</a>        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
-<a href=#360 id=360 data-nosnippet>360</a>    };
-<a href=#361 id=361 data-nosnippet>361</a>    drop(consensus_reader);
-<a href=#362 id=362 data-nosnippet>362</a>    <span class="kw">if </span>justify_qc.view_number()
-<a href=#363 id=363 data-nosnippet>363</a>        &gt; validation_info
-<a href=#364 id=364 data-nosnippet>364</a>            .consensus
-<a href=#365 id=365 data-nosnippet>365</a>            .read()
-<a href=#366 id=366 data-nosnippet>366</a>            .<span class="kw">await
-<a href=#367 id=367 data-nosnippet>367</a>            </span>.high_qc()
-<a href=#368 id=368 data-nosnippet>368</a>            .view_number()
-<a href=#369 id=369 data-nosnippet>369</a>    {
-<a href=#370 id=370 data-nosnippet>370</a>        update_high_qc(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#371 id=371 data-nosnippet>371</a>    }
-<a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">let </span><span class="prelude-val">Some</span>((parent_leaf, _parent_state)) = parent <span class="kw">else </span>{
-<a href=#374 id=374 data-nosnippet>374</a>        <span class="macro">tracing::warn!</span>(
-<a href=#375 id=375 data-nosnippet>375</a>            <span class="string">"Proposal's parent missing from storage with commitment: {:?}"</span>,
-<a href=#376 id=376 data-nosnippet>376</a>            justify_qc.data.leaf_commit
-<a href=#377 id=377 data-nosnippet>377</a>        );
-<a href=#378 id=378 data-nosnippet>378</a>        validate_proposal_liveness(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#379 id=379 data-nosnippet>379</a>        <span class="macro">tracing::trace!</span>(<span class="string">"Sending ViewChange for view {view_number} and epoch {proposal_epoch:?}"</span>);
-<a href=#380 id=380 data-nosnippet>380</a>        validation_info
-<a href=#381 id=381 data-nosnippet>381</a>            .consensus
-<a href=#382 id=382 data-nosnippet>382</a>            .write()
-<a href=#383 id=383 data-nosnippet>383</a>            .<span class="kw">await
-<a href=#384 id=384 data-nosnippet>384</a>            </span>.update_highest_block(proposal_block_number);
-<a href=#385 id=385 data-nosnippet>385</a>        broadcast_event(
-<a href=#386 id=386 data-nosnippet>386</a>            Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
-<a href=#387 id=387 data-nosnippet>387</a>            event_sender,
-<a href=#388 id=388 data-nosnippet>388</a>        )
-<a href=#389 id=389 data-nosnippet>389</a>        .<span class="kw">await</span>;
-<a href=#390 id=390 data-nosnippet>390</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-<a href=#391 id=391 data-nosnippet>391</a>    };
-<a href=#392 id=392 data-nosnippet>392</a>
-<a href=#393 id=393 data-nosnippet>393</a>    <span class="comment">// Validate the proposal
-<a href=#394 id=394 data-nosnippet>394</a>    </span>validate_proposal_safety_and_liveness::&lt;TYPES, I, V&gt;(
-<a href=#395 id=395 data-nosnippet>395</a>        proposal.clone(),
-<a href=#396 id=396 data-nosnippet>396</a>        parent_leaf,
-<a href=#397 id=397 data-nosnippet>397</a>        <span class="kw-2">&amp;</span>validation_info,
-<a href=#398 id=398 data-nosnippet>398</a>        event_sender.clone(),
-<a href=#399 id=399 data-nosnippet>399</a>        quorum_proposal_sender_key,
-<a href=#400 id=400 data-nosnippet>400</a>    )
-<a href=#401 id=401 data-nosnippet>401</a>    .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#316 id=316 data-nosnippet>316</a>    validate_qc_and_next_epoch_qc(
+<a href=#317 id=317 data-nosnippet>317</a>        <span class="kw-2">&amp;</span>justify_qc,
+<a href=#318 id=318 data-nosnippet>318</a>        maybe_next_epoch_justify_qc.as_ref(),
+<a href=#319 id=319 data-nosnippet>319</a>        <span class="kw-2">&amp;</span>validation_info.consensus,
+<a href=#320 id=320 data-nosnippet>320</a>        <span class="kw-2">&amp;</span>validation_info.membership.coordinator,
+<a href=#321 id=321 data-nosnippet>321</a>        <span class="kw-2">&amp;</span>validation_info.upgrade_lock,
+<a href=#322 id=322 data-nosnippet>322</a>        validation_info.epoch_height,
+<a href=#323 id=323 data-nosnippet>323</a>    )
+<a href=#324 id=324 data-nosnippet>324</a>    .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#325 id=325 data-nosnippet>325</a>
+<a href=#326 id=326 data-nosnippet>326</a>    broadcast_event(
+<a href=#327 id=327 data-nosnippet>327</a>        Arc::new(HotShotEvent::QuorumProposalPreliminarilyValidated(
+<a href=#328 id=328 data-nosnippet>328</a>            proposal.clone(),
+<a href=#329 id=329 data-nosnippet>329</a>        )),
+<a href=#330 id=330 data-nosnippet>330</a>        event_sender,
+<a href=#331 id=331 data-nosnippet>331</a>    )
+<a href=#332 id=332 data-nosnippet>332</a>    .<span class="kw">await</span>;
+<a href=#333 id=333 data-nosnippet>333</a>
+<a href=#334 id=334 data-nosnippet>334</a>    <span class="comment">// Get the parent leaf and state.
+<a href=#335 id=335 data-nosnippet>335</a>    </span><span class="kw">let </span>parent_leaf = validation_info
+<a href=#336 id=336 data-nosnippet>336</a>        .consensus
+<a href=#337 id=337 data-nosnippet>337</a>        .read()
+<a href=#338 id=338 data-nosnippet>338</a>        .<span class="kw">await
+<a href=#339 id=339 data-nosnippet>339</a>        </span>.saved_leaves()
+<a href=#340 id=340 data-nosnippet>340</a>        .get(<span class="kw-2">&amp;</span>justify_qc.data.leaf_commit)
+<a href=#341 id=341 data-nosnippet>341</a>        .cloned();
+<a href=#342 id=342 data-nosnippet>342</a>
+<a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">if </span>parent_leaf.is_none() {
+<a href=#344 id=344 data-nosnippet>344</a>        spawn_fetch_proposal(
+<a href=#345 id=345 data-nosnippet>345</a>            <span class="kw-2">&amp;</span>justify_qc,
+<a href=#346 id=346 data-nosnippet>346</a>            event_sender.clone(),
+<a href=#347 id=347 data-nosnippet>347</a>            event_receiver.clone(),
+<a href=#348 id=348 data-nosnippet>348</a>            validation_info.membership.coordinator.clone(),
+<a href=#349 id=349 data-nosnippet>349</a>            OuterConsensus::new(Arc::clone(<span class="kw-2">&amp;</span>validation_info.consensus.inner_consensus)),
+<a href=#350 id=350 data-nosnippet>350</a>            <span class="comment">// Note that we explicitly use the node key here instead of the provided key in the signature.
+<a href=#351 id=351 data-nosnippet>351</a>            // This is because the key that we receive is for the prior leader, so the payload would be routed
+<a href=#352 id=352 data-nosnippet>352</a>            // incorrectly.
+<a href=#353 id=353 data-nosnippet>353</a>            </span>validation_info.public_key.clone(),
+<a href=#354 id=354 data-nosnippet>354</a>            validation_info.private_key.clone(),
+<a href=#355 id=355 data-nosnippet>355</a>            validation_info.upgrade_lock.clone(),
+<a href=#356 id=356 data-nosnippet>356</a>            validation_info.epoch_height,
+<a href=#357 id=357 data-nosnippet>357</a>        );
+<a href=#358 id=358 data-nosnippet>358</a>    }
+<a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">let </span>consensus_reader = validation_info.consensus.read().<span class="kw">await</span>;
+<a href=#360 id=360 data-nosnippet>360</a>
+<a href=#361 id=361 data-nosnippet>361</a>    <span class="kw">let </span>parent = <span class="kw">match </span>parent_leaf {
+<a href=#362 id=362 data-nosnippet>362</a>        <span class="prelude-val">Some</span>(leaf) =&gt; {
+<a href=#363 id=363 data-nosnippet>363</a>            <span class="kw">if let </span>(<span class="prelude-val">Some</span>(state), <span class="kw">_</span>) = consensus_reader.state_and_delta(leaf.view_number()) {
+<a href=#364 id=364 data-nosnippet>364</a>                <span class="prelude-val">Some</span>((leaf, Arc::clone(<span class="kw-2">&amp;</span>state)))
+<a href=#365 id=365 data-nosnippet>365</a>            } <span class="kw">else </span>{
+<a href=#366 id=366 data-nosnippet>366</a>                <span class="macro">bail!</span>(<span class="string">"Parent state not found! Consensus internally inconsistent"</span>);
+<a href=#367 id=367 data-nosnippet>367</a>            }
+<a href=#368 id=368 data-nosnippet>368</a>        },
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="prelude-val">None </span>=&gt; <span class="prelude-val">None</span>,
+<a href=#370 id=370 data-nosnippet>370</a>    };
+<a href=#371 id=371 data-nosnippet>371</a>    drop(consensus_reader);
+<a href=#372 id=372 data-nosnippet>372</a>    <span class="kw">if </span>justify_qc.view_number()
+<a href=#373 id=373 data-nosnippet>373</a>        &gt; validation_info
+<a href=#374 id=374 data-nosnippet>374</a>            .consensus
+<a href=#375 id=375 data-nosnippet>375</a>            .read()
+<a href=#376 id=376 data-nosnippet>376</a>            .<span class="kw">await
+<a href=#377 id=377 data-nosnippet>377</a>            </span>.high_qc()
+<a href=#378 id=378 data-nosnippet>378</a>            .view_number()
+<a href=#379 id=379 data-nosnippet>379</a>    {
+<a href=#380 id=380 data-nosnippet>380</a>        update_high_qc(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#381 id=381 data-nosnippet>381</a>    }
+<a href=#382 id=382 data-nosnippet>382</a>
+<a href=#383 id=383 data-nosnippet>383</a>    <span class="kw">let </span><span class="prelude-val">Some</span>((parent_leaf, _parent_state)) = parent <span class="kw">else </span>{
+<a href=#384 id=384 data-nosnippet>384</a>        <span class="macro">tracing::warn!</span>(
+<a href=#385 id=385 data-nosnippet>385</a>            <span class="string">"Proposal's parent missing from storage with commitment: {:?}"</span>,
+<a href=#386 id=386 data-nosnippet>386</a>            justify_qc.data.leaf_commit
+<a href=#387 id=387 data-nosnippet>387</a>        );
+<a href=#388 id=388 data-nosnippet>388</a>        validate_proposal_liveness(proposal, <span class="kw-2">&amp;</span>validation_info).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#389 id=389 data-nosnippet>389</a>        <span class="macro">tracing::trace!</span>(<span class="string">"Sending ViewChange for view {view_number} and epoch {proposal_epoch:?}"</span>);
+<a href=#390 id=390 data-nosnippet>390</a>        validation_info
+<a href=#391 id=391 data-nosnippet>391</a>            .consensus
+<a href=#392 id=392 data-nosnippet>392</a>            .write()
+<a href=#393 id=393 data-nosnippet>393</a>            .<span class="kw">await
+<a href=#394 id=394 data-nosnippet>394</a>            </span>.update_highest_block(proposal_block_number);
+<a href=#395 id=395 data-nosnippet>395</a>        broadcast_event(
+<a href=#396 id=396 data-nosnippet>396</a>            Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
+<a href=#397 id=397 data-nosnippet>397</a>            event_sender,
+<a href=#398 id=398 data-nosnippet>398</a>        )
+<a href=#399 id=399 data-nosnippet>399</a>        .<span class="kw">await</span>;
+<a href=#400 id=400 data-nosnippet>400</a>        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+<a href=#401 id=401 data-nosnippet>401</a>    };
 <a href=#402 id=402 data-nosnippet>402</a>
-<a href=#403 id=403 data-nosnippet>403</a>    <span class="macro">tracing::trace!</span>(<span class="string">"Sending ViewChange for view {view_number} and epoch {proposal_epoch:?}"</span>);
-<a href=#404 id=404 data-nosnippet>404</a>    validation_info
-<a href=#405 id=405 data-nosnippet>405</a>        .consensus
-<a href=#406 id=406 data-nosnippet>406</a>        .write()
-<a href=#407 id=407 data-nosnippet>407</a>        .<span class="kw">await
-<a href=#408 id=408 data-nosnippet>408</a>        </span>.update_highest_block(proposal_block_number);
-<a href=#409 id=409 data-nosnippet>409</a>    {
-<a href=#410 id=410 data-nosnippet>410</a>        validation_info.consensus.write().<span class="kw">await</span>.highest_block = proposal_block_number;
-<a href=#411 id=411 data-nosnippet>411</a>    }
-<a href=#412 id=412 data-nosnippet>412</a>    broadcast_event(
-<a href=#413 id=413 data-nosnippet>413</a>        Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
-<a href=#414 id=414 data-nosnippet>414</a>        event_sender,
-<a href=#415 id=415 data-nosnippet>415</a>    )
-<a href=#416 id=416 data-nosnippet>416</a>    .<span class="kw">await</span>;
-<a href=#417 id=417 data-nosnippet>417</a>
-<a href=#418 id=418 data-nosnippet>418</a>    <span class="prelude-val">Ok</span>(())
-<a href=#419 id=419 data-nosnippet>419</a>}</code></pre></div></section></main></body></html>
+<a href=#403 id=403 data-nosnippet>403</a>    <span class="comment">// Validate the proposal
+<a href=#404 id=404 data-nosnippet>404</a>    </span>validate_proposal_safety_and_liveness::&lt;TYPES, I, V&gt;(
+<a href=#405 id=405 data-nosnippet>405</a>        proposal.clone(),
+<a href=#406 id=406 data-nosnippet>406</a>        parent_leaf,
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="kw-2">&amp;</span>validation_info,
+<a href=#408 id=408 data-nosnippet>408</a>        event_sender.clone(),
+<a href=#409 id=409 data-nosnippet>409</a>        quorum_proposal_sender_key,
+<a href=#410 id=410 data-nosnippet>410</a>    )
+<a href=#411 id=411 data-nosnippet>411</a>    .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#412 id=412 data-nosnippet>412</a>
+<a href=#413 id=413 data-nosnippet>413</a>    <span class="macro">tracing::trace!</span>(<span class="string">"Sending ViewChange for view {view_number} and epoch {proposal_epoch:?}"</span>);
+<a href=#414 id=414 data-nosnippet>414</a>    validation_info
+<a href=#415 id=415 data-nosnippet>415</a>        .consensus
+<a href=#416 id=416 data-nosnippet>416</a>        .write()
+<a href=#417 id=417 data-nosnippet>417</a>        .<span class="kw">await
+<a href=#418 id=418 data-nosnippet>418</a>        </span>.update_highest_block(proposal_block_number);
+<a href=#419 id=419 data-nosnippet>419</a>    {
+<a href=#420 id=420 data-nosnippet>420</a>        validation_info.consensus.write().<span class="kw">await</span>.highest_block = proposal_block_number;
+<a href=#421 id=421 data-nosnippet>421</a>    }
+<a href=#422 id=422 data-nosnippet>422</a>    broadcast_event(
+<a href=#423 id=423 data-nosnippet>423</a>        Arc::new(HotShotEvent::ViewChange(view_number, proposal_epoch)),
+<a href=#424 id=424 data-nosnippet>424</a>        event_sender,
+<a href=#425 id=425 data-nosnippet>425</a>    )
+<a href=#426 id=426 data-nosnippet>426</a>    .<span class="kw">await</span>;
+<a href=#427 id=427 data-nosnippet>427</a>
+<a href=#428 id=428 data-nosnippet>428</a>    <span class="prelude-val">Ok</span>(())
+<a href=#429 id=429 data-nosnippet>429</a>}</code></pre></div></section></main></body></html>
