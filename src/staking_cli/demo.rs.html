@@ -141,12 +141,12 @@
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">let </span>mk_signer = |account_index| -&gt; <span class="prelude-ty">Result</span>&lt;PrivateKeySigner&gt; {
 <a href=#143 id=143 data-nosnippet>143</a>        <span class="prelude-val">Ok</span>(MnemonicBuilder::&lt;English&gt;::default()
-<a href=#144 id=144 data-nosnippet>144</a>            .phrase(config.mnemonic.clone())
+<a href=#144 id=144 data-nosnippet>144</a>            .phrase(config.signer.mnemonic.as_ref().unwrap())
 <a href=#145 id=145 data-nosnippet>145</a>            .index(account_index)<span class="question-mark">?
 <a href=#146 id=146 data-nosnippet>146</a>            </span>.build()<span class="question-mark">?</span>)
 <a href=#147 id=147 data-nosnippet>147</a>    };
 <a href=#148 id=148 data-nosnippet>148</a>
-<a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">let </span>grant_recipient = mk_signer(config.account_index)<span class="question-mark">?</span>;
+<a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">let </span>grant_recipient = mk_signer(config.signer.account_index.unwrap())<span class="question-mark">?</span>;
 <a href=#150 id=150 data-nosnippet>150</a>
 <a href=#151 id=151 data-nosnippet>151</a>    <span class="macro">tracing::info!</span>(
 <a href=#152 id=152 data-nosnippet>152</a>        <span class="string">"grant recipient account for token funding: {}"</span>,

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["TestSystem"],"type":["SchnorrKeyPair","TestProvider"]};
+window.SIDEBAR_ITEMS = {"enum":["Signer"],"struct":["TestSystem"],"type":["SchnorrKeyPair","TestProvider"]};
