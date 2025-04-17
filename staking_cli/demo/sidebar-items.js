@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["stake_for_demo","stake_in_contract_for_test"]};
+window.SIDEBAR_ITEMS = {"fn":["add_multiple_delegators","make_provider","stake_for_demo","stake_in_contract_for_test"],"type":["Prov"]};
