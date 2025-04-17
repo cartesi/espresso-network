@@ -319,7 +319,7 @@
 <a href=#319 id=319 data-nosnippet>319</a>
 <a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">let </span><span class="kw-2">mut </span>blocks = <span class="self">self</span>.blocks.write().<span class="kw">await</span>;
 <a href=#321 id=321 data-nosnippet>321</a>        <span class="kw">let </span>entry = blocks.get_mut(block_hash).ok_or(BuildError::NotFound)<span class="question-mark">?</span>;
-<a href=#322 id=322 data-nosnippet>322</a>        entry.header_input.take().ok_or(BuildError::Missing)
+<a href=#322 id=322 data-nosnippet>322</a>        <span class="prelude-val">Ok</span>(entry.header_input.clone().ok_or(BuildError::Missing)<span class="question-mark">?</span>)
 <a href=#323 id=323 data-nosnippet>323</a>    }
 <a href=#324 id=324 data-nosnippet>324</a>
 <a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">async fn </span>builder_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;TYPES::BuilderSignatureKey, BuildError&gt; {
