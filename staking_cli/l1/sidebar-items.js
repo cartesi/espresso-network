@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["decode_log"]};
+window.SIDEBAR_ITEMS = {"fn":["decode_log"],"trait":["DecodeRevertError"]};
