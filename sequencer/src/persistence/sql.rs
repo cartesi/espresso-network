@@ -1484,7 +1484,7 @@ impl SequencerPersistence for Persistence {
 
             for row in rows.iter() {
                 let data: Vec<u8> = row.try_get("data")?;
-                let payload_hash: String = row.try_get("payload_hash")?;
+                let payload_hash: Option<String> = row.try_get("payload_hash")?;
 
                 let da_proposal: Proposal<SeqTypes, DaProposal<SeqTypes>> =
                     bincode::deserialize(&data)?;
@@ -1581,7 +1581,7 @@ impl SequencerPersistence for Persistence {
 
             for row in rows.iter() {
                 let data: Vec<u8> = row.try_get("data")?;
-                let payload_hash: String = row.try_get("payload_hash")?;
+                let payload_hash: Option<String> = row.try_get("payload_hash")?;
 
                 let vid_share: Proposal<SeqTypes, ADVZDisperseShare<SeqTypes>> =
                     bincode::deserialize(&data)?;
@@ -1679,7 +1679,7 @@ impl SequencerPersistence for Persistence {
             let mut values = Vec::new();
 
             for row in rows.iter() {
-                let leaf_hash: String = row.try_get("leaf_hash")?;
+                let leaf_hash: Option<String> = row.try_get("leaf_hash")?;
                 let data: Vec<u8> = row.try_get("data")?;
 
                 let quorum_proposal: Proposal<SeqTypes, QuorumProposal<SeqTypes>> =
@@ -2842,11 +2842,18 @@ mod test {
 
             let leaf_hash = Committable::commit(&leaf);
             let mut tx = storage.db.write().await.expect("failed to start write tx");
+
+            let mut qp_leaf_hash = Some(leaf_hash.to_string());
+            // insert some null values for leaf hash
+            if i % 10 == 0 {
+                qp_leaf_hash = None;
+            }
+
             tx.upsert(
                 "quorum_proposals",
                 ["view", "leaf_hash", "data"],
                 ["view"],
-                [(i as i64, leaf_hash.to_string(), proposal_bytes)],
+                [(i as i64, qp_leaf_hash, proposal_bytes)],
             )
             .await
             .expect("failed to upsert quorum proposal");
