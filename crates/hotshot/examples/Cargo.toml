@@ -86,6 +86,7 @@ cdn-broker = { git = "https://github.com/EspressoSystems/Push-CDN", tag = "0.5.7
 cdn-marshal = { git = "https://github.com/EspressoSystems/Push-CDN", tag = "0.5.7", package = "cdn-marshal" }
 chrono = { workspace = true }
 clap = { workspace = true, optional = true }
+espresso-types = { path = "../../../types" }
 futures = { workspace = true }
 hotshot = { workspace = true }
 hotshot-example-types = { workspace = true }
@@ -96,14 +97,13 @@ hotshot-types = { workspace = true }
 local-ip-address = "0.6"
 portpicker = { workspace = true }
 rand = { workspace = true }
+reqwest = { workspace = true }
+sequencer = { path = "../../../sequencer" }
 serde = { workspace = true, features = ["rc"] }
 sha2 = { workspace = true }
 surf-disco = { workspace = true }
 time = { workspace = true }
 tokio = { workspace = true }
-reqwest = { workspace = true }
-sequencer = { path = "../../../sequencer" }
-espresso-types = { path = "../../../types" }
 
 tracing = { workspace = true }
 url = { workspace = true }
