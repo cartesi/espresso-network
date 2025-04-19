@@ -93,26 +93,30 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> CreateTaskState
         };
 
         #[cfg(feature = "example-upgrade")]
-        return Self {
-            output_event_stream: handle.hotshot.external_event_stream.0.clone(),
-            cur_view: handle.cur_view().await,
-            cur_epoch: handle.cur_epoch().await,
-            membership: Arc::clone(&handle.hotshot.memberships),
-            network: Arc::clone(&handle.hotshot.network),
-            vote_collector: None.into(),
-            public_key: handle.public_key().clone(),
-            private_key: handle.private_key().clone(),
-            id: handle.hotshot.id,
-            start_proposing_view: 5,
-            stop_proposing_view: 10,
-            start_voting_view: 0,
-            stop_voting_view: 20,
-            start_proposing_time: 0,
-            stop_proposing_time: u64::MAX,
-            start_voting_time: 0,
-            stop_voting_time: u64::MAX,
-            upgrade_lock: handle.hotshot.upgrade_lock.clone(),
-        };
+        {
+            tracing::error!("Spawning upgrade task configured for `example-upgrade`");
+
+            return Self {
+                output_event_stream: handle.hotshot.external_event_stream.0.clone(),
+                cur_view: handle.cur_view().await,
+                cur_epoch: handle.cur_epoch().await,
+                membership: Arc::clone(&handle.hotshot.memberships),
+                network: Arc::clone(&handle.hotshot.network),
+                vote_collector: None.into(),
+                public_key: handle.public_key().clone(),
+                private_key: handle.private_key().clone(),
+                id: handle.hotshot.id,
+                start_proposing_view: 5,
+                stop_proposing_view: 10,
+                start_voting_view: 0,
+                stop_voting_view: 20,
+                start_proposing_time: 0,
+                stop_proposing_time: u64::MAX,
+                start_voting_time: 0,
+                stop_voting_time: u64::MAX,
+                upgrade_lock: handle.hotshot.upgrade_lock.clone(),
+            };
+        }
     }
 }
 

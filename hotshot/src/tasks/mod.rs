@@ -242,6 +242,7 @@ pub async fn add_consensus_tasks<TYPES: NodeType, I: NodeImplementation<TYPES>, 
 
     // only spawn the upgrade task if we are actually configured to perform an upgrade.
     if V::Base::VERSION < V::Upgrade::VERSION {
+        tracing::warn!("Consensus was started with an upgrade configured. Spawning upgrade task.");
         handle.add_task(UpgradeTaskState::<TYPES, V>::create_from(handle).await);
     }
 
