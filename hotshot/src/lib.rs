@@ -276,9 +276,22 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
         let (internal_tx, mut internal_rx) = internal_channel;
         let (mut external_tx, mut external_rx) = external_channel;
 
+        tracing::warn!(
+            "Starting consensus with versions:\n\n Base: {:?}\nUpgrade: {:?}.",
+            V::Base::VERSION,
+            V::Upgrade::VERSION,
+        );
+        tracing::warn!(
+            "Loading previously decided upgrade certificate from storage: {:?}",
+            initializer.decided_upgrade_certificate
+        );
+
         let cert = match &initializer.decided_upgrade_certificate {
             Some(decided_upgrade_cert) => {
                 if V::Base::VERSION >= decided_upgrade_cert.data.new_version {
+                    tracing::warn!(
+                        "Discarding loaded upgrade certificate due to version configuration."
+                    );
                     None
                 } else {
                     initializer.decided_upgrade_certificate
