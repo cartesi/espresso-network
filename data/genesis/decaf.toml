@@ -21,8 +21,8 @@ number = 6758037 # Block where fee contract is deployed
 
 [[upgrade]]
 version = "0.3"
-start_proposing_view = 0
-stop_proposing_view = 4000000
+start_proposing_view = 2
+stop_proposing_view = 3
 
 [upgrade.epoch]
 [upgrade.epoch.chain_config]
