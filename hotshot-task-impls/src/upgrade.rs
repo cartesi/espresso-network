@@ -300,7 +300,7 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                         return Err(error!("No recent quorum proposals in consensus state -- skipping upgrade proposal."));
                     };
 
-                    // let last_proposal_view: u64 = *last_proposal.data.view_number();
+                    let last_proposal_view: u64 = *last_proposal.data.view_number();
                     let last_proposal_block: u64 = last_proposal.data.block_header().block_number();
 
                     drop(consensus_reader);
@@ -309,8 +309,10 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                         epoch_from_block_number(self.epoch_start_block, self.epoch_height);
                     let last_proposal_epoch =
                         epoch_from_block_number(last_proposal_block, self.epoch_height);
-                    let upgrade_finish_epoch =
-                        epoch_from_block_number(new_version_first_view + 10, self.epoch_height);
+                    let upgrade_finish_epoch = epoch_from_block_number(
+                        last_proposal_block + (new_version_first_view - last_proposal_view) + 10,
+                        self.epoch_height,
+                    );
 
                     target_start_epoch == last_proposal_epoch
                         && last_proposal_epoch == upgrade_finish_epoch
