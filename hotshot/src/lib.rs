@@ -269,6 +269,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
     ) -> Arc<Self> {
         debug!("Creating a new hotshot");
 
+        tracing::warn!("Starting consensus with HotShotConfig:\n\n {:?}", config);
+
         let consensus_metrics = Arc::new(metrics);
         let anchored_leaf = initializer.anchor_leaf;
         let instance_state = initializer.instance_state;
