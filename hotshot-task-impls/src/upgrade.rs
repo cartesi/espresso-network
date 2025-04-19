@@ -293,10 +293,13 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                 let epoch_upgrade_checks = if V::Upgrade::VERSION == V::Epochs::VERSION {
                     let consensus_reader = self.consensus.read().await;
 
-                    let (_, last_proposal) = consensus_reader.last_proposals().last_key_value().context(info!("No recent quorum proposals in consensus state -- skipping upgrade proposal."))?;
+                    let mut leaves = consensus_reader.saved_leaves().values().collect::<Vec<_>>();
+                    leaves.sort_by(|leaf1, leaf2| leaf1.view_number().cmp(&leaf2.view_number()));
+
+                    let last_leaf = leaves.last().context(info!("No recent quorum proposals in consensus state -- skipping upgrade proposal."))?;
 
                     // let last_proposal_view: u64 = *last_proposal.data.view_number();
-                    let last_proposal_block: u64 = last_proposal.data.block_header().block_number();
+                    let last_proposal_block: u64 = last_leaf.block_header().block_number();
 
                     drop(consensus_reader);
 
