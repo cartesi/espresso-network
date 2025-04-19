@@ -317,7 +317,11 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                 };
 
                 // We try to form a certificate 5 views before we're leader.
-                if  !self.upgraded().await
+                if view >= self.start_proposing_view
+                    && view < self.stop_proposing_view
+                    && time >= self.start_proposing_time
+                    && time < self.stop_proposing_time
+                    && !self.upgraded().await
                     && epoch_upgrade_checks
                     && leader == self.public_key
                 {
