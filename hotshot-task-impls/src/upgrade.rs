@@ -266,12 +266,6 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                 }
                 ensure!(self.cur_view < *new_view || *self.cur_view == 0);
 
-                tracing::warn!(
-                    "Received view change to view {:?}. Our public key is {:?}",
-                    new_view,
-                    self.public_key
-                );
-
                 self.cur_view = *new_view;
 
                 let view: u64 = *self.cur_view;
@@ -283,11 +277,6 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                     ))?
                     .as_secs();
 
-                tracing::warn!("Calculated system time");
-                tracing::warn!(
-                    "About to calculate membership for epoch {:?}",
-                    self.cur_epoch
-                );
                 let leader = self
                     .membership_coordinator
                     .membership_for_epoch(self.cur_epoch)
@@ -297,17 +286,11 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                     ))
                     .await?;
 
-                tracing::warn!("Got leader: {:?}", leader);
                 let old_version_last_view = view + TYPES::UPGRADE_CONSTANTS.begin_offset;
                 let new_version_first_view = view + TYPES::UPGRADE_CONSTANTS.finish_offset;
                 let decide_by = view + TYPES::UPGRADE_CONSTANTS.decide_by_offset;
 
                 let epoch_upgrade_checks = if V::Upgrade::VERSION == V::Epochs::VERSION {
-                    tracing::error!(
-                        "Performing epoch checks. Epoch version: {:?}, upgrade version: {:?}",
-                        V::Upgrade::VERSION,
-                        V::Epochs::VERSION
-                    );
                     let consensus_reader = self.consensus.read().await;
 
                     let Some((_, last_proposal)) =
@@ -332,11 +315,6 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                     target_start_epoch == last_proposal_epoch
                         && last_proposal_epoch == upgrade_finish_epoch
                 } else {
-                    tracing::error!(
-                        "Not performing epoch checks. Epoch version: {:?}, upgrade version: {:?}",
-                        V::Upgrade::VERSION,
-                        V::Epochs::VERSION
-                    );
                     true
                 };
 
@@ -387,8 +365,6 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                         &tx,
                     )
                     .await;
-                } else {
-                    tracing::error!(?view, ?self.start_proposing_view, ?self.stop_proposing_view, ?self.start_proposing_time, ?self.stop_proposing_time, ?epoch_upgrade_checks, ?leader, ?self.public_key, "Checks failed! Have we upgraded? {:?}", self.upgraded().await);
                 }
             },
             _ => {},
