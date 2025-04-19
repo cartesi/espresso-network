@@ -10,6 +10,7 @@
 // Documentation module
 #[cfg(feature = "docs")]
 pub mod documentation;
+use vbs::version::StaticVersionType;
 
 use committable::Committable;
 use futures::future::{select, Either};
@@ -26,7 +27,6 @@ use hotshot_types::{
 };
 use rand::Rng;
 use url::Url;
-use vbs::version::StaticVersionType;
 
 /// Contains traits consumed by [`SystemContext`]
 pub mod traits;
@@ -288,21 +288,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
             initializer.decided_upgrade_certificate
         );
 
-        let cert = match &initializer.decided_upgrade_certificate {
-            Some(decided_upgrade_cert) => {
-                if V::Base::VERSION >= decided_upgrade_cert.data.new_version {
-                    tracing::warn!(
-                        "Discarding loaded upgrade certificate due to version configuration."
-                    );
-                    None
-                } else {
-                    initializer.decided_upgrade_certificate
-                }
-            },
-            None => None,
-        };
-
-        let upgrade_lock = UpgradeLock::<TYPES, V>::from_certificate(&cert);
+        let upgrade_lock =
+            UpgradeLock::<TYPES, V>::from_certificate(&initializer.decided_upgrade_certificate);
 
         // Allow overflow on the external channel, otherwise sending to it may block.
         external_rx.set_overflow(true);

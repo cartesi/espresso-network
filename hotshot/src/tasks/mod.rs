@@ -233,6 +233,9 @@ pub async fn add_consensus_tasks<TYPES: NodeType, I: NodeImplementation<TYPES>, 
             .as_ref()
             .is_some_and(|cert| V::Base::VERSION >= cert.data.new_version)
         {
+            tracing::warn!(
+                "Discarding loaded upgrade certificate due to version configuration."
+            );
             *upgrade_certificate_lock = None;
         }
     }
