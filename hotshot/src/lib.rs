@@ -26,6 +26,7 @@ use hotshot_types::{
 };
 use rand::Rng;
 use url::Url;
+use vbs::version::StaticVersionType;
 
 /// Contains traits consumed by [`SystemContext`]
 pub mod traits;
@@ -275,8 +276,18 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
         let (internal_tx, mut internal_rx) = internal_channel;
         let (mut external_tx, mut external_rx) = external_channel;
 
-        let upgrade_lock =
-            UpgradeLock::<TYPES, V>::from_certificate(&initializer.decided_upgrade_certificate);
+        let cert = match &initializer.decided_upgrade_certificate {
+            Some(decided_upgrade_cert) => {
+                if V::Base::VERSION >= decided_upgrade_cert.data.new_version {
+                    None
+                } else {
+                    initializer.decided_upgrade_certificate
+                }
+            },
+            None => None,
+        };
+
+        let upgrade_lock = UpgradeLock::<TYPES, V>::from_certificate(&cert);
 
         // Allow overflow on the external channel, otherwise sending to it may block.
         external_rx.set_overflow(true);
