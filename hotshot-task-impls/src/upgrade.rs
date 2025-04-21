@@ -160,46 +160,6 @@ impl<TYPES: NodeType, V: Versions> UpgradeTaskState<TYPES, V> {
                     proposal.data.view_number()
                 );
 
-                let epoch_upgrade_checks = if V::Upgrade::VERSION == V::Epochs::VERSION {
-                    let consensus_reader = self.consensus.read().await;
-
-                    let Some((_, last_proposal)) =
-                        consensus_reader.last_proposals().last_key_value()
-                    else {
-                        tracing::error!("No recent quorum proposals in consensus state -- skipping upgrade proposal vote.");
-                        return Err(error!("No recent quorum proposals in consensus state -- skipping upgrade proposal vote."));
-                    };
-
-                    let last_proposal_view: u64 = *last_proposal.data.view_number();
-                    let last_proposal_block: u64 = last_proposal.data.block_header().block_number();
-
-                    drop(consensus_reader);
-
-                    let target_start_epoch =
-                        epoch_from_block_number(self.epoch_start_block, self.epoch_height);
-                    let last_proposal_epoch =
-                        epoch_from_block_number(last_proposal_block, self.epoch_height);
-                    let upgrade_finish_epoch = epoch_from_block_number(
-                        last_proposal_block
-                            + (*proposal.data.upgrade_proposal.new_version_first_view
-                                - last_proposal_view)
-                            + 10,
-                        self.epoch_height,
-                    );
-
-                    target_start_epoch == last_proposal_epoch
-                        && last_proposal_epoch == upgrade_finish_epoch
-                } else {
-                    true
-                };
-
-                ensure!(
-                    epoch_upgrade_checks,
-                    error!(
-                        "Epoch upgrade safety check failed! Refusing to vote on upgrade."
-                    )
-                );
-
                 let view = proposal.data.view_number();
 
                 // At this point, we could choose to validate
