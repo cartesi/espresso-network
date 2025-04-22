@@ -32,8 +32,8 @@ use jf_vid::VidScheme;
 
 use crate::{
     availability::{
-        BlockInfo, BlockQueryData, LeafQueryData, QueryablePayload, UpdateAvailabilityData,
-        VidCommonQueryData,
+        BlockInfo, BlockQueryData, LeafQueryData, QueryablePayload, StateCertQueryData,
+        UpdateAvailabilityData, VidCommonQueryData,
     },
     Payload, VidCommon,
 };
@@ -93,6 +93,7 @@ where
                 LeafInfo {
                     leaf: leaf2,
                     vid_share,
+                    state_cert,
                     ..
                 },
             ) in qcs.zip(leaf_chain.iter().rev())
@@ -157,7 +158,13 @@ where
                 }
 
                 if let Err(err) = self
-                    .append(BlockInfo::new(leaf_data, block_data, vid_common, vid_share))
+                    .append(BlockInfo::new(
+                        leaf_data,
+                        block_data,
+                        vid_common,
+                        vid_share,
+                        state_cert.clone().map(StateCertQueryData),
+                    ))
                     .await
                 {
                     tracing::error!(height, "failed to append leaf information: {err:#}");

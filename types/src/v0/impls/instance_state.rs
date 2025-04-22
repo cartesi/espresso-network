@@ -1,5 +1,6 @@
 use std::{collections::BTreeMap, sync::Arc};
 
+use alloy::primitives::Address;
 #[cfg(any(test, feature = "testing"))]
 use async_lock::RwLock;
 use async_trait::async_trait;
@@ -9,6 +10,8 @@ use hotshot_types::{
     HotShotConfig,
 };
 use indexmap::IndexMap;
+use sequencer_utils::ser::FromStringOrInteger;
+use time::OffsetDateTime;
 #[cfg(any(test, feature = "testing"))]
 use vbs::version::StaticVersionType;
 use vbs::version::Version;
@@ -17,8 +20,8 @@ use super::{
     state::ValidatedState,
     traits::MembershipPersistence,
     v0_1::NoStorage,
-    v0_3::{IndexedStake, Validator},
-    SeqTypes,
+    v0_3::{EventKey, IndexedStake, StakeTableEvent, Validator},
+    SeqTypes, TimeBasedUpgrade, UpgradeType, ViewBasedUpgrade,
 };
 use crate::v0::{
     traits::StateCatchup, v0_99::ChainConfig, GenesisHeader, L1BlockInfo, L1Client, Timestamp,
@@ -82,6 +85,17 @@ impl MembershipPersistence for NoStorage {
     ) -> anyhow::Result<()> {
         Ok(())
     }
+
+    async fn store_events(
+        &self,
+        _l1_block: u64,
+        _events: Vec<(EventKey, StakeTableEvent)>,
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
+    async fn load_events(&self) -> anyhow::Result<Option<(u64, Vec<(EventKey, StakeTableEvent)>)>> {
+        Ok(None)
+    }
 }
 
 impl NodeState {
@@ -113,7 +127,6 @@ impl NodeState {
 
     #[cfg(any(test, feature = "testing"))]
     pub fn mock() -> Self {
-        use ethers_conv::ToAlloy;
         use vbs::version::StaticVersion;
 
         let chain_config = ChainConfig::default();
@@ -124,7 +137,7 @@ impl NodeState {
             vec![],
             vec![],
             l1.clone(),
-            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            chain_config,
             Arc::new(mock::MockStateCatchup::default()),
             NoStorage,
         )));
@@ -142,7 +155,6 @@ impl NodeState {
 
     #[cfg(any(test, feature = "testing"))]
     pub fn mock_v2() -> Self {
-        use ethers_conv::ToAlloy;
         use vbs::version::StaticVersion;
 
         let chain_config = ChainConfig::default();
@@ -153,7 +165,7 @@ impl NodeState {
             vec![],
             vec![],
             l1.clone(),
-            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            chain_config,
             Arc::new(mock::MockStateCatchup::default()),
             NoStorage,
         )));
@@ -171,7 +183,6 @@ impl NodeState {
 
     #[cfg(any(test, feature = "testing"))]
     pub fn mock_v3() -> Self {
-        use ethers_conv::ToAlloy;
         use vbs::version::StaticVersion;
 
         let chain_config = ChainConfig::default();
@@ -182,7 +193,7 @@ impl NodeState {
             vec![],
             vec![],
             l1.clone(),
-            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            chain_config,
             Arc::new(mock::MockStateCatchup::default()),
             NoStorage,
         )));
@@ -191,8 +202,7 @@ impl NodeState {
         Self::new(
             0,
             ChainConfig::default(),
-            L1Client::new(vec!["http://localhost:3331".parse().unwrap()])
-                .expect("Failed to create L1 client"),
+            l1,
             mock::MockStateCatchup::default(),
             StaticVersion::<0, 3>::version(),
             coordinator,
@@ -201,7 +211,6 @@ impl NodeState {
 
     #[cfg(any(test, feature = "testing"))]
     pub fn mock_v99() -> Self {
-        use ethers_conv::ToAlloy;
         use vbs::version::StaticVersion;
         let chain_config = ChainConfig::default();
         let l1 = L1Client::new(vec!["http://localhost:3331".parse().unwrap()])
@@ -211,7 +220,7 @@ impl NodeState {
             vec![],
             vec![],
             l1.clone(),
-            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            chain_config,
             Arc::new(mock::MockStateCatchup::default()),
             NoStorage,
         )));
@@ -258,12 +267,30 @@ impl NodeState {
     }
 }
 
+/// NewType to hold upgrades and some convenience behavior.
+pub struct UpgradeMap(pub BTreeMap<Version, Upgrade>);
+impl UpgradeMap {
+    pub fn chain_config(&self, version: Version) -> ChainConfig {
+        self.0
+            .get(&version)
+            .unwrap()
+            .upgrade_type
+            .chain_config()
+            .unwrap()
+    }
+}
+
+impl From<BTreeMap<Version, Upgrade>> for UpgradeMap {
+    fn from(inner: BTreeMap<Version, Upgrade>) -> Self {
+        Self(inner)
+    }
+}
+
 // This allows us to turn on `Default` on InstanceState trait
 // which is used in `HotShot` by `TestBuilderImplementation`.
 #[cfg(any(test, feature = "testing"))]
 impl Default for NodeState {
     fn default() -> Self {
-        use ethers_conv::ToAlloy;
         use vbs::version::StaticVersion;
         let chain_config = ChainConfig::default();
         let l1 = L1Client::new(vec!["http://localhost:3331".parse().unwrap()])
@@ -273,7 +300,7 @@ impl Default for NodeState {
             vec![],
             vec![],
             l1.clone(),
-            chain_config.stake_table_contract.map(|a| a.to_alloy()),
+            chain_config,
             Arc::new(mock::MockStateCatchup::default()),
             NoStorage,
         )));
@@ -319,6 +346,43 @@ impl Upgrade {
                 config.stop_voting_view = u64::MAX;
             },
         }
+    }
+    pub fn pos_view_based(address: Address) -> Upgrade {
+        let chain_config = ChainConfig {
+            base_fee: 0.into(),
+            stake_table_contract: Some(address),
+            ..Default::default()
+        };
+
+        let mode = UpgradeMode::View(ViewBasedUpgrade {
+            start_voting_view: None,
+            stop_voting_view: None,
+            start_proposing_view: 200,
+            stop_proposing_view: 1000,
+        });
+
+        let upgrade_type = UpgradeType::Epoch { chain_config };
+        Upgrade { mode, upgrade_type }
+    }
+
+    pub fn marketplace_time_based() -> Upgrade {
+        let now = OffsetDateTime::now_utc().unix_timestamp() as u64;
+        let mode = UpgradeMode::Time(TimeBasedUpgrade {
+            start_proposing_time: Timestamp::from_integer(now).unwrap(),
+            stop_proposing_time: Timestamp::from_integer(now + 500).unwrap(),
+            start_voting_time: None,
+            stop_voting_time: None,
+        });
+
+        let upgrade_type = UpgradeType::Marketplace {
+            chain_config: ChainConfig {
+                max_block_size: 400.into(),
+                base_fee: 2.into(),
+                bid_recipient: Some(Default::default()),
+                ..Default::default()
+            },
+        };
+        Upgrade { mode, upgrade_type }
     }
 }
 
