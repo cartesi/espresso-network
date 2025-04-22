@@ -8,7 +8,7 @@
 //! all brokers. Right now, we do this by asking the orchestrator for the list of
 //! allowed public keys. In the future, we will pull the stake table from the L1.
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use cdn_broker::reexports::discovery::{DiscoveryClient, Embedded, Redis};
@@ -16,13 +16,17 @@ use clap::Parser;
 use espresso_types::SeqTypes;
 use hotshot_types::{traits::signature_key::SignatureKey, PeerConfig};
 use sequencer::api::data_source::StakeTableWithEpochNumber;
+use tokio::{task::JoinSet, time::timeout};
+use tracing::{error, warn};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// The query node endpoint that we will fetch the stake table from.
+    /// The query node endpoints that we will fetch the stake table from.
+    /// We will use the highest epoch number from all of the nodes. These nodes
+    /// need to be trusted.
     #[arg(short, long)]
-    query_node_url: String,
+    query_node_urls: Vec<String>,
 
     /// The CDN database endpoint (including scheme) to connect to.
     /// With the local discovery feature, this is a file path.
@@ -40,26 +44,79 @@ async fn main() -> Result<()> {
     // Parse the command line arguments
     let args = Args::parse();
 
+    // If no query node URLs are provided, stop here
+    if args.query_node_urls.is_empty() {
+        error!("No query node URLs provided, stopping");
+        return Ok(());
+    }
+
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Get the current stake table from the supplied node
-    let stake_table_and_epoch_number = get_current_stake_table(&args.query_node_url)
-        .await
-        .with_context(|| "failed to get stake table from query node")?;
+    // Create a join set to fetch the stake table from all of the query nodes
+    let mut join_set = JoinSet::new();
 
-    // Extract the epoch number and stake table
-    let (epoch_number, mut stake_table) = (
-        stake_table_and_epoch_number.epoch,
-        stake_table_and_epoch_number.stake_table,
-    );
-
-    // If the stake table has an epoch number, get the stake table for the next epoch and merge them
-    if let Some(epoch_number) = epoch_number {
-        // Get the stake table for the next epoch
-        let next_epoch_stake_table = get_stake_table(&args.query_node_url, *epoch_number + 1)
+    // Spawn a task to get the stake table from each query node
+    for query_node_url in args.query_node_urls {
+        join_set.spawn(async move {
+            // Get the current stake table from the node
+            let stake_table_and_epoch_number = timeout(
+                Duration::from_secs(10),
+                get_current_stake_table(&query_node_url),
+            )
             .await
-            .with_context(|| "failed to get stake table from query node")?;
+            .with_context(|| "timed out while fetching stake table from query node")?
+            .with_context(|| "failed to fetch stake table from query node")?;
+
+            // Extract the stake table and epoch number
+            let (stake_table, epoch_number) = (
+                stake_table_and_epoch_number.stake_table,
+                stake_table_and_epoch_number.epoch,
+            );
+
+            anyhow::Ok((query_node_url, stake_table, epoch_number))
+        });
+    }
+
+    // Collect the stake tables and epoch numbers from each query node
+    let mut all_results = Vec::new();
+    while let Some(result) = join_set.join_next().await {
+        // Extract the task's result
+        match result {
+            Ok(Ok((query_node_url, stake_table, epoch_number))) => {
+                // Add the stake table, epoch number, and query node URL to the list
+                all_results.push((query_node_url, stake_table, epoch_number));
+            },
+            Ok(Err(e)) => {
+                warn!("Failed to fetch stake table from query node: {:?}", e);
+                continue;
+            },
+            Err(e) => {
+                warn!("Failed to join on task: {:?}", e);
+                continue;
+            },
+        };
+    }
+
+    // Return early if there were no successful results
+    if all_results.is_empty() {
+        error!("No successful results from query nodes, stopping");
+        return Ok(());
+    }
+
+    // Sort the results by epoch number
+    all_results.sort_by_key(|stake_table_and_epoch| stake_table_and_epoch.2);
+
+    // Get the result from the node to respond with the highest epoch number
+    let (query_node_url, mut stake_table, epoch_number) = all_results.remove(all_results.len() - 1);
+
+    // If there is an epoch number, we should fetch the next epoch and combine the two lists. If not,
+    // epochs are not enabled yet, so just use the list we got
+    if let Some(epoch_number) = epoch_number {
+        // Fetch the stake table for the next epoch
+        let next_epoch_stake_table = get_stake_table(&query_node_url, *epoch_number + 1)
+            .await
+            .with_context(|| "failed to fetch stake table for the next epoch")?;
 
         // Merge the tables and deduplicate the keys
         stake_table.extend(next_epoch_stake_table);
@@ -93,7 +150,7 @@ async fn main() -> Result<()> {
 async fn get_current_stake_table(
     query_node_url: &str,
 ) -> Result<StakeTableWithEpochNumber<SeqTypes>> {
-    // Get the current stake table
+    // Fetch the current stake table
     let response = reqwest::get(format!("{}/v0/node/stake-table/current", query_node_url))
         .await
         .with_context(|| "failed to fetch stake table")?;
@@ -110,7 +167,7 @@ async fn get_stake_table(
     query_node_url: &str,
     epoch_number: u64,
 ) -> Result<Vec<PeerConfig<SeqTypes>>> {
-    // Get the stake table for the given epoch number
+    // Fetch the stake table for the given epoch number
     let response = reqwest::get(format!(
         "{}/v0/node/stake-table/{}",
         query_node_url, epoch_number
