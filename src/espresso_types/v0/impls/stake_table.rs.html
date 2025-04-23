@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>}
 <a href=#122 id=122 data-nosnippet>122</a>
 <a href=#123 id=123 data-nosnippet>123</a><span class="doccomment">/// Extract all validators from L1 stake table events.
-<a href=#124 id=124 data-nosnippet>124</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>validators_from_l1_events&lt;I: Iterator&lt;Item = StakeTableEvent&gt;&gt;(
+<a href=#124 id=124 data-nosnippet>124</a></span><span class="kw">pub fn </span>validators_from_l1_events&lt;I: Iterator&lt;Item = StakeTableEvent&gt;&gt;(
 <a href=#125 id=125 data-nosnippet>125</a>    events: I,
 <a href=#126 id=126 data-nosnippet>126</a>) -&gt; anyhow::Result&lt;IndexMap&lt;Address, Validator&lt;BLSPubKey&gt;&gt;&gt; {
 <a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">let </span><span class="kw-2">mut </span>validators = IndexMap::new();
