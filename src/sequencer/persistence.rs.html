@@ -1286,4 +1286,101 @@
 <a href=#1286 id=1286 data-nosnippet>1286</a>
 <a href=#1287 id=1287 data-nosnippet>1287</a>        <span class="prelude-val">Ok</span>(())
 <a href=#1288 id=1288 data-nosnippet>1288</a>    }
-<a href=#1289 id=1289 data-nosnippet>1289</a>}</code></pre></div></section></main></body></html>
+<a href=#1289 id=1289 data-nosnippet>1289</a>
+<a href=#1290 id=1290 data-nosnippet>1290</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
+<a href=#1291 id=1291 data-nosnippet>1291</a>    </span><span class="kw">pub async fn </span>test_stake_table_background_fetching&lt;P: TestablePersistence&gt;() -&gt; anyhow::Result&lt;()&gt;
+<a href=#1292 id=1292 data-nosnippet>1292</a>    {
+<a href=#1293 id=1293 data-nosnippet>1293</a>        setup_test();
+<a href=#1294 id=1294 data-nosnippet>1294</a>
+<a href=#1295 id=1295 data-nosnippet>1295</a>        <span class="kw">let </span>epoch_height = <span class="number">30</span>;
+<a href=#1296 id=1296 data-nosnippet>1296</a>        <span class="kw">type </span>PosVersion = SequencerVersions&lt;StaticVersion&lt;<span class="number">0</span>, <span class="number">3</span>&gt;, StaticVersion&lt;<span class="number">0</span>, <span class="number">0</span>&gt;&gt;;
+<a href=#1297 id=1297 data-nosnippet>1297</a>
+<a href=#1298 id=1298 data-nosnippet>1298</a>        <span class="kw">let </span>anvil_instance = Anvil::new()
+<a href=#1299 id=1299 data-nosnippet>1299</a>            .args([<span class="string">"--slots-in-an-epoch"</span>, <span class="string">"0"</span>, <span class="string">"--block-time"</span>, <span class="string">"1"</span>])
+<a href=#1300 id=1300 data-nosnippet>1300</a>            .spawn();
+<a href=#1301 id=1301 data-nosnippet>1301</a>        <span class="kw">let </span>l1_rpc_url = anvil_instance.endpoint_url();
+<a href=#1302 id=1302 data-nosnippet>1302</a>        <span class="kw">let </span>l1_signer_key = anvil_instance.keys()[<span class="number">0</span>].clone();
+<a href=#1303 id=1303 data-nosnippet>1303</a>        <span class="kw">let </span>signer = LocalSigner::from(l1_signer_key);
+<a href=#1304 id=1304 data-nosnippet>1304</a>
+<a href=#1305 id=1305 data-nosnippet>1305</a>        <span class="kw">let </span>network_config = TestConfigBuilder::default()
+<a href=#1306 id=1306 data-nosnippet>1306</a>            .l1_url(l1_rpc_url.clone())
+<a href=#1307 id=1307 data-nosnippet>1307</a>            .signer(signer.clone())
+<a href=#1308 id=1308 data-nosnippet>1308</a>            .epoch_height(epoch_height)
+<a href=#1309 id=1309 data-nosnippet>1309</a>            .build();
+<a href=#1310 id=1310 data-nosnippet>1310</a>
+<a href=#1311 id=1311 data-nosnippet>1311</a>        <span class="kw">let </span>query_service_port = pick_unused_port().expect(<span class="string">"No ports free for query service"</span>);
+<a href=#1312 id=1312 data-nosnippet>1312</a>        <span class="kw">let </span>query_api_options = Options::with_port(query_service_port);
+<a href=#1313 id=1313 data-nosnippet>1313</a>
+<a href=#1314 id=1314 data-nosnippet>1314</a>        <span class="kw">const </span>NODE_COUNT: usize = <span class="number">2</span>;
+<a href=#1315 id=1315 data-nosnippet>1315</a>
+<a href=#1316 id=1316 data-nosnippet>1316</a>        <span class="kw">let </span>storage = join_all((<span class="number">0</span>..NODE_COUNT).map(|<span class="kw">_</span>| P::tmp_storage())).<span class="kw">await</span>;
+<a href=#1317 id=1317 data-nosnippet>1317</a>        <span class="kw">let </span>persistence_options: [<span class="kw">_</span>; NODE_COUNT] = storage
+<a href=#1318 id=1318 data-nosnippet>1318</a>            .iter()
+<a href=#1319 id=1319 data-nosnippet>1319</a>            .map(P::options)
+<a href=#1320 id=1320 data-nosnippet>1320</a>            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+<a href=#1321 id=1321 data-nosnippet>1321</a>            .try_into()
+<a href=#1322 id=1322 data-nosnippet>1322</a>            .unwrap();
+<a href=#1323 id=1323 data-nosnippet>1323</a>
+<a href=#1324 id=1324 data-nosnippet>1324</a>        <span class="comment">// Build the config with PoS hook
+<a href=#1325 id=1325 data-nosnippet>1325</a>        </span><span class="kw">let </span>testnet_config = TestNetworkConfigBuilder::with_num_nodes()
+<a href=#1326 id=1326 data-nosnippet>1326</a>            .api_config(query_api_options)
+<a href=#1327 id=1327 data-nosnippet>1327</a>            .network_config(network_config.clone())
+<a href=#1328 id=1328 data-nosnippet>1328</a>            .persistences(persistence_options.clone())
+<a href=#1329 id=1329 data-nosnippet>1329</a>            .pos_hook::&lt;PosVersion&gt;(<span class="bool-val">true</span>)
+<a href=#1330 id=1330 data-nosnippet>1330</a>            .<span class="kw">await
+<a href=#1331 id=1331 data-nosnippet>1331</a>            </span>.expect(<span class="string">"Pos deployment failed"</span>)
+<a href=#1332 id=1332 data-nosnippet>1332</a>            .build();
+<a href=#1333 id=1333 data-nosnippet>1333</a>
+<a href=#1334 id=1334 data-nosnippet>1334</a>        <span class="comment">//start the network
+<a href=#1335 id=1335 data-nosnippet>1335</a>        </span><span class="kw">let </span>_test_network = TestNetwork::new(testnet_config, PosVersion::new()).<span class="kw">await</span>;
+<a href=#1336 id=1336 data-nosnippet>1336</a>
+<a href=#1337 id=1337 data-nosnippet>1337</a>        <span class="kw">let </span>client: Client&lt;ServerError, SequencerApiVersion&gt; = Client::new(
+<a href=#1338 id=1338 data-nosnippet>1338</a>            <span class="macro">format!</span>(<span class="string">"http://localhost:{query_service_port}"</span>)
+<a href=#1339 id=1339 data-nosnippet>1339</a>                .parse()
+<a href=#1340 id=1340 data-nosnippet>1340</a>                .unwrap(),
+<a href=#1341 id=1341 data-nosnippet>1341</a>        );
+<a href=#1342 id=1342 data-nosnippet>1342</a>        client.connect(<span class="prelude-val">None</span>).<span class="kw">await</span>;
+<a href=#1343 id=1343 data-nosnippet>1343</a>        <span class="macro">tracing::info!</span>(query_service_port, <span class="string">"server running"</span>);
+<a href=#1344 id=1344 data-nosnippet>1344</a>
+<a href=#1345 id=1345 data-nosnippet>1345</a>        <span class="comment">// wait until we enter in epoch 3
+<a href=#1346 id=1346 data-nosnippet>1346</a>        </span><span class="kw">let </span>_initial_blocks = client
+<a href=#1347 id=1347 data-nosnippet>1347</a>            .socket(<span class="string">"availability/stream/blocks/0"</span>)
+<a href=#1348 id=1348 data-nosnippet>1348</a>            .subscribe::&lt;BlockQueryData&lt;SeqTypes&gt;&gt;()
+<a href=#1349 id=1349 data-nosnippet>1349</a>            .<span class="kw">await
+<a href=#1350 id=1350 data-nosnippet>1350</a>            </span>.unwrap()
+<a href=#1351 id=1351 data-nosnippet>1351</a>            .take(<span class="number">60</span>)
+<a href=#1352 id=1352 data-nosnippet>1352</a>            .try_collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+<a href=#1353 id=1353 data-nosnippet>1353</a>            .<span class="kw">await
+<a href=#1354 id=1354 data-nosnippet>1354</a>            </span>.unwrap();
+<a href=#1355 id=1355 data-nosnippet>1355</a>
+<a href=#1356 id=1356 data-nosnippet>1356</a>        <span class="comment">// Load initial persisted events and validate they exist.
+<a href=#1357 id=1357 data-nosnippet>1357</a>        </span><span class="kw">let </span>persistence = persistence_options[<span class="number">0</span>].clone().create().<span class="kw">await</span>.unwrap();
+<a href=#1358 id=1358 data-nosnippet>1358</a>        <span class="kw">let </span>res1 = persistence
+<a href=#1359 id=1359 data-nosnippet>1359</a>            .load_events()
+<a href=#1360 id=1360 data-nosnippet>1360</a>            .<span class="kw">await
+<a href=#1361 id=1361 data-nosnippet>1361</a>            </span>.expect(<span class="string">"failed to load events"</span>);
+<a href=#1362 id=1362 data-nosnippet>1362</a>        <span class="macro">assert!</span>(res1.is_some());
+<a href=#1363 id=1363 data-nosnippet>1363</a>
+<a href=#1364 id=1364 data-nosnippet>1364</a>        <span class="kw">let </span>(<span class="kw-2">mut </span>prev_l1, prev_events) = res1.unwrap();
+<a href=#1365 id=1365 data-nosnippet>1365</a>        <span class="macro">assert!</span>(!prev_events.is_empty());
+<a href=#1366 id=1366 data-nosnippet>1366</a>
+<a href=#1367 id=1367 data-nosnippet>1367</a>        <span class="kw">for </span>_i <span class="kw">in </span><span class="number">0</span>..<span class="number">10 </span>{
+<a href=#1368 id=1368 data-nosnippet>1368</a>            <span class="comment">// Wait for more than update interval to assert that persistence was updated
+<a href=#1369 id=1369 data-nosnippet>1369</a>            // L1 update interval is 5s for testing
+<a href=#1370 id=1370 data-nosnippet>1370</a>            </span>tokio::time::sleep(std::time::Duration::from_secs(<span class="number">6</span>)).<span class="kw">await</span>;
+<a href=#1371 id=1371 data-nosnippet>1371</a>
+<a href=#1372 id=1372 data-nosnippet>1372</a>            <span class="kw">let </span>res = persistence
+<a href=#1373 id=1373 data-nosnippet>1373</a>                .load_events()
+<a href=#1374 id=1374 data-nosnippet>1374</a>                .<span class="kw">await
+<a href=#1375 id=1375 data-nosnippet>1375</a>                </span>.expect(<span class="string">"failed to load events"</span>);
+<a href=#1376 id=1376 data-nosnippet>1376</a>
+<a href=#1377 id=1377 data-nosnippet>1377</a>            <span class="kw">let </span>(l1, events) = res.unwrap();
+<a href=#1378 id=1378 data-nosnippet>1378</a>            <span class="macro">assert!</span>(!events.is_empty());
+<a href=#1379 id=1379 data-nosnippet>1379</a>
+<a href=#1380 id=1380 data-nosnippet>1380</a>            <span class="macro">assert!</span>(l1 &gt; prev_l1, <span class="string">"events not updated"</span>);
+<a href=#1381 id=1381 data-nosnippet>1381</a>            prev_l1 = l1;
+<a href=#1382 id=1382 data-nosnippet>1382</a>        }
+<a href=#1383 id=1383 data-nosnippet>1383</a>
+<a href=#1384 id=1384 data-nosnippet>1384</a>        <span class="prelude-val">Ok</span>(())
+<a href=#1385 id=1385 data-nosnippet>1385</a>    }
+<a href=#1386 id=1386 data-nosnippet>1386</a>}</code></pre></div></section></main></body></html>
