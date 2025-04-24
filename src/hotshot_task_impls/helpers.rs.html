@@ -666,9 +666,9 @@
 <a href=#666 id=666 data-nosnippet>666</a>        .block_number
 <a href=#667 id=667 data-nosnippet>667</a>        .is_some_and(|bn| {
 <a href=#668 id=668 data-nosnippet>668</a>            !is_transition_block(bn, validation_info.epoch_height)
-<a href=#669 id=669 data-nosnippet>669</a>                &amp;&amp; bn % validation_info.epoch_height != <span class="number">0
-<a href=#670 id=670 data-nosnippet>670</a>                </span>&amp;&amp; is_epoch_transition(bn, validation_info.epoch_height)
-<a href=#671 id=671 data-nosnippet>671</a>        });
+<a href=#669 id=669 data-nosnippet>669</a>                &amp;&amp; is_epoch_transition(bn, validation_info.epoch_height)
+<a href=#670 id=670 data-nosnippet>670</a>                &amp;&amp; bn % validation_info.epoch_height != <span class="number">0
+<a href=#671 id=671 data-nosnippet>671</a>        </span>});
 <a href=#672 id=672 data-nosnippet>672</a>    <span class="kw">let </span>justify_qc = proposal.data.justify_qc();
 <a href=#673 id=673 data-nosnippet>673</a>    <span class="kw">let </span>maybe_next_epoch_justify_qc = proposal.data.next_epoch_justify_qc();
 <a href=#674 id=674 data-nosnippet>674</a>    <span class="kw">if </span>!in_transition_epoch {
