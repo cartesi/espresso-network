@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["NsProof"]};
+window.SIDEBAR_ITEMS = {"enum":["NsProof"],"struct":["ADVZNamespaceProofQueryData","NamespaceProofQueryData"]};
