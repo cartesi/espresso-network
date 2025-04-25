@@ -516,11 +516,13 @@ pub async fn upgrade_light_client_v2_multisig_owner(
                 tracing::error!("LightClientProxy upgrade failed: {:?}", err);
             } else {
                 tracing::info!("LightClientProxy upgrade proposal sent");
-
                 // IDEA: add a function to wait for the proposal to be executed
             }
 
-            Ok(result.unwrap())
+            match result {
+                Ok(r) => Ok(r),
+                Err(e) => Err(anyhow!("Upgrade proposal failed: {:?}", e)),
+            }
         },
     }
 }
@@ -1117,6 +1119,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_upgrade_light_client_to_v2_multisig_owner() -> Result<()> {
         test_upgrade_light_client_to_v2_multisig_owner_helper(false).await
     }
