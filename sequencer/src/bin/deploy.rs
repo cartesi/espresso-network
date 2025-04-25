@@ -114,6 +114,9 @@ struct Options {
     /// Option to upgrade to LightClient V2
     #[clap(long, default_value = "false")]
     upgrade_light_client_v2: bool,
+    /// Option to upgrade to LightClient V2
+    #[clap(long, default_value = "false")]
+    upgrade_light_client_v2_multisig_owner: bool,
     #[clap(long, default_value = "false")]
     deploy_esp_token: bool,
     #[clap(long, default_value = "false")]
@@ -286,6 +289,49 @@ async fn main() -> anyhow::Result<()> {
                 opt.use_mock,
                 blocks_per_epoch,
                 epoch_start_block,
+            )
+            .await?;
+        }
+
+        if opt.upgrade_light_client_v2_multisig_owner {
+            // fetch epoch length from HotShot config
+            // Request the configuration until it is successful
+            let (mut blocks_per_epoch, epoch_start_block) = loop {
+                match surf_disco::Client::<ServerError, StaticVersion<0, 1>>::new(
+                    opt.sequencer_url.clone(),
+                )
+                .get::<PublicNetworkConfig>("config/hotshot")
+                .send()
+                .await
+                {
+                    Ok(resp) => {
+                        let config = resp.hotshot_config();
+                        break (config.blocks_per_epoch(), config.epoch_start_block());
+                    },
+                    Err(e) => {
+                        tracing::error!("Failed to fetch the network config: {e}");
+                        sleep(Duration::from_secs(5));
+                    },
+                }
+            };
+
+            // TEST-ONLY: if this config is not yet set, we use a large default value
+            // to avoid contract complaining about invalid zero-valued blocks_per_epoch.
+            // This large value will act as if we are always in epoch 1, which won't conflict
+            // with the effective purpose of the real `PublicNetworkConfig`.
+            if opt.use_mock && blocks_per_epoch == 0 {
+                blocks_per_epoch = u64::MAX;
+            }
+            tracing::info!(%blocks_per_epoch, "Upgrading LightClientV2 with ");
+
+            deployer::upgrade_light_client_v2_multisig_owner(
+                &provider,
+                &mut contracts,
+                opt.use_mock,
+                blocks_per_epoch,
+                epoch_start_block,
+                opt.rpc_url.to_string(),
+                opt.multisig_address.unwrap(),
             )
             .await?;
         }

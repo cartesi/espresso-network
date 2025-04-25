@@ -756,13 +756,7 @@ pub async fn call_upgrade_proxy_script(
 
 #[cfg(test)]
 mod tests {
-    use alloy::{
-        network::EthereumWallet,
-        primitives::utils::parse_units,
-        providers::ProviderBuilder,
-        signers::local::{coins_bip39::English, MnemonicBuilder},
-        sol_types::SolValue,
-    };
+    use alloy::{primitives::utils::parse_units, providers::ProviderBuilder, sol_types::SolValue};
     use hotshot::rand::{rngs::StdRng, SeedableRng};
 
     use super::*;
