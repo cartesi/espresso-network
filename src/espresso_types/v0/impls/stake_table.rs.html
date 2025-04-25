@@ -1445,8 +1445,8 @@
 <a href=#1445 id=1445 data-nosnippet>1445</a>        <span class="kw">let </span><span class="kw-2">mut </span>events: Vec&lt;StakeTableEvent&gt; = [
 <a href=#1446 id=1446 data-nosnippet>1446</a>            ValidatorRegistered {
 <a href=#1447 id=1447 data-nosnippet>1447</a>                account: val.account,
-<a href=#1448 id=1448 data-nosnippet>1448</a>                blsVk: val.bls_vk.clone().into(),
-<a href=#1449 id=1449 data-nosnippet>1449</a>                schnorrVk: val.schnorr_vk.clone().into(),
+<a href=#1448 id=1448 data-nosnippet>1448</a>                blsVk: val.bls_vk.clone(),
+<a href=#1449 id=1449 data-nosnippet>1449</a>                schnorrVk: val.schnorr_vk.clone(),
 <a href=#1450 id=1450 data-nosnippet>1450</a>                commission: val.commission,
 <a href=#1451 id=1451 data-nosnippet>1451</a>            }
 <a href=#1452 id=1452 data-nosnippet>1452</a>            .into(),
@@ -1458,8 +1458,8 @@
 <a href=#1458 id=1458 data-nosnippet>1458</a>            .into(),
 <a href=#1459 id=1459 data-nosnippet>1459</a>            ConsensusKeysUpdated {
 <a href=#1460 id=1460 data-nosnippet>1460</a>                account: val.account,
-<a href=#1461 id=1461 data-nosnippet>1461</a>                blsVK: val_new_keys.bls_vk.clone().into(),
-<a href=#1462 id=1462 data-nosnippet>1462</a>                schnorrVK: val_new_keys.schnorr_vk.clone().into(),
+<a href=#1461 id=1461 data-nosnippet>1461</a>                blsVK: val_new_keys.bls_vk.clone(),
+<a href=#1462 id=1462 data-nosnippet>1462</a>                schnorrVK: val_new_keys.schnorr_vk.clone(),
 <a href=#1463 id=1463 data-nosnippet>1463</a>            }
 <a href=#1464 id=1464 data-nosnippet>1464</a>            .into(),
 <a href=#1465 id=1465 data-nosnippet>1465</a>            Undelegated {
@@ -1507,8 +1507,8 @@
 <a href=#1507 id=1507 data-nosnippet>1507</a>
 <a href=#1508 id=1508 data-nosnippet>1508</a>        <span class="kw">let </span>register: StakeTableEvent = ValidatorRegistered {
 <a href=#1509 id=1509 data-nosnippet>1509</a>            account: val.account,
-<a href=#1510 id=1510 data-nosnippet>1510</a>            blsVk: val.bls_vk.clone().into(),
-<a href=#1511 id=1511 data-nosnippet>1511</a>            schnorrVk: val.schnorr_vk.clone().into(),
+<a href=#1510 id=1510 data-nosnippet>1510</a>            blsVk: val.bls_vk.clone(),
+<a href=#1511 id=1511 data-nosnippet>1511</a>            schnorrVk: val.schnorr_vk.clone(),
 <a href=#1512 id=1512 data-nosnippet>1512</a>            commission: val.commission,
 <a href=#1513 id=1513 data-nosnippet>1513</a>        }
 <a href=#1514 id=1514 data-nosnippet>1514</a>        .into();
@@ -1520,8 +1520,8 @@
 <a href=#1520 id=1520 data-nosnippet>1520</a>        .into();
 <a href=#1521 id=1521 data-nosnippet>1521</a>        <span class="kw">let </span>key_update: StakeTableEvent = ConsensusKeysUpdated {
 <a href=#1522 id=1522 data-nosnippet>1522</a>            account: val.account,
-<a href=#1523 id=1523 data-nosnippet>1523</a>            blsVK: val.bls_vk.clone().into(),
-<a href=#1524 id=1524 data-nosnippet>1524</a>            schnorrVK: val.schnorr_vk.clone().into(),
+<a href=#1523 id=1523 data-nosnippet>1523</a>            blsVK: val.bls_vk.clone(),
+<a href=#1524 id=1524 data-nosnippet>1524</a>            schnorrVK: val.schnorr_vk.clone(),
 <a href=#1525 id=1525 data-nosnippet>1525</a>        }
 <a href=#1526 id=1526 data-nosnippet>1526</a>        .into();
 <a href=#1527 id=1527 data-nosnippet>1527</a>        <span class="kw">let </span>undelegate: StakeTableEvent = Undelegated {
