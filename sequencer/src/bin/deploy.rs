@@ -199,7 +199,9 @@ async fn main() -> anyhow::Result<()> {
         .expect("fail to build signer");
     let deployer = signer.address();
     let wallet = EthereumWallet::from(signer);
-    let provider = ProviderBuilder::new().wallet(wallet).on_http(opt.rpc_url);
+    let provider = ProviderBuilder::new()
+        .wallet(wallet)
+        .on_http(opt.rpc_url.clone());
 
     if opt.deploy_fee {
         let owner = match opt.multisig_address {
