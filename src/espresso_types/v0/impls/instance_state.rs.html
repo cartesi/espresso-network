@@ -38,8 +38,8 @@
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">pub </span>node_id: u64,
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">pub </span>chain_config: <span class="kw">crate</span>::v0_99::ChainConfig,
 <a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">pub </span>l1_client: L1Client,
-<a href=#41 id=41 data-nosnippet>41</a>    <span class="attr">#[debug(<span class="string">"{}"</span>, peers.name())]
-<a href=#42 id=42 data-nosnippet>42</a>    </span><span class="kw">pub </span>peers: Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;,
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="attr">#[debug(<span class="string">"{}"</span>, state_catchup.name())]
+<a href=#42 id=42 data-nosnippet>42</a>    </span><span class="kw">pub </span>state_catchup: Arc&lt;<span class="kw">dyn </span>StateCatchup&gt;,
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">pub </span>genesis_header: GenesisHeader,
 <a href=#44 id=44 data-nosnippet>44</a>    <span class="kw">pub </span>genesis_state: ValidatedState,
 <a href=#45 id=45 data-nosnippet>45</a>    <span class="kw">pub </span>l1_genesis: <span class="prelude-ty">Option</span>&lt;L1BlockInfo&gt;,
@@ -111,7 +111,7 @@
 <a href=#111 id=111 data-nosnippet>111</a>            node_id,
 <a href=#112 id=112 data-nosnippet>112</a>            chain_config,
 <a href=#113 id=113 data-nosnippet>113</a>            l1_client,
-<a href=#114 id=114 data-nosnippet>114</a>            peers: Arc::new(catchup),
+<a href=#114 id=114 data-nosnippet>114</a>            state_catchup: Arc::new(catchup),
 <a href=#115 id=115 data-nosnippet>115</a>            genesis_header: Default::default(),
 <a href=#116 id=116 data-nosnippet>116</a>            genesis_state: ValidatedState {
 <a href=#117 id=117 data-nosnippet>117</a>                chain_config: chain_config.into(),
@@ -488,5 +488,9 @@
 <a href=#488 id=488 data-nosnippet>488</a>        <span class="kw">fn </span>name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
 <a href=#489 id=489 data-nosnippet>489</a>            <span class="string">"MockStateCatchup"</span>.into()
 <a href=#490 id=490 data-nosnippet>490</a>        }
-<a href=#491 id=491 data-nosnippet>491</a>    }
-<a href=#492 id=492 data-nosnippet>492</a>}</code></pre></div></section></main></body></html>
+<a href=#491 id=491 data-nosnippet>491</a>
+<a href=#492 id=492 data-nosnippet>492</a>        <span class="kw">fn </span>is_local(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#493 id=493 data-nosnippet>493</a>            <span class="bool-val">true
+<a href=#494 id=494 data-nosnippet>494</a>        </span>}
+<a href=#495 id=495 data-nosnippet>495</a>    }
+<a href=#496 id=496 data-nosnippet>496</a>}</code></pre></div></section></main></body></html>
