@@ -180,12 +180,12 @@ impl<N: ConnectedNetwork<PubKey>, D: Sync, V: Versions, P: SequencerPersistence>
     async fn get_stake_table(
         &self,
         epoch: Option<<SeqTypes as NodeType>::Epoch>,
-    ) -> Vec<PeerConfig<SeqTypes>> {
+    ) -> anyhow::Result<Vec<PeerConfig<SeqTypes>>> {
         self.as_ref().get_stake_table(epoch).await
     }
 
     /// Get the stake table for the current epoch if not provided
-    async fn get_stake_table_current(&self) -> StakeTableWithEpochNumber<SeqTypes> {
+    async fn get_stake_table_current(&self) -> anyhow::Result<StakeTableWithEpochNumber<SeqTypes>> {
         self.as_ref().get_stake_table_current().await
     }
 
@@ -205,29 +205,42 @@ impl<N: ConnectedNetwork<PubKey>, V: Versions, P: SequencerPersistence>
     async fn get_stake_table(
         &self,
         epoch: Option<<SeqTypes as NodeType>::Epoch>,
-    ) -> Vec<PeerConfig<SeqTypes>> {
-        let Ok(mem) = self
+    ) -> anyhow::Result<Vec<PeerConfig<SeqTypes>>> {
+        let highest_epoch = self
+            .consensus()
+            .await
+            .read()
+            .await
+            .cur_epoch()
+            .await
+            .map(|e| e + 1);
+        if epoch > highest_epoch {
+            return Err(anyhow::anyhow!(
+                "requested stake table for epoch {:?} is beyond the current epoch + 1 {:?}",
+                epoch,
+                highest_epoch
+            ));
+        }
+        let mem = self
             .consensus()
             .await
             .read()
             .await
             .membership_coordinator
             .stake_table_for_epoch(epoch)
-            .await
-        else {
-            return vec![];
-        };
-        mem.stake_table().await
+            .await?;
+
+        Ok(mem.stake_table().await)
     }
 
     /// Get the stake table for the current epoch and return it along with the epoch number
-    async fn get_stake_table_current(&self) -> StakeTableWithEpochNumber<SeqTypes> {
+    async fn get_stake_table_current(&self) -> anyhow::Result<StakeTableWithEpochNumber<SeqTypes>> {
         let epoch = self.consensus().await.read().await.cur_epoch().await;
 
-        StakeTableWithEpochNumber {
+        Ok(StakeTableWithEpochNumber {
             epoch,
-            stake_table: self.get_stake_table(epoch).await,
-        }
+            stake_table: self.get_stake_table(epoch).await?,
+        })
     }
 
     /// Get the whole validators map
@@ -1378,7 +1391,7 @@ mod api_tests {
     use data_source::testing::TestableSequencerDataSource;
     use espresso_types::{
         traits::{EventConsumer, PersistenceOptions},
-        Header, Leaf2, MockSequencerVersions, NamespaceId,
+        Header, Leaf2, MockSequencerVersions, NamespaceId, NamespaceProofQueryData,
     };
     use futures::{future, stream::StreamExt};
     use hotshot_example_types::node_types::{EpochsTestVersions, TestVersions};
@@ -1409,7 +1422,6 @@ mod api_tests {
 
     use super::{update::ApiEventConsumer, *};
     use crate::{
-        api::endpoints::NamespaceProofQueryData,
         network,
         persistence::no_storage::NoStorage,
         testing::{wait_for_decide_on_handle, TestConfigBuilder},
@@ -1919,8 +1931,10 @@ mod test {
         config::PublicHotShotConfig,
         traits::NullEventConsumer,
         v0_1::{block_reward, RewardAmount},
-        BackoffParams, EpochVersion, FeeAmount, FeeVersion, Header, MarketplaceVersion,
-        MockSequencerVersions, SequencerVersions, ValidatedState,
+        v0_3::StakeTableFetcher,
+        validators_from_l1_events, BackoffParams, EpochVersion, FeeAmount, FeeVersion, Header,
+        L1ClientOptions, MarketplaceVersion, MockSequencerVersions, SequencerVersions,
+        ValidatedState,
     };
     use futures::{
         future::{self, join_all},
@@ -3258,5 +3272,209 @@ mod test {
         }
 
         Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_stake_table_duplicate_events_from_contract() -> anyhow::Result<()> {
+        // TODO(abdul): This test currently uses TestNetwork only for contract deployment and for L1 block number.
+        // Once the stake table deployment logic is refactored and isolated, TestNetwork here will be unnecessary
+
+        setup_test();
+        let epoch_height = 20;
+
+        type PosVersion = SequencerVersions<StaticVersion<0, 3>, StaticVersion<0, 0>>;
+
+        let instance = Anvil::new()
+            .args(["--slots-in-an-epoch", "0", "--block-time", "1"])
+            .spawn();
+        let l1_url = instance.endpoint_url();
+        let secret_key = instance.keys()[0].clone();
+
+        let signer = LocalSigner::from(secret_key);
+
+        let network_config = TestConfigBuilder::default()
+            .l1_url(l1_url.clone())
+            .signer(signer.clone())
+            .epoch_height(epoch_height)
+            .build();
+
+        let api_port = pick_unused_port().expect("No ports free for query service");
+
+        const NUM_NODES: usize = 5;
+        // Initialize nodes.
+        let storage = join_all((0..NUM_NODES).map(|_| SqlDataSource::create_storage())).await;
+        let persistence: [_; NUM_NODES] = storage
+            .iter()
+            .map(<SqlDataSource as TestableSequencerDataSource>::persistence_options)
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let config = TestNetworkConfigBuilder::with_num_nodes()
+            .api_config(SqlDataSource::options(
+                &storage[0],
+                Options::with_port(api_port),
+            ))
+            .network_config(network_config)
+            .persistences(persistence.clone())
+            .catchups(std::array::from_fn(|_| {
+                StatePeers::<StaticVersion<0, 1>>::from_urls(
+                    vec![format!("http://localhost:{api_port}").parse().unwrap()],
+                    Default::default(),
+                    &NoMetrics,
+                )
+            }))
+            .pos_hook::<PosVersion>(true)
+            .await
+            .unwrap()
+            .build();
+
+        let network = TestNetwork::new(config, PosVersion::new()).await;
+
+        let mut prev_st = None;
+        let state = network.server.decided_state().await;
+        let chain_config = state.chain_config.resolve().expect("resolve chain config");
+        let stake_table = chain_config.stake_table_contract.unwrap();
+
+        let l1_client = L1ClientOptions::default()
+            .connect(vec![l1_url])
+            .expect("failed to connect to l1");
+
+        let client: Client<ServerError, SequencerApiVersion> =
+            Client::new(format!("http://localhost:{api_port}").parse().unwrap());
+
+        let mut headers = client
+            .socket("availability/stream/headers/0")
+            .subscribe::<Header>()
+            .await
+            .unwrap();
+
+        let mut target_bh = 0;
+        while let Some(header) = headers.next().await {
+            let header = header.unwrap();
+            if header.height() == 0 {
+                continue;
+            }
+            let l1_block = header.l1_finalized().expect("l1 block not found");
+
+            let events = StakeTableFetcher::fetch_events_from_contract(
+                l1_client.clone(),
+                stake_table,
+                None,
+                l1_block.number(),
+            )
+            .await
+            .expect("failed to get stake table from contract");
+            let sorted_events = events.sort_events().expect("failed to sort");
+
+            let mut sorted_dedup_removed = sorted_events.clone();
+            sorted_dedup_removed.dedup();
+
+            assert_eq!(
+                sorted_events.len(),
+                sorted_dedup_removed.len(),
+                "duplicates found"
+            );
+
+            // This also checks if there is a duplicate registration
+            let stake_table =
+                validators_from_l1_events(sorted_events.into_iter().map(|(_, e)| e)).unwrap();
+            if let Some(prev_st) = prev_st {
+                assert_eq!(stake_table, prev_st);
+            }
+
+            prev_st = Some(stake_table);
+
+            if target_bh == 100 {
+                break;
+            }
+
+            target_bh = header.height();
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_node_stake_table_api() {
+        setup_test();
+        let epoch_height = 20;
+
+        type PosVersion = SequencerVersions<StaticVersion<0, 3>, StaticVersion<0, 0>>;
+
+        let instance = Anvil::new()
+            .args(["--slots-in-an-epoch", "0", "--block-time", "1"])
+            .spawn();
+        let l1_url = instance.endpoint_url();
+        let secret_key = instance.keys()[0].clone();
+
+        let signer = LocalSigner::from(secret_key);
+
+        let network_config = TestConfigBuilder::default()
+            .l1_url(l1_url.clone())
+            .signer(signer.clone())
+            .epoch_height(epoch_height)
+            .build();
+
+        let api_port = pick_unused_port().expect("No ports free for query service");
+
+        const NUM_NODES: usize = 2;
+        // Initialize nodes.
+        let storage = join_all((0..NUM_NODES).map(|_| SqlDataSource::create_storage())).await;
+        let persistence: [_; NUM_NODES] = storage
+            .iter()
+            .map(<SqlDataSource as TestableSequencerDataSource>::persistence_options)
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
+        let config = TestNetworkConfigBuilder::with_num_nodes()
+            .api_config(SqlDataSource::options(
+                &storage[0],
+                Options::with_port(api_port),
+            ))
+            .network_config(network_config)
+            .persistences(persistence.clone())
+            .catchups(std::array::from_fn(|_| {
+                StatePeers::<StaticVersion<0, 1>>::from_urls(
+                    vec![format!("http://localhost:{api_port}").parse().unwrap()],
+                    Default::default(),
+                    &NoMetrics,
+                )
+            }))
+            .pos_hook::<PosVersion>(true)
+            .await
+            .unwrap()
+            .build();
+
+        let _network = TestNetwork::new(config, PosVersion::new()).await;
+
+        let client: Client<ServerError, SequencerApiVersion> =
+            Client::new(format!("http://localhost:{api_port}").parse().unwrap());
+
+        // wait for atleast 2 epochs
+        let _blocks = client
+            .socket("availability/stream/blocks/0")
+            .subscribe::<BlockQueryData<SeqTypes>>()
+            .await
+            .unwrap()
+            .take(40)
+            .try_collect::<Vec<_>>()
+            .await
+            .unwrap();
+
+        for i in 1..=3 {
+            let _st = client
+                .get::<Vec<PeerConfig<SeqTypes>>>(&format!("node/stake-table/{}", i as u64))
+                .send()
+                .await
+                .expect("failed to get stake table");
+        }
+
+        let _st = client
+            .get::<StakeTableWithEpochNumber<SeqTypes>>("node/stake-table/current")
+            .send()
+            .await
+            .expect("failed to get stake table");
     }
 }

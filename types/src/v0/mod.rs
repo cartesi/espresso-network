@@ -20,10 +20,10 @@ pub use header::Header;
 #[cfg(any(test, feature = "testing"))]
 pub use impls::mock;
 pub use impls::{
-    get_l1_deposits, retain_accounts, BuilderValidationError, EpochCommittees, FeeError,
-    ProposalValidationError, StateValidationError,
+    get_l1_deposits, retain_accounts, validators_from_l1_events, BuilderValidationError,
+    EpochCommittees, FeeError, ProposalValidationError, StateValidationError,
 };
-pub use nsproof::NsProof;
+pub use nsproof::*;
 pub use utils::*;
 use vbs::version::{StaticVersion, StaticVersionType};
 
