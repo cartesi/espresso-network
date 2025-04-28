@@ -322,25 +322,25 @@
 <a href=#322 id=322 data-nosnippet>322</a>                })<span class="question-mark">?
 <a href=#323 id=323 data-nosnippet>323</a>                </span>.map(EpochNumber::new);
 <a href=#324 id=324 data-nosnippet>324</a>
-<a href=#325 id=325 data-nosnippet>325</a>            <span class="prelude-val">Ok</span>(state
+<a href=#325 id=325 data-nosnippet>325</a>            state
 <a href=#326 id=326 data-nosnippet>326</a>                .read(|state| state.get_stake_table(epoch).boxed())
 <a href=#327 id=327 data-nosnippet>327</a>                .<span class="kw">await
 <a href=#328 id=328 data-nosnippet>328</a>                </span>.map_err(|err| node::Error::Custom {
 <a href=#329 id=329 data-nosnippet>329</a>                    message: <span class="macro">format!</span>(<span class="string">"failed to get stake table for epoch={epoch:?}. err={err:#}"</span>),
 <a href=#330 id=330 data-nosnippet>330</a>                    status: StatusCode::NOT_FOUND,
-<a href=#331 id=331 data-nosnippet>331</a>                }))
+<a href=#331 id=331 data-nosnippet>331</a>                })
 <a href=#332 id=332 data-nosnippet>332</a>        }
 <a href=#333 id=333 data-nosnippet>333</a>        .boxed()
 <a href=#334 id=334 data-nosnippet>334</a>    })<span class="question-mark">?
 <a href=#335 id=335 data-nosnippet>335</a>    </span>.at(<span class="string">"stake_table_current"</span>, |<span class="kw">_</span>, state| {
 <a href=#336 id=336 data-nosnippet>336</a>        <span class="kw">async move </span>{
-<a href=#337 id=337 data-nosnippet>337</a>            <span class="prelude-val">Ok</span>(state
+<a href=#337 id=337 data-nosnippet>337</a>            state
 <a href=#338 id=338 data-nosnippet>338</a>                .read(|state| state.get_stake_table_current().boxed())
 <a href=#339 id=339 data-nosnippet>339</a>                .<span class="kw">await
 <a href=#340 id=340 data-nosnippet>340</a>                </span>.map_err(|err| node::Error::Custom {
 <a href=#341 id=341 data-nosnippet>341</a>                    message: <span class="macro">format!</span>(<span class="string">"failed to get current stake table. err={err:#}"</span>),
 <a href=#342 id=342 data-nosnippet>342</a>                    status: StatusCode::NOT_FOUND,
-<a href=#343 id=343 data-nosnippet>343</a>                }))
+<a href=#343 id=343 data-nosnippet>343</a>                })
 <a href=#344 id=344 data-nosnippet>344</a>        }
 <a href=#345 id=345 data-nosnippet>345</a>        .boxed()
 <a href=#346 id=346 data-nosnippet>346</a>    })<span class="question-mark">?
