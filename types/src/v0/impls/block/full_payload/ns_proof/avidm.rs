@@ -66,13 +66,17 @@ impl AvidMNsProof {
 mod tests {
     use futures::future;
     use hotshot::{helpers::initialize_logging, traits::BlockPayload};
+    use hotshot_query_service::VidCommon;
     use hotshot_types::{
         data::VidCommitment,
         traits::EncodeBytes,
         vid::avidm::{AvidMParam, AvidMScheme},
     };
 
-    use crate::{v0::impls::block::test::ValidTest, v0_3::AvidMNsProof, NsIndex, Payload};
+    use crate::{
+        v0::impls::block::test::ValidTest, v0_3::AvidMNsProof, NsIndex, NsProof, Payload,
+        Transaction,
+    };
 
     #[tokio::test(flavor = "multi_thread")]
     async fn ns_proof() {
@@ -154,6 +158,16 @@ mod tests {
 
                 assert_eq!(ns_proof_ns_id, ns_id);
                 assert_eq!(ns_proof_txs, txs);
+
+                println!("ns_id: {:?}", ns_id);
+                let p = NsProof::V1(ns_proof.clone());
+                println!("ns_proof: {:?}", serde_json::to_string(&p));
+                println!("vid_commit: {:?}", vid_commit.to_string());
+                let vid_common = VidCommon::V1(param.clone());
+                println!("vid_common: {:?}", serde_json::to_string(&vid_common));
+                println!("ns_table: {:?}", block.ns_table().bytes);
+                println!("tx_commit: {:?}", hash_txns(ns_id.into(), &txs));
+                println!("====================================");
             }
         }
 
@@ -176,5 +190,16 @@ mod tests {
                 .verify(ns_table_1, vid_commit_1, &param)
                 .is_none());
         }
+    }
+
+    fn hash_txns(namespace: u32, txns: &[Transaction]) -> String {
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(namespace.to_le_bytes());
+        for txn in txns {
+            hasher.update(&txn.payload());
+        }
+        let hash_result = hasher.finalize();
+        format!("{:x}", hash_result)
     }
 }
