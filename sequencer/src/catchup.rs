@@ -358,7 +358,9 @@ impl<ApiVer: StaticVersionType> StateCatchup for StatePeers<ApiVer> {
         reward_merkle_tree_root: RewardMerkleCommitment,
         accounts: &[RewardAccount],
     ) -> anyhow::Result<RewardMerkleTree> {
+        warn!("Fetching reward accounts with statepeers");
         self.fetch(retry, |client| async move {
+            warn!("Sending req");
             let snapshot = client
                 .inner
                 .post::<RewardMerkleTree>(&format!(
@@ -368,7 +370,7 @@ impl<ApiVer: StaticVersionType> StateCatchup for StatePeers<ApiVer> {
                 .body_binary(&accounts.to_vec())?
                 .send()
                 .await?;
-
+            warn!("Fetched reward accounts from statepeers: {:?}", snapshot);
             // Verify proofs.
             for account in accounts {
                 let (proof, _) = RewardAccountProof::prove(&snapshot, (*account).into())
