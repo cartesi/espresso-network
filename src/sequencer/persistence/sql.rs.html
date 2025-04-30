@@ -2039,7 +2039,7 @@
 <a href=#2039 id=2039 data-nosnippet>2039</a>        <span class="kw">let </span><span class="kw-2">mut </span>tx = <span class="self">self</span>.db.write().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#2040 id=2040 data-nosnippet>2040</a>
 <a href=#2041 id=2041 data-nosnippet>2041</a>        <span class="kw">let </span>rows = <span class="kw">match </span>query_as::&lt;(i64, Vec&lt;u8&gt;)&gt;(
-<a href=#2042 id=2042 data-nosnippet>2042</a>            <span class="string">"SELECT epoch, stake FROM epoch_drb_and_root LIMIT $1"</span>,
+<a href=#2042 id=2042 data-nosnippet>2042</a>            <span class="string">"SELECT epoch, stake FROM epoch_drb_and_root ORDER BY epoch DESC LIMIT $1"</span>,
 <a href=#2043 id=2043 data-nosnippet>2043</a>        )
 <a href=#2044 id=2044 data-nosnippet>2044</a>        .bind(limit <span class="kw">as </span>i64)
 <a href=#2045 id=2045 data-nosnippet>2045</a>        .fetch_all(tx.as_mut())
@@ -2979,39 +2979,4 @@
 <a href=#2979 id=2979 data-nosnippet>2979</a>
 <a href=#2980 id=2980 data-nosnippet>2980</a>        storage.migrate_consensus().<span class="kw">await</span>.unwrap();
 <a href=#2981 id=2981 data-nosnippet>2981</a>    }
-<a href=#2982 id=2982 data-nosnippet>2982</a>
-<a href=#2983 id=2983 data-nosnippet>2983</a>    <span class="attr">#[tokio::test(flavor = <span class="string">"multi_thread"</span>)]
-<a href=#2984 id=2984 data-nosnippet>2984</a>    </span><span class="kw">async fn </span>test_membership_persistence() -&gt; anyhow::Result&lt;()&gt; {
-<a href=#2985 id=2985 data-nosnippet>2985</a>        setup_test();
-<a href=#2986 id=2986 data-nosnippet>2986</a>
-<a href=#2987 id=2987 data-nosnippet>2987</a>        <span class="kw">let </span>tmp = Persistence::tmp_storage().<span class="kw">await</span>;
-<a href=#2988 id=2988 data-nosnippet>2988</a>        <span class="kw">let </span><span class="kw-2">mut </span>opt = Persistence::options(<span class="kw-2">&amp;</span>tmp);
-<a href=#2989 id=2989 data-nosnippet>2989</a>
-<a href=#2990 id=2990 data-nosnippet>2990</a>        <span class="kw">let </span>storage = opt.create().<span class="kw">await</span>.unwrap();
-<a href=#2991 id=2991 data-nosnippet>2991</a>
-<a href=#2992 id=2992 data-nosnippet>2992</a>        <span class="kw">let </span>validator = Validator::mock();
-<a href=#2993 id=2993 data-nosnippet>2993</a>        <span class="kw">let </span><span class="kw-2">mut </span>st = IndexMap::new();
-<a href=#2994 id=2994 data-nosnippet>2994</a>        st.insert(validator.account, validator);
-<a href=#2995 id=2995 data-nosnippet>2995</a>        storage
-<a href=#2996 id=2996 data-nosnippet>2996</a>            .store_stake(EpochNumber::new(<span class="number">10</span>), st.clone())
-<a href=#2997 id=2997 data-nosnippet>2997</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#2998 id=2998 data-nosnippet>2998</a>
-<a href=#2999 id=2999 data-nosnippet>2999</a>        <span class="kw">let </span>table = storage.load_stake(EpochNumber::new(<span class="number">10</span>)).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-<a href=#3000 id=3000 data-nosnippet>3000</a>        <span class="macro">assert_eq!</span>(st, table);
-<a href=#3001 id=3001 data-nosnippet>3001</a>
-<a href=#3002 id=3002 data-nosnippet>3002</a>        <span class="kw">let </span>val2 = Validator::mock();
-<a href=#3003 id=3003 data-nosnippet>3003</a>        <span class="kw">let </span><span class="kw-2">mut </span>st2 = IndexMap::new();
-<a href=#3004 id=3004 data-nosnippet>3004</a>        st2.insert(val2.account, val2);
-<a href=#3005 id=3005 data-nosnippet>3005</a>        storage
-<a href=#3006 id=3006 data-nosnippet>3006</a>            .store_stake(EpochNumber::new(<span class="number">11</span>), st2.clone())
-<a href=#3007 id=3007 data-nosnippet>3007</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#3008 id=3008 data-nosnippet>3008</a>
-<a href=#3009 id=3009 data-nosnippet>3009</a>        <span class="kw">let </span>tables = storage.load_latest_stake(<span class="number">4</span>).<span class="kw">await</span><span class="question-mark">?</span>.unwrap();
-<a href=#3010 id=3010 data-nosnippet>3010</a>        <span class="kw">let </span><span class="kw-2">mut </span>iter = tables.iter();
-<a href=#3011 id=3011 data-nosnippet>3011</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">10</span>), st)), iter.next());
-<a href=#3012 id=3012 data-nosnippet>3012</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>(EpochNumber::new(<span class="number">11</span>), st2)), iter.next());
-<a href=#3013 id=3013 data-nosnippet>3013</a>        <span class="macro">assert_eq!</span>(<span class="prelude-val">None</span>, iter.next());
-<a href=#3014 id=3014 data-nosnippet>3014</a>
-<a href=#3015 id=3015 data-nosnippet>3015</a>        <span class="prelude-val">Ok</span>(())
-<a href=#3016 id=3016 data-nosnippet>3016</a>    }
-<a href=#3017 id=3017 data-nosnippet>3017</a>}</code></pre></div></section></main></body></html>
+<a href=#2982 id=2982 data-nosnippet>2982</a>}</code></pre></div></section></main></body></html>
