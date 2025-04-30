@@ -908,7 +908,7 @@ impl StateCatchup for ParallelStateCatchup {
             let accounts_clone = accounts.clone();
 
             async move {
-                debug!("Fetching accounts using provider: {}", provider.name());
+                warn!("Fetching accounts using provider: {}", provider.name());
                 let res = provider
                     .fetch_accounts(
                         &instance_clone,
@@ -918,7 +918,7 @@ impl StateCatchup for ParallelStateCatchup {
                         accounts_clone,
                     )
                     .await;
-                debug!(
+                warn!(
                     "Fetched accounts using provider: {}. Result: {res:?}",
                     provider.name(),
                 );
@@ -938,11 +938,11 @@ impl StateCatchup for ParallelStateCatchup {
             let stake_table_clone = stake_table.clone();
 
             async move {
-                debug!("Fetching leaf using provider: {}", provider.name());
+                warn!("Fetching leaf using provider: {}", provider.name());
                 let res = provider
                     .fetch_leaf(height, stake_table_clone, success_threshold)
                     .await;
-                debug!(
+                warn!(
                     "Fetched leaf using provider: {}. Result: {res:?}",
                     provider.name()
                 );
@@ -957,9 +957,9 @@ impl StateCatchup for ParallelStateCatchup {
         commitment: Commitment<ChainConfig>,
     ) -> anyhow::Result<ChainConfig> {
         self.on_all_providers(move |provider| async move {
-            debug!("Fetching chain config using provider: {}", provider.name());
+            warn!("Fetching chain config using provider: {}", provider.name());
             let res = provider.fetch_chain_config(commitment).await;
-            debug!(
+            warn!(
                 "Fetched chain config using provider: {}. Result: {res:?}",
                 provider.name()
             );
@@ -982,7 +982,7 @@ impl StateCatchup for ParallelStateCatchup {
             let accounts_clone = accounts.clone();
 
             async move {
-                debug!(
+                warn!(
                     "Fetching reward accounts using provider: {}",
                     provider.name()
                 );
@@ -995,7 +995,7 @@ impl StateCatchup for ParallelStateCatchup {
                         accounts_clone,
                     )
                     .await;
-                debug!(
+                warn!(
                     "Fetched reward accounts using provider: {}. Result: {res:?}",
                     provider.name()
                 );
@@ -1018,7 +1018,7 @@ impl StateCatchup for ParallelStateCatchup {
         let merkle_tree = self
             .on_all_providers(move |provider| {
                 let instance_clone = instance_clone.clone();
-                debug!(
+                warn!(
                     "Remembering blocks merkle tree using provider: {}",
                     provider.name()
                 );
@@ -1028,7 +1028,7 @@ impl StateCatchup for ParallelStateCatchup {
                     provider
                         .remember_blocks_merkle_tree(&instance_clone, height, view, &mut mt_clone)
                         .await?;
-                    debug!(
+                    warn!(
                         "Remembered blocks merkle tree using provider: {}",
                         provider.name()
                     );
