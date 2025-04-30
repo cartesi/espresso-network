@@ -47,7 +47,7 @@ use surf_disco::Request;
 use tide_disco::error::ServerError;
 use tokio::time::timeout;
 use tokio_util::task::AbortOnDropHandle;
-use tracing::warn;
+use tracing::{debug, warn};
 use url::Url;
 use vbs::version::StaticVersionType;
 
@@ -908,7 +908,8 @@ impl StateCatchup for ParallelStateCatchup {
             let accounts_clone = accounts.clone();
 
             async move {
-                provider
+                debug!("Fetching accounts using provider: {}", provider.name());
+                let res = provider
                     .fetch_accounts(
                         &instance_clone,
                         height,
@@ -916,7 +917,12 @@ impl StateCatchup for ParallelStateCatchup {
                         fee_merkle_tree_root,
                         accounts_clone,
                     )
-                    .await
+                    .await;
+                debug!(
+                    "Fetched accounts using provider: {}. Result: {res:?}",
+                    provider.name(),
+                );
+                res
             }
         })
         .await
@@ -932,9 +938,15 @@ impl StateCatchup for ParallelStateCatchup {
             let stake_table_clone = stake_table.clone();
 
             async move {
-                provider
+                debug!("Fetching leaf using provider: {}", provider.name());
+                let res = provider
                     .fetch_leaf(height, stake_table_clone, success_threshold)
-                    .await
+                    .await;
+                debug!(
+                    "Fetched leaf using provider: {}. Result: {res:?}",
+                    provider.name()
+                );
+                res
             }
         })
         .await
@@ -945,7 +957,13 @@ impl StateCatchup for ParallelStateCatchup {
         commitment: Commitment<ChainConfig>,
     ) -> anyhow::Result<ChainConfig> {
         self.on_all_providers(move |provider| async move {
-            provider.fetch_chain_config(commitment).await
+            debug!("Fetching chain config using provider: {}", provider.name());
+            let res = provider.fetch_chain_config(commitment).await;
+            debug!(
+                "Fetched chain config using provider: {}. Result: {res:?}",
+                provider.name()
+            );
+            res
         })
         .await
     }
@@ -964,7 +982,11 @@ impl StateCatchup for ParallelStateCatchup {
             let accounts_clone = accounts.clone();
 
             async move {
-                provider
+                debug!(
+                    "Fetching reward accounts using provider: {}",
+                    provider.name()
+                );
+                let res = provider
                     .fetch_reward_accounts(
                         &instance_clone,
                         height,
@@ -972,7 +994,12 @@ impl StateCatchup for ParallelStateCatchup {
                         reward_merkle_tree_root,
                         accounts_clone,
                     )
-                    .await
+                    .await;
+                debug!(
+                    "Fetched reward accounts using provider: {}. Result: {res:?}",
+                    provider.name()
+                );
+                res
             }
         })
         .await
@@ -991,12 +1018,20 @@ impl StateCatchup for ParallelStateCatchup {
         let merkle_tree = self
             .on_all_providers(move |provider| {
                 let instance_clone = instance_clone.clone();
+                debug!(
+                    "Remembering blocks merkle tree using provider: {}",
+                    provider.name()
+                );
                 let mut mt_clone = mt_clone.clone();
 
                 async move {
                     provider
                         .remember_blocks_merkle_tree(&instance_clone, height, view, &mut mt_clone)
                         .await?;
+                    debug!(
+                        "Remembered blocks merkle tree using provider: {}",
+                        provider.name()
+                    );
                     Ok(mt_clone)
                 }
             })
