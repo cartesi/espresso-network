@@ -260,13 +260,18 @@ impl<ApiVer: StaticVersionType> StateCatchup for StatePeers<ApiVer> {
         fee_merkle_tree_root: FeeMerkleCommitment,
         accounts: &[FeeAccount],
     ) -> anyhow::Result<FeeMerkleTree> {
+        warn!("Fetching accounts with statepeers");
         self.fetch(retry, |client| async move {
+            warn!("Sending req");
             let snapshot = client
                 .inner
                 .post::<FeeMerkleTree>(&format!("catchup/{height}/{}/accounts", view.u64()))
                 .body_binary(&accounts.to_vec())?
                 .send()
-                .await?;
+                .await;
+            warn!("Fetched accounts with statepeers: {:?}", snapshot);
+
+            let snapshot = snapshot?;
 
             // Verify proofs.
             for account in accounts {
@@ -276,6 +281,8 @@ impl<ApiVer: StaticVersionType> StateCatchup for StatePeers<ApiVer> {
                     .verify(&fee_merkle_tree_root)
                     .context(format!("invalid proof for accoujnt {account}"))?;
             }
+
+            warn!("Verified accounts with statepeers");
 
             anyhow::Ok(snapshot)
         })
