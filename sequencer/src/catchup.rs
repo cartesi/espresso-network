@@ -801,7 +801,7 @@ impl ParallelStateCatchup {
                 // before calling the closure. These will automatically be cancelled when this function returns
                 let closure = closure.clone();
                 futures.push(AbortOnDropHandle::new(tokio::spawn(async move {
-                    tokio::time::sleep(remote_request_delay).await;
+                    //tokio::time::sleep(remote_request_delay).await;
                     closure(provider).await
                 })));
             }
