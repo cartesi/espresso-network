@@ -1336,6 +1336,7 @@ impl Membership<SeqTypes> for EpochCommittees {
     }
 
     fn set_first_epoch(&mut self, epoch: Epoch, initial_drb_result: DrbResult) {
+        tracing::warn!("First epoch = {epoch:?}");
         self.first_epoch = Some(epoch);
 
         let epoch_committee = self.state.get(&Epoch::genesis()).unwrap().clone();
