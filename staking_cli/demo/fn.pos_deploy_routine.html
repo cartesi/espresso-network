@@ -3,7 +3,7 @@
     signer: &amp;LocalSigner&lt;SigningKey&gt;,
     blocks_per_epoch: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
     epoch_start_block: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.u64.html">u64</a>,
-    initial_stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../hotshot_types/struct.PeerConfig.html" title="struct hotshot_types::PeerConfig">PeerConfig</a>&lt;SeqTypes&gt;&gt;,
+    initial_stake_table: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;<a class="struct" href="../../hotshot_types/struct.PeerConfig.html" title="struct hotshot_types::PeerConfig">PeerConfig</a>&lt;<a class="struct" href="../../espresso_types/v0/struct.SeqTypes.html" title="struct espresso_types::v0::SeqTypes">SeqTypes</a>&gt;&gt;,
     private_keys: <a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/vec/struct.Vec.html" title="struct alloc::vec::Vec">Vec</a>&lt;(PrivateKeySigner, <a class="type" href="../../hotshot_types/signature_key/type.BLSKeyPair.html" title="type hotshot_types::signature_key::BLSKeyPair">BLSKeyPair</a>, <a class="struct" href="../../hotshot_types/light_client/struct.StateKeyPair.html" title="struct hotshot_types::light_client::StateKeyPair">StateKeyPair</a>)&gt;,
     _multisig: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;Address&gt;,
     multiple_delegators: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.bool.html">bool</a>,
