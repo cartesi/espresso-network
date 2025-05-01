@@ -369,34 +369,41 @@
 <a href=#369 id=369 data-nosnippet>369</a></span><span class="kw">pub fn </span>compute_stake_table_commitment&lt;TYPES: NodeType&gt;(
 <a href=#370 id=370 data-nosnippet>370</a>    known_nodes_with_stakes: <span class="kw-2">&amp;</span>[PeerConfig&lt;TYPES&gt;],
 <a href=#371 id=371 data-nosnippet>371</a>    stake_table_capacity: usize,
-<a href=#372 id=372 data-nosnippet>372</a>) -&gt; StakeTableState {
-<a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">let </span>padding_len = stake_table_capacity - known_nodes_with_stakes.len();
-<a href=#374 id=374 data-nosnippet>374</a>    <span class="kw">let </span><span class="kw-2">mut </span>bls_preimage = <span class="macro">vec!</span>[];
-<a href=#375 id=375 data-nosnippet>375</a>    <span class="kw">let </span><span class="kw-2">mut </span>schnorr_preimage = <span class="macro">vec!</span>[];
-<a href=#376 id=376 data-nosnippet>376</a>    <span class="kw">let </span><span class="kw-2">mut </span>amount_preimage = <span class="macro">vec!</span>[];
-<a href=#377 id=377 data-nosnippet>377</a>    <span class="kw">let </span><span class="kw-2">mut </span>total_stake = U256::from(<span class="number">0</span>);
-<a href=#378 id=378 data-nosnippet>378</a>    <span class="kw">for </span>peer <span class="kw">in </span>known_nodes_with_stakes {
-<a href=#379 id=379 data-nosnippet>379</a>        bls_preimage.extend(peer.stake_table_entry.public_key().to_fields());
-<a href=#380 id=380 data-nosnippet>380</a>        schnorr_preimage.extend(peer.state_ver_key.to_fields());
-<a href=#381 id=381 data-nosnippet>381</a>        amount_preimage.push(u256_to_field(peer.stake_table_entry.stake()));
-<a href=#382 id=382 data-nosnippet>382</a>        total_stake += peer.stake_table_entry.stake();
-<a href=#383 id=383 data-nosnippet>383</a>    }
-<a href=#384 id=384 data-nosnippet>384</a>    bls_preimage.resize(
-<a href=#385 id=385 data-nosnippet>385</a>        &lt;TYPES::SignatureKey <span class="kw">as </span>ToFieldsLightClientCompat&gt;::SIZE * stake_table_capacity,
-<a href=#386 id=386 data-nosnippet>386</a>        CircuitField::default(),
-<a href=#387 id=387 data-nosnippet>387</a>    );
-<a href=#388 id=388 data-nosnippet>388</a>    <span class="comment">// Nasty tech debt
-<a href=#389 id=389 data-nosnippet>389</a>    </span>schnorr_preimage
-<a href=#390 id=390 data-nosnippet>390</a>        .extend(iter::repeat_n(SchnorrPubKey::default().to_fields(), padding_len).flatten());
-<a href=#391 id=391 data-nosnippet>391</a>    amount_preimage.resize(stake_table_capacity, CircuitField::default());
-<a href=#392 id=392 data-nosnippet>392</a>    <span class="kw">let </span>threshold = u256_to_field(one_honest_threshold(total_stake));
-<a href=#393 id=393 data-nosnippet>393</a>    StakeTableState {
-<a href=#394 id=394 data-nosnippet>394</a>        bls_key_comm: VariableLengthRescueCRHF::&lt;CircuitField, <span class="number">1</span>&gt;::evaluate(bls_preimage).unwrap()
-<a href=#395 id=395 data-nosnippet>395</a>            [<span class="number">0</span>],
-<a href=#396 id=396 data-nosnippet>396</a>        schnorr_key_comm: VariableLengthRescueCRHF::&lt;CircuitField, <span class="number">1</span>&gt;::evaluate(schnorr_preimage)
-<a href=#397 id=397 data-nosnippet>397</a>            .unwrap()[<span class="number">0</span>],
-<a href=#398 id=398 data-nosnippet>398</a>        amount_comm: VariableLengthRescueCRHF::&lt;CircuitField, <span class="number">1</span>&gt;::evaluate(amount_preimage)
-<a href=#399 id=399 data-nosnippet>399</a>            .unwrap()[<span class="number">0</span>],
-<a href=#400 id=400 data-nosnippet>400</a>        threshold,
-<a href=#401 id=401 data-nosnippet>401</a>    }
-<a href=#402 id=402 data-nosnippet>402</a>}</code></pre></div></section></main></body></html>
+<a href=#372 id=372 data-nosnippet>372</a>) -&gt; <span class="prelude-ty">Result</span>&lt;StakeTableState, anyhow::Error&gt; {
+<a href=#373 id=373 data-nosnippet>373</a>    <span class="kw">if </span>stake_table_capacity &lt; known_nodes_with_stakes.len() {
+<a href=#374 id=374 data-nosnippet>374</a>        <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(
+<a href=#375 id=375 data-nosnippet>375</a>            <span class="string">"Stake table over capacity: {} &lt; {}"</span>,
+<a href=#376 id=376 data-nosnippet>376</a>            stake_table_capacity,
+<a href=#377 id=377 data-nosnippet>377</a>            known_nodes_with_stakes.len(),
+<a href=#378 id=378 data-nosnippet>378</a>        ));
+<a href=#379 id=379 data-nosnippet>379</a>    }
+<a href=#380 id=380 data-nosnippet>380</a>    <span class="kw">let </span>padding_len = stake_table_capacity - known_nodes_with_stakes.len();
+<a href=#381 id=381 data-nosnippet>381</a>    <span class="kw">let </span><span class="kw-2">mut </span>bls_preimage = <span class="macro">vec!</span>[];
+<a href=#382 id=382 data-nosnippet>382</a>    <span class="kw">let </span><span class="kw-2">mut </span>schnorr_preimage = <span class="macro">vec!</span>[];
+<a href=#383 id=383 data-nosnippet>383</a>    <span class="kw">let </span><span class="kw-2">mut </span>amount_preimage = <span class="macro">vec!</span>[];
+<a href=#384 id=384 data-nosnippet>384</a>    <span class="kw">let </span><span class="kw-2">mut </span>total_stake = U256::from(<span class="number">0</span>);
+<a href=#385 id=385 data-nosnippet>385</a>    <span class="kw">for </span>peer <span class="kw">in </span>known_nodes_with_stakes {
+<a href=#386 id=386 data-nosnippet>386</a>        bls_preimage.extend(peer.stake_table_entry.public_key().to_fields());
+<a href=#387 id=387 data-nosnippet>387</a>        schnorr_preimage.extend(peer.state_ver_key.to_fields());
+<a href=#388 id=388 data-nosnippet>388</a>        amount_preimage.push(u256_to_field(peer.stake_table_entry.stake()));
+<a href=#389 id=389 data-nosnippet>389</a>        total_stake += peer.stake_table_entry.stake();
+<a href=#390 id=390 data-nosnippet>390</a>    }
+<a href=#391 id=391 data-nosnippet>391</a>    bls_preimage.resize(
+<a href=#392 id=392 data-nosnippet>392</a>        &lt;TYPES::SignatureKey <span class="kw">as </span>ToFieldsLightClientCompat&gt;::SIZE * stake_table_capacity,
+<a href=#393 id=393 data-nosnippet>393</a>        CircuitField::default(),
+<a href=#394 id=394 data-nosnippet>394</a>    );
+<a href=#395 id=395 data-nosnippet>395</a>    <span class="comment">// Nasty tech debt
+<a href=#396 id=396 data-nosnippet>396</a>    </span>schnorr_preimage
+<a href=#397 id=397 data-nosnippet>397</a>        .extend(iter::repeat_n(SchnorrPubKey::default().to_fields(), padding_len).flatten());
+<a href=#398 id=398 data-nosnippet>398</a>    amount_preimage.resize(stake_table_capacity, CircuitField::default());
+<a href=#399 id=399 data-nosnippet>399</a>    <span class="kw">let </span>threshold = u256_to_field(one_honest_threshold(total_stake));
+<a href=#400 id=400 data-nosnippet>400</a>    <span class="prelude-val">Ok</span>(StakeTableState {
+<a href=#401 id=401 data-nosnippet>401</a>        bls_key_comm: VariableLengthRescueCRHF::&lt;CircuitField, <span class="number">1</span>&gt;::evaluate(bls_preimage).unwrap()
+<a href=#402 id=402 data-nosnippet>402</a>            [<span class="number">0</span>],
+<a href=#403 id=403 data-nosnippet>403</a>        schnorr_key_comm: VariableLengthRescueCRHF::&lt;CircuitField, <span class="number">1</span>&gt;::evaluate(schnorr_preimage)
+<a href=#404 id=404 data-nosnippet>404</a>            .unwrap()[<span class="number">0</span>],
+<a href=#405 id=405 data-nosnippet>405</a>        amount_comm: VariableLengthRescueCRHF::&lt;CircuitField, <span class="number">1</span>&gt;::evaluate(amount_preimage)
+<a href=#406 id=406 data-nosnippet>406</a>            .unwrap()[<span class="number">0</span>],
+<a href=#407 id=407 data-nosnippet>407</a>        threshold,
+<a href=#408 id=408 data-nosnippet>408</a>    })
+<a href=#409 id=409 data-nosnippet>409</a>}</code></pre></div></section></main></body></html>
