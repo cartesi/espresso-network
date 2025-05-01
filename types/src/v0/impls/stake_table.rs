@@ -713,6 +713,7 @@ impl StakeTableFetcher {
         // update chain config
         *self.chain_config.lock().await = chain_config;
 
+        tracing::warn!("fetched chain config {chain_config:?}");
         let Some(address) = chain_config.stake_table_contract else {
             tracing::error!("No stake table contract address found in Chain config");
             return None;
@@ -1213,6 +1214,7 @@ impl Membership<SeqTypes> for EpochCommittees {
         epoch: Epoch,
         block_header: Header,
     ) -> Option<Box<dyn FnOnce(&mut Self) + Send>> {
+        tracing::warn!("epoch={epoch:?} header={block_header:?}");
         if self.state.contains_key(&epoch) {
             tracing::info!(
                 "We already have a the stake table for epoch {}. Skipping L1 fetching.",

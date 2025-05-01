@@ -269,7 +269,7 @@ impl<ApiVer: StaticVersionType> StateCatchup for StatePeers<ApiVer> {
                 .body_binary(&accounts.to_vec())?
                 .send()
                 .await;
-            warn!("Fetched accounts with statepeers: {:?}", snapshot);
+            warn!("Fetched accounts with statepeers:");
 
             let snapshot = snapshot?;
 
@@ -370,7 +370,7 @@ impl<ApiVer: StaticVersionType> StateCatchup for StatePeers<ApiVer> {
                 .body_binary(&accounts.to_vec())?
                 .send()
                 .await?;
-            warn!("Fetched reward accounts from statepeers: {:?}", snapshot);
+            warn!("Fetched reward accounts from statepeers:");
             // Verify proofs.
             for account in accounts {
                 let (proof, _) = RewardAccountProof::prove(&snapshot, (*account).into())
