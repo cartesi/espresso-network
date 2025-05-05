@@ -474,7 +474,7 @@
 <a href=#474 id=474 data-nosnippet>474</a>    }
 <a href=#475 id=475 data-nosnippet>475</a>
 <a href=#476 id=476 data-nosnippet>476</a>    <span class="comment">// Create the list of parallel catchup providers
-<a href=#477 id=477 data-nosnippet>477</a>    </span><span class="kw">let </span>state_catchup_providers = ParallelStateCatchup::new(<span class="kw-2">&amp;</span>[], Duration::from_secs(<span class="number">1</span>));
+<a href=#477 id=477 data-nosnippet>477</a>    </span><span class="kw">let </span>state_catchup_providers = ParallelStateCatchup::new(<span class="kw-2">&amp;</span>[]);
 <a href=#478 id=478 data-nosnippet>478</a>
 <a href=#479 id=479 data-nosnippet>479</a>    <span class="comment">// Add the state peers to the list
 <a href=#480 id=480 data-nosnippet>480</a>    </span><span class="kw">let </span>state_peers = StatePeers::&lt;SequencerApiVersion&gt;::from_urls(
@@ -1162,7 +1162,7 @@
 <a href=#1162 id=1162 data-nosnippet>1162</a>            <span class="kw">let </span>chain_config = state.chain_config.resolve().unwrap_or_default();
 <a href=#1163 id=1163 data-nosnippet>1163</a>
 <a href=#1164 id=1164 data-nosnippet>1164</a>            <span class="comment">// Create an empty list of catchup providers
-<a href=#1165 id=1165 data-nosnippet>1165</a>            </span><span class="kw">let </span>catchup_providers = ParallelStateCatchup::new(<span class="kw-2">&amp;</span>[], Duration::from_millis(<span class="number">500</span>));
+<a href=#1165 id=1165 data-nosnippet>1165</a>            </span><span class="kw">let </span>catchup_providers = ParallelStateCatchup::new(<span class="kw-2">&amp;</span>[]);
 <a href=#1166 id=1166 data-nosnippet>1166</a>
 <a href=#1167 id=1167 data-nosnippet>1167</a>            <span class="comment">// If we have the state peers, add them
 <a href=#1168 id=1168 data-nosnippet>1168</a>            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(state_peers) = state_peers {
