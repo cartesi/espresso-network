@@ -31,7 +31,7 @@ jobs:
           - test-ci-6-6
           - test-ci-rest
       fail-fast: false
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: ubuntu-24.04-8core
     steps:
       - uses: actions/checkout@v4
         name: Checkout Repository
