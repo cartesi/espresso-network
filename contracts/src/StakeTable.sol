@@ -8,7 +8,7 @@ import { UUPSUpgradeable } from
     "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BN254 } from "bn254/BN254.sol";
 import { BLSSig } from "./libraries/BLSSig.sol";
-import { LightClient } from "../src/LightClient.sol";
+import { LightClientV2 as LightClient } from "../src/LightClientV2.sol";
 import { EdOnBN254 } from "./libraries/EdOnBn254.sol";
 import { InitializedAt } from "./InitializedAt.sol";
 
@@ -140,6 +140,12 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     /// Contract dependencies initialized with zero address.
     error ZeroAddress();
 
+    /// An undelegation already exists for this validator and delegator.
+    error UndelegationAlreadyExists();
+
+    /// A zero amount would lead to a no-op.
+    error ZeroAmount();
+
     // === Structs ===
 
     /// @notice Delegation info and status of a Validator.
@@ -157,7 +163,8 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     /// registered. Upon registration the status will become `Active` and if the validator
     /// deregisters its status becomes `Exited`.
     ///
-    /// @notice Validators become "Active" in this contract upon successfully sending the transaction
+    /// @notice Validators become "Active" in this contract upon successfully sending the
+    /// transaction
     /// to register. This does not mean they will necessarily be part of the active stake table in
     /// the GCL. To be part of the active validator set in the GCL stake table their registration
     /// data needs to be correct and delegators must delegate funds to them.
@@ -206,12 +213,12 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
     mapping(address validator => uint256 unlocksAt) public validatorExits;
 
     /// Currently active delegation amounts.
-    mapping(address validator => mapping(address delegator => uint256 amount)) delegations;
+    mapping(address validator => mapping(address delegator => uint256 amount)) public delegations;
 
     /// Delegations held in escrow that are to be unlocked at a later time.
     //
     // @dev these are stored indexed by validator so we can keep track of them for slashing later
-    mapping(address validator => mapping(address delegator => Undelegation)) undelegations;
+    mapping(address validator => mapping(address delegator => Undelegation)) public undelegations;
 
     /// The time the contract will hold funds after undelegations are requested.
     ///
@@ -380,7 +387,9 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         ensureValidatorActive(validator);
         address delegator = msg.sender;
 
-        // TODO: revert if amount is zero
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
 
         uint256 allowance = token.allowance(delegator, address(this));
         if (allowance < amount) {
@@ -404,9 +413,18 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         ensureValidatorActive(validator);
         address delegator = msg.sender;
 
-        // TODO: revert if amount is zero
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
 
-        // For non-existent validator or delegator balance will be the default value, zero.
+        if (validators[delegator].status == ValidatorStatus.Exited) {
+            revert ValidatorAlreadyExited();
+        }
+
+        if (undelegations[validator][delegator].amount != 0) {
+            revert UndelegationAlreadyExists();
+        }
+
         uint256 balance = delegations[validator][delegator];
         if (balance < amount) {
             revert InsufficientBalance(balance);
@@ -415,6 +433,7 @@ contract StakeTable is Initializable, InitializedAt, OwnableUpgradeable, UUPSUpg
         delegations[validator][delegator] -= amount;
         undelegations[validator][delegator] =
             Undelegation({ amount: amount, unlocksAt: block.timestamp + exitEscrowPeriod });
+        validators[validator].delegatedAmount -= amount;
 
         emit Undelegated(delegator, validator, amount);
     }
