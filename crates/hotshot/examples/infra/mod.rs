@@ -387,6 +387,7 @@ pub trait RunDa<
             fallback_builder_url: config.config.builder_urls.first().clone(),
         };
         let epoch_height = config.config.epoch_height;
+        let storage = TestStorage::<TYPES>::default();
 
         SystemContext::init(
             pk,
@@ -394,11 +395,11 @@ pub trait RunDa<
             state_sk,
             config.node_index,
             config.config,
-            EpochMembershipCoordinator::new(membership, epoch_height),
+            EpochMembershipCoordinator::new(membership, epoch_height, &storage.clone()),
             Arc::from(network),
             initializer,
             ConsensusMetricsValue::default(),
-            TestStorage::<TYPES>::default(),
+            storage,
             marketplace_config,
         )
         .await

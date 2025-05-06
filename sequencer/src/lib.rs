@@ -515,8 +515,11 @@ pub async fn init_node<P: SequencerPersistence + MembershipPersistence, V: Versi
     membership.reload_stake(RECENT_STAKE_TABLES_LIMIT).await;
 
     let membership: Arc<RwLock<EpochCommittees>> = Arc::new(RwLock::new(membership));
-    let coordinator =
-        EpochMembershipCoordinator::new(membership, network_config.config.epoch_height);
+    let coordinator = EpochMembershipCoordinator::new(
+        membership,
+        network_config.config.epoch_height,
+        &Arc::new(persistence.clone()),
+    );
 
     let instance_state = NodeState {
         chain_config: genesis.chain_config,
@@ -1213,7 +1216,9 @@ pub mod testing {
 
             let membership = Arc::new(RwLock::new(membership));
 
-            let coordinator = EpochMembershipCoordinator::new(membership, 100);
+            let persistence = persistence_opt.create().await.unwrap();
+            let coordinator =
+                EpochMembershipCoordinator::new(membership, 100, &Arc::new(persistence.clone()));
 
             let node_state = NodeState::new(
                 i as u64,
@@ -1235,7 +1240,6 @@ pub mod testing {
                 "starting node",
             );
 
-            let persistence = persistence_opt.create().await.unwrap();
             SequencerContext::init(
                 NetworkConfig {
                     config,

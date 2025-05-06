@@ -13,10 +13,11 @@ use hotshot_utils::{
 
 use crate::{
     data::Leaf2,
-    drb::{compute_drb_result, DrbResult},
+    drb::{compute_drb_result, DrbInput, DrbResult},
     traits::{
         election::Membership,
         node_implementation::{ConsensusTime, NodeType},
+        storage::{store_drb_progress_fn, Storage, StoreDrbProgressFn},
     },
     utils::{root_block_in_epoch, transition_block_for_epoch},
     PeerConfig,
@@ -38,6 +39,8 @@ pub struct EpochMembershipCoordinator<TYPES: NodeType> {
 
     /// Number of blocks in an epoch
     pub epoch_height: u64,
+
+    store_drb_progress_fn: StoreDrbProgressFn,
 }
 
 impl<TYPES: NodeType> Clone for EpochMembershipCoordinator<TYPES> {
@@ -46,23 +49,26 @@ impl<TYPES: NodeType> Clone for EpochMembershipCoordinator<TYPES> {
             membership: Arc::clone(&self.membership),
             catchup_map: Arc::clone(&self.catchup_map),
             epoch_height: self.epoch_height,
+            store_drb_progress_fn: Arc::clone(&self.store_drb_progress_fn),
         }
     }
 }
-// async fn catchup_membership(coordinator: EpochMembershipCoordinator<TYPES>) {
-
-// }
 
 impl<TYPES: NodeType> EpochMembershipCoordinator<TYPES>
 where
     Self: Send,
 {
     /// Create an EpochMembershipCoordinator
-    pub fn new(membership: Arc<RwLock<TYPES::Membership>>, epoch_height: u64) -> Self {
+    pub fn new<S: Storage<TYPES>>(
+        membership: Arc<RwLock<TYPES::Membership>>,
+        epoch_height: u64,
+        storage: &S,
+    ) -> Self {
         Self {
             membership,
             catchup_map: Arc::default(),
             epoch_height,
+            store_drb_progress_fn: store_drb_progress_fn(storage.clone()),
         }
     }
 
@@ -206,9 +212,17 @@ where
             let mut drb_seed_input = [0u8; 32];
             let len = drb_seed_input_vec.len().min(32);
             drb_seed_input[..len].copy_from_slice(&drb_seed_input_vec[..len]);
-            tokio::task::spawn_blocking(move || compute_drb_result::<TYPES>(drb_seed_input))
-                .await
-                .unwrap()
+            let drb_input = DrbInput {
+                epoch: *epoch,
+                iteration: 0,
+                initial: drb_seed_input,
+            };
+            let store_drb_progress_fn = self.store_drb_progress_fn.clone();
+            tokio::task::spawn_blocking(move || {
+                compute_drb_result::<TYPES>(drb_input, store_drb_progress_fn)
+            })
+            .await
+            .unwrap()
         };
 
         self.membership.write().await.add_drb_result(epoch, drb);

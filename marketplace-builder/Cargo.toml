@@ -20,6 +20,7 @@ committable = { workspace = true }
 espresso-types = { path = "../types", features = ["testing"] }
 futures = { workspace = true }
 hotshot = { workspace = true }
+hotshot-example-types = { workspace = true }
 hotshot-builder-api = { workspace = true }
 hotshot-events-service = { workspace = true }
 hotshot-orchestrator = { workspace = true }

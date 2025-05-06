@@ -15,6 +15,7 @@ use hotshot_builder_core::{
         ReceivedTransaction,
     },
 };
+use hotshot_example_types::storage_types::TestStorage;
 use hotshot_types::{
     data::{fake_commitment, vid_commitment, ViewNumber},
     epoch_membership::EpochMembershipCoordinator,
@@ -60,6 +61,7 @@ pub fn build_instance_state<V: Versions>(
         l1_client.clone(),
         chain_config,
     );
+    let storage = TestStorage::default();
     let coordinator = EpochMembershipCoordinator::new(
         Arc::new(RwLock::new(EpochCommittees::new_stake(
             vec![],
@@ -67,6 +69,7 @@ pub fn build_instance_state<V: Versions>(
             fetcher,
         ))),
         100,
+        &storage,
     );
 
     NodeState::new(

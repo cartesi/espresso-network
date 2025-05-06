@@ -21,6 +21,7 @@ committable = { workspace = true }
 espresso-types = { path = "../types" }
 futures = { workspace = true }
 hotshot = { workspace = true }
+hotshot-example-types = { workspace = true }
 hotshot-builder-api = { workspace = true }
 hotshot-builder-core = { workspace = true }
 hotshot-events-service = { workspace = true }

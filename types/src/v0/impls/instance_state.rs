@@ -5,6 +5,7 @@ use alloy::primitives::Address;
 use async_lock::RwLock;
 use async_trait::async_trait;
 use hotshot::types::BLSPubKey;
+use hotshot_example_types::storage_types::TestStorage;
 use hotshot_types::{
     data::EpochNumber, epoch_membership::EpochMembershipCoordinator, traits::states::InstanceState,
     HotShotConfig,
@@ -141,7 +142,8 @@ impl NodeState {
             StakeTableFetcher::mock(),
         )));
 
-        let coordinator = EpochMembershipCoordinator::new(membership, 100);
+        let storage = TestStorage::default();
+        let coordinator = EpochMembershipCoordinator::new(membership, 100, &storage);
         Self::new(
             0,
             chain_config,
@@ -167,7 +169,8 @@ impl NodeState {
             vec![],
             StakeTableFetcher::mock(),
         )));
-        let coordinator = EpochMembershipCoordinator::new(membership, 100);
+        let storage = TestStorage::default();
+        let coordinator = EpochMembershipCoordinator::new(membership, 100, &storage);
 
         Self::new(
             0,
@@ -193,7 +196,8 @@ impl NodeState {
             StakeTableFetcher::mock(),
         )));
 
-        let coordinator = EpochMembershipCoordinator::new(membership, 100);
+        let storage = TestStorage::default();
+        let coordinator = EpochMembershipCoordinator::new(membership, 100, &storage);
         Self::new(
             0,
             ChainConfig::default(),
@@ -218,7 +222,8 @@ impl NodeState {
             vec![],
             StakeTableFetcher::mock(),
         )));
-        let coordinator = EpochMembershipCoordinator::new(membership, 100);
+        let storage = TestStorage::default();
+        let coordinator = EpochMembershipCoordinator::new(membership, 100, &storage);
 
         Self::new(
             0,
@@ -297,7 +302,8 @@ impl Default for NodeState {
             vec![],
             StakeTableFetcher::mock(),
         )));
-        let coordinator = EpochMembershipCoordinator::new(membership, 100);
+        let storage = TestStorage::default();
+        let coordinator = EpochMembershipCoordinator::new(membership, 100, &storage);
 
         Self::new(
             1u64,
