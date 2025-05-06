@@ -1036,7 +1036,7 @@
 <a href=#1036 id=1036 data-nosnippet>1036</a>    function deregisterValidator() external;
 <a href=#1037 id=1037 data-nosnippet>1037</a>    function exitEscrowPeriod() external view returns (uint256);
 <a href=#1038 id=1038 data-nosnippet>1038</a>    function getVersion() external pure returns (uint8 majorVersion, uint8 minorVersion, uint8 patchVersion);
-<a href=#1039 id=1039 data-nosnippet>1039</a>    function initialize(address _tokenAddress, address _lightClientAddress, uint256 _exitEscrowPeriod, address _initialOwner) external;
+<a href=#1039 id=1039 data-nosnippet>1039</a>    function initialize(address _tokenAddress, address _lightClientAddress, uint256 _exitEscrowPeriod, address _timelock) external;
 <a href=#1040 id=1040 data-nosnippet>1040</a>    function initializedAtBlock() external view returns (uint256);
 <a href=#1041 id=1041 data-nosnippet>1041</a>    function lightClient() external view returns (address);
 <a href=#1042 id=1042 data-nosnippet>1042</a>    function owner() external view returns (address);
@@ -1266,7 +1266,7 @@
 <a href=#1266 id=1266 data-nosnippet>1266</a>        "internalType": "uint256"
 <a href=#1267 id=1267 data-nosnippet>1267</a>      },
 <a href=#1268 id=1268 data-nosnippet>1268</a>      {
-<a href=#1269 id=1269 data-nosnippet>1269</a>        "name": "_initialOwner",
+<a href=#1269 id=1269 data-nosnippet>1269</a>        "name": "_timelock",
 <a href=#1270 id=1270 data-nosnippet>1270</a>        "type": "address",
 <a href=#1271 id=1271 data-nosnippet>1271</a>        "internalType": "address"
 <a href=#1272 id=1272 data-nosnippet>1272</a>      }
@@ -6154,7 +6154,7 @@
 <a href=#6154 id=6154 data-nosnippet>6154</a>    <span class="attr">#[derive(Default, Debug, PartialEq, Eq, Hash)]
 <a href=#6155 id=6155 data-nosnippet>6155</a>    </span><span class="doccomment">/**Function with signature `initialize(address,address,uint256,address)` and selector `0xbe203094`.
 <a href=#6156 id=6156 data-nosnippet>6156</a>    ```solidity
-<a href=#6157 id=6157 data-nosnippet>6157</a>    function initialize(address _tokenAddress, address _lightClientAddress, uint256 _exitEscrowPeriod, address _initialOwner) external;
+<a href=#6157 id=6157 data-nosnippet>6157</a>    function initialize(address _tokenAddress, address _lightClientAddress, uint256 _exitEscrowPeriod, address _timelock) external;
 <a href=#6158 id=6158 data-nosnippet>6158</a>    ```*/
 <a href=#6159 id=6159 data-nosnippet>6159</a>    </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
 <a href=#6160 id=6160 data-nosnippet>6160</a>    #[derive(Clone)]
@@ -6166,7 +6166,7 @@
 <a href=#6166 id=6166 data-nosnippet>6166</a>        <span class="attr">#[allow(missing_docs)]
 <a href=#6167 id=6167 data-nosnippet>6167</a>        </span><span class="kw">pub </span>_exitEscrowPeriod: alloy::sol_types::private::primitives::aliases::U256,
 <a href=#6168 id=6168 data-nosnippet>6168</a>        <span class="attr">#[allow(missing_docs)]
-<a href=#6169 id=6169 data-nosnippet>6169</a>        </span><span class="kw">pub </span>_initialOwner: alloy::sol_types::private::Address,
+<a href=#6169 id=6169 data-nosnippet>6169</a>        </span><span class="kw">pub </span>_timelock: alloy::sol_types::private::Address,
 <a href=#6170 id=6170 data-nosnippet>6170</a>    }
 <a href=#6171 id=6171 data-nosnippet>6171</a>    <span class="doccomment">///Container type for the return parameters of the [`initialize(address,address,uint256,address)`](initializeCall) function.
 <a href=#6172 id=6172 data-nosnippet>6172</a>    </span><span class="attr">#[allow(non_camel_case_types, non_snake_case, clippy::pub_underscore_fields)]
@@ -6212,7 +6212,7 @@
 <a href=#6212 id=6212 data-nosnippet>6212</a>                        value._tokenAddress,
 <a href=#6213 id=6213 data-nosnippet>6213</a>                        value._lightClientAddress,
 <a href=#6214 id=6214 data-nosnippet>6214</a>                        value._exitEscrowPeriod,
-<a href=#6215 id=6215 data-nosnippet>6215</a>                        value._initialOwner,
+<a href=#6215 id=6215 data-nosnippet>6215</a>                        value._timelock,
 <a href=#6216 id=6216 data-nosnippet>6216</a>                    )
 <a href=#6217 id=6217 data-nosnippet>6217</a>                }
 <a href=#6218 id=6218 data-nosnippet>6218</a>            }
@@ -6224,7 +6224,7 @@
 <a href=#6224 id=6224 data-nosnippet>6224</a>                        _tokenAddress: tuple.<span class="number">0</span>,
 <a href=#6225 id=6225 data-nosnippet>6225</a>                        _lightClientAddress: tuple.<span class="number">1</span>,
 <a href=#6226 id=6226 data-nosnippet>6226</a>                        _exitEscrowPeriod: tuple.<span class="number">2</span>,
-<a href=#6227 id=6227 data-nosnippet>6227</a>                        _initialOwner: tuple.<span class="number">3</span>,
+<a href=#6227 id=6227 data-nosnippet>6227</a>                        _timelock: tuple.<span class="number">3</span>,
 <a href=#6228 id=6228 data-nosnippet>6228</a>                    }
 <a href=#6229 id=6229 data-nosnippet>6229</a>                }
 <a href=#6230 id=6230 data-nosnippet>6230</a>            }
@@ -6291,7 +6291,7 @@
 <a href=#6291 id=6291 data-nosnippet>6291</a>                        <span class="kw-2">&amp;</span><span class="self">self</span>._exitEscrowPeriod,
 <a href=#6292 id=6292 data-nosnippet>6292</a>                    ),
 <a href=#6293 id=6293 data-nosnippet>6293</a>                    &lt;alloy::sol_types::sol_data::Address <span class="kw">as </span>alloy_sol_types::SolType&gt;::tokenize(
-<a href=#6294 id=6294 data-nosnippet>6294</a>                        <span class="kw-2">&amp;</span><span class="self">self</span>._initialOwner,
+<a href=#6294 id=6294 data-nosnippet>6294</a>                        <span class="kw-2">&amp;</span><span class="self">self</span>._timelock,
 <a href=#6295 id=6295 data-nosnippet>6295</a>                    ),
 <a href=#6296 id=6296 data-nosnippet>6296</a>                )
 <a href=#6297 id=6297 data-nosnippet>6297</a>            }
@@ -9822,13 +9822,13 @@
 <a href=#9822 id=9822 data-nosnippet>9822</a>            _tokenAddress: alloy::sol_types::private::Address,
 <a href=#9823 id=9823 data-nosnippet>9823</a>            _lightClientAddress: alloy::sol_types::private::Address,
 <a href=#9824 id=9824 data-nosnippet>9824</a>            _exitEscrowPeriod: alloy::sol_types::private::primitives::aliases::U256,
-<a href=#9825 id=9825 data-nosnippet>9825</a>            _initialOwner: alloy::sol_types::private::Address,
+<a href=#9825 id=9825 data-nosnippet>9825</a>            _timelock: alloy::sol_types::private::Address,
 <a href=#9826 id=9826 data-nosnippet>9826</a>        ) -&gt; alloy_contract::SolCallBuilder&lt;T, <span class="kw-2">&amp;</span>P, initializeCall, N&gt; {
 <a href=#9827 id=9827 data-nosnippet>9827</a>            <span class="self">self</span>.call_builder(<span class="kw-2">&amp;</span>initializeCall {
 <a href=#9828 id=9828 data-nosnippet>9828</a>                _tokenAddress,
 <a href=#9829 id=9829 data-nosnippet>9829</a>                _lightClientAddress,
 <a href=#9830 id=9830 data-nosnippet>9830</a>                _exitEscrowPeriod,
-<a href=#9831 id=9831 data-nosnippet>9831</a>                _initialOwner,
+<a href=#9831 id=9831 data-nosnippet>9831</a>                _timelock,
 <a href=#9832 id=9832 data-nosnippet>9832</a>            })
 <a href=#9833 id=9833 data-nosnippet>9833</a>        }
 <a href=#9834 id=9834 data-nosnippet>9834</a>        <span class="doccomment">///Creates a new call builder for the [`initializedAtBlock`] function.
