@@ -7,11 +7,11 @@
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>alloy::primitives::U256;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>async_lock::RwLock;
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>clap::Args;
-<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>espresso_types::{config::PublicNetworkConfig, SeqTypes};
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>futures::FutureExt;
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>hotshot_state_prover::service::{
-<a href=#13 id=13 data-nosnippet>13</a>    fetch_epoch_config_from_sequencer, fetch_stake_table_from_sequencer,
-<a href=#14 id=14 data-nosnippet>14</a>};
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>espresso_contract_deployer::network_config::{
+<a href=#11 id=11 data-nosnippet>11</a>    fetch_epoch_config_from_sequencer, fetch_stake_table_from_sequencer,
+<a href=#12 id=12 data-nosnippet>12</a>};
+<a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>espresso_types::{config::PublicNetworkConfig, SeqTypes};
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span>futures::FutureExt;
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>hotshot_types::{
 <a href=#16 id=16 data-nosnippet>16</a>    light_client::{one_honest_threshold, StateSignaturesBundle, StateVerKey},
 <a href=#17 id=17 data-nosnippet>17</a>    traits::signature_key::{StakeTableEntryType, StateSignatureKey},
