@@ -37,30 +37,40 @@ pub(crate) async fn compute_state_update(
 
     // Check internal consistency.
     let parent_header = parent_leaf.block_header();
+    let parent_height = parent_leaf.height();
+    let proposed_height = proposed_leaf.height();
     ensure!(
         state.chain_config.commit() == parent_header.chain_config().commit(),
-        "internal error! in-memory chain config {:?} does not match parent header {:?}",
+        "internal error! in-memory chain config {:?} does not match parent header {:?}. parent height={:?}, proposed height={:?}",
         state.chain_config,
         parent_header.chain_config(),
+        parent_height,
+        proposed_height,
     );
     ensure!(
         state.block_merkle_tree.commitment() == parent_header.block_merkle_tree_root(),
-        "internal error! in-memory block tree {:?} does not match parent header {:?}",
+        "internal error! in-memory block tree {:?} does not match parent header {:?}. parent height={:?}, proposed height={:?}",
         state.block_merkle_tree.commitment(),
-        parent_header.block_merkle_tree_root()
+        parent_header.block_merkle_tree_root(),
+        parent_height,
+        proposed_height,
     );
     ensure!(
         state.fee_merkle_tree.commitment() == parent_header.fee_merkle_tree_root(),
-        "internal error! in-memory fee tree {:?} does not match parent header {:?}",
+        "internal error! in-memory fee tree {:?} does not match parent header {:?}. parent height={:?}, proposed height={:?}",
         state.fee_merkle_tree.commitment(),
-        parent_header.fee_merkle_tree_root()
+        parent_header.fee_merkle_tree_root(),
+        parent_height,
+        proposed_height,
     );
 
     ensure!(
         state.reward_merkle_tree.commitment() == parent_header.reward_merkle_tree_root(),
-        "internal error! in-memory reward tree {:?} does not match parent header {:?}",
+        "internal error! in-memory reward tree {:?} does not match parent header {:?}. parent height={:?}, proposed height={:?}",
         state.reward_merkle_tree.commitment(),
-        parent_header.reward_merkle_tree_root()
+        parent_header.reward_merkle_tree_root(),
+        parent_height,
+        proposed_height,
     );
 
     state
@@ -303,9 +313,16 @@ where
         let leaves = storage.subscribe_leaves(height + 1).await;
         (last_height, parent_leaf, leaves)
     };
+
     // resolve the parent leaf future _after_ dropping our lock on the state, in case it is not
     // ready yet and another task needs a mutable lock on the state to produce the parent leaf.
     let mut parent_leaf = parent_leaf.await;
+
+    tracing::warn!(
+        "Building merklzed state. parent_header={:?}",
+        parent_leaf.header()
+    );
+
     let mut parent_state = ValidatedState::from_header(parent_leaf.header());
 
     if last_height == 0 {
