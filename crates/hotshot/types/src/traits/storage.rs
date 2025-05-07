@@ -170,11 +170,13 @@ pub type StoreDrbProgressFn =
 
 pub fn store_drb_progress_fn<TYPES: NodeType>(
     storage: impl Storage<TYPES> + 'static,
-) -> StoreDrbProgressFn
-//   impl Fn(u64, u64, DrbResult) -> BoxFuture<'a, ()> + Send + Sync + 'a
-{
+) -> StoreDrbProgressFn {
     Arc::new(move |epoch, iteration, value| {
         let storage = storage.clone();
         Box::pin(store_drb_input_impl(storage, epoch, iteration, value))
     })
+}
+
+pub fn null_store_drb_progress_fn() -> StoreDrbProgressFn {
+    Arc::new(move |_epoch, _iteration, _value| Box::pin(async {}))
 }

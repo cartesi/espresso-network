@@ -219,7 +219,7 @@ where
             };
             let store_drb_progress_fn = self.store_drb_progress_fn.clone();
             tokio::task::spawn_blocking(move || {
-                compute_drb_result::<TYPES>(drb_input, store_drb_progress_fn)
+                compute_drb_result(drb_input, store_drb_progress_fn)
             })
             .await
             .unwrap()

@@ -33,10 +33,10 @@ pub struct DrbInput {
 // the hash time.
 // <https://github.com/EspressoSystems/HotShot/issues/3880>
 /// Arbitrary number of times the hash function will be repeatedly called.
-const DIFFICULTY_LEVEL: u64 = 10;
+pub const DIFFICULTY_LEVEL: u64 = 10;
 
 /// Interval at which to store the results
-pub const DRB_CHECKPOINT_INTERVAL: u64 = 5;
+pub const DRB_CHECKPOINT_INTERVAL: u64 = 3;
 
 /// DRB seed input for epoch 1 and 2.
 pub const INITIAL_DRB_SEED_INPUT: [u8; 32] = [0; 32];
@@ -70,7 +70,7 @@ pub fn difficulty_level() -> u64 {
 /// # Arguments
 /// * `drb_seed_input` - Serialized QC signature.
 #[must_use]
-pub fn compute_drb_result<TYPES: NodeType>(
+pub fn compute_drb_result(
     drb_input: DrbInput,
     store_drb_progress: StoreDrbProgressFn,
 ) -> DrbResult {

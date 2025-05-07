@@ -187,7 +187,7 @@ fn start_drb_task<TYPES: NodeType, I: NodeImplementation<TYPES>>(
     };
     tokio::spawn(async move {
         let drb_result = tokio::task::spawn_blocking(move || {
-            hotshot_types::drb::compute_drb_result::<TYPES>(drb_input, store_drb_progress_fn)
+            hotshot_types::drb::compute_drb_result(drb_input, store_drb_progress_fn)
         })
         .await
         .unwrap();
