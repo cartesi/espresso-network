@@ -113,12 +113,6 @@ pub fn compute_drb_result<TYPES: NodeType>(
         iteration += 1;
     }
 
-    for _ in 0..DRB_CHECKPOINT_INTERVAL {
-        // TODO: This may be optimized to avoid memcopies after we bench the hash time.
-        // <https://github.com/EspressoSystems/HotShot/issues/3880>
-        hash = Sha256::digest(hash).to_vec();
-    }
-
     // Convert the hash to the DRB result.
     let mut drb_result = [0u8; 32];
     drb_result.copy_from_slice(&hash);
