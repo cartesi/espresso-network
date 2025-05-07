@@ -26,3 +26,26 @@ async fn test_compute_drb_result() {
 
     assert_eq!(expected_result, actual_result);
 }
+
+#[cfg(test)]
+#[tokio::test(flavor = "multi_thread")]
+async fn test_compute_drb_result_2() {
+    let drb_input = DrbInput {
+        epoch: 0,
+        iteration: 2,
+        initial: [0u8; 32],
+    };
+
+    let mut expected_result = [0u8; 32];
+    {
+    let mut hash = drb_input.initial.to_vec().clone();
+        for _ in 2..DIFFICULTY_LEVEL {
+            hash = Sha256::digest(hash).to_vec();
+        }
+    expected_result.copy_from_slice(&hash);
+    }
+
+    let actual_result = compute_drb_result(drb_input, null_store_drb_progress_fn());
+
+    assert_eq!(expected_result, actual_result);
+}
