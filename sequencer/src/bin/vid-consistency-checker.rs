@@ -61,8 +61,9 @@ async fn main() {
                 continue;
             },
         };
+        let payload_hash = vid_common.payload_hash();
         let payload: PayloadQueryData<SeqTypes> = match client
-            .get(&format!("availability/payload/{block}"))
+            .get(&format!("availability/payload/hash/{payload_hash}"))
             .send()
             .await
         {
@@ -72,7 +73,7 @@ async fn main() {
                 continue;
             },
         };
-        match (vid_common.common(), payload.hash()) {
+        match (vid_common.common(), payload_hash) {
             (VidCommon::V0(common), VidCommitment::V0(payload_hash)) => {
                 let mut vid = advz_scheme(ADVZScheme::get_num_storage_nodes(common) as usize);
                 let expected_commit = match vid.commit_only(payload.data().encode()) {
