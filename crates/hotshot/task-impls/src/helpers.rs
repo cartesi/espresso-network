@@ -125,7 +125,7 @@ pub(crate) async fn fetch_proposal<TYPES: NodeType, V: Versions>(
 
     justify_qc
         .is_valid_cert(
-            StakeTableEntries::<TYPES>::from(membership_stake_table).0,
+            &StakeTableEntries::<TYPES>::from(membership_stake_table).0,
             membership_success_threshold,
             upgrade_lock,
         )
@@ -320,7 +320,7 @@ pub async fn decide_from_proposal_2<TYPES: NodeType, I: NodeImplementation<TYPES
 
     // If we don't have the proposals parent return early
     let Some(parent_info) = consensus_reader
-        .parent_leaf_info(&proposed_leaf, public_key, membership)
+        .parent_leaf_info(&proposed_leaf, public_key)
         .await
     else {
         return res;
@@ -328,7 +328,7 @@ pub async fn decide_from_proposal_2<TYPES: NodeType, I: NodeImplementation<TYPES
     // Get the parents parent and check if it's consecutive in view to the parent, if so we can decided
     // the grandparents view.  If not we're done.
     let Some(grand_parent_info) = consensus_reader
-        .parent_leaf_info(&parent_info.leaf, public_key, membership)
+        .parent_leaf_info(&parent_info.leaf, public_key)
         .await
     else {
         return res;
@@ -379,7 +379,7 @@ pub async fn decide_from_proposal_2<TYPES: NodeType, I: NodeImplementation<TYPES
         }
 
         current_leaf_info = consensus_reader
-            .parent_leaf_info(&info.leaf, public_key, membership)
+            .parent_leaf_info(&info.leaf, public_key)
             .await;
         res.leaf_views.push(info.clone());
     }
@@ -1044,7 +1044,7 @@ pub(crate) async fn validate_proposal_view_and_certs<
 
                 timeout_cert
                     .is_valid_cert(
-                        StakeTableEntries::<TYPES>::from(membership_stake_table).0,
+                        &StakeTableEntries::<TYPES>::from(membership_stake_table).0,
                         membership_success_threshold,
                         &validation_info.upgrade_lock,
                     )
@@ -1070,7 +1070,7 @@ pub(crate) async fn validate_proposal_view_and_certs<
                 // View sync certs must also be valid.
                 view_sync_cert
                     .is_valid_cert(
-                        StakeTableEntries::<TYPES>::from(membership_stake_table).0,
+                        &StakeTableEntries::<TYPES>::from(membership_stake_table).0,
                         membership_success_threshold,
                         &validation_info.upgrade_lock,
                     )
@@ -1193,7 +1193,7 @@ pub async fn validate_qc_and_next_epoch_qc<TYPES: NodeType, V: Versions>(
     {
         let consensus_reader = consensus.read().await;
         qc.is_valid_cert(
-            StakeTableEntries::<TYPES>::from(membership_stake_table).0,
+            &StakeTableEntries::<TYPES>::from(membership_stake_table).0,
             membership_success_threshold,
             upgrade_lock,
         )
@@ -1236,7 +1236,7 @@ pub async fn validate_qc_and_next_epoch_qc<TYPES: NodeType, V: Versions>(
         // Validate the next epoch qc as well
         next_epoch_qc
             .is_valid_cert(
-                StakeTableEntries::<TYPES>::from(membership_next_stake_table).0,
+                &StakeTableEntries::<TYPES>::from(membership_next_stake_table).0,
                 membership_next_success_threshold,
                 upgrade_lock,
             )

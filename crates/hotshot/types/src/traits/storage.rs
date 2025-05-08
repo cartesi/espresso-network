@@ -180,3 +180,30 @@ pub fn store_drb_progress_fn<TYPES: NodeType>(
 pub fn null_store_drb_progress_fn() -> StoreDrbProgressFn {
     Arc::new(move |_epoch, _iteration, _value| Box::pin(async {}))
 }
+
+pub type StorageAddDrbResultFn<TYPES> = Arc<
+    Box<
+        dyn Fn(<TYPES as NodeType>::Epoch, DrbResult) -> BoxFuture<'static, Result<()>>
+            + Send
+            + Sync
+            + 'static,
+    >,
+>;
+
+async fn storage_add_drb_result_impl<TYPES: NodeType>(
+    storage: impl Storage<TYPES>,
+    epoch: TYPES::Epoch,
+    drb_result: DrbResult,
+) -> Result<()> {
+    storage.add_drb_result(epoch, drb_result).await
+}
+
+/// Helper function to create a callback to add a drb result to storage
+pub fn storage_add_drb_result<TYPES: NodeType>(
+    storage: impl Storage<TYPES> + 'static,
+) -> StorageAddDrbResultFn<TYPES> {
+    Arc::new(Box::new(move |epoch, drb_result| {
+        let st = storage.clone();
+        Box::pin(storage_add_drb_result_impl(st, epoch, drb_result))
+    }))
+}

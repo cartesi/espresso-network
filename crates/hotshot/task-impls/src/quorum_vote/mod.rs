@@ -225,7 +225,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
             return;
         };
 
-        let mut maybe_next_epoch_vid_share = None;
+        let mut maybe_current_epoch_vid_share = None;
         // If this is an epoch transition block, we might need two VID shares.
         if self.upgrade_lock.epochs_enabled(leaf.view_number()).await
             && is_epoch_transition(leaf.block_header().block_number(), self.epoch_height)
@@ -259,9 +259,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
                 && next_epoch_membership.has_stake(&self.public_key).await
             {
                 let other_target_epoch = if vid_share.data.target_epoch() == current_epoch {
+                    maybe_current_epoch_vid_share = Some(vid_share.clone());
                     next_epoch
                 } else {
-                    maybe_next_epoch_vid_share = Some(vid_share.clone());
                     current_epoch
                 };
                 match wait_for_second_vid_share(
@@ -276,8 +276,21 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
                 .await
                 {
                     Ok(other_vid_share) => {
-                        if maybe_next_epoch_vid_share.is_none() {
-                            maybe_next_epoch_vid_share = Some(other_vid_share);
+                        if maybe_current_epoch_vid_share.is_none() {
+                            maybe_current_epoch_vid_share = Some(other_vid_share);
+                        }
+                        if leaf.block_header().payload_commitment()
+                            != maybe_current_epoch_vid_share
+                                .as_ref()
+                                .unwrap()
+                                .data
+                                .payload_commitment()
+                        {
+                            tracing::error!(
+                                "We have both epochs vid shares but the leaf's vid commit doesn't \
+                                match the old epoch vid share's commit. It should never happen."
+                            );
+                            return;
                         }
                     },
                     Err(e) => {
@@ -303,7 +316,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
             self.view_number,
             Arc::clone(&self.instance_state),
             &leaf,
-            maybe_next_epoch_vid_share.as_ref().unwrap_or(&vid_share),
+            maybe_current_epoch_vid_share.as_ref().unwrap_or(&vid_share),
             parent_view_number,
             self.epoch_height,
         )
@@ -364,7 +377,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
                 self.view_number,
                 self.storage.clone(),
                 leaf,
-                maybe_next_epoch_vid_share.unwrap_or(vid_share),
+                maybe_current_epoch_vid_share.unwrap_or(vid_share),
                 is_vote_leaf_extended,
                 is_vote_epoch_root,
                 self.epoch_height,
@@ -628,7 +641,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
 
                 // Validate the DAC.
                 cert.is_valid_cert(
-                    StakeTableEntries::<TYPES>::from(membership_da_stake_table).0,
+                    &StakeTableEntries::<TYPES>::from(membership_da_stake_table).0,
                     membership_da_success_threshold,
                     &self.upgrade_lock,
                 )
