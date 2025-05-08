@@ -214,6 +214,9 @@ jobs:
           - version: 02
             test-name: test_native_demo_basic
 
+          - version: 03
+            test-name: test_native_demo_pos_base
+
           # - version: 99
           #   test-name: test_native_demo_upgrade
 

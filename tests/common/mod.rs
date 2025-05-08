@@ -315,7 +315,10 @@ impl Drop for NativeDemo {
 }
 
 impl NativeDemo {
-    pub(crate) fn run(process_compose_extra_args: Option<String>) -> anyhow::Result<Self> {
+    pub(crate) fn run(
+        process_compose_extra_args: Option<String>,
+        env_overrides: Option<Vec<(String, String)>>,
+    ) -> anyhow::Result<Self> {
         // Because we use nextest with the archive feature on CI we need to use the **runtime**
         // value of CARGO_MANIFEST_DIR.
         let crate_dir = PathBuf::from(
@@ -326,6 +329,12 @@ impl NativeDemo {
         let workspace_dir = crate_dir.parent().expect("crate_dir has a parent");
 
         let mut cmd = Command::new("bash");
+        if let Some(overrides) = env_overrides {
+            for (key, value) in overrides {
+                println!("applying env override: {key}={value}");
+                cmd.env(key, value);
+            }
+        }
         cmd.arg("scripts/demo-native")
             .current_dir(workspace_dir)
             .arg("--tui=false");
@@ -351,10 +360,14 @@ impl NativeDemo {
         let mut child = cmd.spawn().context("failed to spawn command")?;
 
         // Wait for three seconds and check if process has already exited so we don't waste time
-        // waiting for results later.
-        std::thread::sleep(Duration::from_secs(3));
-        if let Some(exit_code) = child.try_wait()? {
-            return Err(anyhow!("process-compose exited early with: {}", exit_code));
+        // waiting for results later. The native demo takes quite some time to get functional
+        // so we check for exit status for 30 seconds.
+        for _ in 0..30 {
+            if let Some(exit_code) = child.try_wait()? {
+                return Err(anyhow!("process-compose exited early with: {}", exit_code));
+            }
+            println!("Waiting for process-compose to start ...");
+            std::thread::sleep(Duration::from_secs(1));
         }
 
         println!("process-compose started ...");
