@@ -183,7 +183,7 @@ fn start_drb_task<TYPES: NodeType, I: NodeImplementation<TYPES>>(
     let drb_input = DrbInput {
         epoch: *epoch,
         iteration: 0,
-        initial: seed,
+        value: seed,
     };
     tokio::spawn(async move {
         let drb_result = tokio::task::spawn_blocking(move || {

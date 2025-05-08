@@ -10,12 +10,12 @@ async fn test_compute_drb_result() {
     let drb_input = DrbInput {
         epoch: 0,
         iteration: 0,
-        initial: [0u8; 32],
+        value: [0u8; 32],
     };
 
     let mut expected_result = [0u8; 32];
     {
-    let mut hash = drb_input.initial.to_vec().clone();
+    let mut hash = drb_input.value.to_vec().clone();
         for _ in 0..DIFFICULTY_LEVEL {
             hash = Sha256::digest(hash).to_vec();
         }
@@ -33,12 +33,12 @@ async fn test_compute_drb_result_2() {
     let drb_input = DrbInput {
         epoch: 0,
         iteration: 2,
-        initial: [0u8; 32],
+        value: [0u8; 32],
     };
 
     let mut expected_result = [0u8; 32];
     {
-    let mut hash = drb_input.initial.to_vec().clone();
+    let mut hash = drb_input.value.to_vec().clone();
         for _ in 2..DIFFICULTY_LEVEL {
             hash = Sha256::digest(hash).to_vec();
         }

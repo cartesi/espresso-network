@@ -226,7 +226,7 @@ where
             let drb_input = DrbInput {
                 epoch: *epoch,
                 iteration: 0,
-                initial: drb_seed_input,
+                value: drb_seed_input,
             };
             let store_drb_progress_fn = self.store_drb_progress_fn.clone();
             tokio::task::spawn_blocking(move || {

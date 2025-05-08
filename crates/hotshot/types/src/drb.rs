@@ -18,8 +18,8 @@ pub struct DrbInput {
     pub epoch: u64,
     /// The iteration this seed is from. For fresh calculations, this should be `0`.
     pub iteration: u64,
-    /// Initial seed for the DRB calculation
-    pub initial: [u8; 32],
+    /// the value of the drb calculation at the current iteration
+    pub value: [u8; 32],
 }
 
 // TODO: Add the following consts once we bench the hash time.
@@ -74,7 +74,7 @@ pub fn compute_drb_result(
     drb_input: DrbInput,
     store_drb_progress: StoreDrbProgressFn,
 ) -> DrbResult {
-    let mut hash = drb_input.initial.to_vec();
+    let mut hash = drb_input.value.to_vec();
     let mut iteration = drb_input.iteration;
     let remaining_iterations = DIFFICULTY_LEVEL
       .checked_sub(iteration)
