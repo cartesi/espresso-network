@@ -314,7 +314,7 @@
 <a href=#314 id=314 data-nosnippet>314</a>
 <a href=#315 id=315 data-nosnippet>315</a>    <span class="comment">// If we don't have the proposals parent return early
 <a href=#316 id=316 data-nosnippet>316</a>    </span><span class="kw">let </span><span class="prelude-val">Some</span>(parent_info) = consensus_reader
-<a href=#317 id=317 data-nosnippet>317</a>        .parent_leaf_info(<span class="kw-2">&amp;</span>proposed_leaf, public_key, membership)
+<a href=#317 id=317 data-nosnippet>317</a>        .parent_leaf_info(<span class="kw-2">&amp;</span>proposed_leaf, public_key)
 <a href=#318 id=318 data-nosnippet>318</a>        .<span class="kw">await
 <a href=#319 id=319 data-nosnippet>319</a>    else </span>{
 <a href=#320 id=320 data-nosnippet>320</a>        <span class="kw">return </span>res;
@@ -322,7 +322,7 @@
 <a href=#322 id=322 data-nosnippet>322</a>    <span class="comment">// Get the parents parent and check if it's consecutive in view to the parent, if so we can decided
 <a href=#323 id=323 data-nosnippet>323</a>    // the grandparents view.  If not we're done.
 <a href=#324 id=324 data-nosnippet>324</a>    </span><span class="kw">let </span><span class="prelude-val">Some</span>(grand_parent_info) = consensus_reader
-<a href=#325 id=325 data-nosnippet>325</a>        .parent_leaf_info(<span class="kw-2">&amp;</span>parent_info.leaf, public_key, membership)
+<a href=#325 id=325 data-nosnippet>325</a>        .parent_leaf_info(<span class="kw-2">&amp;</span>parent_info.leaf, public_key)
 <a href=#326 id=326 data-nosnippet>326</a>        .<span class="kw">await
 <a href=#327 id=327 data-nosnippet>327</a>    else </span>{
 <a href=#328 id=328 data-nosnippet>328</a>        <span class="kw">return </span>res;
@@ -373,7 +373,7 @@
 <a href=#373 id=373 data-nosnippet>373</a>        }
 <a href=#374 id=374 data-nosnippet>374</a>
 <a href=#375 id=375 data-nosnippet>375</a>        current_leaf_info = consensus_reader
-<a href=#376 id=376 data-nosnippet>376</a>            .parent_leaf_info(<span class="kw-2">&amp;</span>info.leaf, public_key, membership)
+<a href=#376 id=376 data-nosnippet>376</a>            .parent_leaf_info(<span class="kw-2">&amp;</span>info.leaf, public_key)
 <a href=#377 id=377 data-nosnippet>377</a>            .<span class="kw">await</span>;
 <a href=#378 id=378 data-nosnippet>378</a>        res.leaf_views.push(info.clone());
 <a href=#379 id=379 data-nosnippet>379</a>    }
