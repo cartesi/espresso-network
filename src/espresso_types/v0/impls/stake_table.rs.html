@@ -23,7 +23,7 @@
 <a href=#23 id=23 data-nosnippet>23</a>        election::{generate_stake_cdf, select_randomized_leader, RandomizedCommittee},
 <a href=#24 id=24 data-nosnippet>24</a>        DrbResult,
 <a href=#25 id=25 data-nosnippet>25</a>    },
-<a href=#26 id=26 data-nosnippet>26</a>    stake_table::StakeTableEntry,
+<a href=#26 id=26 data-nosnippet>26</a>    stake_table::{HSStakeTable, StakeTableEntry},
 <a href=#27 id=27 data-nosnippet>27</a>    traits::{
 <a href=#28 id=28 data-nosnippet>28</a>        election::Membership,
 <a href=#29 id=29 data-nosnippet>29</a>        node_implementation::{ConsensusTime, NodeType},
@@ -1041,12 +1041,12 @@
 <a href=#1041 id=1041 data-nosnippet>1041</a>    }
 <a href=#1042 id=1042 data-nosnippet>1042</a>
 <a href=#1043 id=1043 data-nosnippet>1043</a>    <span class="doccomment">/// Get the stake table for the current view
-<a href=#1044 id=1044 data-nosnippet>1044</a>    </span><span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
-<a href=#1045 id=1045 data-nosnippet>1045</a>        <span class="self">self</span>.get_stake_table(<span class="kw-2">&amp;</span>epoch).unwrap_or_default()
+<a href=#1044 id=1044 data-nosnippet>1044</a>    </span><span class="kw">fn </span>stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; HSStakeTable&lt;SeqTypes&gt; {
+<a href=#1045 id=1045 data-nosnippet>1045</a>        <span class="self">self</span>.get_stake_table(<span class="kw-2">&amp;</span>epoch).unwrap_or_default().into()
 <a href=#1046 id=1046 data-nosnippet>1046</a>    }
 <a href=#1047 id=1047 data-nosnippet>1047</a>    <span class="doccomment">/// Get the stake table for the current view
-<a href=#1048 id=1048 data-nosnippet>1048</a>    </span><span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt; {
-<a href=#1049 id=1049 data-nosnippet>1049</a>        <span class="self">self</span>.non_epoch_committee.da_members.clone()
+<a href=#1048 id=1048 data-nosnippet>1048</a>    </span><span class="kw">fn </span>da_stake_table(<span class="kw-2">&amp;</span><span class="self">self</span>, _epoch: <span class="prelude-ty">Option</span>&lt;Epoch&gt;) -&gt; HSStakeTable&lt;SeqTypes&gt; {
+<a href=#1049 id=1049 data-nosnippet>1049</a>        <span class="self">self</span>.non_epoch_committee.da_members.clone().into()
 <a href=#1050 id=1050 data-nosnippet>1050</a>    }
 <a href=#1051 id=1051 data-nosnippet>1051</a>
 <a href=#1052 id=1052 data-nosnippet>1052</a>    <span class="doccomment">/// Get all members of the committee for the current view

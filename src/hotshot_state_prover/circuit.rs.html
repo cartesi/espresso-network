@@ -341,7 +341,7 @@
 <a href=#341 id=341 data-nosnippet>341</a>    <span class="kw">use </span>ark_ed_on_bn254::EdwardsConfig <span class="kw">as </span>Config;
 <a href=#342 id=342 data-nosnippet>342</a>    <span class="kw">use </span>ark_std::UniformRand;
 <a href=#343 id=343 data-nosnippet>343</a>    <span class="kw">use </span>hotshot_types::{
-<a href=#344 id=344 data-nosnippet>344</a>        light_client::{compute_stake_table_commitment, LightClientState, StakeTableState},
+<a href=#344 id=344 data-nosnippet>344</a>        light_client::{LightClientState, StakeTableState},
 <a href=#345 id=345 data-nosnippet>345</a>        signature_key::SchnorrPubKey,
 <a href=#346 id=346 data-nosnippet>346</a>        traits::signature_key::StateSignatureKey,
 <a href=#347 id=347 data-nosnippet>347</a>    };
@@ -363,7 +363,7 @@
 <a href=#363 id=363 data-nosnippet>363</a>
 <a href=#364 id=364 data-nosnippet>364</a>        <span class="kw">let </span>(qc_keys, state_keys) = key_pairs_for_testing(num_validators, <span class="kw-2">&amp;mut </span>prng);
 <a href=#365 id=365 data-nosnippet>365</a>        <span class="kw">let </span>st = stake_table_for_testing(<span class="kw-2">&amp;</span>qc_keys, <span class="kw-2">&amp;</span>state_keys);
-<a href=#366 id=366 data-nosnippet>366</a>        <span class="kw">let </span>st_state = compute_stake_table_commitment(<span class="kw-2">&amp;</span>st, ST_CAPACITY).unwrap();
+<a href=#366 id=366 data-nosnippet>366</a>        <span class="kw">let </span>st_state = st.commitment(ST_CAPACITY).unwrap();
 <a href=#367 id=367 data-nosnippet>367</a>        <span class="kw">let </span>next_st_state = st_state;
 <a href=#368 id=368 data-nosnippet>368</a>
 <a href=#369 id=369 data-nosnippet>369</a>        <span class="kw">let </span>entries = st

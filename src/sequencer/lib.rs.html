@@ -866,7 +866,7 @@
 <a href=#866 id=866 data-nosnippet>866</a>                    <span class="kw">let </span>epoch_start_block = <span class="self">self</span>.config.epoch_start_block;
 <a href=#867 id=867 data-nosnippet>867</a>
 <a href=#868 id=868 data-nosnippet>868</a>                    <span class="kw">let </span>(genesis_state, genesis_stake) = light_client_genesis_from_stake_table(
-<a href=#869 id=869 data-nosnippet>869</a>                        <span class="kw-2">&amp;</span><span class="self">self</span>.config.known_nodes_with_stake,
+<a href=#869 id=869 data-nosnippet>869</a>                        <span class="kw-2">&amp;</span><span class="self">self</span>.config.hotshot_stake_table(),
 <a href=#870 id=870 data-nosnippet>870</a>                        STAKE_TABLE_CAPACITY_FOR_TEST,
 <a href=#871 id=871 data-nosnippet>871</a>                    )
 <a href=#872 id=872 data-nosnippet>872</a>                    .unwrap();

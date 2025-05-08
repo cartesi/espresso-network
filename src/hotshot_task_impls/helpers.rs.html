@@ -29,20 +29,20 @@
 <a href=#29 id=29 data-nosnippet>29</a>        QuorumCertificate2, UpgradeCertificate,
 <a href=#30 id=30 data-nosnippet>30</a>    },
 <a href=#31 id=31 data-nosnippet>31</a>    simple_vote::HasEpoch,
-<a href=#32 id=32 data-nosnippet>32</a>    traits::{
-<a href=#33 id=33 data-nosnippet>33</a>        block_contents::BlockHeader,
-<a href=#34 id=34 data-nosnippet>34</a>        election::Membership,
-<a href=#35 id=35 data-nosnippet>35</a>        node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
-<a href=#36 id=36 data-nosnippet>36</a>        signature_key::{SignatureKey, StakeTableEntryType, StateSignatureKey},
-<a href=#37 id=37 data-nosnippet>37</a>        storage::Storage,
-<a href=#38 id=38 data-nosnippet>38</a>        BlockPayload, ValidatedState,
-<a href=#39 id=39 data-nosnippet>39</a>    },
-<a href=#40 id=40 data-nosnippet>40</a>    utils::{
-<a href=#41 id=41 data-nosnippet>41</a>        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_transition_block,
-<a href=#42 id=42 data-nosnippet>42</a>        option_epoch_from_block_number, Terminator, View, ViewInner,
-<a href=#43 id=43 data-nosnippet>43</a>    },
-<a href=#44 id=44 data-nosnippet>44</a>    vote::{Certificate, HasViewNumber},
-<a href=#45 id=45 data-nosnippet>45</a>    StakeTableEntries,
+<a href=#32 id=32 data-nosnippet>32</a>    stake_table::StakeTableEntries,
+<a href=#33 id=33 data-nosnippet>33</a>    traits::{
+<a href=#34 id=34 data-nosnippet>34</a>        block_contents::BlockHeader,
+<a href=#35 id=35 data-nosnippet>35</a>        election::Membership,
+<a href=#36 id=36 data-nosnippet>36</a>        node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
+<a href=#37 id=37 data-nosnippet>37</a>        signature_key::{SignatureKey, StakeTableEntryType, StateSignatureKey},
+<a href=#38 id=38 data-nosnippet>38</a>        storage::Storage,
+<a href=#39 id=39 data-nosnippet>39</a>        BlockPayload, ValidatedState,
+<a href=#40 id=40 data-nosnippet>40</a>    },
+<a href=#41 id=41 data-nosnippet>41</a>    utils::{
+<a href=#42 id=42 data-nosnippet>42</a>        epoch_from_block_number, is_epoch_root, is_epoch_transition, is_transition_block,
+<a href=#43 id=43 data-nosnippet>43</a>        option_epoch_from_block_number, Terminator, View, ViewInner,
+<a href=#44 id=44 data-nosnippet>44</a>    },
+<a href=#45 id=45 data-nosnippet>45</a>    vote::{Certificate, HasViewNumber},
 <a href=#46 id=46 data-nosnippet>46</a>};
 <a href=#47 id=47 data-nosnippet>47</a><span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <a href=#48 id=48 data-nosnippet>48</a><span class="kw">use </span>tokio::time::timeout;

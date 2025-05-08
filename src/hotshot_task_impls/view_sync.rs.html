@@ -25,13 +25,13 @@
 <a href=#25 id=25 data-nosnippet>25</a>        HasEpoch, ViewSyncCommitData2, ViewSyncCommitVote2, ViewSyncFinalizeData2,
 <a href=#26 id=26 data-nosnippet>26</a>        ViewSyncFinalizeVote2, ViewSyncPreCommitData2, ViewSyncPreCommitVote2,
 <a href=#27 id=27 data-nosnippet>27</a>    },
-<a href=#28 id=28 data-nosnippet>28</a>    traits::{
-<a href=#29 id=29 data-nosnippet>29</a>        node_implementation::{ConsensusTime, NodeType, Versions},
-<a href=#30 id=30 data-nosnippet>30</a>        signature_key::SignatureKey,
-<a href=#31 id=31 data-nosnippet>31</a>    },
-<a href=#32 id=32 data-nosnippet>32</a>    utils::EpochTransitionIndicator,
-<a href=#33 id=33 data-nosnippet>33</a>    vote::{Certificate, HasViewNumber, Vote},
-<a href=#34 id=34 data-nosnippet>34</a>    StakeTableEntries,
+<a href=#28 id=28 data-nosnippet>28</a>    stake_table::StakeTableEntries,
+<a href=#29 id=29 data-nosnippet>29</a>    traits::{
+<a href=#30 id=30 data-nosnippet>30</a>        node_implementation::{ConsensusTime, NodeType, Versions},
+<a href=#31 id=31 data-nosnippet>31</a>        signature_key::SignatureKey,
+<a href=#32 id=32 data-nosnippet>32</a>    },
+<a href=#33 id=33 data-nosnippet>33</a>    utils::EpochTransitionIndicator,
+<a href=#34 id=34 data-nosnippet>34</a>    vote::{Certificate, HasViewNumber, Vote},
 <a href=#35 id=35 data-nosnippet>35</a>};
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>hotshot_utils::anytrace::<span class="kw-2">*</span>;
 <a href=#37 id=37 data-nosnippet>37</a><span class="kw">use </span>tokio::{spawn, task::JoinHandle, time::sleep};

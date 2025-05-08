@@ -178,12 +178,12 @@
 <a href=#178 id=178 data-nosnippet>178</a>                    <span class="macro">debug!</span>(<span class="string">"We were not chosen for consensus committee for view {view_number} in epoch {epoch_number:?}"</span>)
 <a href=#179 id=179 data-nosnippet>179</a>                );
 <a href=#180 id=180 data-nosnippet>180</a>                <span class="kw">let </span>total_weight =
-<a href=#181 id=181 data-nosnippet>181</a>                    vid_total_weight::&lt;TYPES&gt;(membership.stake_table().<span class="kw">await</span>, epoch_number);
+<a href=#181 id=181 data-nosnippet>181</a>                    vid_total_weight::&lt;TYPES&gt;(<span class="kw-2">&amp;</span>membership.stake_table().<span class="kw">await</span>, epoch_number);
 <a href=#182 id=182 data-nosnippet>182</a>
 <a href=#183 id=183 data-nosnippet>183</a>                <span class="kw">let </span><span class="kw-2">mut </span>next_epoch_total_weight = total_weight;
 <a href=#184 id=184 data-nosnippet>184</a>                <span class="kw">if </span>epoch_number.is_some() {
 <a href=#185 id=185 data-nosnippet>185</a>                    next_epoch_total_weight = vid_total_weight::&lt;TYPES&gt;(
-<a href=#186 id=186 data-nosnippet>186</a>                        membership
+<a href=#186 id=186 data-nosnippet>186</a>                        <span class="kw-2">&amp;</span>membership
 <a href=#187 id=187 data-nosnippet>187</a>                            .next_epoch_stake_table()
 <a href=#188 id=188 data-nosnippet>188</a>                            .<span class="kw">await</span><span class="question-mark">?
 <a href=#189 id=189 data-nosnippet>189</a>                            </span>.stake_table()

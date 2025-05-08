@@ -228,7 +228,7 @@
 <a href=#228 id=228 data-nosnippet>228</a>            .stake_table_for_epoch(epoch)
 <a href=#229 id=229 data-nosnippet>229</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#230 id=230 data-nosnippet>230</a>
-<a href=#231 id=231 data-nosnippet>231</a>        <span class="prelude-val">Ok</span>(mem.stake_table().<span class="kw">await</span>)
+<a href=#231 id=231 data-nosnippet>231</a>        <span class="prelude-val">Ok</span>(mem.stake_table().<span class="kw">await</span>.<span class="number">0</span>)
 <a href=#232 id=232 data-nosnippet>232</a>    }
 <a href=#233 id=233 data-nosnippet>233</a>
 <a href=#234 id=234 data-nosnippet>234</a>    <span class="doccomment">/// Get the stake table for the current epoch and return it along with the epoch number
@@ -817,7 +817,7 @@
 <a href=#817 id=817 data-nosnippet>817</a>            <span class="kw">let </span>blocks_per_epoch = network_config.hotshot_config().epoch_height;
 <a href=#818 id=818 data-nosnippet>818</a>            <span class="kw">let </span>epoch_start_block = network_config.hotshot_config().epoch_start_block;
 <a href=#819 id=819 data-nosnippet>819</a>            <span class="kw">let </span>(genesis_state, genesis_stake) = light_client_genesis_from_stake_table(
-<a href=#820 id=820 data-nosnippet>820</a>                <span class="kw-2">&amp;</span>network_config.hotshot_config().known_nodes_with_stake,
+<a href=#820 id=820 data-nosnippet>820</a>                <span class="kw-2">&amp;</span>network_config.hotshot_config().hotshot_stake_table(),
 <a href=#821 id=821 data-nosnippet>821</a>                STAKE_TABLE_CAPACITY_FOR_TEST,
 <a href=#822 id=822 data-nosnippet>822</a>            )
 <a href=#823 id=823 data-nosnippet>823</a>            .unwrap();

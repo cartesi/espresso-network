@@ -387,7 +387,7 @@
 <a href=#387 id=387 data-nosnippet>387</a>    <span class="kw">use </span>anyhow::Context;
 <a href=#388 id=388 data-nosnippet>388</a>    <span class="kw">use </span>async_trait::async_trait;
 <a href=#389 id=389 data-nosnippet>389</a>    <span class="kw">use </span>committable::Commitment;
-<a href=#390 id=390 data-nosnippet>390</a>    <span class="kw">use </span>hotshot_types::{data::ViewNumber, PeerConfig};
+<a href=#390 id=390 data-nosnippet>390</a>    <span class="kw">use </span>hotshot_types::{data::ViewNumber, stake_table::HSStakeTable};
 <a href=#391 id=391 data-nosnippet>391</a>    <span class="kw">use </span>jf_merkle_tree::{ForgetableMerkleTreeScheme, MerkleTreeScheme};
 <a href=#392 id=392 data-nosnippet>392</a>
 <a href=#393 id=393 data-nosnippet>393</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -418,7 +418,7 @@
 <a href=#418 id=418 data-nosnippet>418</a>            <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#419 id=419 data-nosnippet>419</a>            _retry: usize,
 <a href=#420 id=420 data-nosnippet>420</a>            _height: u64,
-<a href=#421 id=421 data-nosnippet>421</a>            _stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+<a href=#421 id=421 data-nosnippet>421</a>            _stake_table: HSStakeTable&lt;SeqTypes&gt;,
 <a href=#422 id=422 data-nosnippet>422</a>            _success_threshold: U256,
 <a href=#423 id=423 data-nosnippet>423</a>        ) -&gt; anyhow::Result&lt;Leaf2&gt; {
 <a href=#424 id=424 data-nosnippet>424</a>            <span class="prelude-val">Err</span>(<span class="macro">anyhow::anyhow!</span>(<span class="string">"todo"</span>))

@@ -24,13 +24,13 @@
 <a href=#24 id=24 data-nosnippet>24</a>        LightClientStateUpdateCertificate, NextEpochQuorumCertificate2, QuorumCertificate,
 <a href=#25 id=25 data-nosnippet>25</a>        QuorumCertificate2, UpgradeCertificate,
 <a href=#26 id=26 data-nosnippet>26</a>    },
-<a href=#27 id=27 data-nosnippet>27</a>    traits::{
-<a href=#28 id=28 data-nosnippet>28</a>        node_implementation::{ConsensusTime, NodeType, Versions},
-<a href=#29 id=29 data-nosnippet>29</a>        storage::Storage,
-<a href=#30 id=30 data-nosnippet>30</a>        ValidatedState <span class="kw">as </span>HotShotState,
-<a href=#31 id=31 data-nosnippet>31</a>    },
-<a href=#32 id=32 data-nosnippet>32</a>    utils::genesis_epoch_from_version,
-<a href=#33 id=33 data-nosnippet>33</a>    PeerConfig,
+<a href=#27 id=27 data-nosnippet>27</a>    stake_table::HSStakeTable,
+<a href=#28 id=28 data-nosnippet>28</a>    traits::{
+<a href=#29 id=29 data-nosnippet>29</a>        node_implementation::{ConsensusTime, NodeType, Versions},
+<a href=#30 id=30 data-nosnippet>30</a>        storage::Storage,
+<a href=#31 id=31 data-nosnippet>31</a>        ValidatedState <span class="kw">as </span>HotShotState,
+<a href=#32 id=32 data-nosnippet>32</a>    },
+<a href=#33 id=33 data-nosnippet>33</a>    utils::genesis_epoch_from_version,
 <a href=#34 id=34 data-nosnippet>34</a>};
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">use </span>indexmap::IndexMap;
 <a href=#36 id=36 data-nosnippet>36</a><span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
@@ -53,7 +53,7 @@
 <a href=#53 id=53 data-nosnippet>53</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#54 id=54 data-nosnippet>54</a>        retry: usize,
 <a href=#55 id=55 data-nosnippet>55</a>        height: u64,
-<a href=#56 id=56 data-nosnippet>56</a>        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+<a href=#56 id=56 data-nosnippet>56</a>        stake_table: HSStakeTable&lt;SeqTypes&gt;,
 <a href=#57 id=57 data-nosnippet>57</a>        success_threshold: U256,
 <a href=#58 id=58 data-nosnippet>58</a>    ) -&gt; anyhow::Result&lt;Leaf2&gt;;
 <a href=#59 id=59 data-nosnippet>59</a>
@@ -61,7 +61,7 @@
 <a href=#61 id=61 data-nosnippet>61</a>    </span><span class="kw">async fn </span>fetch_leaf(
 <a href=#62 id=62 data-nosnippet>62</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#63 id=63 data-nosnippet>63</a>        height: u64,
-<a href=#64 id=64 data-nosnippet>64</a>        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+<a href=#64 id=64 data-nosnippet>64</a>        stake_table: HSStakeTable&lt;SeqTypes&gt;,
 <a href=#65 id=65 data-nosnippet>65</a>        success_threshold: U256,
 <a href=#66 id=66 data-nosnippet>66</a>    ) -&gt; anyhow::Result&lt;Leaf2&gt; {
 <a href=#67 id=67 data-nosnippet>67</a>        <span class="self">self</span>.backoff()
@@ -232,7 +232,7 @@
 <a href=#232 id=232 data-nosnippet>232</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#233 id=233 data-nosnippet>233</a>        retry: usize,
 <a href=#234 id=234 data-nosnippet>234</a>        height: u64,
-<a href=#235 id=235 data-nosnippet>235</a>        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+<a href=#235 id=235 data-nosnippet>235</a>        stake_table: HSStakeTable&lt;SeqTypes&gt;,
 <a href=#236 id=236 data-nosnippet>236</a>        success_threshold: U256,
 <a href=#237 id=237 data-nosnippet>237</a>    ) -&gt; anyhow::Result&lt;Leaf2&gt; {
 <a href=#238 id=238 data-nosnippet>238</a>        (<span class="kw-2">**</span><span class="self">self</span>)
@@ -243,7 +243,7 @@
 <a href=#243 id=243 data-nosnippet>243</a>    <span class="kw">async fn </span>fetch_leaf(
 <a href=#244 id=244 data-nosnippet>244</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#245 id=245 data-nosnippet>245</a>        height: u64,
-<a href=#246 id=246 data-nosnippet>246</a>        stake_table: Vec&lt;PeerConfig&lt;SeqTypes&gt;&gt;,
+<a href=#246 id=246 data-nosnippet>246</a>        stake_table: HSStakeTable&lt;SeqTypes&gt;,
 <a href=#247 id=247 data-nosnippet>247</a>        success_threshold: U256,
 <a href=#248 id=248 data-nosnippet>248</a>    ) -&gt; anyhow::Result&lt;Leaf2&gt; {
 <a href=#249 id=249 data-nosnippet>249</a>        (<span class="kw-2">**</span><span class="self">self</span>)
