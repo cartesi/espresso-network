@@ -3,18 +3,18 @@ use std::time::Instant;
 use anyhow::Result;
 use futures::StreamExt;
 
-use crate::common::{NativeDemo, TestConfig};
+use crate::common::{NativeDemo, TestConfig, TestRequirements};
 
 /// We allow for no change in state across this many consecutive iterations.
 const MAX_STATE_NOT_INCREMENTING: u8 = 1;
 /// We allow for no new transactions across this many consecutive iterations.
 const MAX_TXNS_NOT_INCREMENTING: u8 = 5;
 
-pub async fn assert_native_demo_works() -> Result<()> {
+pub async fn assert_native_demo_works(requirements: TestRequirements) -> Result<()> {
     let start = Instant::now();
     dotenvy::dotenv()?;
 
-    let testing = TestConfig::new().await.unwrap();
+    let testing = TestConfig::new(requirements.clone()).await.unwrap();
 
     println!("Waiting on readiness");
     let _ = testing.readiness().await?;
@@ -41,7 +41,7 @@ pub async fn assert_native_demo_works() -> Result<()> {
         }
 
         // Timeout if tests take too long.
-        if start.elapsed().as_secs() as f64 > testing.timeout {
+        if start.elapsed() > requirements.timeout {
             panic!("Timeout waiting for block height, transaction count, and light client updates to increase.");
         }
 
@@ -86,5 +86,5 @@ pub async fn assert_native_demo_works() -> Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 async fn test_native_demo_basic() -> Result<()> {
     let _child = NativeDemo::run(None, None);
-    assert_native_demo_works().await
+    assert_native_demo_works(Default::default()).await
 }

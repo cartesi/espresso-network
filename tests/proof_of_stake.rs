@@ -11,5 +11,5 @@ async fn test_native_demo_pos_base() -> Result<()> {
             "data/genesis/demo-pos-base.toml".to_string(),
         )]),
     );
-    assert_native_demo_works().await
+    assert_native_demo_works(Default::default()).await
 }
