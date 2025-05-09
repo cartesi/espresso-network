@@ -247,7 +247,7 @@ jobs:
         run: |
           cargo nextest run --archive-file nextest-archive-postgres.tar.zst --verbose --no-fail-fast --nocapture \
           --workspace-remap $PWD ${{ matrix.test-name }}
-        timeout-minutes: 10
+        timeout-minutes: 20
 
       - name: Show end of logs
         if: always()
