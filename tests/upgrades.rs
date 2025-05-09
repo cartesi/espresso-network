@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use espresso_types::{EpochVersion, FeeVersion};
 use futures::{future::join_all, StreamExt};
@@ -91,7 +93,8 @@ async fn test_native_demo_pos_upgrade() -> Result<()> {
     // verify native demo continues to work after upgrade
     let requirements = TestRequirements {
         block_height_increment: MIN_BLOCK_INCREMENT_WITH_POS,
-        ..Default::default()
+        txn_count_increment: 100, // a bit arbitrary but we wait for many blocks
+        timeout: Duration::from_secs(MIN_BLOCK_INCREMENT_WITH_POS * 2),
     };
     assert_native_demo_works(requirements).await?;
 

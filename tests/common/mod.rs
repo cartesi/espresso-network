@@ -154,6 +154,10 @@ impl TestConfig {
         self.initial_height + self.requirements.block_height_increment
     }
 
+    pub fn expected_txn_count(&self) -> u64 {
+        self.initial_txns + self.requirements.txn_count_increment
+    }
+
     /// Get the latest block where we see a light client update
     pub async fn latest_light_client_update(&self) -> u64 {
         let provider = ProviderBuilder::new().on_http(self.l1_endpoint.clone());
