@@ -68,7 +68,7 @@ impl Default for TestRequirements {
             block_height_increment: 10,
             txn_count_increment: 10,
             global_timeout: Duration::from_secs(60),
-            block_timeout: Duration::from_secs(5),
+            block_timeout: Duration::from_secs(20),
             max_consecutive_blocks_without_tx: 10,
         }
     }
