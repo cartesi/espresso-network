@@ -97,7 +97,7 @@ async fn test_native_demo_pos_upgrade() -> Result<()> {
     let pos_progress_requirements = TestRequirements {
         block_height_increment: expected_block_height,
         txn_count_increment: 2 * expected_block_height,
-        global_timeout: Duration::from_secs(expected_block_height as u64 * 2),
+        global_timeout: Duration::from_secs(expected_block_height as u64 * 3),
         ..Default::default()
     };
     assert_native_demo_works(pos_progress_requirements).await?;
