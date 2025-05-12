@@ -14,7 +14,7 @@ use crate::{
 async fn assert_pos_upgrade_happens(genesis: &Genesis) -> Result<()> {
     dotenvy::dotenv()?;
 
-    // TODO we don't really want to use the requirements here
+    // The requirements passed to `TestConfig` are ignored here.
     let testing = TestConfig::new(Default::default()).await.unwrap();
     println!("Testing upgrade {:?}", testing);
 
@@ -61,7 +61,7 @@ async fn assert_pos_upgrade_happens(genesis: &Genesis) -> Result<()> {
             // It usually takes about 120 blocks to get to the upgrade, wait a bit longer.
             UpgradeMode::View(upgrade) => upgrade.start_proposing_view + 200,
             UpgradeMode::Time(_time_based_upgrade) => {
-                unimplemented!("View based upgrade not supported yet")
+                unimplemented!("Time based upgrade not supported yet")
             },
         };
 
