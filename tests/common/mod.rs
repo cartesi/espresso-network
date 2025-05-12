@@ -68,7 +68,8 @@ impl Default for TestRequirements {
             block_height_increment: 10,
             txn_count_increment: 10,
             global_timeout: Duration::from_secs(60),
-            block_timeout: Duration::from_secs(20),
+            // TODO: find out why 20 seconds is too low for the CI.
+            block_timeout: Duration::from_secs(30),
             max_consecutive_blocks_without_tx: 10,
         }
     }

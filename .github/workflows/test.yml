@@ -242,7 +242,6 @@ jobs:
 
       - name: Test Integration
         env:
-          RUST_LOG: debug
           NEXTEST_PROFILE: integration
         run: |
           cargo nextest run --archive-file nextest-archive-postgres.tar.zst --verbose --no-fail-fast --nocapture \
