@@ -672,7 +672,7 @@ pub mod testing {
     use portpicker::pick_unused_port;
     use rand::SeedableRng as _;
     use rand_chacha::ChaCha20Rng;
-    use staking_cli::demo::setup_stake_table_contract_for_test;
+    use staking_cli::demo::{setup_stake_table_contract_for_test, DelegationConfig};
     use tokio::spawn;
     use vbs::version::Version;
 
@@ -866,7 +866,7 @@ pub mod testing {
                     let epoch_start_block = self.config.epoch_start_block;
 
                     let (genesis_state, genesis_stake) = light_client_genesis_from_stake_table(
-                        &self.config.known_nodes_with_stake,
+                        &self.config.hotshot_stake_table(),
                         STAKE_TABLE_CAPACITY_FOR_TEST,
                     )
                     .unwrap();
@@ -904,7 +904,7 @@ pub mod testing {
                         st_addr,
                         token_addr,
                         validators,
-                        false,
+                        DelegationConfig::default(),
                     )
                     .await
                     .expect("stake table setup failed");
@@ -1212,7 +1212,7 @@ pub mod testing {
             let coordinator = EpochMembershipCoordinator::new(
                 membership,
                 Some(storage_add_drb_result(persistence.clone())),
-                100,
+                config.epoch_height,
             );
 
             let node_state = NodeState::new(
