@@ -389,7 +389,7 @@ processes:
       restart: exit_on_failure
 
   node_validator:
-    command: RUST_LOG=debug node-metrics --
+    command: node-metrics --
     environment:
       - ESPRESSO_NODE_VALIDATOR_STAKE_TABLE_SOURCE_BASE_URL=http://localhost:$ESPRESSO_SEQUENCER_API_PORT/v0/
       - ESPRESSO_NODE_VALIDATOR_LEAF_STREAM_SOURCE_BASE_URL=http://localhost:$ESPRESSO_SEQUENCER_API_PORT/v0/
@@ -449,7 +449,7 @@ processes:
 
   # A broker is the main message-routing unit of the CDN
   broker_0:
-    command: RUST_LOG=debug cdn-broker -d "redis://:changeme!@localhost:6379" -m 127.0.0.1:9091
+    command: cdn-broker -d "redis://:changeme!@localhost:6379" -m 127.0.0.1:9091
     depends_on:
       keydb:
         condition: process_healthy
@@ -466,7 +466,7 @@ processes:
   # as we're running a local demo, we need to operate on different ports
   broker_1:
     command:
-      RUST_LOG=debug cdn-broker --public-bind-endpoint 0.0.0.0:1740 --public-advertise-endpoint local_ip:1740
+      cdn-broker --public-bind-endpoint 0.0.0.0:1740 --public-advertise-endpoint local_ip:1740
       --private-bind-endpoint 0.0.0.0:1741 --private-advertise-endpoint local_ip:1741 -d
       "redis://:changeme!@localhost:6379" -m 127.0.0.1:9092
     depends_on:
