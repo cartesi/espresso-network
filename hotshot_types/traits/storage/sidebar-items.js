@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["storage_add_drb_result","storage_add_drb_result_impl"],"trait":["Storage"],"type":["StorageAddDrbResultFn"]};
+window.SIDEBAR_ITEMS = {"fn":["null_store_drb_progress_fn","storage_add_drb_result","storage_add_drb_result_impl","store_drb_input_impl","store_drb_progress_fn"],"trait":["Storage"],"type":["StorageAddDrbResultFn","StoreDrbProgressFn"]};
