@@ -58,7 +58,8 @@ async fn assert_pos_upgrade_happens(genesis: &Genesis) -> Result<()> {
         }
 
         let wait_until_view = match genesis.upgrades[&upgrade_version].mode.clone() {
-            UpgradeMode::View(upgrade) => upgrade.start_proposing_view + 100,
+            // It usually takes about 120 blocks to get to the upgrade, wait a bit longer.
+            UpgradeMode::View(upgrade) => upgrade.start_proposing_view + 200,
             UpgradeMode::Time(_time_based_upgrade) => {
                 unimplemented!("View based upgrade not supported yet")
             },
