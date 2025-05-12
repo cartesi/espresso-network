@@ -2,7 +2,7 @@ use std::{
     fmt,
     fs::File,
     io::{stderr, stdout},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Child, Command},
     str::FromStr,
     time::Duration,
@@ -18,11 +18,23 @@ use anyhow::{anyhow, Context, Result};
 use client::SequencerClient;
 use espresso_types::FeeAmount;
 use futures::future::join_all;
+use sequencer::Genesis;
 use surf_disco::Url;
 use tokio::time::{sleep, timeout};
 
 // TODO add to .env
 const RECIPIENT_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
+
+pub fn load_genesis_file(path: impl AsRef<Path>) -> Result<Genesis> {
+    // Because we use nextest with the archive feature on CI we need to use the **runtime**
+    // value of CARGO_MANIFEST_DIR.
+    let crate_dir = PathBuf::from(
+        std::env::var("CARGO_MANIFEST_DIR")
+            .expect("CARGO_MANIFEST_DIR is set")
+            .clone(),
+    );
+    Genesis::from_file(crate_dir.join("..").join(path))
+}
 
 #[derive(Clone, Debug)]
 pub struct TestConfig {
@@ -43,15 +55,21 @@ pub struct TestConfig {
 pub struct TestRequirements {
     pub block_height_increment: u64,
     pub txn_count_increment: u64,
-    pub timeout: Duration,
+    /// Fail the test after this interval if requirement not met yet.
+    pub global_timeout: Duration,
+    /// Panic if no block seen for this interval, we will panic fail relatively quickly.
+    pub block_timeout: Duration,
+    pub max_consecutive_blocks_without_tx: u64,
 }
 
 impl Default for TestRequirements {
     fn default() -> Self {
         Self {
             block_height_increment: 10,
-            txn_count_increment: 3,
-            timeout: Duration::from_secs(60),
+            txn_count_increment: 10,
+            global_timeout: Duration::from_secs(60),
+            block_timeout: Duration::from_secs(5),
+            max_consecutive_blocks_without_tx: 10,
         }
     }
 }

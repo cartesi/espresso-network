@@ -5,11 +5,6 @@ use futures::StreamExt;
 
 use crate::common::{NativeDemo, TestConfig, TestRequirements};
 
-/// We allow for no change in state across this many consecutive iterations.
-const MAX_STATE_NOT_INCREMENTING: u8 = 1;
-/// We allow for no new transactions across this many consecutive iterations.
-const MAX_TXNS_NOT_INCREMENTING: u8 = 5;
-
 pub async fn assert_native_demo_works(requirements: TestRequirements) -> Result<()> {
     let start = Instant::now();
     dotenvy::dotenv()?;
@@ -27,9 +22,31 @@ pub async fn assert_native_demo_works(requirements: TestRequirements) -> Result<
         .subscribe_blocks(initial.block_height.unwrap())
         .await?;
 
-    while (sub.next().await).is_some() {
+    let old = initial.clone();
+    let mut blocks_without_tx = 0;
+
+    loop {
+        match tokio::time::timeout(requirements.block_timeout, sub.next()).await {
+            Ok(Some(_header)) => {},
+            Ok(None) => panic!("Unexpected end of block stream"),
+            Err(_) => panic!("No new blocks after {:?}", requirements.block_timeout),
+        };
+
         let new = testing.test_state().await;
         println!("New State:{}", new);
+
+        let num_new_tx = new.txn_count - old.txn_count;
+        if num_new_tx == 0 {
+            blocks_without_tx += new.block_height.unwrap() - old.block_height.unwrap();
+            if blocks_without_tx > requirements.block_height_increment {
+                panic!(
+                    "Found {} blocks without txns",
+                    requirements.max_consecutive_blocks_without_tx
+                );
+            }
+        } else {
+            blocks_without_tx = 0;
+        }
 
         if initial.builder_balance + initial.recipient_balance
             != new.builder_balance + new.recipient_balance
@@ -38,7 +55,7 @@ pub async fn assert_native_demo_works(requirements: TestRequirements) -> Result<
         }
 
         // Timeout if tests take too long.
-        if start.elapsed() > requirements.timeout {
+        if start.elapsed() > requirements.global_timeout {
             panic!("Timeout waiting for block height, transaction count, and light client updates to increase.");
         }
 

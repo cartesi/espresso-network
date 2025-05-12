@@ -1,29 +1,17 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use espresso_types::{EpochVersion, FeeVersion};
+use espresso_types::{EpochVersion, FeeVersion, UpgradeMode};
 use futures::{future::join_all, StreamExt};
+use sequencer::Genesis;
 use vbs::version::StaticVersionType;
 
 use crate::{
-    common::{NativeDemo, TestConfig, TestRequirements},
+    common::{load_genesis_file, NativeDemo, TestConfig, TestRequirements},
     smoke::assert_native_demo_works,
 };
 
-// The number of blocks we will wait for the upgrade to complete before we panic. Needs to be large
-// than "start_proposing_view" set in the "demo-pos.toml" genesis file.
-//
-// With the current config
-//
-// epoch_height = 200
-// epoch_start_block = 321
-// start_proposing_view = 200
-//
-// the upgrade happens usually at height 316.
-const POS_UPGRADE_WAIT_UNTIL_HEIGHT: u64 = 350;
-const MIN_BLOCK_INCREMENT_WITH_POS: u64 = 400; // 2 epochs
-
-async fn assert_pos_upgrade_happens() -> Result<()> {
+async fn assert_pos_upgrade_happens(genesis: &Genesis) -> Result<()> {
     dotenvy::dotenv()?;
 
     // TODO we don't really want to use the requirements here
@@ -69,8 +57,15 @@ async fn assert_pos_upgrade_happens() -> Result<()> {
             break;
         }
 
-        if header.height() > POS_UPGRADE_WAIT_UNTIL_HEIGHT {
-            panic!("Exceeded maximum block height. Upgrade should have finished by now :(");
+        let wait_until_view = match genesis.upgrades[&upgrade_version].mode.clone() {
+            UpgradeMode::View(upgrade) => upgrade.start_proposing_view + 100,
+            UpgradeMode::Time(_time_based_upgrade) => {
+                unimplemented!("View based upgrade not supported yet")
+            },
+        };
+
+        if header.height() > wait_until_view {
+            panic!("Waited until {wait_until_view} but upgrade did not happen");
         }
     }
 
@@ -79,24 +74,32 @@ async fn assert_pos_upgrade_happens() -> Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_native_demo_pos_upgrade() -> Result<()> {
+    let genesis_path = "data/genesis/demo-pos.toml";
+    let genesis = load_genesis_file(genesis_path)?;
     let _demo = NativeDemo::run(
         None,
         Some(vec![(
             "ESPRESSO_SEQUENCER_PROCESS_COMPOSE_GENESIS_FILE".to_string(),
-            "data/genesis/demo-pos.toml".to_string(),
+            genesis_path.to_string(),
         )]),
     )?;
 
     assert_native_demo_works(Default::default()).await?;
-    assert_pos_upgrade_happens().await?;
+    assert_pos_upgrade_happens(&genesis).await?;
+
+    let epoch_length = genesis.epoch_height.expect("epoch_height set in genesis");
+    // Run for a least 3 epochs plus a few blocks to confirm we can make progress once
+    // we are using the stake table from the contract.
+    let expected_block_height = epoch_length * 3 + 10;
 
     // verify native demo continues to work after upgrade
-    let requirements = TestRequirements {
-        block_height_increment: MIN_BLOCK_INCREMENT_WITH_POS,
-        txn_count_increment: 100, // a bit arbitrary but we wait for many blocks
-        timeout: Duration::from_secs(MIN_BLOCK_INCREMENT_WITH_POS * 2),
+    let pos_progress_requirements = TestRequirements {
+        block_height_increment: expected_block_height,
+        txn_count_increment: 2 * expected_block_height,
+        global_timeout: Duration::from_secs(expected_block_height as u64 * 2),
+        ..Default::default()
     };
-    assert_native_demo_works(requirements).await?;
+    assert_native_demo_works(pos_progress_requirements).await?;
 
     Ok(())
 }
