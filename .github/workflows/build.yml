@@ -27,12 +27,9 @@ env:
     target/release/cdn-whitelist
     target/release/cli
     target/release/deploy
-    target/release/dev-rollup
     target/release/espresso-bridge
     target/release/espresso-dev-node
     target/release/keygen
-    target/release/marketplace-builder
-    target/release/marketplace-solver
     target/release/nasty-client
     target/release/node-metrics
     target/release/orchestrator
@@ -49,7 +46,7 @@ env:
 
 jobs:
   build:
-    runs-on: buildjet-8vcpu-ubuntu-2204
+    runs-on: ubuntu-24.04-8core
     steps:
       - uses: rui314/setup-mold@v1
 
@@ -60,7 +57,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           prefix-key: v1-rust
-          cache-provider: buildjet
+          cache-provider: github
 
       - name: Build
         # Build in release without `testing` feature, this should work without `hotshot_example` config.
@@ -130,10 +127,7 @@ jobs:
           - cdn-marshal
           - cdn-whitelist
           - deploy
-          - dev-rollup
           - espresso-dev-node
-          - marketplace-builder
-          - marketplace-solver
           - nasty-client
           - node-validator
           - orchestrator

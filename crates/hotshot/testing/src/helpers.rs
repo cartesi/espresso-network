@@ -32,6 +32,7 @@ use hotshot_types::{
     message::{Proposal, UpgradeLock},
     simple_certificate::DaCertificate2,
     simple_vote::{DaData2, DaVote2, SimpleVote, VersionedVoteData},
+    stake_table::StakeTableEntries,
     traits::{
         election::Membership,
         node_implementation::{NodeType, Versions},
@@ -39,7 +40,7 @@ use hotshot_types::{
     },
     utils::{option_epoch_from_block_number, View, ViewInner},
     vote::{Certificate, HasViewNumber, Vote},
-    StakeTableEntries, ValidatorConfig,
+    ValidatorConfig,
 };
 use serde::Serialize;
 use vbs::version::Version;
@@ -127,7 +128,8 @@ pub async fn build_system_handle_from_launcher<
         hotshot_config.known_da_nodes.clone(),
     )));
 
-    let coordinator = EpochMembershipCoordinator::new(memberships, hotshot_config.epoch_height);
+    let coordinator =
+        EpochMembershipCoordinator::new(memberships, hotshot_config.epoch_height, &storage);
     let node_key_map = launcher.metadata.build_node_key_map();
 
     let (c, s, r) = SystemContext::init(
@@ -229,9 +231,10 @@ pub async fn build_assembled_sig<
     upgrade_lock: &UpgradeLock<TYPES, V>,
 ) -> <TYPES::SignatureKey as SignatureKey>::QcType {
     let stake_table = CERT::stake_table(epoch_membership).await;
-    let real_qc_pp: <TYPES::SignatureKey as SignatureKey>::QcParams =
+    let stake_table_entries = StakeTableEntries::<TYPES>::from(stake_table.clone()).0;
+    let real_qc_pp: <TYPES::SignatureKey as SignatureKey>::QcParams<'_> =
         <TYPES::SignatureKey as SignatureKey>::public_parameter(
-            StakeTableEntries::<TYPES>::from(stake_table.clone()).0,
+            &stake_table_entries,
             CERT::threshold(epoch_membership).await,
         );
 
