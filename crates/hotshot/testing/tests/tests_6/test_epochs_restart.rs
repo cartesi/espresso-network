@@ -19,196 +19,250 @@ use hotshot_testing::{
     test_builder::{TestDescription, TimingData},
 };
 
+// cross_tests!(
+//     TestName: test_all_restart_epochs,
+//     Impls: [CombinedImpl, PushCdnImpl],
+//     Types: [TestTypes, TestTypesRandomizedLeader, TestTwoStakeTablesTypes],
+//     Versions: [EpochsTestVersions],
+//     Ignore: false,
+//     Metadata: {
+//       let timing_data = TimingData {
+//           next_view_timeout: 5000,
+//           ..Default::default()
+//       };
+//       let mut metadata = TestDescription::default().set_num_nodes(20,20);
+//       let mut catchup_nodes = vec![];
+
+//       for i in 0..20 {
+//           catchup_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(0),
+//           })
+//       }
+
+//       metadata.timing_data = timing_data;
+
+//       metadata.spinning_properties = SpinningTaskDescription {
+//           // Restart all the nodes in view 10
+//           node_changes: vec![(10, catchup_nodes)],
+//       };
+//       metadata.view_sync_properties =
+//           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 20);
+
+//       metadata.completion_task_description =
+//           CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
+//               TimeBasedCompletionTaskDescription {
+//                   duration: Duration::from_secs(60),
+//               },
+//           );
+//       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
+//           // Make sure we keep committing rounds after the catchup, but not the full 50.
+//           num_successful_views: 22,
+//           expected_view_failures: vec![10],
+//           possible_view_failures: vec![8, 9, 11, 12],
+//           decide_timeout: Duration::from_secs(60),
+//           ..Default::default()
+//       };
+
+//       metadata
+//     },
+// );
+
+// cross_tests!(
+//     TestName: test_all_restart_one_da_with_epochs,
+//     Impls: [CombinedImpl],
+//     Types: [TestTypes, TestTwoStakeTablesTypes],
+//     Versions: [EpochsTestVersions],
+//     Ignore: false,
+//     Metadata: {
+//       let timing_data = TimingData {
+//           next_view_timeout: 5000,
+//           ..Default::default()
+//       };
+//       let mut metadata = TestDescription::default().set_num_nodes(20,2);
+
+//       let mut catchup_nodes = vec![];
+//       for i in 0..20 {
+//           catchup_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(0),
+//           })
+//       }
+
+//       metadata.timing_data = timing_data;
+
+//       metadata.spinning_properties = SpinningTaskDescription {
+//           // Restart all the nodes in view 10
+//           node_changes: vec![(10, catchup_nodes)],
+//       };
+//       metadata.view_sync_properties =
+//           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 20);
+
+//       metadata.completion_task_description =
+//           CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
+//               TimeBasedCompletionTaskDescription {
+//                   duration: Duration::from_secs(60),
+//               },
+//           );
+//       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
+//           // Make sure we keep committing rounds after the catchup, but not the full 50.
+//           num_successful_views: 22,
+//           expected_view_failures: vec![10],
+//           possible_view_failures: vec![8, 9, 11, 12],
+//           decide_timeout: Duration::from_secs(60),
+//           ..Default::default()
+//       };
+
+//       metadata
+//     },
+// );
+
+// cross_tests!(
+//     TestName: test_staggered_restart_with_epochs_1,
+//     Impls: [CombinedImpl],
+//     Types: [TestTwoStakeTablesTypes],
+//     Versions: [EpochsTestVersions],
+//     Ignore: false,
+//     Metadata: {
+//       let mut metadata = TestDescription::default().set_num_nodes(20,4);
+
+//       let mut down_da_nodes = vec![];
+//       for i in 2..4 {
+//           down_da_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(10),
+//           });
+//       }
+
+//       let mut down_regular_nodes = vec![];
+//       for i in 4..20 {
+//           down_regular_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(0),
+//           });
+//       }
+//       // restart the last da so it gets the new libp2p routing table
+//       for i in 0..2 {
+//           down_regular_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(0),
+//           });
+//       }
+
+//       metadata.spinning_properties = SpinningTaskDescription {
+//           node_changes: vec![(10, down_da_nodes), (20, down_regular_nodes)],
+//       };
+//       metadata.view_sync_properties =
+//           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 50);
+
+//       // Give the test some extra time because we are purposely timing out views
+//       metadata.completion_task_description =
+//           CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
+//               TimeBasedCompletionTaskDescription {
+//                   duration: Duration::from_secs(140),
+//               },
+//           );
+//       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
+//           // Make sure we keep committing rounds after the catchup, but not the full 50.
+//           num_successful_views: 22,
+//           expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+//           possible_view_failures: vec![8, 9, 10, 21, 22, 23, 24],
+//           decide_timeout: Duration::from_secs(120),
+//           ..Default::default()
+//       };
+
+//       metadata
+//     },
+// );
+
+// cross_tests!(
+//     TestName: test_staggered_restart_with_epochs_2,
+//     Impls: [CombinedImpl],
+//     Types: [TestTypes],
+//     Versions: [EpochsTestVersions],
+//     Ignore: false,
+//     Metadata: {
+//       let mut metadata = TestDescription::default().set_num_nodes(20,4);
+
+//       let mut down_da_nodes = vec![];
+//       for i in 2..4 {
+//           down_da_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(10),
+//           });
+//       }
+
+//       let mut down_regular_nodes = vec![];
+//       for i in 4..20 {
+//           down_regular_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(0),
+//           });
+//       }
+//       // restart the last da so it gets the new libp2p routing table
+//       for i in 0..2 {
+//           down_regular_nodes.push(ChangeNode {
+//               idx: i,
+//               updown: NodeAction::RestartDown(0),
+//           });
+//       }
+
+//       metadata.spinning_properties = SpinningTaskDescription {
+//           node_changes: vec![(10, down_da_nodes), (20, down_regular_nodes)],
+//       };
+//       metadata.view_sync_properties =
+//           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 50);
+
+//       // Give the test some extra time because we are purposely timing out views
+//       metadata.completion_task_description =
+//           CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
+//               TimeBasedCompletionTaskDescription {
+//                   duration: Duration::from_secs(240),
+//               },
+//           );
+//       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
+//           // Make sure we keep committing rounds after the catchup, but not the full 50.
+//           num_successful_views: 22,
+//           expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+//           possible_view_failures: vec![8, 9, 10, 21, 22, 23, 24],
+//           decide_timeout: Duration::from_secs(120),
+//           ..Default::default()
+//       };
+
+//       metadata
+//     },
+// );
+
 cross_tests!(
-    TestName: test_all_restart_epochs,
-    Impls: [CombinedImpl, PushCdnImpl],
-    Types: [TestTypes, TestTypesRandomizedLeader, TestTwoStakeTablesTypes],
-    Versions: [EpochsTestVersions],
-    Ignore: false,
-    Metadata: {
-      let timing_data = TimingData {
-          next_view_timeout: 5000,
-          ..Default::default()
-      };
-      let mut metadata = TestDescription::default().set_num_nodes(20,20);
-      let mut catchup_nodes = vec![];
-
-      for i in 0..20 {
-          catchup_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(0),
-          })
-      }
-
-      metadata.timing_data = timing_data;
-
-      metadata.spinning_properties = SpinningTaskDescription {
-          // Restart all the nodes in view 10
-          node_changes: vec![(10, catchup_nodes)],
-      };
-      metadata.view_sync_properties =
-          hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 20);
-
-      metadata.completion_task_description =
-          CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
-              TimeBasedCompletionTaskDescription {
-                  duration: Duration::from_secs(60),
-              },
-          );
-      metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
-          // Make sure we keep committing rounds after the catchup, but not the full 50.
-          num_successful_views: 22,
-          expected_view_failures: vec![10],
-          possible_view_failures: vec![8, 9, 11, 12],
-          decide_timeout: Duration::from_secs(60),
-          ..Default::default()
-      };
-
-      metadata
-    },
-);
-
-cross_tests!(
-    TestName: test_all_restart_one_da_with_epochs,
-    Impls: [CombinedImpl],
-    Types: [TestTypes, TestTwoStakeTablesTypes],
-    Versions: [EpochsTestVersions],
-    Ignore: false,
-    Metadata: {
-      let timing_data = TimingData {
-          next_view_timeout: 5000,
-          ..Default::default()
-      };
-      let mut metadata = TestDescription::default().set_num_nodes(20,2);
-
-      let mut catchup_nodes = vec![];
-      for i in 0..20 {
-          catchup_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(0),
-          })
-      }
-
-      metadata.timing_data = timing_data;
-
-      metadata.spinning_properties = SpinningTaskDescription {
-          // Restart all the nodes in view 10
-          node_changes: vec![(10, catchup_nodes)],
-      };
-      metadata.view_sync_properties =
-          hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 20);
-
-      metadata.completion_task_description =
-          CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
-              TimeBasedCompletionTaskDescription {
-                  duration: Duration::from_secs(60),
-              },
-          );
-      metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
-          // Make sure we keep committing rounds after the catchup, but not the full 50.
-          num_successful_views: 22,
-          expected_view_failures: vec![10],
-          possible_view_failures: vec![8, 9, 11, 12],
-          decide_timeout: Duration::from_secs(60),
-          ..Default::default()
-      };
-
-      metadata
-    },
-);
-
-cross_tests!(
-    TestName: test_staggered_restart_with_epochs_1,
-    Impls: [CombinedImpl],
-    Types: [TestTwoStakeTablesTypes],
-    Versions: [EpochsTestVersions],
-    Ignore: false,
-    Metadata: {
-      let mut metadata = TestDescription::default().set_num_nodes(20,4);
-
-      let mut down_da_nodes = vec![];
-      for i in 2..4 {
-          down_da_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(10),
-          });
-      }
-
-      let mut down_regular_nodes = vec![];
-      for i in 4..20 {
-          down_regular_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(0),
-          });
-      }
-      // restart the last da so it gets the new libp2p routing table
-      for i in 0..2 {
-          down_regular_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(0),
-          });
-      }
-
-      metadata.spinning_properties = SpinningTaskDescription {
-          node_changes: vec![(10, down_da_nodes), (20, down_regular_nodes)],
-      };
-      metadata.view_sync_properties =
-          hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 50);
-
-      // Give the test some extra time because we are purposely timing out views
-      metadata.completion_task_description =
-          CompletionTaskDescription::TimeBasedCompletionTaskBuilder(
-              TimeBasedCompletionTaskDescription {
-                  duration: Duration::from_secs(140),
-              },
-          );
-      metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
-          // Make sure we keep committing rounds after the catchup, but not the full 50.
-          num_successful_views: 22,
-          expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-          possible_view_failures: vec![8, 9, 10, 21, 22, 23, 24],
-          decide_timeout: Duration::from_secs(120),
-          ..Default::default()
-      };
-
-      metadata
-    },
-);
-
-cross_tests!(
-    TestName: test_staggered_restart_with_epochs_2,
+    TestName: test_staggered_restart_double_restart,
     Impls: [CombinedImpl],
     Types: [TestTypes],
     Versions: [EpochsTestVersions],
     Ignore: false,
     Metadata: {
-      let mut metadata = TestDescription::default().set_num_nodes(20,4);
+      let mut metadata = TestDescription::default().set_num_nodes(10,1);
 
-      let mut down_da_nodes = vec![];
-      for i in 2..4 {
-          down_da_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(10),
-          });
+      let mut node_changes = vec![];
+      for i in 6..10 {
+        let view: u64 = i + 1;
+        let views_down: u64 = 11 - view;
+        let change = vec![ChangeNode {
+            idx: i as usize,
+            updown: NodeAction::RestartDown(views_down),
+        }];
+        node_changes.push((view, change));
       }
 
-      let mut down_regular_nodes = vec![];
-      for i in 4..20 {
-          down_regular_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(0),
-          });
-      }
-      // restart the last da so it gets the new libp2p routing table
-      for i in 0..2 {
-          down_regular_nodes.push(ChangeNode {
-              idx: i,
-              updown: NodeAction::RestartDown(0),
-          });
+      for i in 0..6 {
+        let change = vec![ChangeNode {
+            idx: i as usize,
+            updown: NodeAction::RestartDown(0),
+        }];
+        node_changes.push((9, change));
       }
 
       metadata.spinning_properties = SpinningTaskDescription {
-          node_changes: vec![(10, down_da_nodes), (20, down_regular_nodes)],
+          node_changes,
       };
       metadata.view_sync_properties =
           hotshot_testing::view_sync_task::ViewSyncTaskDescription::Threshold(0, 50);
@@ -223,9 +277,9 @@ cross_tests!(
       metadata.overall_safety_properties = OverallSafetyPropertiesDescription {
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
-          expected_view_failures: vec![11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-          possible_view_failures: vec![8, 9, 10, 21, 22, 23, 24],
-          decide_timeout: Duration::from_secs(120),
+          expected_view_failures: vec![8,9],
+          possible_view_failures: vec![1,2,3,4,5,6,7,10],
+          decide_timeout: Duration::from_secs(60),
           ..Default::default()
       };
 

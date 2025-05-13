@@ -133,6 +133,8 @@ where
             if proposal.data.justify_qc().view_number() > self.high_qc.view_number() {
                 self.high_qc = proposal.data.justify_qc().clone();
             }
+        } else if let EventType::ViewTimeout { view_number } = event {
+            tracing::error!("View timeout for view {}", view_number);
         }
 
         let mut new_nodes = vec![];
@@ -160,7 +162,6 @@ where
                                     // Node not initialized. Initialize it
                                     // based on the received leaf.
                                     LateNodeContext::UninitializedContext(late_context_params) => {
-                                        // We'll deconstruct the individual terms here.
                                         let LateNodeContextParameters {
                                             storage,
                                             memberships,
