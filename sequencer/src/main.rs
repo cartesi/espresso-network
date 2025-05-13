@@ -1,19 +1,14 @@
-use clap::Parser;
-
-#[derive(Parser)]
-struct Args {
-    #[arg(short, long, env = "TOKIO_THREAD_STACK_SIZE")]
-    tokio_thread_stack_size: Option<usize>,
-}
-
 pub fn main() -> anyhow::Result<()> {
-    // Parse args
-    let args = Args::parse();
+    // Get the environment variable
+    let tokio_thread_stack_size = std::env::var("TOKIO_THREAD_STACK_SIZE")
+        .unwrap_or("4194304".to_string())
+        .parse::<usize>()
+        .unwrap_or(4194304);
 
     // Set tokio thread stack size
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .thread_stack_size(args.tokio_thread_stack_size.unwrap_or(4194304))
+        .thread_stack_size(tokio_thread_stack_size)
         .build()
         .unwrap();
 
