@@ -46,7 +46,7 @@ use priority_queue::PriorityQueue;
 use serde::de::DeserializeOwned;
 use surf_disco::Request;
 use tide_disco::error::ServerError;
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 use tokio_util::task::AbortOnDropHandle;
 use tracing::{debug, warn};
 use url::Url;
@@ -981,6 +981,7 @@ impl StateCatchup for ParallelStateCatchup {
 
         debug!("try_fetch_leaf at height {height} from local providers failed. Trying remote providers...");
 
+        sleep(Duration::from_millis(500)).await;
         // If that fails, try the remote ones
         let res = self
             .on_remote_providers(clone! {(stake_table) move |provider| {
