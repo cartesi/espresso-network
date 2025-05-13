@@ -1299,4 +1299,28 @@
 <a href=#1299 id=1299 data-nosnippet>1299</a>        </span><span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">warn!</span>(<span class="string">"Received event is not VidShareValidated but we checked it earlier. Shouldn't be possible."</span>));
 <a href=#1300 id=1300 data-nosnippet>1300</a>    };
 <a href=#1301 id=1301 data-nosnippet>1301</a>    <span class="prelude-val">Ok</span>(second_vid_share.clone())
-<a href=#1302 id=1302 data-nosnippet>1302</a>}</code></pre></div></section></main></body></html>
+<a href=#1302 id=1302 data-nosnippet>1302</a>}
+<a href=#1303 id=1303 data-nosnippet>1303</a>
+<a href=#1304 id=1304 data-nosnippet>1304</a><span class="kw">pub async fn </span>broadcast_view_change&lt;TYPES: NodeType&gt;(
+<a href=#1305 id=1305 data-nosnippet>1305</a>    sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;HotShotEvent&lt;TYPES&gt;&gt;&gt;,
+<a href=#1306 id=1306 data-nosnippet>1306</a>    new_view_number: TYPES::View,
+<a href=#1307 id=1307 data-nosnippet>1307</a>    epoch: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
+<a href=#1308 id=1308 data-nosnippet>1308</a>    first_epoch: <span class="prelude-ty">Option</span>&lt;(TYPES::View, TYPES::Epoch)&gt;,
+<a href=#1309 id=1309 data-nosnippet>1309</a>) {
+<a href=#1310 id=1310 data-nosnippet>1310</a>    <span class="kw">let </span><span class="kw-2">mut </span>broadcast_epoch = epoch;
+<a href=#1311 id=1311 data-nosnippet>1311</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>((first_epoch_view, first_epoch)) = first_epoch {
+<a href=#1312 id=1312 data-nosnippet>1312</a>        <span class="kw">if </span>new_view_number == first_epoch_view &amp;&amp; broadcast_epoch != <span class="prelude-val">Some</span>(first_epoch) {
+<a href=#1313 id=1313 data-nosnippet>1313</a>            broadcast_epoch = <span class="prelude-val">Some</span>(first_epoch);
+<a href=#1314 id=1314 data-nosnippet>1314</a>        }
+<a href=#1315 id=1315 data-nosnippet>1315</a>    }
+<a href=#1316 id=1316 data-nosnippet>1316</a>    <span class="macro">tracing::trace!</span>(
+<a href=#1317 id=1317 data-nosnippet>1317</a>        <span class="string">"Sending ViewChange for view {} and epoch {:?}"</span>,
+<a href=#1318 id=1318 data-nosnippet>1318</a>        new_view_number,
+<a href=#1319 id=1319 data-nosnippet>1319</a>        broadcast_epoch
+<a href=#1320 id=1320 data-nosnippet>1320</a>    );
+<a href=#1321 id=1321 data-nosnippet>1321</a>    broadcast_event(
+<a href=#1322 id=1322 data-nosnippet>1322</a>        Arc::new(HotShotEvent::ViewChange(new_view_number, broadcast_epoch)),
+<a href=#1323 id=1323 data-nosnippet>1323</a>        sender,
+<a href=#1324 id=1324 data-nosnippet>1324</a>    )
+<a href=#1325 id=1325 data-nosnippet>1325</a>    .<span class="kw">await
+<a href=#1326 id=1326 data-nosnippet>1326</a></span>}</code></pre></div></section></main></body></html>

@@ -536,405 +536,396 @@
 <a href=#536 id=536 data-nosnippet>536</a>            },
 <a href=#537 id=537 data-nosnippet>537</a>            HotShotEvent::ViewChange(view, epoch) =&gt; {
 <a href=#538 id=538 data-nosnippet>538</a>                <span class="kw">let </span>view = TYPES::View::new(std::cmp::max(<span class="number">1</span>, <span class="kw-2">**</span>view));
-<a href=#539 id=539 data-nosnippet>539</a>                <span class="kw">let </span>epoch = <span class="kw">if </span><span class="self">self</span>.upgrade_lock.epochs_enabled(view).<span class="kw">await </span>{
-<a href=#540 id=540 data-nosnippet>540</a>                    <span class="comment">// #3967 REVIEW NOTE: Double check this logic
-<a href=#541 id=541 data-nosnippet>541</a>                    </span><span class="prelude-val">Some</span>(TYPES::Epoch::new(std::cmp::max(
-<a href=#542 id=542 data-nosnippet>542</a>                        <span class="number">1</span>,
-<a href=#543 id=543 data-nosnippet>543</a>                        epoch.map(|x| <span class="kw-2">*</span>x).unwrap_or(<span class="number">0</span>),
-<a href=#544 id=544 data-nosnippet>544</a>                    )))
-<a href=#545 id=545 data-nosnippet>545</a>                } <span class="kw">else </span>{
-<a href=#546 id=546 data-nosnippet>546</a>                    <span class="kw-2">*</span>epoch
-<a href=#547 id=547 data-nosnippet>547</a>                };
-<a href=#548 id=548 data-nosnippet>548</a>                <span class="macro">ensure!</span>(
-<a href=#549 id=549 data-nosnippet>549</a>                    <span class="kw-2">*</span>view &gt; <span class="kw-2">*</span><span class="self">self</span>.cur_view &amp;&amp; epoch &gt;= <span class="self">self</span>.cur_epoch,
-<a href=#550 id=550 data-nosnippet>550</a>                    <span class="macro">debug!</span>(
-<a href=#551 id=551 data-nosnippet>551</a>                      <span class="string">"Received a view change to an older view and epoch: tried to change view to {:?}\
-<a href=#552 id=552 data-nosnippet>552</a>                      and epoch {:?} though we are at view {:?} and epoch {:?}"</span>,
-<a href=#553 id=553 data-nosnippet>553</a>                        view, epoch, <span class="self">self</span>.cur_view, <span class="self">self</span>.cur_epoch
-<a href=#554 id=554 data-nosnippet>554</a>                    )
-<a href=#555 id=555 data-nosnippet>555</a>                );
-<a href=#556 id=556 data-nosnippet>556</a>                <span class="self">self</span>.cur_view = view;
-<a href=#557 id=557 data-nosnippet>557</a>                <span class="self">self</span>.cur_epoch = epoch;
-<a href=#558 id=558 data-nosnippet>558</a>
-<a href=#559 id=559 data-nosnippet>559</a>                <span class="kw">let </span>leader = <span class="self">self
-<a href=#560 id=560 data-nosnippet>560</a>                    </span>.membership_coordinator
-<a href=#561 id=561 data-nosnippet>561</a>                    .membership_for_epoch(epoch)
-<a href=#562 id=562 data-nosnippet>562</a>                    .<span class="kw">await</span><span class="question-mark">?
-<a href=#563 id=563 data-nosnippet>563</a>                    </span>.leader(view)
-<a href=#564 id=564 data-nosnippet>564</a>                    .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#565 id=565 data-nosnippet>565</a>                <span class="kw">if </span>leader == <span class="self">self</span>.public_key {
-<a href=#566 id=566 data-nosnippet>566</a>                    <span class="self">self</span>.handle_view_change(<span class="kw-2">&amp;</span>event_stream, view, epoch).<span class="kw">await</span>;
-<a href=#567 id=567 data-nosnippet>567</a>                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-<a href=#568 id=568 data-nosnippet>568</a>                }
-<a href=#569 id=569 data-nosnippet>569</a>            },
-<a href=#570 id=570 data-nosnippet>570</a>            <span class="kw">_ </span>=&gt; {},
-<a href=#571 id=571 data-nosnippet>571</a>        }
-<a href=#572 id=572 data-nosnippet>572</a>        <span class="prelude-val">Ok</span>(())
-<a href=#573 id=573 data-nosnippet>573</a>    }
-<a href=#574 id=574 data-nosnippet>574</a>
-<a href=#575 id=575 data-nosnippet>575</a>    <span class="doccomment">/// Get VID commitment for the last successful view before `block_view`.
-<a href=#576 id=576 data-nosnippet>576</a>    /// Returns None if we don't have said commitment recorded.
-<a href=#577 id=577 data-nosnippet>577</a>    </span><span class="attr">#[instrument(skip_all, target = <span class="string">"TransactionTaskState"</span>, fields(id = <span class="self">self</span>.id, cur_view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, block_view = <span class="kw-2">*</span>block_view))]
-<a href=#578 id=578 data-nosnippet>578</a>    </span><span class="kw">async fn </span>last_vid_commitment_retry(
-<a href=#579 id=579 data-nosnippet>579</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#580 id=580 data-nosnippet>580</a>        block_view: TYPES::View,
-<a href=#581 id=581 data-nosnippet>581</a>        task_start_time: Instant,
-<a href=#582 id=582 data-nosnippet>582</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(TYPES::View, VidCommitment)&gt; {
-<a href=#583 id=583 data-nosnippet>583</a>        <span class="kw">loop </span>{
-<a href=#584 id=584 data-nosnippet>584</a>            <span class="kw">match </span><span class="self">self</span>.last_vid_commitment(block_view).<span class="kw">await </span>{
-<a href=#585 id=585 data-nosnippet>585</a>                <span class="prelude-val">Ok</span>((view, comm)) =&gt; <span class="kw">break </span><span class="prelude-val">Ok</span>((view, comm)),
-<a href=#586 id=586 data-nosnippet>586</a>                <span class="prelude-val">Err</span>(e) <span class="kw">if </span>task_start_time.elapsed() &gt;= <span class="self">self</span>.builder_timeout =&gt; <span class="kw">break </span><span class="prelude-val">Err</span>(e),
-<a href=#587 id=587 data-nosnippet>587</a>                <span class="kw">_ </span>=&gt; {
-<a href=#588 id=588 data-nosnippet>588</a>                    <span class="comment">// We still have time, will re-try in a bit
-<a href=#589 id=589 data-nosnippet>589</a>                    </span>sleep(RETRY_DELAY).<span class="kw">await</span>;
-<a href=#590 id=590 data-nosnippet>590</a>                    <span class="kw">continue</span>;
-<a href=#591 id=591 data-nosnippet>591</a>                },
-<a href=#592 id=592 data-nosnippet>592</a>            }
-<a href=#593 id=593 data-nosnippet>593</a>        }
-<a href=#594 id=594 data-nosnippet>594</a>    }
-<a href=#595 id=595 data-nosnippet>595</a>
-<a href=#596 id=596 data-nosnippet>596</a>    <span class="doccomment">/// Get VID commitment for the last successful view before `block_view`.
-<a href=#597 id=597 data-nosnippet>597</a>    /// Returns None if we don't have said commitment recorded.
-<a href=#598 id=598 data-nosnippet>598</a>    </span><span class="attr">#[instrument(skip_all, target = <span class="string">"TransactionTaskState"</span>, fields(id = <span class="self">self</span>.id, cur_view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, block_view = <span class="kw-2">*</span>block_view))]
-<a href=#599 id=599 data-nosnippet>599</a>    </span><span class="kw">async fn </span>last_vid_commitment(
-<a href=#600 id=600 data-nosnippet>600</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#601 id=601 data-nosnippet>601</a>        block_view: TYPES::View,
-<a href=#602 id=602 data-nosnippet>602</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(TYPES::View, VidCommitment)&gt; {
-<a href=#603 id=603 data-nosnippet>603</a>        <span class="kw">let </span>consensus_reader = <span class="self">self</span>.consensus.read().<span class="kw">await</span>;
-<a href=#604 id=604 data-nosnippet>604</a>        <span class="kw">let </span><span class="kw-2">mut </span>target_view = TYPES::View::new(block_view.saturating_sub(<span class="number">1</span>));
-<a href=#605 id=605 data-nosnippet>605</a>
-<a href=#606 id=606 data-nosnippet>606</a>        <span class="kw">loop </span>{
-<a href=#607 id=607 data-nosnippet>607</a>            <span class="kw">let </span>view_data = consensus_reader
-<a href=#608 id=608 data-nosnippet>608</a>                .validated_state_map()
-<a href=#609 id=609 data-nosnippet>609</a>                .get(<span class="kw-2">&amp;</span>target_view)
-<a href=#610 id=610 data-nosnippet>610</a>                .context(<span class="macro">info!</span>(
-<a href=#611 id=611 data-nosnippet>611</a>                    <span class="string">"Missing record for view {target_view} in validated state"</span>,
-<a href=#612 id=612 data-nosnippet>612</a>                ))<span class="question-mark">?</span>;
-<a href=#613 id=613 data-nosnippet>613</a>
-<a href=#614 id=614 data-nosnippet>614</a>            <span class="kw">match </span><span class="kw-2">&amp;</span>view_data.view_inner {
-<a href=#615 id=615 data-nosnippet>615</a>                ViewInner::Da {
-<a href=#616 id=616 data-nosnippet>616</a>                    payload_commitment, ..
-<a href=#617 id=617 data-nosnippet>617</a>                } =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>((target_view, <span class="kw-2">*</span>payload_commitment)),
-<a href=#618 id=618 data-nosnippet>618</a>                ViewInner::Leaf {
-<a href=#619 id=619 data-nosnippet>619</a>                    leaf: leaf_commitment,
-<a href=#620 id=620 data-nosnippet>620</a>                    ..
-<a href=#621 id=621 data-nosnippet>621</a>                } =&gt; {
-<a href=#622 id=622 data-nosnippet>622</a>                    <span class="kw">let </span>leaf = consensus_reader
-<a href=#623 id=623 data-nosnippet>623</a>                        .saved_leaves()
-<a href=#624 id=624 data-nosnippet>624</a>                        .get(leaf_commitment)
-<a href=#625 id=625 data-nosnippet>625</a>                        .context(<span class="macro">info!</span>(
-<a href=#626 id=626 data-nosnippet>626</a>                            <span class="string">"Missing leaf with commitment {leaf_commitment} for view {target_view} in saved_leaves"</span>,
-<a href=#627 id=627 data-nosnippet>627</a>                        ))<span class="question-mark">?</span>;
-<a href=#628 id=628 data-nosnippet>628</a>                    <span class="kw">return </span><span class="prelude-val">Ok</span>((target_view, leaf.payload_commitment()));
-<a href=#629 id=629 data-nosnippet>629</a>                },
-<a href=#630 id=630 data-nosnippet>630</a>                ViewInner::Failed =&gt; {
-<a href=#631 id=631 data-nosnippet>631</a>                    <span class="comment">// For failed views, backtrack
-<a href=#632 id=632 data-nosnippet>632</a>                    </span>target_view =
-<a href=#633 id=633 data-nosnippet>633</a>                        TYPES::View::new(target_view.checked_sub(<span class="number">1</span>).context(<span class="macro">warn!</span>(<span class="string">"Reached genesis. Something is wrong -- have we not decided any blocks since genesis?"</span>))<span class="question-mark">?</span>);
-<a href=#634 id=634 data-nosnippet>634</a>                    <span class="kw">continue</span>;
-<a href=#635 id=635 data-nosnippet>635</a>                },
-<a href=#636 id=636 data-nosnippet>636</a>            }
-<a href=#637 id=637 data-nosnippet>637</a>        }
-<a href=#638 id=638 data-nosnippet>638</a>    }
-<a href=#639 id=639 data-nosnippet>639</a>
-<a href=#640 id=640 data-nosnippet>640</a>    <span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, cur_view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, block_view = <span class="kw-2">*</span>block_view), name = <span class="string">"wait_for_block"</span>, level = <span class="string">"error"</span>)]
-<a href=#641 id=641 data-nosnippet>641</a>    </span><span class="kw">async fn </span>wait_for_block(<span class="kw-2">&amp;</span><span class="self">self</span>, block_view: TYPES::View) -&gt; <span class="prelude-ty">Option</span>&lt;BuilderResponse&lt;TYPES&gt;&gt; {
-<a href=#642 id=642 data-nosnippet>642</a>        <span class="kw">let </span>task_start_time = Instant::now();
-<a href=#643 id=643 data-nosnippet>643</a>
-<a href=#644 id=644 data-nosnippet>644</a>        <span class="comment">// Find commitment to the block we want to build upon
-<a href=#645 id=645 data-nosnippet>645</a>        </span><span class="kw">let </span>(parent_view, parent_comm) = <span class="kw">match </span><span class="self">self
-<a href=#646 id=646 data-nosnippet>646</a>            </span>.last_vid_commitment_retry(block_view, task_start_time)
-<a href=#647 id=647 data-nosnippet>647</a>            .<span class="kw">await
-<a href=#648 id=648 data-nosnippet>648</a>        </span>{
-<a href=#649 id=649 data-nosnippet>649</a>            <span class="prelude-val">Ok</span>((v, c)) =&gt; (v, c),
-<a href=#650 id=650 data-nosnippet>650</a>            <span class="prelude-val">Err</span>(e) =&gt; {
-<a href=#651 id=651 data-nosnippet>651</a>                <span class="macro">tracing::warn!</span>(<span class="string">"Failed to find last vid commitment in time: {e}"</span>);
-<a href=#652 id=652 data-nosnippet>652</a>                <span class="kw">return </span><span class="prelude-val">None</span>;
-<a href=#653 id=653 data-nosnippet>653</a>            },
-<a href=#654 id=654 data-nosnippet>654</a>        };
-<a href=#655 id=655 data-nosnippet>655</a>
-<a href=#656 id=656 data-nosnippet>656</a>        <span class="kw">let </span>parent_comm_sig = <span class="kw">match </span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::sign(
-<a href=#657 id=657 data-nosnippet>657</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.private_key,
-<a href=#658 id=658 data-nosnippet>658</a>            parent_comm.as_ref(),
-<a href=#659 id=659 data-nosnippet>659</a>        ) {
-<a href=#660 id=660 data-nosnippet>660</a>            <span class="prelude-val">Ok</span>(sig) =&gt; sig,
-<a href=#661 id=661 data-nosnippet>661</a>            <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#662 id=662 data-nosnippet>662</a>                <span class="macro">tracing::error!</span>(%err, <span class="string">"Failed to sign block hash"</span>);
-<a href=#663 id=663 data-nosnippet>663</a>                <span class="kw">return </span><span class="prelude-val">None</span>;
-<a href=#664 id=664 data-nosnippet>664</a>            },
-<a href=#665 id=665 data-nosnippet>665</a>        };
-<a href=#666 id=666 data-nosnippet>666</a>
-<a href=#667 id=667 data-nosnippet>667</a>        <span class="kw">while </span>task_start_time.elapsed() &lt; <span class="self">self</span>.builder_timeout {
-<a href=#668 id=668 data-nosnippet>668</a>            <span class="kw">match </span>timeout(
-<a href=#669 id=669 data-nosnippet>669</a>                <span class="self">self</span>.builder_timeout
-<a href=#670 id=670 data-nosnippet>670</a>                    .saturating_sub(task_start_time.elapsed()),
-<a href=#671 id=671 data-nosnippet>671</a>                <span class="self">self</span>.block_from_builder(parent_comm, parent_view, <span class="kw-2">&amp;</span>parent_comm_sig),
-<a href=#672 id=672 data-nosnippet>672</a>            )
-<a href=#673 id=673 data-nosnippet>673</a>            .<span class="kw">await
-<a href=#674 id=674 data-nosnippet>674</a>            </span>{
-<a href=#675 id=675 data-nosnippet>675</a>                <span class="comment">// We got a block
-<a href=#676 id=676 data-nosnippet>676</a>                </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(block)) =&gt; {
-<a href=#677 id=677 data-nosnippet>677</a>                    <span class="kw">return </span><span class="prelude-val">Some</span>(block);
-<a href=#678 id=678 data-nosnippet>678</a>                },
-<a href=#679 id=679 data-nosnippet>679</a>
-<a href=#680 id=680 data-nosnippet>680</a>                <span class="comment">// We failed to get a block
-<a href=#681 id=681 data-nosnippet>681</a>                </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
-<a href=#682 id=682 data-nosnippet>682</a>                    <span class="macro">tracing::info!</span>(<span class="string">"Couldn't get a block: {err:#}"</span>);
-<a href=#683 id=683 data-nosnippet>683</a>                    <span class="comment">// pause a bit
-<a href=#684 id=684 data-nosnippet>684</a>                    </span>sleep(RETRY_DELAY).<span class="kw">await</span>;
-<a href=#685 id=685 data-nosnippet>685</a>                    <span class="kw">continue</span>;
-<a href=#686 id=686 data-nosnippet>686</a>                },
-<a href=#687 id=687 data-nosnippet>687</a>
-<a href=#688 id=688 data-nosnippet>688</a>                <span class="comment">// We timed out while getting available blocks
-<a href=#689 id=689 data-nosnippet>689</a>                </span><span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#690 id=690 data-nosnippet>690</a>                    <span class="macro">tracing::info!</span>(%err, <span class="string">"Timeout while getting available blocks"</span>);
-<a href=#691 id=691 data-nosnippet>691</a>                    <span class="kw">return </span><span class="prelude-val">None</span>;
-<a href=#692 id=692 data-nosnippet>692</a>                },
-<a href=#693 id=693 data-nosnippet>693</a>            }
-<a href=#694 id=694 data-nosnippet>694</a>        }
-<a href=#695 id=695 data-nosnippet>695</a>
-<a href=#696 id=696 data-nosnippet>696</a>        <span class="macro">tracing::warn!</span>(<span class="string">"could not get a block from the builder in time"</span>);
-<a href=#697 id=697 data-nosnippet>697</a>        <span class="prelude-val">None
-<a href=#698 id=698 data-nosnippet>698</a>    </span>}
-<a href=#699 id=699 data-nosnippet>699</a>
-<a href=#700 id=700 data-nosnippet>700</a>    <span class="doccomment">/// Query the builders for available blocks. Queries only fraction of the builders
-<a href=#701 id=701 data-nosnippet>701</a>    /// based on the response time.
-<a href=#702 id=702 data-nosnippet>702</a>    </span><span class="kw">async fn </span>get_available_blocks(
-<a href=#703 id=703 data-nosnippet>703</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#704 id=704 data-nosnippet>704</a>        parent_comm: VidCommitment,
-<a href=#705 id=705 data-nosnippet>705</a>        view_number: TYPES::View,
-<a href=#706 id=706 data-nosnippet>706</a>        parent_comm_sig: <span class="kw-2">&amp;</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PureAssembledSignatureType,
-<a href=#707 id=707 data-nosnippet>707</a>    ) -&gt; Vec&lt;(AvailableBlockInfo&lt;TYPES&gt;, usize)&gt; {
-<a href=#708 id=708 data-nosnippet>708</a>        <span class="kw">let </span>tasks = <span class="self">self
-<a href=#709 id=709 data-nosnippet>709</a>            </span>.builder_clients
-<a href=#710 id=710 data-nosnippet>710</a>            .iter()
-<a href=#711 id=711 data-nosnippet>711</a>            .enumerate()
-<a href=#712 id=712 data-nosnippet>712</a>            .map(|(builder_idx, client)| <span class="kw">async move </span>{
-<a href=#713 id=713 data-nosnippet>713</a>                client
-<a href=#714 id=714 data-nosnippet>714</a>                    .available_blocks(
-<a href=#715 id=715 data-nosnippet>715</a>                        parent_comm,
-<a href=#716 id=716 data-nosnippet>716</a>                        view_number.u64(),
-<a href=#717 id=717 data-nosnippet>717</a>                        <span class="self">self</span>.public_key.clone(),
-<a href=#718 id=718 data-nosnippet>718</a>                        parent_comm_sig,
-<a href=#719 id=719 data-nosnippet>719</a>                    )
-<a href=#720 id=720 data-nosnippet>720</a>                    .<span class="kw">await
-<a href=#721 id=721 data-nosnippet>721</a>                    </span>.map(<span class="kw">move </span>|blocks| {
-<a href=#722 id=722 data-nosnippet>722</a>                        blocks
-<a href=#723 id=723 data-nosnippet>723</a>                            .into_iter()
-<a href=#724 id=724 data-nosnippet>724</a>                            .map(<span class="kw">move </span>|block_info| (block_info, builder_idx))
-<a href=#725 id=725 data-nosnippet>725</a>                    })
-<a href=#726 id=726 data-nosnippet>726</a>            })
-<a href=#727 id=727 data-nosnippet>727</a>            .collect::&lt;FuturesUnordered&lt;<span class="kw">_</span>&gt;&gt;();
-<a href=#728 id=728 data-nosnippet>728</a>        <span class="kw">let </span><span class="kw-2">mut </span>results = Vec::with_capacity(<span class="self">self</span>.builder_clients.len());
-<a href=#729 id=729 data-nosnippet>729</a>        <span class="kw">let </span>query_start = Instant::now();
-<a href=#730 id=730 data-nosnippet>730</a>        <span class="kw">let </span>threshold = (<span class="self">self</span>.builder_clients.len() * BUILDER_MAIN_BATCH_THRESHOLD_DIVIDEND)
-<a href=#731 id=731 data-nosnippet>731</a>            .div_ceil(BUILDER_MAIN_BATCH_THRESHOLD_DIVISOR);
-<a href=#732 id=732 data-nosnippet>732</a>        <span class="kw">let </span><span class="kw-2">mut </span>tasks = tasks.take(threshold);
-<a href=#733 id=733 data-nosnippet>733</a>        <span class="kw">while let </span><span class="prelude-val">Some</span>(result) = tasks.next().<span class="kw">await </span>{
-<a href=#734 id=734 data-nosnippet>734</a>            results.push(result);
-<a href=#735 id=735 data-nosnippet>735</a>            <span class="kw">if </span>query_start.elapsed() &gt; BUILDER_MAIN_BATCH_CUTOFF {
-<a href=#736 id=736 data-nosnippet>736</a>                <span class="kw">break</span>;
-<a href=#737 id=737 data-nosnippet>737</a>            }
-<a href=#738 id=738 data-nosnippet>738</a>        }
-<a href=#739 id=739 data-nosnippet>739</a>        <span class="kw">let </span>timeout = sleep(std::cmp::max(
-<a href=#740 id=740 data-nosnippet>740</a>            query_start
-<a href=#741 id=741 data-nosnippet>741</a>                .elapsed()
-<a href=#742 id=742 data-nosnippet>742</a>                .mul_f32(BUILDER_ADDITIONAL_TIME_MULTIPLIER),
-<a href=#743 id=743 data-nosnippet>743</a>            BUILDER_MINIMUM_QUERY_TIME.saturating_sub(query_start.elapsed()),
-<a href=#744 id=744 data-nosnippet>744</a>        ));
-<a href=#745 id=745 data-nosnippet>745</a>        <span class="macro">futures::pin_mut!</span>(timeout);
-<a href=#746 id=746 data-nosnippet>746</a>        <span class="kw">let </span><span class="kw-2">mut </span>tasks = tasks.into_inner().take_until(timeout);
-<a href=#747 id=747 data-nosnippet>747</a>        <span class="kw">while let </span><span class="prelude-val">Some</span>(result) = tasks.next().<span class="kw">await </span>{
-<a href=#748 id=748 data-nosnippet>748</a>            results.push(result);
-<a href=#749 id=749 data-nosnippet>749</a>        }
-<a href=#750 id=750 data-nosnippet>750</a>        results
-<a href=#751 id=751 data-nosnippet>751</a>            .into_iter()
-<a href=#752 id=752 data-nosnippet>752</a>            .filter_map(|result| result.ok())
-<a href=#753 id=753 data-nosnippet>753</a>            .flatten()
-<a href=#754 id=754 data-nosnippet>754</a>            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-<a href=#755 id=755 data-nosnippet>755</a>    }
-<a href=#756 id=756 data-nosnippet>756</a>
-<a href=#757 id=757 data-nosnippet>757</a>    <span class="doccomment">/// Get a block from builder.
-<a href=#758 id=758 data-nosnippet>758</a>    /// Queries the sufficiently fast builders for available blocks and chooses the one with the
-<a href=#759 id=759 data-nosnippet>759</a>    /// best fee/byte ratio, re-trying with the next best one in case of failure.
-<a href=#760 id=760 data-nosnippet>760</a>    ///
-<a href=#761 id=761 data-nosnippet>761</a>    /// # Errors
-<a href=#762 id=762 data-nosnippet>762</a>    /// If none of the builder reports any available blocks or claiming block fails for all of the
-<a href=#763 id=763 data-nosnippet>763</a>    /// builders.
-<a href=#764 id=764 data-nosnippet>764</a>    </span><span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, view = <span class="kw-2">*</span><span class="self">self</span>.cur_view), name = <span class="string">"block_from_builder"</span>, level = <span class="string">"error"</span>)]
-<a href=#765 id=765 data-nosnippet>765</a>    </span><span class="kw">async fn </span>block_from_builder(
-<a href=#766 id=766 data-nosnippet>766</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#767 id=767 data-nosnippet>767</a>        parent_comm: VidCommitment,
-<a href=#768 id=768 data-nosnippet>768</a>        view_number: TYPES::View,
-<a href=#769 id=769 data-nosnippet>769</a>        parent_comm_sig: <span class="kw-2">&amp;</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PureAssembledSignatureType,
-<a href=#770 id=770 data-nosnippet>770</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;BuilderResponse&lt;TYPES&gt;&gt; {
-<a href=#771 id=771 data-nosnippet>771</a>        <span class="kw">let </span><span class="kw-2">mut </span>available_blocks = <span class="self">self
-<a href=#772 id=772 data-nosnippet>772</a>            </span>.get_available_blocks(parent_comm, view_number, parent_comm_sig)
-<a href=#773 id=773 data-nosnippet>773</a>            .<span class="kw">await</span>;
-<a href=#774 id=774 data-nosnippet>774</a>
-<a href=#775 id=775 data-nosnippet>775</a>        available_blocks.sort_by(|(l, <span class="kw">_</span>), (r, <span class="kw">_</span>)| {
-<a href=#776 id=776 data-nosnippet>776</a>            <span class="comment">// We want the block with the highest fee per byte of data we're going to have to
-<a href=#777 id=777 data-nosnippet>777</a>            // process, thus our comparison function is:
-<a href=#778 id=778 data-nosnippet>778</a>            //      (l.offered_fee / l.block_size) &lt; (r.offered_fee / r.block_size)
-<a href=#779 id=779 data-nosnippet>779</a>            // To avoid floating point math (which doesn't even have an `Ord` impl) we multiply
-<a href=#780 id=780 data-nosnippet>780</a>            // through by the denominators to get
-<a href=#781 id=781 data-nosnippet>781</a>            //      l.offered_fee * r.block_size &lt; r.offered_fee * l.block_size
-<a href=#782 id=782 data-nosnippet>782</a>            // We cast up to u128 to avoid overflow.
-<a href=#783 id=783 data-nosnippet>783</a>            </span>(u128::from(l.offered_fee) * u128::from(r.block_size))
-<a href=#784 id=784 data-nosnippet>784</a>                .cmp(<span class="kw-2">&amp;</span>(u128::from(r.offered_fee) * u128::from(l.block_size)))
-<a href=#785 id=785 data-nosnippet>785</a>        });
-<a href=#786 id=786 data-nosnippet>786</a>
-<a href=#787 id=787 data-nosnippet>787</a>        <span class="kw">if </span>available_blocks.is_empty() {
-<a href=#788 id=788 data-nosnippet>788</a>            <span class="macro">tracing::info!</span>(<span class="string">"No available blocks"</span>);
-<a href=#789 id=789 data-nosnippet>789</a>            <span class="macro">bail!</span>(<span class="string">"No available blocks"</span>);
-<a href=#790 id=790 data-nosnippet>790</a>        }
-<a href=#791 id=791 data-nosnippet>791</a>
-<a href=#792 id=792 data-nosnippet>792</a>        <span class="kw">for </span>(block_info, builder_idx) <span class="kw">in </span>available_blocks {
-<a href=#793 id=793 data-nosnippet>793</a>            <span class="comment">// Verify signature over chosen block.
-<a href=#794 id=794 data-nosnippet>794</a>            </span><span class="kw">if </span>!block_info.sender.validate_block_info_signature(
-<a href=#795 id=795 data-nosnippet>795</a>                <span class="kw-2">&amp;</span>block_info.signature,
-<a href=#796 id=796 data-nosnippet>796</a>                block_info.block_size,
-<a href=#797 id=797 data-nosnippet>797</a>                block_info.offered_fee,
-<a href=#798 id=798 data-nosnippet>798</a>                <span class="kw-2">&amp;</span>block_info.block_hash,
-<a href=#799 id=799 data-nosnippet>799</a>            ) {
-<a href=#800 id=800 data-nosnippet>800</a>                <span class="macro">tracing::warn!</span>(<span class="string">"Failed to verify available block info response message signature"</span>);
-<a href=#801 id=801 data-nosnippet>801</a>                <span class="kw">continue</span>;
-<a href=#802 id=802 data-nosnippet>802</a>            }
-<a href=#803 id=803 data-nosnippet>803</a>
-<a href=#804 id=804 data-nosnippet>804</a>            <span class="kw">let </span>request_signature = <span class="kw">match </span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::sign(
-<a href=#805 id=805 data-nosnippet>805</a>                <span class="kw-2">&amp;</span><span class="self">self</span>.private_key,
-<a href=#806 id=806 data-nosnippet>806</a>                block_info.block_hash.as_ref(),
-<a href=#807 id=807 data-nosnippet>807</a>            ) {
-<a href=#808 id=808 data-nosnippet>808</a>                <span class="prelude-val">Ok</span>(request_signature) =&gt; request_signature,
-<a href=#809 id=809 data-nosnippet>809</a>                <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#810 id=810 data-nosnippet>810</a>                    <span class="macro">tracing::error!</span>(%err, <span class="string">"Failed to sign block hash"</span>);
-<a href=#811 id=811 data-nosnippet>811</a>                    <span class="kw">continue</span>;
-<a href=#812 id=812 data-nosnippet>812</a>                },
-<a href=#813 id=813 data-nosnippet>813</a>            };
+<a href=#539 id=539 data-nosnippet>539</a>                <span class="macro">ensure!</span>(
+<a href=#540 id=540 data-nosnippet>540</a>                    <span class="kw-2">*</span>view &gt; <span class="kw-2">*</span><span class="self">self</span>.cur_view &amp;&amp; <span class="kw-2">*</span>epoch &gt;= <span class="self">self</span>.cur_epoch,
+<a href=#541 id=541 data-nosnippet>541</a>                    <span class="macro">debug!</span>(
+<a href=#542 id=542 data-nosnippet>542</a>                      <span class="string">"Received a view change to an older view and epoch: tried to change view to {:?}\
+<a href=#543 id=543 data-nosnippet>543</a>                      and epoch {:?} though we are at view {:?} and epoch {:?}"</span>,
+<a href=#544 id=544 data-nosnippet>544</a>                        view, epoch, <span class="self">self</span>.cur_view, <span class="self">self</span>.cur_epoch
+<a href=#545 id=545 data-nosnippet>545</a>                    )
+<a href=#546 id=546 data-nosnippet>546</a>                );
+<a href=#547 id=547 data-nosnippet>547</a>                <span class="self">self</span>.cur_view = view;
+<a href=#548 id=548 data-nosnippet>548</a>                <span class="self">self</span>.cur_epoch = <span class="kw-2">*</span>epoch;
+<a href=#549 id=549 data-nosnippet>549</a>
+<a href=#550 id=550 data-nosnippet>550</a>                <span class="kw">let </span>leader = <span class="self">self
+<a href=#551 id=551 data-nosnippet>551</a>                    </span>.membership_coordinator
+<a href=#552 id=552 data-nosnippet>552</a>                    .membership_for_epoch(<span class="kw-2">*</span>epoch)
+<a href=#553 id=553 data-nosnippet>553</a>                    .<span class="kw">await</span><span class="question-mark">?
+<a href=#554 id=554 data-nosnippet>554</a>                    </span>.leader(view)
+<a href=#555 id=555 data-nosnippet>555</a>                    .<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#556 id=556 data-nosnippet>556</a>                <span class="kw">if </span>leader == <span class="self">self</span>.public_key {
+<a href=#557 id=557 data-nosnippet>557</a>                    <span class="self">self</span>.handle_view_change(<span class="kw-2">&amp;</span>event_stream, view, <span class="kw-2">*</span>epoch).<span class="kw">await</span>;
+<a href=#558 id=558 data-nosnippet>558</a>                    <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+<a href=#559 id=559 data-nosnippet>559</a>                }
+<a href=#560 id=560 data-nosnippet>560</a>            },
+<a href=#561 id=561 data-nosnippet>561</a>            <span class="kw">_ </span>=&gt; {},
+<a href=#562 id=562 data-nosnippet>562</a>        }
+<a href=#563 id=563 data-nosnippet>563</a>        <span class="prelude-val">Ok</span>(())
+<a href=#564 id=564 data-nosnippet>564</a>    }
+<a href=#565 id=565 data-nosnippet>565</a>
+<a href=#566 id=566 data-nosnippet>566</a>    <span class="doccomment">/// Get VID commitment for the last successful view before `block_view`.
+<a href=#567 id=567 data-nosnippet>567</a>    /// Returns None if we don't have said commitment recorded.
+<a href=#568 id=568 data-nosnippet>568</a>    </span><span class="attr">#[instrument(skip_all, target = <span class="string">"TransactionTaskState"</span>, fields(id = <span class="self">self</span>.id, cur_view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, block_view = <span class="kw-2">*</span>block_view))]
+<a href=#569 id=569 data-nosnippet>569</a>    </span><span class="kw">async fn </span>last_vid_commitment_retry(
+<a href=#570 id=570 data-nosnippet>570</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#571 id=571 data-nosnippet>571</a>        block_view: TYPES::View,
+<a href=#572 id=572 data-nosnippet>572</a>        task_start_time: Instant,
+<a href=#573 id=573 data-nosnippet>573</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(TYPES::View, VidCommitment)&gt; {
+<a href=#574 id=574 data-nosnippet>574</a>        <span class="kw">loop </span>{
+<a href=#575 id=575 data-nosnippet>575</a>            <span class="kw">match </span><span class="self">self</span>.last_vid_commitment(block_view).<span class="kw">await </span>{
+<a href=#576 id=576 data-nosnippet>576</a>                <span class="prelude-val">Ok</span>((view, comm)) =&gt; <span class="kw">break </span><span class="prelude-val">Ok</span>((view, comm)),
+<a href=#577 id=577 data-nosnippet>577</a>                <span class="prelude-val">Err</span>(e) <span class="kw">if </span>task_start_time.elapsed() &gt;= <span class="self">self</span>.builder_timeout =&gt; <span class="kw">break </span><span class="prelude-val">Err</span>(e),
+<a href=#578 id=578 data-nosnippet>578</a>                <span class="kw">_ </span>=&gt; {
+<a href=#579 id=579 data-nosnippet>579</a>                    <span class="comment">// We still have time, will re-try in a bit
+<a href=#580 id=580 data-nosnippet>580</a>                    </span>sleep(RETRY_DELAY).<span class="kw">await</span>;
+<a href=#581 id=581 data-nosnippet>581</a>                    <span class="kw">continue</span>;
+<a href=#582 id=582 data-nosnippet>582</a>                },
+<a href=#583 id=583 data-nosnippet>583</a>            }
+<a href=#584 id=584 data-nosnippet>584</a>        }
+<a href=#585 id=585 data-nosnippet>585</a>    }
+<a href=#586 id=586 data-nosnippet>586</a>
+<a href=#587 id=587 data-nosnippet>587</a>    <span class="doccomment">/// Get VID commitment for the last successful view before `block_view`.
+<a href=#588 id=588 data-nosnippet>588</a>    /// Returns None if we don't have said commitment recorded.
+<a href=#589 id=589 data-nosnippet>589</a>    </span><span class="attr">#[instrument(skip_all, target = <span class="string">"TransactionTaskState"</span>, fields(id = <span class="self">self</span>.id, cur_view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, block_view = <span class="kw-2">*</span>block_view))]
+<a href=#590 id=590 data-nosnippet>590</a>    </span><span class="kw">async fn </span>last_vid_commitment(
+<a href=#591 id=591 data-nosnippet>591</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#592 id=592 data-nosnippet>592</a>        block_view: TYPES::View,
+<a href=#593 id=593 data-nosnippet>593</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(TYPES::View, VidCommitment)&gt; {
+<a href=#594 id=594 data-nosnippet>594</a>        <span class="kw">let </span>consensus_reader = <span class="self">self</span>.consensus.read().<span class="kw">await</span>;
+<a href=#595 id=595 data-nosnippet>595</a>        <span class="kw">let </span><span class="kw-2">mut </span>target_view = TYPES::View::new(block_view.saturating_sub(<span class="number">1</span>));
+<a href=#596 id=596 data-nosnippet>596</a>
+<a href=#597 id=597 data-nosnippet>597</a>        <span class="kw">loop </span>{
+<a href=#598 id=598 data-nosnippet>598</a>            <span class="kw">let </span>view_data = consensus_reader
+<a href=#599 id=599 data-nosnippet>599</a>                .validated_state_map()
+<a href=#600 id=600 data-nosnippet>600</a>                .get(<span class="kw-2">&amp;</span>target_view)
+<a href=#601 id=601 data-nosnippet>601</a>                .context(<span class="macro">info!</span>(
+<a href=#602 id=602 data-nosnippet>602</a>                    <span class="string">"Missing record for view {target_view} in validated state"</span>,
+<a href=#603 id=603 data-nosnippet>603</a>                ))<span class="question-mark">?</span>;
+<a href=#604 id=604 data-nosnippet>604</a>
+<a href=#605 id=605 data-nosnippet>605</a>            <span class="kw">match </span><span class="kw-2">&amp;</span>view_data.view_inner {
+<a href=#606 id=606 data-nosnippet>606</a>                ViewInner::Da {
+<a href=#607 id=607 data-nosnippet>607</a>                    payload_commitment, ..
+<a href=#608 id=608 data-nosnippet>608</a>                } =&gt; <span class="kw">return </span><span class="prelude-val">Ok</span>((target_view, <span class="kw-2">*</span>payload_commitment)),
+<a href=#609 id=609 data-nosnippet>609</a>                ViewInner::Leaf {
+<a href=#610 id=610 data-nosnippet>610</a>                    leaf: leaf_commitment,
+<a href=#611 id=611 data-nosnippet>611</a>                    ..
+<a href=#612 id=612 data-nosnippet>612</a>                } =&gt; {
+<a href=#613 id=613 data-nosnippet>613</a>                    <span class="kw">let </span>leaf = consensus_reader
+<a href=#614 id=614 data-nosnippet>614</a>                        .saved_leaves()
+<a href=#615 id=615 data-nosnippet>615</a>                        .get(leaf_commitment)
+<a href=#616 id=616 data-nosnippet>616</a>                        .context(<span class="macro">info!</span>(
+<a href=#617 id=617 data-nosnippet>617</a>                            <span class="string">"Missing leaf with commitment {leaf_commitment} for view {target_view} in saved_leaves"</span>,
+<a href=#618 id=618 data-nosnippet>618</a>                        ))<span class="question-mark">?</span>;
+<a href=#619 id=619 data-nosnippet>619</a>                    <span class="kw">return </span><span class="prelude-val">Ok</span>((target_view, leaf.payload_commitment()));
+<a href=#620 id=620 data-nosnippet>620</a>                },
+<a href=#621 id=621 data-nosnippet>621</a>                ViewInner::Failed =&gt; {
+<a href=#622 id=622 data-nosnippet>622</a>                    <span class="comment">// For failed views, backtrack
+<a href=#623 id=623 data-nosnippet>623</a>                    </span>target_view =
+<a href=#624 id=624 data-nosnippet>624</a>                        TYPES::View::new(target_view.checked_sub(<span class="number">1</span>).context(<span class="macro">warn!</span>(<span class="string">"Reached genesis. Something is wrong -- have we not decided any blocks since genesis?"</span>))<span class="question-mark">?</span>);
+<a href=#625 id=625 data-nosnippet>625</a>                    <span class="kw">continue</span>;
+<a href=#626 id=626 data-nosnippet>626</a>                },
+<a href=#627 id=627 data-nosnippet>627</a>            }
+<a href=#628 id=628 data-nosnippet>628</a>        }
+<a href=#629 id=629 data-nosnippet>629</a>    }
+<a href=#630 id=630 data-nosnippet>630</a>
+<a href=#631 id=631 data-nosnippet>631</a>    <span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, cur_view = <span class="kw-2">*</span><span class="self">self</span>.cur_view, block_view = <span class="kw-2">*</span>block_view), name = <span class="string">"wait_for_block"</span>, level = <span class="string">"error"</span>)]
+<a href=#632 id=632 data-nosnippet>632</a>    </span><span class="kw">async fn </span>wait_for_block(<span class="kw-2">&amp;</span><span class="self">self</span>, block_view: TYPES::View) -&gt; <span class="prelude-ty">Option</span>&lt;BuilderResponse&lt;TYPES&gt;&gt; {
+<a href=#633 id=633 data-nosnippet>633</a>        <span class="kw">let </span>task_start_time = Instant::now();
+<a href=#634 id=634 data-nosnippet>634</a>
+<a href=#635 id=635 data-nosnippet>635</a>        <span class="comment">// Find commitment to the block we want to build upon
+<a href=#636 id=636 data-nosnippet>636</a>        </span><span class="kw">let </span>(parent_view, parent_comm) = <span class="kw">match </span><span class="self">self
+<a href=#637 id=637 data-nosnippet>637</a>            </span>.last_vid_commitment_retry(block_view, task_start_time)
+<a href=#638 id=638 data-nosnippet>638</a>            .<span class="kw">await
+<a href=#639 id=639 data-nosnippet>639</a>        </span>{
+<a href=#640 id=640 data-nosnippet>640</a>            <span class="prelude-val">Ok</span>((v, c)) =&gt; (v, c),
+<a href=#641 id=641 data-nosnippet>641</a>            <span class="prelude-val">Err</span>(e) =&gt; {
+<a href=#642 id=642 data-nosnippet>642</a>                <span class="macro">tracing::warn!</span>(<span class="string">"Failed to find last vid commitment in time: {e}"</span>);
+<a href=#643 id=643 data-nosnippet>643</a>                <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#644 id=644 data-nosnippet>644</a>            },
+<a href=#645 id=645 data-nosnippet>645</a>        };
+<a href=#646 id=646 data-nosnippet>646</a>
+<a href=#647 id=647 data-nosnippet>647</a>        <span class="kw">let </span>parent_comm_sig = <span class="kw">match </span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::sign(
+<a href=#648 id=648 data-nosnippet>648</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.private_key,
+<a href=#649 id=649 data-nosnippet>649</a>            parent_comm.as_ref(),
+<a href=#650 id=650 data-nosnippet>650</a>        ) {
+<a href=#651 id=651 data-nosnippet>651</a>            <span class="prelude-val">Ok</span>(sig) =&gt; sig,
+<a href=#652 id=652 data-nosnippet>652</a>            <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#653 id=653 data-nosnippet>653</a>                <span class="macro">tracing::error!</span>(%err, <span class="string">"Failed to sign block hash"</span>);
+<a href=#654 id=654 data-nosnippet>654</a>                <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#655 id=655 data-nosnippet>655</a>            },
+<a href=#656 id=656 data-nosnippet>656</a>        };
+<a href=#657 id=657 data-nosnippet>657</a>
+<a href=#658 id=658 data-nosnippet>658</a>        <span class="kw">while </span>task_start_time.elapsed() &lt; <span class="self">self</span>.builder_timeout {
+<a href=#659 id=659 data-nosnippet>659</a>            <span class="kw">match </span>timeout(
+<a href=#660 id=660 data-nosnippet>660</a>                <span class="self">self</span>.builder_timeout
+<a href=#661 id=661 data-nosnippet>661</a>                    .saturating_sub(task_start_time.elapsed()),
+<a href=#662 id=662 data-nosnippet>662</a>                <span class="self">self</span>.block_from_builder(parent_comm, parent_view, <span class="kw-2">&amp;</span>parent_comm_sig),
+<a href=#663 id=663 data-nosnippet>663</a>            )
+<a href=#664 id=664 data-nosnippet>664</a>            .<span class="kw">await
+<a href=#665 id=665 data-nosnippet>665</a>            </span>{
+<a href=#666 id=666 data-nosnippet>666</a>                <span class="comment">// We got a block
+<a href=#667 id=667 data-nosnippet>667</a>                </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Ok</span>(block)) =&gt; {
+<a href=#668 id=668 data-nosnippet>668</a>                    <span class="kw">return </span><span class="prelude-val">Some</span>(block);
+<a href=#669 id=669 data-nosnippet>669</a>                },
+<a href=#670 id=670 data-nosnippet>670</a>
+<a href=#671 id=671 data-nosnippet>671</a>                <span class="comment">// We failed to get a block
+<a href=#672 id=672 data-nosnippet>672</a>                </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Err</span>(err)) =&gt; {
+<a href=#673 id=673 data-nosnippet>673</a>                    <span class="macro">tracing::info!</span>(<span class="string">"Couldn't get a block: {err:#}"</span>);
+<a href=#674 id=674 data-nosnippet>674</a>                    <span class="comment">// pause a bit
+<a href=#675 id=675 data-nosnippet>675</a>                    </span>sleep(RETRY_DELAY).<span class="kw">await</span>;
+<a href=#676 id=676 data-nosnippet>676</a>                    <span class="kw">continue</span>;
+<a href=#677 id=677 data-nosnippet>677</a>                },
+<a href=#678 id=678 data-nosnippet>678</a>
+<a href=#679 id=679 data-nosnippet>679</a>                <span class="comment">// We timed out while getting available blocks
+<a href=#680 id=680 data-nosnippet>680</a>                </span><span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#681 id=681 data-nosnippet>681</a>                    <span class="macro">tracing::info!</span>(%err, <span class="string">"Timeout while getting available blocks"</span>);
+<a href=#682 id=682 data-nosnippet>682</a>                    <span class="kw">return </span><span class="prelude-val">None</span>;
+<a href=#683 id=683 data-nosnippet>683</a>                },
+<a href=#684 id=684 data-nosnippet>684</a>            }
+<a href=#685 id=685 data-nosnippet>685</a>        }
+<a href=#686 id=686 data-nosnippet>686</a>
+<a href=#687 id=687 data-nosnippet>687</a>        <span class="macro">tracing::warn!</span>(<span class="string">"could not get a block from the builder in time"</span>);
+<a href=#688 id=688 data-nosnippet>688</a>        <span class="prelude-val">None
+<a href=#689 id=689 data-nosnippet>689</a>    </span>}
+<a href=#690 id=690 data-nosnippet>690</a>
+<a href=#691 id=691 data-nosnippet>691</a>    <span class="doccomment">/// Query the builders for available blocks. Queries only fraction of the builders
+<a href=#692 id=692 data-nosnippet>692</a>    /// based on the response time.
+<a href=#693 id=693 data-nosnippet>693</a>    </span><span class="kw">async fn </span>get_available_blocks(
+<a href=#694 id=694 data-nosnippet>694</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#695 id=695 data-nosnippet>695</a>        parent_comm: VidCommitment,
+<a href=#696 id=696 data-nosnippet>696</a>        view_number: TYPES::View,
+<a href=#697 id=697 data-nosnippet>697</a>        parent_comm_sig: <span class="kw-2">&amp;</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PureAssembledSignatureType,
+<a href=#698 id=698 data-nosnippet>698</a>    ) -&gt; Vec&lt;(AvailableBlockInfo&lt;TYPES&gt;, usize)&gt; {
+<a href=#699 id=699 data-nosnippet>699</a>        <span class="kw">let </span>tasks = <span class="self">self
+<a href=#700 id=700 data-nosnippet>700</a>            </span>.builder_clients
+<a href=#701 id=701 data-nosnippet>701</a>            .iter()
+<a href=#702 id=702 data-nosnippet>702</a>            .enumerate()
+<a href=#703 id=703 data-nosnippet>703</a>            .map(|(builder_idx, client)| <span class="kw">async move </span>{
+<a href=#704 id=704 data-nosnippet>704</a>                client
+<a href=#705 id=705 data-nosnippet>705</a>                    .available_blocks(
+<a href=#706 id=706 data-nosnippet>706</a>                        parent_comm,
+<a href=#707 id=707 data-nosnippet>707</a>                        view_number.u64(),
+<a href=#708 id=708 data-nosnippet>708</a>                        <span class="self">self</span>.public_key.clone(),
+<a href=#709 id=709 data-nosnippet>709</a>                        parent_comm_sig,
+<a href=#710 id=710 data-nosnippet>710</a>                    )
+<a href=#711 id=711 data-nosnippet>711</a>                    .<span class="kw">await
+<a href=#712 id=712 data-nosnippet>712</a>                    </span>.map(<span class="kw">move </span>|blocks| {
+<a href=#713 id=713 data-nosnippet>713</a>                        blocks
+<a href=#714 id=714 data-nosnippet>714</a>                            .into_iter()
+<a href=#715 id=715 data-nosnippet>715</a>                            .map(<span class="kw">move </span>|block_info| (block_info, builder_idx))
+<a href=#716 id=716 data-nosnippet>716</a>                    })
+<a href=#717 id=717 data-nosnippet>717</a>            })
+<a href=#718 id=718 data-nosnippet>718</a>            .collect::&lt;FuturesUnordered&lt;<span class="kw">_</span>&gt;&gt;();
+<a href=#719 id=719 data-nosnippet>719</a>        <span class="kw">let </span><span class="kw-2">mut </span>results = Vec::with_capacity(<span class="self">self</span>.builder_clients.len());
+<a href=#720 id=720 data-nosnippet>720</a>        <span class="kw">let </span>query_start = Instant::now();
+<a href=#721 id=721 data-nosnippet>721</a>        <span class="kw">let </span>threshold = (<span class="self">self</span>.builder_clients.len() * BUILDER_MAIN_BATCH_THRESHOLD_DIVIDEND)
+<a href=#722 id=722 data-nosnippet>722</a>            .div_ceil(BUILDER_MAIN_BATCH_THRESHOLD_DIVISOR);
+<a href=#723 id=723 data-nosnippet>723</a>        <span class="kw">let </span><span class="kw-2">mut </span>tasks = tasks.take(threshold);
+<a href=#724 id=724 data-nosnippet>724</a>        <span class="kw">while let </span><span class="prelude-val">Some</span>(result) = tasks.next().<span class="kw">await </span>{
+<a href=#725 id=725 data-nosnippet>725</a>            results.push(result);
+<a href=#726 id=726 data-nosnippet>726</a>            <span class="kw">if </span>query_start.elapsed() &gt; BUILDER_MAIN_BATCH_CUTOFF {
+<a href=#727 id=727 data-nosnippet>727</a>                <span class="kw">break</span>;
+<a href=#728 id=728 data-nosnippet>728</a>            }
+<a href=#729 id=729 data-nosnippet>729</a>        }
+<a href=#730 id=730 data-nosnippet>730</a>        <span class="kw">let </span>timeout = sleep(std::cmp::max(
+<a href=#731 id=731 data-nosnippet>731</a>            query_start
+<a href=#732 id=732 data-nosnippet>732</a>                .elapsed()
+<a href=#733 id=733 data-nosnippet>733</a>                .mul_f32(BUILDER_ADDITIONAL_TIME_MULTIPLIER),
+<a href=#734 id=734 data-nosnippet>734</a>            BUILDER_MINIMUM_QUERY_TIME.saturating_sub(query_start.elapsed()),
+<a href=#735 id=735 data-nosnippet>735</a>        ));
+<a href=#736 id=736 data-nosnippet>736</a>        <span class="macro">futures::pin_mut!</span>(timeout);
+<a href=#737 id=737 data-nosnippet>737</a>        <span class="kw">let </span><span class="kw-2">mut </span>tasks = tasks.into_inner().take_until(timeout);
+<a href=#738 id=738 data-nosnippet>738</a>        <span class="kw">while let </span><span class="prelude-val">Some</span>(result) = tasks.next().<span class="kw">await </span>{
+<a href=#739 id=739 data-nosnippet>739</a>            results.push(result);
+<a href=#740 id=740 data-nosnippet>740</a>        }
+<a href=#741 id=741 data-nosnippet>741</a>        results
+<a href=#742 id=742 data-nosnippet>742</a>            .into_iter()
+<a href=#743 id=743 data-nosnippet>743</a>            .filter_map(|result| result.ok())
+<a href=#744 id=744 data-nosnippet>744</a>            .flatten()
+<a href=#745 id=745 data-nosnippet>745</a>            .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+<a href=#746 id=746 data-nosnippet>746</a>    }
+<a href=#747 id=747 data-nosnippet>747</a>
+<a href=#748 id=748 data-nosnippet>748</a>    <span class="doccomment">/// Get a block from builder.
+<a href=#749 id=749 data-nosnippet>749</a>    /// Queries the sufficiently fast builders for available blocks and chooses the one with the
+<a href=#750 id=750 data-nosnippet>750</a>    /// best fee/byte ratio, re-trying with the next best one in case of failure.
+<a href=#751 id=751 data-nosnippet>751</a>    ///
+<a href=#752 id=752 data-nosnippet>752</a>    /// # Errors
+<a href=#753 id=753 data-nosnippet>753</a>    /// If none of the builder reports any available blocks or claiming block fails for all of the
+<a href=#754 id=754 data-nosnippet>754</a>    /// builders.
+<a href=#755 id=755 data-nosnippet>755</a>    </span><span class="attr">#[instrument(skip_all, fields(id = <span class="self">self</span>.id, view = <span class="kw-2">*</span><span class="self">self</span>.cur_view), name = <span class="string">"block_from_builder"</span>, level = <span class="string">"error"</span>)]
+<a href=#756 id=756 data-nosnippet>756</a>    </span><span class="kw">async fn </span>block_from_builder(
+<a href=#757 id=757 data-nosnippet>757</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#758 id=758 data-nosnippet>758</a>        parent_comm: VidCommitment,
+<a href=#759 id=759 data-nosnippet>759</a>        view_number: TYPES::View,
+<a href=#760 id=760 data-nosnippet>760</a>        parent_comm_sig: <span class="kw-2">&amp;</span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::PureAssembledSignatureType,
+<a href=#761 id=761 data-nosnippet>761</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;BuilderResponse&lt;TYPES&gt;&gt; {
+<a href=#762 id=762 data-nosnippet>762</a>        <span class="kw">let </span><span class="kw-2">mut </span>available_blocks = <span class="self">self
+<a href=#763 id=763 data-nosnippet>763</a>            </span>.get_available_blocks(parent_comm, view_number, parent_comm_sig)
+<a href=#764 id=764 data-nosnippet>764</a>            .<span class="kw">await</span>;
+<a href=#765 id=765 data-nosnippet>765</a>
+<a href=#766 id=766 data-nosnippet>766</a>        available_blocks.sort_by(|(l, <span class="kw">_</span>), (r, <span class="kw">_</span>)| {
+<a href=#767 id=767 data-nosnippet>767</a>            <span class="comment">// We want the block with the highest fee per byte of data we're going to have to
+<a href=#768 id=768 data-nosnippet>768</a>            // process, thus our comparison function is:
+<a href=#769 id=769 data-nosnippet>769</a>            //      (l.offered_fee / l.block_size) &lt; (r.offered_fee / r.block_size)
+<a href=#770 id=770 data-nosnippet>770</a>            // To avoid floating point math (which doesn't even have an `Ord` impl) we multiply
+<a href=#771 id=771 data-nosnippet>771</a>            // through by the denominators to get
+<a href=#772 id=772 data-nosnippet>772</a>            //      l.offered_fee * r.block_size &lt; r.offered_fee * l.block_size
+<a href=#773 id=773 data-nosnippet>773</a>            // We cast up to u128 to avoid overflow.
+<a href=#774 id=774 data-nosnippet>774</a>            </span>(u128::from(l.offered_fee) * u128::from(r.block_size))
+<a href=#775 id=775 data-nosnippet>775</a>                .cmp(<span class="kw-2">&amp;</span>(u128::from(r.offered_fee) * u128::from(l.block_size)))
+<a href=#776 id=776 data-nosnippet>776</a>        });
+<a href=#777 id=777 data-nosnippet>777</a>
+<a href=#778 id=778 data-nosnippet>778</a>        <span class="kw">if </span>available_blocks.is_empty() {
+<a href=#779 id=779 data-nosnippet>779</a>            <span class="macro">tracing::info!</span>(<span class="string">"No available blocks"</span>);
+<a href=#780 id=780 data-nosnippet>780</a>            <span class="macro">bail!</span>(<span class="string">"No available blocks"</span>);
+<a href=#781 id=781 data-nosnippet>781</a>        }
+<a href=#782 id=782 data-nosnippet>782</a>
+<a href=#783 id=783 data-nosnippet>783</a>        <span class="kw">for </span>(block_info, builder_idx) <span class="kw">in </span>available_blocks {
+<a href=#784 id=784 data-nosnippet>784</a>            <span class="comment">// Verify signature over chosen block.
+<a href=#785 id=785 data-nosnippet>785</a>            </span><span class="kw">if </span>!block_info.sender.validate_block_info_signature(
+<a href=#786 id=786 data-nosnippet>786</a>                <span class="kw-2">&amp;</span>block_info.signature,
+<a href=#787 id=787 data-nosnippet>787</a>                block_info.block_size,
+<a href=#788 id=788 data-nosnippet>788</a>                block_info.offered_fee,
+<a href=#789 id=789 data-nosnippet>789</a>                <span class="kw-2">&amp;</span>block_info.block_hash,
+<a href=#790 id=790 data-nosnippet>790</a>            ) {
+<a href=#791 id=791 data-nosnippet>791</a>                <span class="macro">tracing::warn!</span>(<span class="string">"Failed to verify available block info response message signature"</span>);
+<a href=#792 id=792 data-nosnippet>792</a>                <span class="kw">continue</span>;
+<a href=#793 id=793 data-nosnippet>793</a>            }
+<a href=#794 id=794 data-nosnippet>794</a>
+<a href=#795 id=795 data-nosnippet>795</a>            <span class="kw">let </span>request_signature = <span class="kw">match </span>&lt;&lt;TYPES <span class="kw">as </span>NodeType&gt;::SignatureKey <span class="kw">as </span>SignatureKey&gt;::sign(
+<a href=#796 id=796 data-nosnippet>796</a>                <span class="kw-2">&amp;</span><span class="self">self</span>.private_key,
+<a href=#797 id=797 data-nosnippet>797</a>                block_info.block_hash.as_ref(),
+<a href=#798 id=798 data-nosnippet>798</a>            ) {
+<a href=#799 id=799 data-nosnippet>799</a>                <span class="prelude-val">Ok</span>(request_signature) =&gt; request_signature,
+<a href=#800 id=800 data-nosnippet>800</a>                <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#801 id=801 data-nosnippet>801</a>                    <span class="macro">tracing::error!</span>(%err, <span class="string">"Failed to sign block hash"</span>);
+<a href=#802 id=802 data-nosnippet>802</a>                    <span class="kw">continue</span>;
+<a href=#803 id=803 data-nosnippet>803</a>                },
+<a href=#804 id=804 data-nosnippet>804</a>            };
+<a href=#805 id=805 data-nosnippet>805</a>
+<a href=#806 id=806 data-nosnippet>806</a>            <span class="kw">let </span>response = {
+<a href=#807 id=807 data-nosnippet>807</a>                <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self</span>.builder_clients[builder_idx];
+<a href=#808 id=808 data-nosnippet>808</a>
+<a href=#809 id=809 data-nosnippet>809</a>                <span class="kw">let </span>(block, header_input, legacy_header_input) = <span class="macro">futures::join!</span> {
+<a href=#810 id=810 data-nosnippet>810</a>                    client.claim_block(block_info.block_hash.clone(), view_number.u64(), <span class="self">self</span>.public_key.clone(), <span class="kw-2">&amp;</span>request_signature),
+<a href=#811 id=811 data-nosnippet>811</a>                    client.claim_block_header_input(block_info.block_hash.clone(), view_number.u64(), <span class="self">self</span>.public_key.clone(), <span class="kw-2">&amp;</span>request_signature),
+<a href=#812 id=812 data-nosnippet>812</a>                    client.claim_legacy_block_header_input(block_info.block_hash.clone(), view_number.u64(), <span class="self">self</span>.public_key.clone(), <span class="kw-2">&amp;</span>request_signature)
+<a href=#813 id=813 data-nosnippet>813</a>                };
 <a href=#814 id=814 data-nosnippet>814</a>
-<a href=#815 id=815 data-nosnippet>815</a>            <span class="kw">let </span>response = {
-<a href=#816 id=816 data-nosnippet>816</a>                <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self</span>.builder_clients[builder_idx];
-<a href=#817 id=817 data-nosnippet>817</a>
-<a href=#818 id=818 data-nosnippet>818</a>                <span class="kw">let </span>(block, header_input, legacy_header_input) = <span class="macro">futures::join!</span> {
-<a href=#819 id=819 data-nosnippet>819</a>                    client.claim_block(block_info.block_hash.clone(), view_number.u64(), <span class="self">self</span>.public_key.clone(), <span class="kw-2">&amp;</span>request_signature),
-<a href=#820 id=820 data-nosnippet>820</a>                    client.claim_block_header_input(block_info.block_hash.clone(), view_number.u64(), <span class="self">self</span>.public_key.clone(), <span class="kw-2">&amp;</span>request_signature),
-<a href=#821 id=821 data-nosnippet>821</a>                    client.claim_legacy_block_header_input(block_info.block_hash.clone(), view_number.u64(), <span class="self">self</span>.public_key.clone(), <span class="kw-2">&amp;</span>request_signature)
-<a href=#822 id=822 data-nosnippet>822</a>                };
-<a href=#823 id=823 data-nosnippet>823</a>
-<a href=#824 id=824 data-nosnippet>824</a>                <span class="kw">let </span>block_data = <span class="kw">match </span>block {
-<a href=#825 id=825 data-nosnippet>825</a>                    <span class="prelude-val">Ok</span>(block_data) =&gt; block_data,
-<a href=#826 id=826 data-nosnippet>826</a>                    <span class="prelude-val">Err</span>(err) =&gt; {
-<a href=#827 id=827 data-nosnippet>827</a>                        <span class="macro">tracing::warn!</span>(%err, <span class="string">"Error claiming block data"</span>);
-<a href=#828 id=828 data-nosnippet>828</a>                        <span class="kw">continue</span>;
-<a href=#829 id=829 data-nosnippet>829</a>                    },
-<a href=#830 id=830 data-nosnippet>830</a>                };
-<a href=#831 id=831 data-nosnippet>831</a>
-<a href=#832 id=832 data-nosnippet>832</a>                <span class="kw">let </span>header_input = <span class="kw">match </span>(header_input, legacy_header_input) {
-<a href=#833 id=833 data-nosnippet>833</a>                    (<span class="prelude-val">Ok</span>(header_input), <span class="prelude-val">Ok</span>(legacy_header_input)) =&gt; {
-<a href=#834 id=834 data-nosnippet>834</a>                        <span class="comment">// verify the message signature and the fee_signature
-<a href=#835 id=835 data-nosnippet>835</a>                        </span><span class="kw">if </span>header_input
-<a href=#836 id=836 data-nosnippet>836</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
-<a href=#837 id=837 data-nosnippet>837</a>                        {
-<a href=#838 id=838 data-nosnippet>838</a>                            header_input
-<a href=#839 id=839 data-nosnippet>839</a>                        } <span class="kw">else if </span>legacy_header_input
-<a href=#840 id=840 data-nosnippet>840</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
-<a href=#841 id=841 data-nosnippet>841</a>                        {
-<a href=#842 id=842 data-nosnippet>842</a>                            AvailableBlockHeaderInputV2 {
-<a href=#843 id=843 data-nosnippet>843</a>                                fee_signature: legacy_header_input.fee_signature,
-<a href=#844 id=844 data-nosnippet>844</a>                                sender: legacy_header_input.sender,
-<a href=#845 id=845 data-nosnippet>845</a>                            }
-<a href=#846 id=846 data-nosnippet>846</a>                        } <span class="kw">else </span>{
-<a href=#847 id=847 data-nosnippet>847</a>                            <span class="macro">tracing::warn!</span>(
-<a href=#848 id=848 data-nosnippet>848</a>                              <span class="string">"Failed to verify available new or legacy block header input data response message signature"
-<a href=#849 id=849 data-nosnippet>849</a>                            </span>);
-<a href=#850 id=850 data-nosnippet>850</a>                            <span class="kw">continue</span>;
-<a href=#851 id=851 data-nosnippet>851</a>                        }
-<a href=#852 id=852 data-nosnippet>852</a>                    },
-<a href=#853 id=853 data-nosnippet>853</a>                    (<span class="prelude-val">Ok</span>(header_input), <span class="kw">_</span>) =&gt; {
-<a href=#854 id=854 data-nosnippet>854</a>                        <span class="comment">// verify the message signature and the fee_signature
-<a href=#855 id=855 data-nosnippet>855</a>                        </span><span class="kw">if </span>!header_input
-<a href=#856 id=856 data-nosnippet>856</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
-<a href=#857 id=857 data-nosnippet>857</a>                        {
-<a href=#858 id=858 data-nosnippet>858</a>                            <span class="macro">tracing::warn!</span>(
-<a href=#859 id=859 data-nosnippet>859</a>                              <span class="string">"Failed to verify available new block header input data response message signature"
-<a href=#860 id=860 data-nosnippet>860</a>                            </span>);
-<a href=#861 id=861 data-nosnippet>861</a>                            <span class="kw">continue</span>;
-<a href=#862 id=862 data-nosnippet>862</a>                        }
-<a href=#863 id=863 data-nosnippet>863</a>
-<a href=#864 id=864 data-nosnippet>864</a>                        header_input
-<a href=#865 id=865 data-nosnippet>865</a>                    },
-<a href=#866 id=866 data-nosnippet>866</a>                    (<span class="prelude-val">Err</span>(<span class="kw">_</span>), <span class="prelude-val">Ok</span>(legacy_header_input)) =&gt; {
-<a href=#867 id=867 data-nosnippet>867</a>                        <span class="comment">// verify the message signature and the fee_signature
-<a href=#868 id=868 data-nosnippet>868</a>                        </span><span class="kw">if </span>!legacy_header_input
-<a href=#869 id=869 data-nosnippet>869</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
-<a href=#870 id=870 data-nosnippet>870</a>                        {
-<a href=#871 id=871 data-nosnippet>871</a>                            <span class="macro">tracing::warn!</span>(
-<a href=#872 id=872 data-nosnippet>872</a>                              <span class="string">"Failed to verify available legacy block header input data response message signature"
-<a href=#873 id=873 data-nosnippet>873</a>                            </span>);
-<a href=#874 id=874 data-nosnippet>874</a>                            <span class="kw">continue</span>;
-<a href=#875 id=875 data-nosnippet>875</a>                        }
-<a href=#876 id=876 data-nosnippet>876</a>                        AvailableBlockHeaderInputV2 {
-<a href=#877 id=877 data-nosnippet>877</a>                            fee_signature: legacy_header_input.fee_signature,
-<a href=#878 id=878 data-nosnippet>878</a>                            sender: legacy_header_input.sender,
-<a href=#879 id=879 data-nosnippet>879</a>                        }
-<a href=#880 id=880 data-nosnippet>880</a>                    },
-<a href=#881 id=881 data-nosnippet>881</a>                    (<span class="prelude-val">Err</span>(err1), <span class="prelude-val">Err</span>(err2)) =&gt; {
-<a href=#882 id=882 data-nosnippet>882</a>                        <span class="macro">tracing::warn!</span>(%err1, %err2, <span class="string">"Error claiming header input"</span>);
-<a href=#883 id=883 data-nosnippet>883</a>                        <span class="kw">continue</span>;
-<a href=#884 id=884 data-nosnippet>884</a>                    },
-<a href=#885 id=885 data-nosnippet>885</a>                };
-<a href=#886 id=886 data-nosnippet>886</a>
-<a href=#887 id=887 data-nosnippet>887</a>                <span class="comment">// verify the signature over the message
-<a href=#888 id=888 data-nosnippet>888</a>                </span><span class="kw">if </span>!block_data.validate_signature() {
-<a href=#889 id=889 data-nosnippet>889</a>                    <span class="macro">tracing::warn!</span>(
-<a href=#890 id=890 data-nosnippet>890</a>                        <span class="string">"Failed to verify available block data response message signature"
-<a href=#891 id=891 data-nosnippet>891</a>                    </span>);
-<a href=#892 id=892 data-nosnippet>892</a>                    <span class="kw">continue</span>;
-<a href=#893 id=893 data-nosnippet>893</a>                }
-<a href=#894 id=894 data-nosnippet>894</a>
-<a href=#895 id=895 data-nosnippet>895</a>                <span class="comment">// verify the message signature and the fee_signature
-<a href=#896 id=896 data-nosnippet>896</a>                </span><span class="kw">if </span>!header_input.validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata) {
-<a href=#897 id=897 data-nosnippet>897</a>                    <span class="macro">tracing::warn!</span>(
-<a href=#898 id=898 data-nosnippet>898</a>                        <span class="string">"Failed to verify available block header input data response message signature"
-<a href=#899 id=899 data-nosnippet>899</a>                    </span>);
-<a href=#900 id=900 data-nosnippet>900</a>                    <span class="kw">continue</span>;
-<a href=#901 id=901 data-nosnippet>901</a>                }
-<a href=#902 id=902 data-nosnippet>902</a>
-<a href=#903 id=903 data-nosnippet>903</a>                <span class="kw">let </span>fee = BuilderFee {
-<a href=#904 id=904 data-nosnippet>904</a>                    fee_amount: block_info.offered_fee,
-<a href=#905 id=905 data-nosnippet>905</a>                    fee_account: header_input.sender,
-<a href=#906 id=906 data-nosnippet>906</a>                    fee_signature: header_input.fee_signature,
-<a href=#907 id=907 data-nosnippet>907</a>                };
-<a href=#908 id=908 data-nosnippet>908</a>
-<a href=#909 id=909 data-nosnippet>909</a>                BuilderResponse {
-<a href=#910 id=910 data-nosnippet>910</a>                    fee,
-<a href=#911 id=911 data-nosnippet>911</a>                    block_payload: block_data.block_payload,
-<a href=#912 id=912 data-nosnippet>912</a>                    metadata: block_data.metadata,
-<a href=#913 id=913 data-nosnippet>913</a>                }
-<a href=#914 id=914 data-nosnippet>914</a>            };
-<a href=#915 id=915 data-nosnippet>915</a>
-<a href=#916 id=916 data-nosnippet>916</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(response);
-<a href=#917 id=917 data-nosnippet>917</a>        }
-<a href=#918 id=918 data-nosnippet>918</a>
-<a href=#919 id=919 data-nosnippet>919</a>        <span class="macro">bail!</span>(<span class="string">"Couldn't claim a block from any of the builders"</span>);
-<a href=#920 id=920 data-nosnippet>920</a>    }
-<a href=#921 id=921 data-nosnippet>921</a>}
-<a href=#922 id=922 data-nosnippet>922</a>
-<a href=#923 id=923 data-nosnippet>923</a><span class="attr">#[async_trait]
-<a href=#924 id=924 data-nosnippet>924</a></span><span class="doccomment">/// task state implementation for Transactions Task
-<a href=#925 id=925 data-nosnippet>925</a></span><span class="kw">impl</span>&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt; TaskState
-<a href=#926 id=926 data-nosnippet>926</a>    <span class="kw">for </span>TransactionTaskState&lt;TYPES, I, V&gt;
-<a href=#927 id=927 data-nosnippet>927</a>{
-<a href=#928 id=928 data-nosnippet>928</a>    <span class="kw">type </span>Event = HotShotEvent&lt;TYPES&gt;;
+<a href=#815 id=815 data-nosnippet>815</a>                <span class="kw">let </span>block_data = <span class="kw">match </span>block {
+<a href=#816 id=816 data-nosnippet>816</a>                    <span class="prelude-val">Ok</span>(block_data) =&gt; block_data,
+<a href=#817 id=817 data-nosnippet>817</a>                    <span class="prelude-val">Err</span>(err) =&gt; {
+<a href=#818 id=818 data-nosnippet>818</a>                        <span class="macro">tracing::warn!</span>(%err, <span class="string">"Error claiming block data"</span>);
+<a href=#819 id=819 data-nosnippet>819</a>                        <span class="kw">continue</span>;
+<a href=#820 id=820 data-nosnippet>820</a>                    },
+<a href=#821 id=821 data-nosnippet>821</a>                };
+<a href=#822 id=822 data-nosnippet>822</a>
+<a href=#823 id=823 data-nosnippet>823</a>                <span class="kw">let </span>header_input = <span class="kw">match </span>(header_input, legacy_header_input) {
+<a href=#824 id=824 data-nosnippet>824</a>                    (<span class="prelude-val">Ok</span>(header_input), <span class="prelude-val">Ok</span>(legacy_header_input)) =&gt; {
+<a href=#825 id=825 data-nosnippet>825</a>                        <span class="comment">// verify the message signature and the fee_signature
+<a href=#826 id=826 data-nosnippet>826</a>                        </span><span class="kw">if </span>header_input
+<a href=#827 id=827 data-nosnippet>827</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
+<a href=#828 id=828 data-nosnippet>828</a>                        {
+<a href=#829 id=829 data-nosnippet>829</a>                            header_input
+<a href=#830 id=830 data-nosnippet>830</a>                        } <span class="kw">else if </span>legacy_header_input
+<a href=#831 id=831 data-nosnippet>831</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
+<a href=#832 id=832 data-nosnippet>832</a>                        {
+<a href=#833 id=833 data-nosnippet>833</a>                            AvailableBlockHeaderInputV2 {
+<a href=#834 id=834 data-nosnippet>834</a>                                fee_signature: legacy_header_input.fee_signature,
+<a href=#835 id=835 data-nosnippet>835</a>                                sender: legacy_header_input.sender,
+<a href=#836 id=836 data-nosnippet>836</a>                            }
+<a href=#837 id=837 data-nosnippet>837</a>                        } <span class="kw">else </span>{
+<a href=#838 id=838 data-nosnippet>838</a>                            <span class="macro">tracing::warn!</span>(
+<a href=#839 id=839 data-nosnippet>839</a>                              <span class="string">"Failed to verify available new or legacy block header input data response message signature"
+<a href=#840 id=840 data-nosnippet>840</a>                            </span>);
+<a href=#841 id=841 data-nosnippet>841</a>                            <span class="kw">continue</span>;
+<a href=#842 id=842 data-nosnippet>842</a>                        }
+<a href=#843 id=843 data-nosnippet>843</a>                    },
+<a href=#844 id=844 data-nosnippet>844</a>                    (<span class="prelude-val">Ok</span>(header_input), <span class="kw">_</span>) =&gt; {
+<a href=#845 id=845 data-nosnippet>845</a>                        <span class="comment">// verify the message signature and the fee_signature
+<a href=#846 id=846 data-nosnippet>846</a>                        </span><span class="kw">if </span>!header_input
+<a href=#847 id=847 data-nosnippet>847</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
+<a href=#848 id=848 data-nosnippet>848</a>                        {
+<a href=#849 id=849 data-nosnippet>849</a>                            <span class="macro">tracing::warn!</span>(
+<a href=#850 id=850 data-nosnippet>850</a>                              <span class="string">"Failed to verify available new block header input data response message signature"
+<a href=#851 id=851 data-nosnippet>851</a>                            </span>);
+<a href=#852 id=852 data-nosnippet>852</a>                            <span class="kw">continue</span>;
+<a href=#853 id=853 data-nosnippet>853</a>                        }
+<a href=#854 id=854 data-nosnippet>854</a>
+<a href=#855 id=855 data-nosnippet>855</a>                        header_input
+<a href=#856 id=856 data-nosnippet>856</a>                    },
+<a href=#857 id=857 data-nosnippet>857</a>                    (<span class="prelude-val">Err</span>(<span class="kw">_</span>), <span class="prelude-val">Ok</span>(legacy_header_input)) =&gt; {
+<a href=#858 id=858 data-nosnippet>858</a>                        <span class="comment">// verify the message signature and the fee_signature
+<a href=#859 id=859 data-nosnippet>859</a>                        </span><span class="kw">if </span>!legacy_header_input
+<a href=#860 id=860 data-nosnippet>860</a>                            .validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata)
+<a href=#861 id=861 data-nosnippet>861</a>                        {
+<a href=#862 id=862 data-nosnippet>862</a>                            <span class="macro">tracing::warn!</span>(
+<a href=#863 id=863 data-nosnippet>863</a>                              <span class="string">"Failed to verify available legacy block header input data response message signature"
+<a href=#864 id=864 data-nosnippet>864</a>                            </span>);
+<a href=#865 id=865 data-nosnippet>865</a>                            <span class="kw">continue</span>;
+<a href=#866 id=866 data-nosnippet>866</a>                        }
+<a href=#867 id=867 data-nosnippet>867</a>                        AvailableBlockHeaderInputV2 {
+<a href=#868 id=868 data-nosnippet>868</a>                            fee_signature: legacy_header_input.fee_signature,
+<a href=#869 id=869 data-nosnippet>869</a>                            sender: legacy_header_input.sender,
+<a href=#870 id=870 data-nosnippet>870</a>                        }
+<a href=#871 id=871 data-nosnippet>871</a>                    },
+<a href=#872 id=872 data-nosnippet>872</a>                    (<span class="prelude-val">Err</span>(err1), <span class="prelude-val">Err</span>(err2)) =&gt; {
+<a href=#873 id=873 data-nosnippet>873</a>                        <span class="macro">tracing::warn!</span>(%err1, %err2, <span class="string">"Error claiming header input"</span>);
+<a href=#874 id=874 data-nosnippet>874</a>                        <span class="kw">continue</span>;
+<a href=#875 id=875 data-nosnippet>875</a>                    },
+<a href=#876 id=876 data-nosnippet>876</a>                };
+<a href=#877 id=877 data-nosnippet>877</a>
+<a href=#878 id=878 data-nosnippet>878</a>                <span class="comment">// verify the signature over the message
+<a href=#879 id=879 data-nosnippet>879</a>                </span><span class="kw">if </span>!block_data.validate_signature() {
+<a href=#880 id=880 data-nosnippet>880</a>                    <span class="macro">tracing::warn!</span>(
+<a href=#881 id=881 data-nosnippet>881</a>                        <span class="string">"Failed to verify available block data response message signature"
+<a href=#882 id=882 data-nosnippet>882</a>                    </span>);
+<a href=#883 id=883 data-nosnippet>883</a>                    <span class="kw">continue</span>;
+<a href=#884 id=884 data-nosnippet>884</a>                }
+<a href=#885 id=885 data-nosnippet>885</a>
+<a href=#886 id=886 data-nosnippet>886</a>                <span class="comment">// verify the message signature and the fee_signature
+<a href=#887 id=887 data-nosnippet>887</a>                </span><span class="kw">if </span>!header_input.validate_signature(block_info.offered_fee, <span class="kw-2">&amp;</span>block_data.metadata) {
+<a href=#888 id=888 data-nosnippet>888</a>                    <span class="macro">tracing::warn!</span>(
+<a href=#889 id=889 data-nosnippet>889</a>                        <span class="string">"Failed to verify available block header input data response message signature"
+<a href=#890 id=890 data-nosnippet>890</a>                    </span>);
+<a href=#891 id=891 data-nosnippet>891</a>                    <span class="kw">continue</span>;
+<a href=#892 id=892 data-nosnippet>892</a>                }
+<a href=#893 id=893 data-nosnippet>893</a>
+<a href=#894 id=894 data-nosnippet>894</a>                <span class="kw">let </span>fee = BuilderFee {
+<a href=#895 id=895 data-nosnippet>895</a>                    fee_amount: block_info.offered_fee,
+<a href=#896 id=896 data-nosnippet>896</a>                    fee_account: header_input.sender,
+<a href=#897 id=897 data-nosnippet>897</a>                    fee_signature: header_input.fee_signature,
+<a href=#898 id=898 data-nosnippet>898</a>                };
+<a href=#899 id=899 data-nosnippet>899</a>
+<a href=#900 id=900 data-nosnippet>900</a>                BuilderResponse {
+<a href=#901 id=901 data-nosnippet>901</a>                    fee,
+<a href=#902 id=902 data-nosnippet>902</a>                    block_payload: block_data.block_payload,
+<a href=#903 id=903 data-nosnippet>903</a>                    metadata: block_data.metadata,
+<a href=#904 id=904 data-nosnippet>904</a>                }
+<a href=#905 id=905 data-nosnippet>905</a>            };
+<a href=#906 id=906 data-nosnippet>906</a>
+<a href=#907 id=907 data-nosnippet>907</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(response);
+<a href=#908 id=908 data-nosnippet>908</a>        }
+<a href=#909 id=909 data-nosnippet>909</a>
+<a href=#910 id=910 data-nosnippet>910</a>        <span class="macro">bail!</span>(<span class="string">"Couldn't claim a block from any of the builders"</span>);
+<a href=#911 id=911 data-nosnippet>911</a>    }
+<a href=#912 id=912 data-nosnippet>912</a>}
+<a href=#913 id=913 data-nosnippet>913</a>
+<a href=#914 id=914 data-nosnippet>914</a><span class="attr">#[async_trait]
+<a href=#915 id=915 data-nosnippet>915</a></span><span class="doccomment">/// task state implementation for Transactions Task
+<a href=#916 id=916 data-nosnippet>916</a></span><span class="kw">impl</span>&lt;TYPES: NodeType, I: NodeImplementation&lt;TYPES&gt;, V: Versions&gt; TaskState
+<a href=#917 id=917 data-nosnippet>917</a>    <span class="kw">for </span>TransactionTaskState&lt;TYPES, I, V&gt;
+<a href=#918 id=918 data-nosnippet>918</a>{
+<a href=#919 id=919 data-nosnippet>919</a>    <span class="kw">type </span>Event = HotShotEvent&lt;TYPES&gt;;
+<a href=#920 id=920 data-nosnippet>920</a>
+<a href=#921 id=921 data-nosnippet>921</a>    <span class="kw">async fn </span>handle_event(
+<a href=#922 id=922 data-nosnippet>922</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#923 id=923 data-nosnippet>923</a>        event: Arc&lt;<span class="self">Self</span>::Event&gt;,
+<a href=#924 id=924 data-nosnippet>924</a>        sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;<span class="self">Self</span>::Event&gt;&gt;,
+<a href=#925 id=925 data-nosnippet>925</a>        _receiver: <span class="kw-2">&amp;</span>Receiver&lt;Arc&lt;<span class="self">Self</span>::Event&gt;&gt;,
+<a href=#926 id=926 data-nosnippet>926</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#927 id=927 data-nosnippet>927</a>        <span class="self">self</span>.handle(event, sender.clone()).<span class="kw">await
+<a href=#928 id=928 data-nosnippet>928</a>    </span>}
 <a href=#929 id=929 data-nosnippet>929</a>
-<a href=#930 id=930 data-nosnippet>930</a>    <span class="kw">async fn </span>handle_event(
-<a href=#931 id=931 data-nosnippet>931</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#932 id=932 data-nosnippet>932</a>        event: Arc&lt;<span class="self">Self</span>::Event&gt;,
-<a href=#933 id=933 data-nosnippet>933</a>        sender: <span class="kw-2">&amp;</span>Sender&lt;Arc&lt;<span class="self">Self</span>::Event&gt;&gt;,
-<a href=#934 id=934 data-nosnippet>934</a>        _receiver: <span class="kw-2">&amp;</span>Receiver&lt;Arc&lt;<span class="self">Self</span>::Event&gt;&gt;,
-<a href=#935 id=935 data-nosnippet>935</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#936 id=936 data-nosnippet>936</a>        <span class="self">self</span>.handle(event, sender.clone()).<span class="kw">await
-<a href=#937 id=937 data-nosnippet>937</a>    </span>}
-<a href=#938 id=938 data-nosnippet>938</a>
-<a href=#939 id=939 data-nosnippet>939</a>    <span class="kw">fn </span>cancel_subtasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {}
-<a href=#940 id=940 data-nosnippet>940</a>}</code></pre></div></section></main></body></html>
+<a href=#930 id=930 data-nosnippet>930</a>    <span class="kw">fn </span>cancel_subtasks(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {}
+<a href=#931 id=931 data-nosnippet>931</a>}</code></pre></div></section></main></body></html>

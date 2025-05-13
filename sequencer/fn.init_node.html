@@ -4,7 +4,7 @@
     metrics: &amp;dyn <a class="trait" href="../hotshot_types/traits/metrics/trait.Metrics.html" title="trait hotshot_types::traits::metrics::Metrics">Metrics</a>,
     persistence: P,
     l1_params: <a class="struct" href="struct.L1Params.html" title="struct sequencer::L1Params">L1Params</a>,
-    storage: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;SqlStorage&gt;&gt;,
+    storage: <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/option/enum.Option.html" title="enum core::option::Option">Option</a>&lt;<a class="struct" href="https://doc.rust-lang.org/1.86.0/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;<a class="struct" href="../hotshot_query_service/data_source/storage/sql/struct.SqlStorage.html" title="struct hotshot_query_service::data_source::storage::sql::SqlStorage">SqlStorage</a>&gt;&gt;,
     seq_versions: V,
     event_consumer: impl <a class="trait" href="../espresso_types/v0/traits/trait.EventConsumer.html" title="trait espresso_types::v0::traits::EventConsumer">EventConsumer</a> + 'static,
     is_da: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.bool.html">bool</a>,
