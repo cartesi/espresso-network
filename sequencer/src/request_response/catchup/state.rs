@@ -19,6 +19,7 @@ use hotshot_types::{
 };
 use jf_merkle_tree::{ForgetableMerkleTreeScheme, MerkleTreeScheme};
 use tokio::time::timeout;
+use tracing::warn;
 
 use crate::request_response::{
     request::{Request, Response},
@@ -40,6 +41,7 @@ impl<
         stake_table: Vec<PeerConfig<SeqTypes>>,
         success_threshold: U256,
     ) -> anyhow::Result<Leaf2> {
+        tracing::info!("try_fetch_leaf at height {height} from r/r protocol");
         // Timeout after a few batches
         let timeout_duration = self.config.request_batch_interval * 3;
 

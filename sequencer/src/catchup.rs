@@ -48,7 +48,7 @@ use surf_disco::Request;
 use tide_disco::error::ServerError;
 use tokio::time::timeout;
 use tokio_util::task::AbortOnDropHandle;
-use tracing::warn;
+use tracing::{debug, warn};
 use url::Url;
 use vbs::version::StaticVersionType;
 
@@ -848,6 +848,18 @@ impl ParallelStateCatchup {
         F: Future<Output = anyhow::Result<RT>> + Send + 'static,
         RT: Send + Sync + 'static,
     {
+        // Get the local providers
+        let providers = self.providers.lock().clone();
+        let local_providers = providers
+            .into_iter()
+            .filter(|provider| provider.is_local())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|provider| provider.name())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        debug!("Performing operation on local providers: {local_providers}");
         self.on_providers(|provider| provider.is_local(), closure)
             .await
     }
@@ -859,6 +871,18 @@ impl ParallelStateCatchup {
         F: Future<Output = anyhow::Result<RT>> + Send + 'static,
         RT: Send + Sync + 'static,
     {
+        // Get the remote providers
+        let providers = self.providers.lock().clone();
+        let remote_providers = providers
+            .into_iter()
+            .filter(|provider| !provider.is_local())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|provider| provider.name())
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        debug!("Performing operation on remote providers: {remote_providers}");
         self.on_providers(|provider| !provider.is_local(), closure)
             .await
     }
@@ -937,6 +961,7 @@ impl StateCatchup for ParallelStateCatchup {
         stake_table: Vec<PeerConfig<SeqTypes>>,
         success_threshold: U256,
     ) -> anyhow::Result<Leaf2> {
+        debug!("try_fetch_leaf at height {height} from local providers");
         // Try fetching the leaf on the local providers first
         let local_result = self
             .on_local_providers(clone! {(stake_table) move |provider| {
@@ -950,18 +975,26 @@ impl StateCatchup for ParallelStateCatchup {
 
         // Check if we were successful locally
         if local_result.is_ok() {
+            debug!("try_fetch_leaf at height {height} from local providers success");
             return local_result;
         }
 
+        debug!("try_fetch_leaf at height {height} from local providers failed. Trying remote providers...");
+
         // If that fails, try the remote ones
-        self.on_remote_providers(clone! {(stake_table) move |provider| {
-            clone!{(stake_table) async move {
-                provider
-                    .try_fetch_leaf(retry, height, stake_table, success_threshold)
-                    .await
-            }}
-        }})
-        .await
+        let res = self
+            .on_remote_providers(clone! {(stake_table) move |provider| {
+                clone!{(stake_table) async move {
+                    provider
+                        .try_fetch_leaf(retry, height, stake_table, success_threshold)
+                        .await
+                }}
+            }})
+            .await;
+
+        debug!("try_fetch_leaf at height {height} from remote providers {res:?}");
+
+        res
     }
 
     async fn try_fetch_accounts(
@@ -1224,6 +1257,7 @@ impl StateCatchup for ParallelStateCatchup {
         stake_table: Vec<PeerConfig<SeqTypes>>,
         success_threshold: U256,
     ) -> anyhow::Result<Leaf2> {
+        debug!("fetch_leaf at height {height} from local providers");
         // Try fetching the leaf on the local providers first
         let local_result = self
             .on_local_providers(clone! {(stake_table) move |provider| {
@@ -1237,18 +1271,28 @@ impl StateCatchup for ParallelStateCatchup {
 
         // Check if we were successful locally
         if local_result.is_ok() {
+            debug!("fetch_leaf at height {height} from local providers success");
             return local_result;
         }
 
+        debug!(
+            "fetch_leaf at height {height} from local providers failed. Trying remote providers..."
+        );
+
         // If that fails, try the remote ones (with retry)
-        self.on_remote_providers(clone! {(stake_table) move |provider| {
-         clone!{(stake_table) async move {
-             provider
-                 .fetch_leaf(height, stake_table, success_threshold)
-                 .await
-         }}
-        }})
-        .await
+        let res = self
+            .on_remote_providers(clone! {(stake_table) move |provider| {
+             clone!{(stake_table) async move {
+                 provider
+                     .fetch_leaf(height, stake_table, success_threshold)
+                     .await
+             }}
+            }})
+            .await;
+
+        debug!("fetch_leaf at height {height} from remote providers {res:?}");
+
+        res
     }
 
     async fn fetch_chain_config(
