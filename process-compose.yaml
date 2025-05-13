@@ -129,11 +129,11 @@ processes:
     availability: *run-forever
 
   prover-service:
-    command: state-prover -d
+    # to avoid interfering so much with other work, "nice" the state prover process
+    command: nice state-prover -d
     environment:
       - MNEMONIC=$ESPRESSO_SEQUENCER_ETH_MNEMONIC
       - RAYON_NUM_THREADS=$PROVER_RAYON_NUM_THREADS
-      - RUST_LOG=${RUST_LOG},hotshot_state_prover::service=debug
     depends_on:
       sequencer0:
         condition: process_healthy
@@ -171,7 +171,6 @@ processes:
       - ESPRESSO_SEQUENCER_IDENTITY_LATITUDE=40.7128
       - ESPRESSO_SEQUENCER_IDENTITY_LONGITUDE=-74.0060
       - ESPRESSO_SEQUENCER_PUBLIC_API_URL=http://localhost:$ESPRESSO_SEQUENCER_API_PORT/
-      - RUST_LOG=${RUST_LOG},hotshot_task_impls=debug
     depends_on:
       orchestrator:
         condition: process_healthy
@@ -443,7 +442,7 @@ processes:
 
   # The CDN system's main entry point; where users contact first.
   marshal_0:
-    command: RUST_LOG=debug cdn-marshal -d "redis://:changeme!@localhost:6379" -b $ESPRESSO_CDN_SERVER_PORT -m 127.0.0.1:9093
+    command: cdn-marshal -d "redis://:changeme!@localhost:6379" -b $ESPRESSO_CDN_SERVER_PORT -m 127.0.0.1:9093
     depends_on:
       keydb:
         condition: process_healthy
