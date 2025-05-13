@@ -469,21 +469,7 @@ where
                 })
                 .collect();
 
-            // Perform the proof
-            let proof = AvidMScheme::proof_of_incorrect_encoding(
-                &avidm_param,
-                &local_payload_hash,
-                avidm_shares.as_slice(),
-            )
-            .map_err(|err| {
-                warn!("Failed to perform proof of incorrect encoding: {err:#}");
-                hotshot_query_service::node::Error::Custom {
-                    message: format!("Failed to perform proof"),
-                    status: StatusCode::INTERNAL_SERVER_ERROR,
-                }
-            })?;
-
-            Ok(proof)
+            Ok(avidm_shares)
         }
         .boxed()
     })?;
