@@ -171,6 +171,7 @@ processes:
       - ESPRESSO_SEQUENCER_IDENTITY_LATITUDE=40.7128
       - ESPRESSO_SEQUENCER_IDENTITY_LONGITUDE=-74.0060
       - ESPRESSO_SEQUENCER_PUBLIC_API_URL=http://localhost:$ESPRESSO_SEQUENCER_API_PORT/
+      - RUST_LOG=${RUST_LOG},hotshot_task_impls=debug
     depends_on:
       orchestrator:
         condition: process_healthy
