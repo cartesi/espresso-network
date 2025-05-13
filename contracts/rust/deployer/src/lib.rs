@@ -507,6 +507,7 @@ pub async fn upgrade_light_client_v2(
 /// - the proxy is already deployed.
 /// - the proxy is owned by a multisig.
 /// - the proxy is not yet initialized for V2
+///
 /// Returns the url link to the upgrade proposal
 /// This function can only be called on a real network supported by the safeSDK
 pub async fn upgrade_light_client_v2_multisig_owner(

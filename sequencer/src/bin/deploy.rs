@@ -3,8 +3,8 @@ use std::{fs::File, io::stdout, path::PathBuf, thread::sleep, time::Duration};
 use alloy::primitives::{Address, U256};
 use clap::Parser;
 use espresso_contract_deployer::{
-    build_provider, builder::DeployerArgsBuilder, network_config::light_client_genesis, Contract,
-    Contracts, DeployedContracts,
+    builder::DeployerArgsBuilder, network_config::light_client_genesis, Contract, Contracts,
+    DeployedContracts,
 };
 use espresso_types::{config::PublicNetworkConfig, parse_duration};
 use hotshot_types::light_client::STAKE_TABLE_CAPACITY;
@@ -101,7 +101,7 @@ struct Options {
     /// Option to upgrade to LightClient V2
     #[clap(long, default_value = "false")]
     upgrade_light_client_v2: bool,
-    /// Option to upgrade to LightClient V2
+    /// Option to upgrade to LightClient V2 with multisig ownership
     #[clap(long, default_value = "false")]
     upgrade_light_client_v2_multisig_owner: bool,
     #[clap(long, default_value = "false")]
@@ -150,28 +150,36 @@ struct Options {
     #[clap(long, env = "ESP_TOKEN_INITIAL_GRANT_RECIPIENT_ADDRESS")]
     initial_token_grant_recipient: Option<Address>,
 
+    /// The blocks per epoch    
+    #[clap(long, env = "ESPRESSO_SEQUENCER_BLOCKS_PER_EPOCH")]
+    blocks_per_epoch: Option<u64>,
+
+    /// The epoch start block
+    #[clap(long, env = "ESPRESSO_SEQUENCER_EPOCH_START_BLOCK")]
+    epoch_start_block: Option<u64>,
+
     #[clap(flatten)]
     logging: logging::Config,
+}
+
+impl Options {
+    fn validate_upgrade_choice(&self) -> anyhow::Result<()> {
+        if self.upgrade_light_client_v2 && self.upgrade_light_client_v2_multisig_owner {
+            anyhow::bail!("Cannot use both --upgrade-light-client-v2 and --upgrade-light-client-v2-multisig-owner at the same time");
+        }
+        Ok(())
+    }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opt = Options::parse();
+    opt.validate_upgrade_choice()?;
     opt.logging.init();
 
     let mut contracts = Contracts::from(opt.contracts);
-
-    let signer = MnemonicBuilder::<English>::default()
-        .phrase(opt.mnemonic)
-        .index(opt.account_index)
-        .expect("wrong mnemonic or index")
-        .build()
-        .expect("fail to build signer");
     let deployer = signer.address();
-    let wallet = EthereumWallet::from(signer);
-    let provider = ProviderBuilder::new()
-        .wallet(wallet)
-        .on_http(opt.rpc_url.clone());
+    let provider = ProviderBuilder::new().on_http(opt.rpc_url.clone());
 
     // First use builder to build constructor input arguments
     let mut args_builder = DeployerArgsBuilder::default();
@@ -183,6 +191,13 @@ async fn main() -> anyhow::Result<()> {
     }
     if let Some(token_recipient) = opt.initial_token_grant_recipient {
         args_builder.token_recipient(token_recipient);
+    }
+
+    if let Some(blocks_per_epoch) = opt.blocks_per_epoch {
+        args_builder.blocks_per_epoch(blocks_per_epoch);
+    }
+    if let Some(epoch_start_block) = opt.epoch_start_block {
+        args_builder.epoch_start_block(epoch_start_block);
     }
 
     if opt.deploy_light_client_v1 {
@@ -215,71 +230,34 @@ async fn main() -> anyhow::Result<()> {
                     sleep(Duration::from_secs(5));
                 },
             }
-            tracing::info!(%blocks_per_epoch, "Upgrading LightClientV2 with ");
-
-            deployer::upgrade_light_client_v2(
-                &provider,
-                &mut contracts,
-                opt.use_mock,
-                blocks_per_epoch,
-                epoch_start_block,
-            )
-            .await?;
         };
+        args_builder.blocks_per_epoch(blocks_per_epoch);
+        args_builder.epoch_start_block(epoch_start_block);
+    }
 
-        if opt.upgrade_light_client_v2_multisig_owner {
-            // fetch epoch length from HotShot config
-            // Request the configuration until it is successful
-            let (mut blocks_per_epoch, epoch_start_block) = loop {
-                match surf_disco::Client::<ServerError, StaticVersion<0, 1>>::new(
-                    opt.sequencer_url.clone(),
-                )
-                .get::<PublicNetworkConfig>("config/hotshot")
-                .send()
-                .await
-                {
-                    Ok(resp) => {
-                        let config = resp.hotshot_config();
-                        break (config.blocks_per_epoch(), config.epoch_start_block());
-                    },
-                    Err(e) => {
-                        tracing::error!("Failed to fetch the network config: {e}");
-                        sleep(Duration::from_secs(5));
-                    },
-                }
-            };
-
-            // TEST-ONLY: if this config is not yet set, we use a large default value
-            // to avoid contract complaining about invalid zero-valued blocks_per_epoch.
-            // This large value will act as if we are always in epoch 1, which won't conflict
-            // with the effective purpose of the real `PublicNetworkConfig`.
-            if opt.use_mock && blocks_per_epoch == 0 {
-                blocks_per_epoch = u64::MAX;
+    if opt.upgrade_light_client_v2_multisig_owner {
+        // fetch epoch length from HotShot config
+        // Request the configuration until it is successful
+        let (blocks_per_epoch, epoch_start_block) = loop {
+            match surf_disco::Client::<ServerError, StaticVersion<0, 1>>::new(
+                opt.sequencer_url.clone(),
+            )
+            .get::<PublicNetworkConfig>("config/hotshot")
+            .send()
+            .await
+            {
+                Ok(resp) => {
+                    let config = resp.hotshot_config();
+                    break (config.blocks_per_epoch(), config.epoch_start_block());
+                },
+                Err(e) => {
+                    tracing::error!("Failed to fetch the network config: {e}");
+                    sleep(Duration::from_secs(5));
+                },
             }
-            tracing::info!(%blocks_per_epoch, "Upgrading LightClientV2 with ");
-
-            deployer::upgrade_light_client_v2_multisig_owner(
-                &provider,
-                &mut contracts,
-                opt.use_mock,
-                blocks_per_epoch,
-                epoch_start_block,
-                opt.rpc_url.to_string(),
-                opt.multisig_address.unwrap(),
-            )
-            .await?;
-        }
-
-        // NOTE: see the comment during LC V1 deployment, we defer ownership transfer to multisig here.
-        if let Some(multisig) = opt.multisig_address {
-            transfer_ownership(
-                &provider,
-                Contract::LightClientProxy,
-                lc_proxy_addr,
-                multisig,
-            )
-            .await?;
-        }
+        };
+        args_builder.blocks_per_epoch(blocks_per_epoch);
+        args_builder.epoch_start_block(epoch_start_block);
     }
 
     if opt.deploy_esp_token {
@@ -287,9 +265,6 @@ async fn main() -> anyhow::Result<()> {
             Some(r) => r,
             None => deployer,
         };
-        args_builder
-            .blocks_per_epoch(blocks_per_epoch)
-            .epoch_start_block(epoch_start_block);
     }
     if opt.deploy_stake_table {
         if let Some(escrow_period) = opt.exit_escrow_period {
@@ -311,6 +286,9 @@ async fn main() -> anyhow::Result<()> {
             .await?;
     }
     if opt.upgrade_light_client_v2 {
+        args.deploy(&mut contracts, Contract::LightClientV2).await?;
+    }
+    if opt.upgrade_light_client_v2_multisig_owner {
         args.deploy(&mut contracts, Contract::LightClientV2).await?;
     }
     if opt.deploy_stake_table {
