@@ -232,7 +232,14 @@ use hotshot_testing::{
 //       metadata
 //     },
 // );
-
+fn create_node_change(idx: usize, view: u64, view_up: u64, change: &mut Vec<(u64, Vec<ChangeNode>)>) {
+  assert!(view_up >= view);
+  let views_down = view_up - view;
+  change.push((view, vec![ChangeNode {
+    idx: idx as usize,
+    updown: NodeAction::RestartDown(views_down),
+  }]));
+}
 cross_tests!(
     TestName: test_staggered_restart_double_restart,
     Impls: [CombinedImpl],
@@ -243,23 +250,18 @@ cross_tests!(
       let mut metadata = TestDescription::default().set_num_nodes(10,1);
 
       let mut node_changes = vec![];
-      for i in 6..10 {
-        let view: u64 = i + 1;
-        let views_down: u64 = 11 - view;
-        let change = vec![ChangeNode {
-            idx: i as usize,
-            updown: NodeAction::RestartDown(views_down),
-        }];
-        node_changes.push((view, change));
-      }
+      // idx, down view, up view
+      create_node_change(1, 6, 8, &mut node_changes);
+      create_node_change(2, 7, 8, &mut node_changes);
+      create_node_change(3, 8, 8, &mut node_changes);
+      create_node_change(4, 10, 10, &mut node_changes);
+      create_node_change(5, 7, 7, &mut node_changes);
+      create_node_change(6, 8, 8, &mut node_changes);
+      // KILL 3 NODES until well after view sync
+      create_node_change(7, 1, 15, &mut node_changes);
+      create_node_change(8, 1, 15, &mut node_changes);
+      create_node_change(9, 1, 15, &mut node_changes);
 
-      for i in 0..6 {
-        let change = vec![ChangeNode {
-            idx: i as usize,
-            updown: NodeAction::RestartDown(0),
-        }];
-        node_changes.push((9, change));
-      }
 
       metadata.spinning_properties = SpinningTaskDescription {
           node_changes,
@@ -278,7 +280,7 @@ cross_tests!(
           // Make sure we keep committing rounds after the catchup, but not the full 50.
           num_successful_views: 22,
           expected_view_failures: vec![8,9],
-          possible_view_failures: vec![1,2,3,4,5,6,7,10],
+          possible_view_failures: vec![5,6,7,10,11,12,13,14,15,16,17, 18, 19],
           decide_timeout: Duration::from_secs(60),
           ..Default::default()
       };

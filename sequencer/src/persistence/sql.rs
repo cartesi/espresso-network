@@ -1275,6 +1275,17 @@ impl SequencerPersistence for Persistence {
 
         let mut tx = self.db.write().await?;
         tx.execute(query(&stmt).bind(view.u64() as i64)).await?;
+
+        if matches!(action, HotShotAction::Vote) {
+            let restart_view = view + 1;
+            let stmt = format!(
+                "INSERT INTO restart_view (id, view) VALUES (0, $1)
+                ON CONFLICT (id) DO UPDATE SET view = {MAX_FN}(restart_view.view, excluded.view)"
+            );
+            tx.execute(query(&stmt).bind(restart_view.u64() as i64))
+                .await?;
+        }
+
         tx.commit().await
     }
 
