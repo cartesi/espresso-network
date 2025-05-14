@@ -162,93 +162,174 @@ where
     /// e.g. if we start with only epoch 0 stake table and call catchup for epoch 10, then call catchup for epoch 20
     /// the first caller will actually do the work for to catchup to epoch 10 then the second caller will continue
     /// catching up to epoch 20
-    async fn catchup(self, epoch: TYPES::Epoch) -> Result<EpochMembership<TYPES>> {
-        // recursively catchup until we have a stake table for the epoch containing our root
-        ensure!(
-            *epoch != 0 && *epoch != 1,
-            "We are trying to catchup to epoch 0! This means the initial stake table is missing!"
-        );
-        let root_epoch = TYPES::Epoch::new(*epoch - 2);
+    async fn catchup(self, epoch: TYPES::Epoch) {
+        // We need to fetch the requested epoch, that's for sure
+        tracing::error!("lrzasik: Catchup requested for epoch {}", epoch);
+        let mut fetch_epochs = vec![];
+        let (tx, rx) = broadcast(1);
+        self.catchup_map.lock().await.insert(epoch, rx.deactivate());
+        fetch_epochs.push((epoch, tx));
 
-        let root_membership = if self.membership.read().await.has_stake_table(root_epoch) {
-            EpochMembership {
-                epoch: Some(root_epoch),
-                coordinator: self.clone(),
+        let mut try_epoch = TYPES::Epoch::new(*epoch - 1);
+        let mut maybe_err = Ok(());
+
+        // First figure out which epochs we need to fetch
+        'membership: loop {
+            if self.membership.read().await.has_stake_table(try_epoch) {
+                break 'membership ;
+            } else {
+                if *try_epoch == 0 || *try_epoch == 1 {
+                    maybe_err = Err(anytrace::error!("We are trying to catchup to epoch 0! This means the initial stake table is missing!"));
+                    break 'membership
+                }
+                loop {
+                    // Lock the catchup map
+                    let mut map_lock = self.catchup_map.lock().await;
+                    if let Some(mut rx) = map_lock.get(&try_epoch).map(InactiveReceiver::activate_cloned) {
+                        tracing::error!("lrzasik: Epoch {} already being fetched", try_epoch);
+                        // Somebody else is already fetching this epoch, drop the lock and wait for them to finish
+                        drop(map_lock);
+                        if let Ok(Ok(_)) = rx.recv_direct().await {
+                            tracing::error!("lrzasik: Epoch {} fetched", try_epoch);
+                            break 'membership
+                        };
+                        tracing::error!("lrzasik: Epoch {} failed to fetch", try_epoch);
+                        // If we didn't receive the epoch then we need to try again
+                    } else {
+                        tracing::error!("lrzasik: Epoch {} not being fetched", try_epoch);
+                        // Nobody else is fetching this epoch. We need to do it. Put it in the map and move on to the next epoch
+                        let (tx, rx) = broadcast(1);
+                        map_lock.insert(try_epoch, rx.deactivate());
+                        drop(map_lock);
+                        fetch_epochs.push((try_epoch, tx));
+                        try_epoch = TYPES::Epoch::new(*try_epoch - 1);
+                        break;
+                    }
+                }
+            };
+        };
+
+        tracing::error!("lrzasik: Epochs to fetch: {:?}", fetch_epochs.iter().map(|(epoch, _)| epoch).collect::<Vec<_>>());
+        let mut cancel_epochs = vec![];
+        // Iterate through the epochs we need to fetch in reverse, i.e. from the oldest to the newest
+        for (current_fetch_epoch, tx) in fetch_epochs.into_iter().rev() {
+            tracing::error!("lrzasik: Fetching epoch {}", current_fetch_epoch);
+            // First check if we already failed and if so, mark this and all the remaining epochs as failed and to be canceled.
+            if maybe_err.is_err() {
+                cancel_epochs.push((current_fetch_epoch, tx));
+                continue;
             }
-        } else {
-            Box::pin(self.wait_for_catchup(root_epoch)).await?
-        };
-
-        // Get the epoch root headers and update our membership with them, finally sync them
-        // Verification of the root is handled in get_epoch_root_and_drb
-        let Ok(root_leaf) = root_membership
-            .get_epoch_root(root_block_in_epoch(*root_epoch, self.epoch_height))
-            .await
-        else {
-            anytrace::bail!("get epoch root failed for epoch {:?}", root_epoch);
-        };
-
-        let add_epoch_root_updater = {
-            let membership_read = self.membership.read().await;
-            membership_read
-                .add_epoch_root(epoch, root_leaf.block_header().clone())
+            let current_root_epoch = TYPES::Epoch::new(*current_fetch_epoch - 2);
+            let Ok(current_root_membership) = self.stake_table_for_epoch(Some(current_root_epoch)).await else {
+                maybe_err = Err(anytrace::error!("We tried to fetch epoch {:?} but we don't have its root epoch {:?}. This should not happen", current_fetch_epoch, current_root_epoch));
+                cancel_epochs.push((current_fetch_epoch, tx));
+                continue;
+            };
+            tracing::error!("lrzasik: Fetched epoch root for epoch {}", current_fetch_epoch);
+            // Get the epoch root headers and update our membership with them, finally sync them
+            // Verification of the root is handled in get_epoch_root_and_drb
+            let Ok(root_leaf) = current_root_membership
+                .get_epoch_root(root_block_in_epoch(*current_root_epoch, self.epoch_height))
                 .await
-        };
-
-        if let Some(updater) = add_epoch_root_updater {
-            let mut membership_write = self.membership.write().await;
-            updater(&mut *(membership_write));
-        };
-
-        let drb_membership = match root_membership.next_epoch_stake_table().await {
-            Ok(drb_membership) => drb_membership,
-            Err(_) => Box::pin(self.wait_for_catchup(root_epoch + 1)).await?,
-        };
-
-        // get the DRB from the last block of the epoch right before the one we're catching up to
-        // or compute it if it's not available
-        let drb = if let Ok(drb) = drb_membership
-            .get_epoch_drb(transition_block_for_epoch(
-                *(root_epoch + 1),
-                self.epoch_height,
-            ))
-            .await
-        {
-            drb
-        } else {
-            let Ok(drb_seed_input_vec) = bincode::serialize(&root_leaf.justify_qc().signatures)
             else {
-                return Err(anytrace::error!("Failed to serialize the QC signature."));
+                maybe_err = Err(anytrace::error!("get epoch root leaf failed for epoch {:?}", current_root_epoch));
+                cancel_epochs.push((current_fetch_epoch, tx));
+                continue;
             };
 
-            let mut drb_seed_input = [0u8; 32];
-            let len = drb_seed_input_vec.len().min(32);
-            drb_seed_input[..len].copy_from_slice(&drb_seed_input_vec[..len]);
-            let drb_input = DrbInput {
-                epoch: *epoch,
-                iteration: 0,
-                value: drb_seed_input,
+            tracing::error!("lrzasik: Fetched epoch root leaf for epoch {}", current_fetch_epoch);
+            let add_epoch_root_updater = {
+                let membership_read = self.membership.read().await;
+                membership_read
+                    .add_epoch_root(current_fetch_epoch, root_leaf.block_header().clone())
+                    .await
             };
-            let store_drb_progress_fn = self.store_drb_progress_fn.clone();
-            tokio::task::spawn_blocking(move || {
-                compute_drb_result(drb_input, store_drb_progress_fn)
-            })
-            .await
-            .unwrap()
-        };
 
-        if let Some(cb) = &self.storage_add_drb_result_fn {
-            tracing::info!("Writing drb result from catchup to storage for epoch {epoch}");
-            if let Err(e) = cb(epoch, drb).await {
-                tracing::warn!("Failed to add drb result to storage: {e}");
+            tracing::error!("lrzasik: added epoch root for epoch {}", current_fetch_epoch);
+            if let Some(updater) = add_epoch_root_updater {
+                let mut membership_write = self.membership.write().await;
+                updater(&mut *(membership_write));
+            };
+
+            tracing::error!("lrzasik: updated epoch root for epoch {}", current_fetch_epoch);
+            let Ok(drb_membership) = current_root_membership.next_epoch_stake_table().await else {
+                maybe_err = Err(anytrace::error!("get drb stake table failed for epoch {:?}", current_root_epoch));
+                cancel_epochs.push((current_fetch_epoch, tx));
+                continue;
+            };
+
+            tracing::error!("lrzasik: Fetched drb stake table for epoch {}", current_fetch_epoch);
+            // get the DRB from the last block of the epoch right before the one we're catching up to
+            // or compute it if it's not available
+            let drb = if let Ok(drb) = drb_membership
+                .get_epoch_drb(transition_block_for_epoch(
+                    *(current_root_epoch + 1),
+                    self.epoch_height,
+                ))
+                .await
+            {
+                tracing::error!("lrzasik: Fetched drb for epoch {}", current_fetch_epoch);
+                drb
+            } else {
+                tracing::error!("lrzasik: Computing drb for epoch {}", current_fetch_epoch);
+                let Ok(drb_seed_input_vec) = bincode::serialize(&root_leaf.justify_qc().signatures)
+                else {
+                    maybe_err = Err(anytrace::error!("Failed to serialize the QC signature for leaf {:?}", root_leaf));
+                    cancel_epochs.push((current_fetch_epoch, tx));
+                    continue;
+                };
+
+                let mut drb_seed_input = [0u8; 32];
+                let len = drb_seed_input_vec.len().min(32);
+                drb_seed_input[..len].copy_from_slice(&drb_seed_input_vec[..len]);
+                let drb_input = DrbInput {
+                    epoch: *current_fetch_epoch,
+                    iteration: 0,
+                    value: drb_seed_input,
+                };
+                let store_drb_progress_fn = self.store_drb_progress_fn.clone();
+                tokio::task::spawn_blocking(move || {
+                    compute_drb_result(drb_input, store_drb_progress_fn)
+                })
+                .await
+                .unwrap()
+            };
+
+            if let Some(cb) = &self.storage_add_drb_result_fn {
+                tracing::info!("Writing drb result from catchup to storage for epoch {current_fetch_epoch}");
+                if let Err(e) = cb(current_fetch_epoch, drb).await {
+                    tracing::warn!("Failed to add drb result to storage: {e}");
+                }
             }
+            self.membership.write().await.add_drb_result(current_fetch_epoch, drb);
+
+            // Signal the other tasks about the success
+            let _ = tx.broadcast_direct(Ok(EpochMembership {
+                epoch: Some(current_fetch_epoch),
+                coordinator: self.clone(),
+            }))
+            .await;
+
+            // Remove the epoch from the catchup map to indicate that the catchup is complete
+            self.catchup_map.lock().await.remove(&current_fetch_epoch);
         }
 
-        self.membership.write().await.add_drb_result(epoch, drb);
-        Ok(EpochMembership {
-            epoch: Some(epoch),
-            coordinator: self.clone(),
-        })
+        // Cleanup in case of error
+        let mut map_lock = self.catchup_map.lock().await;
+        for (epoch, _) in cancel_epochs.iter() {
+            tracing::error!("lrzasik: Canceling catchup for epoch {}", epoch);
+            // Remove the failed epochs from the catchup map
+            map_lock.remove(epoch);
+        }
+        drop(map_lock);
+        if let Err(err) = maybe_err {
+            for (_, tx) in cancel_epochs {
+                tracing::error!("lrzasik: Signalling failed catchup for epoch {}", epoch);
+                // Signal the other tasks about the failures
+                let _ = tx.broadcast_direct(Err(err.clone())).await;
+            }
+            tracing::error!("catchup for epoch {:?} failed: {:?}", epoch, err);
+        }
     }
 
     pub async fn wait_for_catchup(&self, epoch: TYPES::Epoch) -> Result<EpochMembership<TYPES>> {
@@ -259,10 +340,17 @@ where
             .get(&epoch)
             .map(InactiveReceiver::activate_cloned)
         else {
-            return self.clone().catchup(epoch).await;
+            // There is no catchup in progress, maybe the epoch is already finalized
+            if self.membership.read().await.has_stake_table(epoch) {
+                return Ok(EpochMembership {
+                    epoch: Some(epoch),
+                    coordinator: self.clone(),
+                });
+            }
+            return Err(anytrace::error!("No catchup in progress for epoch {epoch} and we don't have a stake table for it"));
         };
         let Ok(Ok(mem)) = rx.recv_direct().await else {
-            return self.clone().catchup(epoch).await;
+            return Err(anytrace::error!("Catchup for epoch {epoch} failed"));
         };
         Ok(mem)
     }
@@ -270,24 +358,7 @@ where
 
 fn spawn_catchup<T: NodeType>(coordinator: EpochMembershipCoordinator<T>, epoch: T::Epoch) {
     tokio::spawn(async move {
-        let tx = {
-            let mut map = coordinator.catchup_map.lock().await;
-            if map.contains_key(&epoch) {
-                return;
-            }
-            let (tx, rx) = broadcast(1);
-            map.insert(epoch, rx.deactivate());
-            tx
-        };
-        // do catchup
-
-        let result = coordinator.clone().catchup(epoch).await;
-        let _ = tx.broadcast_direct(result.clone()).await;
-
-        if let Err(err) = result {
-            tracing::warn!("failed to catchup for epoch={epoch:?}. err={err:#}");
-            coordinator.catchup_map.lock().await.remove(&epoch);
-        }
+        coordinator.clone().catchup(epoch).await;
     });
 }
 /// Wrapper around a membership that guarantees that the epoch
