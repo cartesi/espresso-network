@@ -1085,6 +1085,19 @@ impl SequencerPersistence for Persistence {
             }))
     }
 
+    async fn load_restart_view(&self) -> anyhow::Result<Option<ViewNumber>> {
+        Ok(self
+            .db
+            .read()
+            .await?
+            .fetch_optional(query("SELECT view FROM restart_view WHERE id = 0"))
+            .await?
+            .map(|row| {
+                let view: i64 = row.get("view");
+                ViewNumber::new(view as u64)
+            }))
+    }
+
     async fn load_anchor_leaf(
         &self,
     ) -> anyhow::Result<Option<(Leaf2, QuorumCertificate2<SeqTypes>)>> {

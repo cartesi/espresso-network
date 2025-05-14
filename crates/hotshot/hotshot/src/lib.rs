@@ -437,10 +437,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
             async move {
                 sleep(Duration::from_millis(next_view_timeout)).await;
                 broadcast_event(
-                    Arc::new(HotShotEvent::Timeout(
-                        start_view + 1,
-                        start_epoch.map(|x| x + 1),
-                    )),
+                    Arc::new(HotShotEvent::Timeout(start_view, start_epoch)),
                     &event_stream,
                 )
                 .await;

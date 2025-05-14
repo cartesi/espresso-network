@@ -593,6 +593,18 @@ impl SequencerPersistence for Persistence {
         Ok(Some(ViewNumber::new(u64::from_le_bytes(bytes))))
     }
 
+    async fn load_restart_view(&self) -> anyhow::Result<Option<ViewNumber>> {
+        let inner = self.inner.read().await;
+        let path = inner.restart_view_path();
+        if !path.is_file() {
+            return Ok(None);
+        }
+        let bytes = fs::read(path)?
+            .try_into()
+            .map_err(|bytes| anyhow!("malformed restart view file: {bytes:?}"))?;
+        Ok(Some(ViewNumber::new(u64::from_le_bytes(bytes))))
+    }
+
     async fn append_decided_leaves(
         &self,
         view: ViewNumber,
