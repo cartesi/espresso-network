@@ -46,7 +46,7 @@ use sequencer::{
 };
 use sequencer_utils::logging;
 use serde::{Deserialize, Serialize};
-use staking_cli::demo::setup_stake_table_contract_for_test;
+use staking_cli::demo::{setup_stake_table_contract_for_test, DelegationConfig};
 use tempfile::NamedTempFile;
 use tide_disco::{error::ServerError, method::ReadState, Api, Error as _, StatusCode};
 use tokio::spawn;
@@ -501,7 +501,7 @@ async fn main() -> anyhow::Result<()> {
                     .address(Contract::EspTokenProxy)
                     .expect("ESP token deployed"),
                 staking_priv_keys,
-                false,
+                DelegationConfig::default(),
             )
             .await?;
         }
@@ -535,6 +535,7 @@ async fn main() -> anyhow::Result<()> {
             blocks_per_epoch,
             epoch_start_block,
             max_retries: 0,
+            max_gas_price: None,
         };
 
         // spawn off prover service for this chain
