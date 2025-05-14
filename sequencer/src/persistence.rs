@@ -48,7 +48,6 @@ mod testing {
 mod persistence_tests {
     use std::{collections::BTreeMap, marker::PhantomData, sync::Arc};
 
-    use alloy::{node_bindings::Anvil, signers::local::LocalSigner};
     use anyhow::bail;
     use async_lock::RwLock;
     use committable::{Commitment, Committable};
@@ -89,6 +88,7 @@ mod persistence_tests {
     use indexmap::IndexMap;
     use portpicker::pick_unused_port;
     use sequencer_utils::test_utils::setup_test;
+    use staking_cli::demo::DelegationConfig;
     use surf_disco::Client;
     use testing::TestablePersistence;
     use tide_disco::error::ServerError;
@@ -188,7 +188,7 @@ mod persistence_tests {
 
         // Store a drb result.
         storage
-            .add_drb_result(EpochNumber::new(1), [1; 32])
+            .store_drb_result(EpochNumber::new(1), [1; 32])
             .await
             .unwrap();
         assert_eq!(
@@ -202,7 +202,7 @@ mod persistence_tests {
 
         // Store a second DRB result
         storage
-            .add_drb_result(EpochNumber::new(2), [3; 32])
+            .store_drb_result(EpochNumber::new(2), [3; 32])
             .await
             .unwrap();
         assert_eq!(
@@ -256,7 +256,7 @@ mod persistence_tests {
             let epoch = EpochNumber::new(i);
             let drb = [i as u8; 32];
             storage
-                .add_drb_result(epoch, drb)
+                .store_drb_result(epoch, drb)
                 .await
                 .unwrap_or_else(|_| panic!("Failed to store DRB result for epoch {}", i));
         }
@@ -1155,14 +1155,7 @@ mod persistence_tests {
         let epoch_height = 20;
         type PosVersion = SequencerVersions<StaticVersion<0, 3>, StaticVersion<0, 0>>;
 
-        let anvil_instance = Anvil::new().args(["--slots-in-an-epoch", "0"]).spawn();
-        let l1_rpc_url = anvil_instance.endpoint_url();
-        let l1_signer_key = anvil_instance.keys()[0].clone();
-        let signer = LocalSigner::from(l1_signer_key);
-
         let network_config = TestConfigBuilder::default()
-            .l1_url(l1_rpc_url.clone())
-            .signer(signer.clone())
             .epoch_height(epoch_height)
             .build();
 
@@ -1181,17 +1174,18 @@ mod persistence_tests {
 
         // Build the config with PoS hook
 
+        let l1_url = network_config.l1_url();
+
         let testnet_config = TestNetworkConfigBuilder::with_num_nodes()
             .api_config(query_api_options)
             .network_config(network_config.clone())
             .persistences(persistence_options.clone())
-            .pos_hook::<PosVersion>(true)
+            .pos_hook::<PosVersion>(DelegationConfig::MultipleDelegators)
             .await
             .expect("Pos deployment failed")
             .build();
 
         //start the network
-
         let mut test_network = TestNetwork::new(testnet_config, PosVersion::new()).await;
 
         let client: Client<ServerError, SequencerApiVersion> = Client::new(
@@ -1254,7 +1248,7 @@ mod persistence_tests {
             .membership_coordinator
             .clone();
 
-        let l1_client = L1Client::new(vec![l1_rpc_url]).unwrap();
+        let l1_client = L1Client::new(vec![l1_url]).unwrap();
         let node_state = test_network.server.node_state();
         let chain_config = node_state.chain_config;
         let stake_table_contract = chain_config.stake_table_contract.unwrap();
@@ -1325,16 +1319,7 @@ mod persistence_tests {
         let epoch_height = 30;
         type PosVersion = SequencerVersions<StaticVersion<0, 3>, StaticVersion<0, 0>>;
 
-        let anvil_instance = Anvil::new()
-            .args(["--slots-in-an-epoch", "0", "--block-time", "1"])
-            .spawn();
-        let l1_rpc_url = anvil_instance.endpoint_url();
-        let l1_signer_key = anvil_instance.keys()[0].clone();
-        let signer = LocalSigner::from(l1_signer_key);
-
         let network_config = TestConfigBuilder::default()
-            .l1_url(l1_rpc_url.clone())
-            .signer(signer.clone())
             .epoch_height(epoch_height)
             .build();
 
@@ -1356,14 +1341,13 @@ mod persistence_tests {
             .api_config(query_api_options)
             .network_config(network_config.clone())
             .persistences(persistence_options.clone())
-            .pos_hook::<PosVersion>(true)
+            .pos_hook::<PosVersion>(DelegationConfig::MultipleDelegators)
             .await
             .expect("Pos deployment failed")
             .build();
 
         //start the network
         let _test_network = TestNetwork::new(testnet_config, PosVersion::new()).await;
-
         let client: Client<ServerError, SequencerApiVersion> = Client::new(
             format!("http://localhost:{query_service_port}")
                 .parse()
