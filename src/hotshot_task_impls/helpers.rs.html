@@ -160,8 +160,8 @@
 <a href=#160 id=160 data-nosnippet>160</a>    <span class="kw">let </span><span class="kw-2">mut </span>consensus_writer = consensus.write().<span class="kw">await</span>;
 <a href=#161 id=161 data-nosnippet>161</a>    consensus_writer.drb_results.store_result(epoch, drb_result);
 <a href=#162 id=162 data-nosnippet>162</a>    drop(consensus_writer);
-<a href=#163 id=163 data-nosnippet>163</a>    <span class="macro">tracing::debug!</span>(<span class="string">"Calling add_drb_result for epoch {epoch}"</span>);
-<a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = storage.add_drb_result(epoch, drb_result).<span class="kw">await </span>{
+<a href=#163 id=163 data-nosnippet>163</a>    <span class="macro">tracing::debug!</span>(<span class="string">"Calling store_drb_result for epoch {epoch}"</span>);
+<a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">if let </span><span class="prelude-val">Err</span>(e) = storage.store_drb_result(epoch, drb_result).<span class="kw">await </span>{
 <a href=#165 id=165 data-nosnippet>165</a>        <span class="macro">tracing::error!</span>(<span class="string">"Failed to store drb result for epoch {epoch}: {e}"</span>);
 <a href=#166 id=166 data-nosnippet>166</a>    }
 <a href=#167 id=167 data-nosnippet>167</a>

@@ -738,7 +738,7 @@
 <a href=#738 id=738 data-nosnippet>738</a>        <span class="self">self</span>.append_quorum_proposal2(proposal).<span class="kw">await
 <a href=#739 id=739 data-nosnippet>739</a>    </span>}
 <a href=#740 id=740 data-nosnippet>740</a>
-<a href=#741 id=741 data-nosnippet>741</a>    <span class="kw">async fn </span>add_drb_result(
+<a href=#741 id=741 data-nosnippet>741</a>    <span class="kw">async fn </span>store_drb_result(
 <a href=#742 id=742 data-nosnippet>742</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#743 id=743 data-nosnippet>743</a>        epoch: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch,
 <a href=#744 id=744 data-nosnippet>744</a>        drb_result: DrbResult,
@@ -855,12 +855,12 @@
 <a href=#855 id=855 data-nosnippet>855</a>            .<span class="kw">await
 <a href=#856 id=856 data-nosnippet>856</a>    </span>}
 <a href=#857 id=857 data-nosnippet>857</a>
-<a href=#858 id=858 data-nosnippet>858</a>    <span class="kw">async fn </span>add_drb_result(
+<a href=#858 id=858 data-nosnippet>858</a>    <span class="kw">async fn </span>store_drb_result(
 <a href=#859 id=859 data-nosnippet>859</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#860 id=860 data-nosnippet>860</a>        epoch: &lt;SeqTypes <span class="kw">as </span>NodeType&gt;::Epoch,
 <a href=#861 id=861 data-nosnippet>861</a>        drb_result: DrbResult,
 <a href=#862 id=862 data-nosnippet>862</a>    ) -&gt; anyhow::Result&lt;()&gt; {
-<a href=#863 id=863 data-nosnippet>863</a>        (<span class="kw-2">**</span><span class="self">self</span>).add_drb_result(epoch, drb_result).<span class="kw">await
+<a href=#863 id=863 data-nosnippet>863</a>        (<span class="kw-2">**</span><span class="self">self</span>).store_drb_result(epoch, drb_result).<span class="kw">await
 <a href=#864 id=864 data-nosnippet>864</a>    </span>}
 <a href=#865 id=865 data-nosnippet>865</a>
 <a href=#866 id=866 data-nosnippet>866</a>    <span class="kw">async fn </span>add_epoch_root(

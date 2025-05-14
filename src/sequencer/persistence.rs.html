@@ -188,7 +188,7 @@
 <a href=#188 id=188 data-nosnippet>188</a>
 <a href=#189 id=189 data-nosnippet>189</a>        <span class="comment">// Store a drb result.
 <a href=#190 id=190 data-nosnippet>190</a>        </span>storage
-<a href=#191 id=191 data-nosnippet>191</a>            .add_drb_result(EpochNumber::new(<span class="number">1</span>), [<span class="number">1</span>; <span class="number">32</span>])
+<a href=#191 id=191 data-nosnippet>191</a>            .store_drb_result(EpochNumber::new(<span class="number">1</span>), [<span class="number">1</span>; <span class="number">32</span>])
 <a href=#192 id=192 data-nosnippet>192</a>            .<span class="kw">await
 <a href=#193 id=193 data-nosnippet>193</a>            </span>.unwrap();
 <a href=#194 id=194 data-nosnippet>194</a>        <span class="macro">assert_eq!</span>(
@@ -202,7 +202,7 @@
 <a href=#202 id=202 data-nosnippet>202</a>
 <a href=#203 id=203 data-nosnippet>203</a>        <span class="comment">// Store a second DRB result
 <a href=#204 id=204 data-nosnippet>204</a>        </span>storage
-<a href=#205 id=205 data-nosnippet>205</a>            .add_drb_result(EpochNumber::new(<span class="number">2</span>), [<span class="number">3</span>; <span class="number">32</span>])
+<a href=#205 id=205 data-nosnippet>205</a>            .store_drb_result(EpochNumber::new(<span class="number">2</span>), [<span class="number">3</span>; <span class="number">32</span>])
 <a href=#206 id=206 data-nosnippet>206</a>            .<span class="kw">await
 <a href=#207 id=207 data-nosnippet>207</a>            </span>.unwrap();
 <a href=#208 id=208 data-nosnippet>208</a>        <span class="macro">assert_eq!</span>(
@@ -256,7 +256,7 @@
 <a href=#256 id=256 data-nosnippet>256</a>            <span class="kw">let </span>epoch = EpochNumber::new(i);
 <a href=#257 id=257 data-nosnippet>257</a>            <span class="kw">let </span>drb = [i <span class="kw">as </span>u8; <span class="number">32</span>];
 <a href=#258 id=258 data-nosnippet>258</a>            storage
-<a href=#259 id=259 data-nosnippet>259</a>                .add_drb_result(epoch, drb)
+<a href=#259 id=259 data-nosnippet>259</a>                .store_drb_result(epoch, drb)
 <a href=#260 id=260 data-nosnippet>260</a>                .<span class="kw">await
 <a href=#261 id=261 data-nosnippet>261</a>                </span>.unwrap_or_else(|<span class="kw">_</span>| <span class="macro">panic!</span>(<span class="string">"Failed to store DRB result for epoch {}"</span>, i));
 <a href=#262 id=262 data-nosnippet>262</a>        }

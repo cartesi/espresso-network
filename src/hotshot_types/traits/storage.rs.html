@@ -143,7 +143,7 @@
 <a href=#143 id=143 data-nosnippet>143</a>        <span class="prelude-val">Ok</span>(())
 <a href=#144 id=144 data-nosnippet>144</a>    }
 <a href=#145 id=145 data-nosnippet>145</a>    <span class="doccomment">/// Add a drb result
-<a href=#146 id=146 data-nosnippet>146</a>    </span><span class="kw">async fn </span>add_drb_result(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch, drb_result: DrbResult) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+<a href=#146 id=146 data-nosnippet>146</a>    </span><span class="kw">async fn </span>store_drb_result(<span class="kw-2">&amp;</span><span class="self">self</span>, epoch: TYPES::Epoch, drb_result: DrbResult) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
 <a href=#147 id=147 data-nosnippet>147</a>    <span class="doccomment">/// Add an epoch block header
 <a href=#148 id=148 data-nosnippet>148</a>    </span><span class="kw">async fn </span>add_epoch_root(
 <a href=#149 id=149 data-nosnippet>149</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -156,7 +156,7 @@
 <a href=#156 id=156 data-nosnippet>156</a>    }
 <a href=#157 id=157 data-nosnippet>157</a>}
 <a href=#158 id=158 data-nosnippet>158</a>
-<a href=#159 id=159 data-nosnippet>159</a><span class="kw">pub async fn </span>store_drb_input_impl&lt;TYPES: NodeType&gt;(
+<a href=#159 id=159 data-nosnippet>159</a><span class="kw">async fn </span>store_drb_input_impl&lt;TYPES: NodeType&gt;(
 <a href=#160 id=160 data-nosnippet>160</a>    storage: <span class="kw">impl </span>Storage&lt;TYPES&gt;,
 <a href=#161 id=161 data-nosnippet>161</a>    epoch: u64,
 <a href=#162 id=162 data-nosnippet>162</a>    iteration: u64,
@@ -181,7 +181,7 @@
 <a href=#181 id=181 data-nosnippet>181</a>    Arc::new(<span class="kw">move </span>|_epoch, _iteration, _value| Box::pin(<span class="kw">async </span>{}))
 <a href=#182 id=182 data-nosnippet>182</a>}
 <a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a><span class="kw">pub type </span>StorageAddDrbResultFn&lt;TYPES&gt; = Arc&lt;
+<a href=#184 id=184 data-nosnippet>184</a><span class="kw">pub type </span>StoreDrbResultFn&lt;TYPES&gt; = Arc&lt;
 <a href=#185 id=185 data-nosnippet>185</a>    Box&lt;
 <a href=#186 id=186 data-nosnippet>186</a>        <span class="kw">dyn </span>Fn(&lt;TYPES <span class="kw">as </span>NodeType&gt;::Epoch, DrbResult) -&gt; BoxFuture&lt;<span class="lifetime">'static</span>, <span class="prelude-ty">Result</span>&lt;()&gt;&gt;
 <a href=#187 id=187 data-nosnippet>187</a>            + Send
@@ -190,20 +190,20 @@
 <a href=#190 id=190 data-nosnippet>190</a>    &gt;,
 <a href=#191 id=191 data-nosnippet>191</a>&gt;;
 <a href=#192 id=192 data-nosnippet>192</a>
-<a href=#193 id=193 data-nosnippet>193</a><span class="kw">async fn </span>storage_add_drb_result_impl&lt;TYPES: NodeType&gt;(
+<a href=#193 id=193 data-nosnippet>193</a><span class="kw">async fn </span>store_drb_result_impl&lt;TYPES: NodeType&gt;(
 <a href=#194 id=194 data-nosnippet>194</a>    storage: <span class="kw">impl </span>Storage&lt;TYPES&gt;,
 <a href=#195 id=195 data-nosnippet>195</a>    epoch: TYPES::Epoch,
 <a href=#196 id=196 data-nosnippet>196</a>    drb_result: DrbResult,
 <a href=#197 id=197 data-nosnippet>197</a>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#198 id=198 data-nosnippet>198</a>    storage.add_drb_result(epoch, drb_result).<span class="kw">await
+<a href=#198 id=198 data-nosnippet>198</a>    storage.store_drb_result(epoch, drb_result).<span class="kw">await
 <a href=#199 id=199 data-nosnippet>199</a></span>}
 <a href=#200 id=200 data-nosnippet>200</a>
 <a href=#201 id=201 data-nosnippet>201</a><span class="doccomment">/// Helper function to create a callback to add a drb result to storage
-<a href=#202 id=202 data-nosnippet>202</a></span><span class="kw">pub fn </span>storage_add_drb_result&lt;TYPES: NodeType&gt;(
+<a href=#202 id=202 data-nosnippet>202</a></span><span class="kw">pub fn </span>store_drb_result_fn&lt;TYPES: NodeType&gt;(
 <a href=#203 id=203 data-nosnippet>203</a>    storage: <span class="kw">impl </span>Storage&lt;TYPES&gt; + <span class="lifetime">'static</span>,
-<a href=#204 id=204 data-nosnippet>204</a>) -&gt; StorageAddDrbResultFn&lt;TYPES&gt; {
+<a href=#204 id=204 data-nosnippet>204</a>) -&gt; StoreDrbResultFn&lt;TYPES&gt; {
 <a href=#205 id=205 data-nosnippet>205</a>    Arc::new(Box::new(<span class="kw">move </span>|epoch, drb_result| {
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">let </span>st = storage.clone();
-<a href=#207 id=207 data-nosnippet>207</a>        Box::pin(storage_add_drb_result_impl(st, epoch, drb_result))
+<a href=#207 id=207 data-nosnippet>207</a>        Box::pin(store_drb_result_impl(st, epoch, drb_result))
 <a href=#208 id=208 data-nosnippet>208</a>    }))
 <a href=#209 id=209 data-nosnippet>209</a>}</code></pre></div></section></main></body></html>
