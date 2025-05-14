@@ -1304,7 +1304,6 @@ pub mod testing {
 mod test {
 
     use alloy::node_bindings::Anvil;
-    use clap::Parser;
     use espresso_types::{Header, MockSequencerVersions, NamespaceId, Payload, Transaction};
     use futures::StreamExt;
     use hotshot::types::EventType::Decide;
@@ -1316,7 +1315,7 @@ mod test {
             BlockHeader, BlockPayload, EncodeBytes, GENESIS_VID_NUM_STORAGE_NODES,
         },
     };
-    use sequencer_utils::{options::Options, test_utils::setup_test};
+    use sequencer_utils::test_utils::setup_test;
     use testing::{wait_for_decide_on_handle, TestConfigBuilder};
 
     use self::testing::run_test_builder;
