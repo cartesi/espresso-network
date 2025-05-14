@@ -3,8 +3,8 @@ use std::{fs::File, io::stdout, path::PathBuf, thread::sleep, time::Duration};
 use alloy::primitives::{Address, U256};
 use clap::Parser;
 use espresso_contract_deployer::{
-    builder::DeployerArgsBuilder, network_config::light_client_genesis, Contract, Contracts,
-    DeployedContracts,
+    build_provider, builder::DeployerArgsBuilder, network_config::light_client_genesis, Contract,
+    Contracts, DeployedContracts,
 };
 use espresso_types::{config::PublicNetworkConfig, parse_duration};
 use hotshot_types::light_client::STAKE_TABLE_CAPACITY;
@@ -178,8 +178,7 @@ async fn main() -> anyhow::Result<()> {
     opt.logging.init();
 
     let mut contracts = Contracts::from(opt.contracts);
-    let deployer = signer.address();
-    let provider = ProviderBuilder::new().on_http(opt.rpc_url.clone());
+    let provider = build_provider(opt.mnemonic, opt.account_index, opt.rpc_url);
 
     // First use builder to build constructor input arguments
     let mut args_builder = DeployerArgsBuilder::default();
@@ -260,12 +259,6 @@ async fn main() -> anyhow::Result<()> {
         args_builder.epoch_start_block(epoch_start_block);
     }
 
-    if opt.deploy_esp_token {
-        let recipient = match opt.initial_token_grant_recipient {
-            Some(r) => r,
-            None => deployer,
-        };
-    }
     if opt.deploy_stake_table {
         if let Some(escrow_period) = opt.exit_escrow_period {
             args_builder.exit_escrow_period(U256::from(escrow_period.as_secs()));
