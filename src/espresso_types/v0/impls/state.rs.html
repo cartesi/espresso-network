@@ -29,7 +29,7 @@
 <a href=#29 id=29 data-nosnippet>29</a>    auction::ExecutionError,
 <a href=#30 id=30 data-nosnippet>30</a>    fee_info::FeeError,
 <a href=#31 id=31 data-nosnippet>31</a>    instance_state::NodeState,
-<a href=#32 id=32 data-nosnippet>32</a>    reward::{apply_rewards, find_validator_info, first_two_epochs},
+<a href=#32 id=32 data-nosnippet>32</a>    reward::{find_validator_info, first_two_epochs},
 <a href=#33 id=33 data-nosnippet>33</a>    v0_1::{
 <a href=#34 id=34 data-nosnippet>34</a>        RewardAccount, RewardAmount, RewardMerkleCommitment, RewardMerkleTree,
 <a href=#35 id=35 data-nosnippet>35</a>        REWARD_MERKLE_TREE_HEIGHT,
@@ -301,7 +301,7 @@
 <a href=#301 id=301 data-nosnippet>301</a>        delta: <span class="kw-2">&amp;mut </span>Delta,
 <a href=#302 id=302 data-nosnippet>302</a>        validator: Validator&lt;BLSPubKey&gt;,
 <a href=#303 id=303 data-nosnippet>303</a>    ) -&gt; anyhow::Result&lt;()&gt; {
-<a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">let </span>reward_state = apply_rewards(<span class="self">self</span>.reward_merkle_tree.clone(), validator.clone())<span class="question-mark">?</span>;
+<a href=#304 id=304 data-nosnippet>304</a>        <span class="kw">let </span>reward_state = validator.apply_rewards(<span class="self">self</span>.reward_merkle_tree.clone())<span class="question-mark">?</span>;
 <a href=#305 id=305 data-nosnippet>305</a>        <span class="self">self</span>.reward_merkle_tree = reward_state;
 <a href=#306 id=306 data-nosnippet>306</a>
 <a href=#307 id=307 data-nosnippet>307</a>        <span class="comment">// Update delta rewards

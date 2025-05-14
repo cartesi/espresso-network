@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a>    eth_signature_key::BuilderSignature,
 <a href=#37 id=37 data-nosnippet>37</a>    v0::{
 <a href=#38 id=38 data-nosnippet>38</a>        header::{EitherOrVersion, VersionedHeader},
-<a href=#39 id=39 data-nosnippet>39</a>        impls::reward::{apply_rewards, find_validator_info, first_two_epochs},
+<a href=#39 id=39 data-nosnippet>39</a>        impls::reward::{find_validator_info, first_two_epochs},
 <a href=#40 id=40 data-nosnippet>40</a>        MarketplaceVersion,
 <a href=#41 id=41 data-nosnippet>41</a>    },
 <a href=#42 id=42 data-nosnippet>42</a>    v0_1, v0_2, v0_3,
@@ -534,7 +534,7 @@
 <a href=#534 id=534 data-nosnippet>534</a>        // so that marketplace version also supports this,
 <a href=#535 id=535 data-nosnippet>535</a>        // and the marketplace integration test passes
 <a href=#536 id=536 data-nosnippet>536</a>        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(validator) = validator {
-<a href=#537 id=537 data-nosnippet>537</a>            <span class="kw">let </span>reward_state = apply_rewards(state.reward_merkle_tree.clone(), validator)<span class="question-mark">?</span>;
+<a href=#537 id=537 data-nosnippet>537</a>            <span class="kw">let </span>reward_state = validator.apply_rewards(state.reward_merkle_tree.clone())<span class="question-mark">?</span>;
 <a href=#538 id=538 data-nosnippet>538</a>            state.reward_merkle_tree = reward_state;
 <a href=#539 id=539 data-nosnippet>539</a>        }
 <a href=#540 id=540 data-nosnippet>540</a>
