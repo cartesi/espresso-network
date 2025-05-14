@@ -492,6 +492,7 @@ impl<
         request_message: RequestMessage<Req, K>,
         outgoing_responses: &mut OutgoingResponses,
     ) {
+        warn!("Handling request {:?}", request_message);
         // Spawn a task to:
         // - Validate the request
         // - Derive the response data (check if we have it)
