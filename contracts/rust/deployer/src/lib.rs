@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
     io::Write,
-    path::Path,
     process::{Command, Stdio},
 };
 
@@ -834,13 +833,7 @@ pub async fn call_upgrade_proxy_script(
     rpc_url: String,
     safe_address: String,
 ) -> Result<(String, bool), anyhow::Error> {
-    let script_path = Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap())
-        .join("../../script/multisigTransactionProposals/safeSDK/");
-
-    tracing::info!("script_path: {:?}", script_path);
-    let output = Command::new("npx")
-        .arg("ts-node")
-        .arg(script_path.join("upgradeProxy.ts").to_str().unwrap())
+    let output = Command::new("multisig-upgrade-entrypoint")
         .arg("--from-rust")
         .arg("--proxy")
         .arg(proxy_addr)

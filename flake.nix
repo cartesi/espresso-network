@@ -236,6 +236,9 @@
           ++ lib.optionals (!stdenv.isDarwin) [ cargo-watch ] # broken on OSX
           ;
           shellHook = ''
+            # Add the local scripts to the PATH
+            export PATH="$PWD/scripts:$PATH"
+
             # Add node binaries to PATH for development
             export PATH="$PWD/node_modules/.bin:$PATH"
 
