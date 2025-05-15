@@ -34,7 +34,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestHeader0_1(t *testing.T) {
-	header := getHeaderFromTestFile("./test-data/header0_1.json", t)
+	header := getHeaderFromTestFile("../../../data/v1/header.json", t)
 
 	if header.Version().Major != 0 || header.Version().Minor != 1 {
 		t.Fatal("Wrong version", header.Version())
@@ -46,7 +46,7 @@ func TestHeader0_1(t *testing.T) {
 }
 
 func TestHeader0_2(t *testing.T) {
-	header := getHeaderFromTestFile("./test-data/header0_2.json", t)
+	header := getHeaderFromTestFile("../../../data/v2/header.json", t)
 
 	if header.Version().Major != 0 || header.Version().Minor != 2 {
 		t.Fatal("Wrong version", header.Version())
@@ -58,7 +58,7 @@ func TestHeader0_2(t *testing.T) {
 }
 
 func TestHeader0_3(t *testing.T) {
-	header := getHeaderFromTestFile("./test-data/header0_3.json", t)
+	header := getHeaderFromTestFile("../../../data/v3/header.json", t)
 
 	if header.Version().Major != 0 || header.Version().Minor != 3 {
 		t.Fatal("Wrong version", header.Version())
