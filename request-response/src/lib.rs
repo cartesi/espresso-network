@@ -27,7 +27,7 @@ use tokio::{
 };
 use tokio_util::task::AbortOnDropHandle;
 use tracing::{debug, error, trace, warn};
-use util::{BoundedVecDeque, FuturePool, KeyedFuturePool, KeyedFuturePoolError};
+use util::{BoundedVecDeque, NamedSemaphore, NamedSemaphoreError};
 
 /// The data source trait. Is what we use to derive the response data for a request
 pub mod data_source;
@@ -52,10 +52,10 @@ pub type OutgoingRequestsMap<Req> =
     Arc<RwLock<HashMap<RequestHash, Weak<OutgoingRequestInner<Req>>>>>;
 
 /// A type alias for the list of tasks that are responding to requests
-pub type IncomingRequests<K> = KeyedFuturePool<K, ()>;
+pub type IncomingRequests<K> = NamedSemaphore<K>;
 
 /// A type alias for the list of tasks that are validating incoming responses
-pub type IncomingResponses = FuturePool<()>;
+pub type IncomingResponses = NamedSemaphore<()>;
 
 /// The errors that can occur when making a request for data
 #[derive(thiserror::Error, Debug)]
@@ -464,11 +464,11 @@ impl<
     /// The task responsible for receiving messages from the receiver and handling them
     async fn receiving_task(self: Arc<Self>, mut receiver: R) {
         // Upper bound the number of outgoing and incoming responses
-        let mut incoming_requests = KeyedFuturePool::new(
-            self.config.max_incoming_requests,
+        let mut incoming_requests = NamedSemaphore::new(
             self.config.max_incoming_requests_per_key,
+            Some(self.config.max_incoming_requests),
         );
-        let mut incoming_responses = FuturePool::new(self.config.max_incoming_responses);
+        let mut incoming_responses = NamedSemaphore::new(self.config.max_incoming_responses, None);
 
         // While the receiver is open, we receive messages and handle them
         loop {
@@ -516,8 +516,29 @@ impl<
         // - Derive the response data (check if we have it)
         // - Send the response to the requester
         let self_clone = Arc::clone(self);
-        let requester_public_key = request_message.public_key.clone();
-        let response_task = AbortOnDropHandle::new(tokio::spawn(async move {
+
+        // Attempt to acquire a permit for the request. Warn if there are too many requests currently being processed
+        // either globally or per-key
+        let permit = incoming_requests.try_acquire(request_message.public_key.clone());
+        match permit {
+            Ok(ref permit) => permit,
+            Err(NamedSemaphoreError::PerKeyLimitReached) => {
+                warn!(
+                    "Failed to process request from {}: too many requests from the same key are already being processed",
+                    request_message.public_key
+                );
+                return;
+            },
+            Err(NamedSemaphoreError::GlobalLimitReached) => {
+                warn!(
+                    "Failed to process request from {}: too many requests are already being processed",
+                    request_message.public_key
+                );
+                return;
+            },
+        };
+
+        tokio::spawn(async move {
             let result = timeout(self_clone.config.incoming_request_timeout, async move {
                 // Validate the request message. This includes:
                 // - Checking the signature and making sure it's valid
@@ -552,6 +573,10 @@ impl<
                     .await
                     .with_context(|| "failed to send response to requester")?;
 
+                // Drop the permit
+                _ = permit;
+                drop(permit);
+
                 Ok::<(), anyhow::Error>(())
             })
             .await
@@ -561,23 +586,7 @@ impl<
             if let Err(e) = result {
                 debug!("Failed to send response to requester: {e:#}");
             }
-        }));
-
-        // Add the response task to the outgoing responses queue. This will automatically cancel an older task
-        // if there are more than [`config.max_outgoing_responses`] responses in flight.
-        if let Err(err) = incoming_requests.insert(requester_public_key.clone(), response_task) {
-            // Derive an error string that makes more sense
-            let err = match err {
-                KeyedFuturePoolError::PerKeyPoolFull => {
-                    "we are already processing a request from this key"
-                },
-                KeyedFuturePoolError::GlobalPoolFull => {
-                    "we are already processing too many requests"
-                },
-            };
-
-            warn!("Failed to respond to request from {requester_public_key}: {err}");
-        }
+        });
     }
 
     /// Handle a response sent to us
@@ -597,9 +606,16 @@ impl<
             return;
         };
 
+        // Attempt to acquire a permit for the request. Warn if there are too many responses currently being processed
+        let permit = incoming_responses.try_acquire(());
+        let Ok(permit) = permit else {
+            warn!("Failed to process response: too many responses are already being processed");
+            return;
+        };
+
         // Spawn a task to validate the response and send it to the requester (us)
         let response_validate_timeout = self.config.incoming_response_timeout;
-        let response_task = AbortOnDropHandle::new(tokio::spawn(async move {
+        tokio::spawn(async move {
             if timeout(response_validate_timeout, async move {
                 // Make sure the response is valid for the given request
                 let validation_result = match (outgoing_request.response_validation_fn)(
@@ -617,19 +633,17 @@ impl<
 
                 // Send the response to the requester (the user of [`RequestResponse::request`])
                 let _ = outgoing_request.sender.try_broadcast(validation_result);
+
+                // Drop the permit
+                _ = permit;
+                drop(permit);
             })
             .await
             .is_err()
             {
                 warn!("Timed out while validating response");
             }
-        }));
-
-        // Add the response task to the incoming responses queue. This will automatically cancel an older task
-        // if there are more than [`config.max_incoming_responses`] responses being processed
-        if incoming_responses.insert(response_task).is_err() {
-            warn!("Failed to process response: too many responses being processed simultaneously");
-        }
+        });
     }
 }
 
