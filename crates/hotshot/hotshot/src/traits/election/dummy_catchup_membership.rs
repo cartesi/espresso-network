@@ -211,7 +211,7 @@ where
         }))
     }
 
-    fn first_epoch(&mut self) -> Option<TYPES::Epoch> {
+    fn first_epoch(&self) -> Option<TYPES::Epoch> {
         self.inner.first_epoch()
     }
 }

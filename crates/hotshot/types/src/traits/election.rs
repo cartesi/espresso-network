@@ -187,7 +187,7 @@ pub trait Membership<TYPES: NodeType>: Debug + Send + Sync {
     fn set_first_epoch(&mut self, _epoch: TYPES::Epoch, _initial_drb_result: DrbResult) {}
 
     /// Get first epoch if epochs are enabled, `None` otherwise
-    fn first_epoch(&mut self) -> Option<TYPES::Epoch> {
+    fn first_epoch(&self) -> Option<TYPES::Epoch> {
         None
     }
 }

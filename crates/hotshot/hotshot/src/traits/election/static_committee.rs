@@ -260,7 +260,7 @@ impl<TYPES: NodeType> Membership<TYPES> for StaticCommittee<TYPES> {
         self.first_epoch = Some(epoch);
     }
 
-    fn first_epoch(&mut self) -> Option<TYPES::Epoch> {
+    fn first_epoch(&self) -> Option<TYPES::Epoch> {
         self.first_epoch
     }
 }

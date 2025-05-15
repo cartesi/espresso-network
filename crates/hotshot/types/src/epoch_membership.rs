@@ -175,13 +175,14 @@ where
         let mut maybe_err = Ok(());
         let maybe_first_epoch = self.membership.read().await.first_epoch();
         let Some(first_epoch) = maybe_first_epoch else {
+            let (req_epoch, req_tx) = fetch_epochs.pop().unwrap();
             let err = anytrace::error!(
                 "We got a catchup request for epoch {:?} but the first epoch is not set",
-                epoch
+                req_epoch
             );
-            let _ = epoch_tx.broadcast_direct(Err(err)).await;
-            self.catchup_map.lock().await.remove(epoch);
-            tracing::error!("catchup for epoch {:?} failed: {:?}", epoch, err);
+            let _ = req_tx.broadcast_direct(Err(err.clone())).await;
+            self.catchup_map.lock().await.remove(&req_epoch);
+            tracing::error!("catchup for epoch {:?} failed: {:?}", req_epoch, err);
             return;
         };
 
@@ -195,7 +196,7 @@ where
                 }
                 try_epoch = TYPES::Epoch::new(*try_epoch - 1);
             } else {
-                if try_epoch == first_epoch || *try_epoch == first_epoch + 1 {
+                if try_epoch == first_epoch || try_epoch == first_epoch + 1 {
                     maybe_err = Err(anytrace::error!("We are trying to catchup to the first or second epoch! This means the initial stake table is missing!"));
                     break 'membership;
                 }
