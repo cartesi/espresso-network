@@ -58,7 +58,7 @@ impl VerificationResult {
 ///
 /// This function needs to be called for every ValidationResult created via FFI.
 #[no_mangle]
-pub extern "C" fn free_error_string(s: *mut c_char) {
+pub unsafe extern "C" fn free_error_string(s: *mut c_char) {
     if !s.is_null() {
         unsafe {
             let _ = CString::from_raw(s);
@@ -89,7 +89,7 @@ pub extern "C" fn verify_merkle_proof_helper(
         handle_result!(slice_from_raw_parts(circuit_block_ptr, circuit_block_len));
 
     let block_comm_str = handle_result!(std::str::from_utf8(block_comm_bytes));
-    let tagged = handle_result!(TaggedBase64::parse(&block_comm_str));
+    let tagged = handle_result!(TaggedBase64::parse(block_comm_str));
     let block_comm: BlockMerkleCommitment = handle_result!(tagged.try_into());
 
     let proof: Proof = handle_result!(serde_json::from_slice(proof_bytes));
@@ -98,7 +98,7 @@ pub extern "C" fn verify_merkle_proof_helper(
 
     let proof = MerkleProof::new(header.height(), proof.to_vec());
     let proved_comm = if let Some(p) = proof.elem() {
-        p.clone()
+        *p
     } else {
         return VerificationResult::err("Merkle Proof missing element");
     };
@@ -160,7 +160,7 @@ pub extern "C" fn verify_namespace_helper(
 
     let proof: NsProof = handle_result!(serde_json::from_slice(proof_bytes));
     let ns_table: NsTable = NsTable::from_bytes_unchecked(ns_table_bytes);
-    let tagged = handle_result!(TaggedBase64::parse(&commit_str));
+    let tagged = handle_result!(TaggedBase64::parse(commit_str));
     let commit: VidCommitment = handle_result!(tagged.try_into());
     let vid_common: VidCommon = handle_result!(serde_json::from_slice(common_data_bytes));
 
@@ -229,9 +229,9 @@ mod test {
         let ptr = error_string.into_raw();
 
         // sanity check that the function works
-        free_error_string(ptr);
+        unsafe { free_error_string(ptr) };
 
         // sanity check that the function doesn't panic if the pointer is null
-        free_error_string(std::ptr::null_mut());
+        unsafe { free_error_string(std::ptr::null_mut()) };
     }
 }
