@@ -215,3 +215,6 @@ dev-download-srs:
 gen-go-bindings:
 	abigen --abi contracts/artifacts/abi/LightClient.json --pkg lightclient --out sdks/go/light-client/lightclient.go
 	abigen --abi contracts/artifacts/abi/LightClientMock.json --pkg lightclientmock --out sdks/go/light-client-mock/lightclient.go
+
+build-go-crypto-helper:
+    ./scripts/build-go-crypto-helper

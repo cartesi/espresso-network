@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#
+# Used to build crypto-helper
+# Please run `just build-go-crypto-helper` instead
+#
+set -euo pipefail
+
+arch=$(uname -m)
+os=$(uname -s)
+
+if [ "$arch" = "arm64" ] || [ "$arch" = "aarch64" ]; then
+    if [ "$os" = "Darwin" ]; then
+        triple="aarch64-apple-darwin"
+    else
+        triple="aarch64-unknown-linux-gnu"
+    fi
+elif [ "$arch" = "x86_64" ]; then
+    if [ "$os" = "Darwin" ]; then
+        triple="x86_64-apple-darwin"
+    else
+        triple="x86_64-unknown-linux-gnu"
+    fi
+else
+    echo "ERROR: $arch is not supported"
+    exit 1
+fi
+
+if [ "$os" = "Darwin" ]; then
+    extension="dylib"
+else
+    extension="a"
+fi
+
+cargo build --release --manifest-path ./sdks/crypto-helper/Cargo.toml
+
+project_root=$(pwd)
+go_build_dir=$project_root/sdks/go/verification/target/lib
+rm -rf $go_build_dir
+mkdir -p $go_build_dir
+
+ln -s $project_root/target/nix/release/libespresso_crypto_helper.$extension $go_build_dir/libespresso_crypto_helper-$triple.$extension
+
+cd $project_root/sdks/go
+go test -count=1 ./verification
