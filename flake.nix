@@ -245,6 +245,11 @@
             solhint
             (python3.withPackages (ps: with ps; [ black ]))
             yarn
+
+            go
+            golangci-lint
+            # provides abigen
+            go-ethereum
           ] ++ lib.optionals stdenv.isDarwin
             [ darwin.apple_sdk.frameworks.SystemConfiguration ]
           ++ lib.optionals (!stdenv.isDarwin) [ cargo-watch ] # broken on OSX
