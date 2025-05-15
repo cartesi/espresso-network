@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::Write,
-    path::PathBuf,
+    path::Path,
     process::{Command, Stdio},
 };
 
@@ -586,7 +586,7 @@ pub async fn upgrade_light_client_v2_multisig_owner(
                 .calldata()
                 .to_owned();
 
-            println!("Init Data to be signed.\n Function: initializeV2\n Arguments:\n blocks_per_epoch: {:?}\n epoch_start_block: {:?}", blocks_per_epoch, epoch_start_block);
+            tracing::info!("Init Data to be signed.\n Function: initializeV2\n Arguments:\n blocks_per_epoch: {:?}\n epoch_start_block: {:?}", blocks_per_epoch, epoch_start_block);
             // invoke upgrade on proxy via the safeSDK
             let result = call_upgrade_proxy_script(
                 proxy_addr.to_string(),
@@ -834,11 +834,13 @@ pub async fn call_upgrade_proxy_script(
     rpc_url: String,
     safe_address: String,
 ) -> Result<(String, bool), anyhow::Error> {
-    let script_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../contracts/script/multisigTransactionProposals/safeSDK/upgradeProxy.ts");
+    let script_path = Path::new(&std::env::var("CARGO_MANIFEST_DIR").unwrap())
+        .join("../../script/multisigTransactionProposals/safeSDK/");
+
+    tracing::info!("script_path: {:?}", script_path);
     let output = Command::new("npx")
         .arg("ts-node")
-        .arg(script_path.to_str().unwrap())
+        .arg(script_path.join("upgradeProxy.ts").to_str().unwrap())
         .arg("--from-rust")
         .arg("--proxy")
         .arg(proxy_addr)
@@ -1216,11 +1218,23 @@ mod tests {
     // Ensure that the private key has proposal rights on the Safe Multisig Wallet and the SDK supports the network
     async fn test_upgrade_light_client_to_v2_multisig_owner_helper(is_mock: bool) -> Result<()> {
         dotenvy::from_filename_override(".env.deployer.rs.test").ok();
-        let sepolia_rpc_url = std::env::var("RPC_URL").expect("RPC_URL must be set");
-        let multisig_admin = std::env::var("SAFE_MULTISIG_ADDRESS")
-            .expect("SAFE_MULTISIG_ADDRESS must be set")
-            .parse::<Address>()
-            .unwrap();
+        let mut sepolia_rpc_url = String::new();
+        let mut multisig_admin = Address::ZERO;
+
+        for item in dotenvy::from_filename_iter(".env.deployer.rs.test")
+            .expect("Failed to read .env.deployer.rs.test")
+        {
+            let (key, val) = item?;
+            if key == "RPC_URL" {
+                sepolia_rpc_url = val.to_string();
+            } else if key == "SAFE_MULTISIG_ADDRESS" {
+                multisig_admin = val.parse::<Address>()?;
+            }
+        }
+
+        if sepolia_rpc_url.is_empty() || multisig_admin.is_zero() {
+            panic!("RPC_URL and SAFE_MULTISIG_ADDRESS must be set in .env.deployer.rs.test");
+        }
 
         let provider = ProviderBuilder::new().on_anvil_with_wallet();
         let mut contracts = Contracts::new();

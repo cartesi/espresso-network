@@ -7,7 +7,6 @@ RUN apt-get update \
     nodejs  \
     npm \
     && npm install -g ts-node typescript \
-    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . $HOME/.cargo/env \
     &&  rm -rf /var/lib/apt/lists/* 
 
