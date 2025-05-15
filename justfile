@@ -153,6 +153,7 @@ gen-bindings:
     cargo sort -g -w
 
     just export-contract-abis
+    just gen-go-bindings
 
 # export select ABIs, to let downstream projects can use them without solc compilation
 export-contract-abis:
@@ -218,3 +219,6 @@ gen-go-bindings:
 
 build-go-crypto-helper:
     ./scripts/build-go-crypto-helper
+
+test-go:
+    cd sdks/go && go test ./...
