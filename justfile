@@ -217,8 +217,10 @@ gen-go-bindings:
 	abigen --abi contracts/artifacts/abi/LightClient.json --pkg lightclient --out sdks/go/light-client/lightclient.go
 	abigen --abi contracts/artifacts/abi/LightClientMock.json --pkg lightclientmock --out sdks/go/light-client-mock/lightclient.go
 
-build-go-crypto-helper:
-    ./scripts/build-go-crypto-helper
+build-go-crypto-helper *args:
+    ./scripts/build-go-crypto-helper {{args}}
 
 test-go:
-    cd sdks/go && go test ./...
+    #!/usr/bin/env bash
+    export LD_LIBRARY_PATH=$PWD/sdks/go/verification/target/lib:$LD_LIBRARY_PATH
+    cd sdks/go && go test -v ./...

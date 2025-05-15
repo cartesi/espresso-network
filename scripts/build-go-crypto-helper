@@ -3,6 +3,7 @@
 # Used to build crypto-helper
 # Please run `just build-go-crypto-helper` instead
 #
+# arguments are passed to cargo build
 set -euo pipefail
 
 arch=$(uname -m)
@@ -28,17 +29,23 @@ fi
 if [ "$os" = "Darwin" ]; then
     extension="dylib"
 else
-    extension="a"
+    extension="so"
 fi
 
-cargo build --release --manifest-path ./sdks/crypto-helper/Cargo.toml
+lib_path="$(cargo build --manifest-path ./sdks/crypto-helper/Cargo.toml --message-format json "$@" | jq -r '
+  select(.reason == "compiler-artifact")
+  | select(.target.name == "espresso_crypto_helper")
+  | .filenames[0]
+')"
 
 project_root=$(pwd)
-go_build_dir=$project_root/sdks/go/verification/target/lib
-rm -rf $go_build_dir
-mkdir -p $go_build_dir
+go_target_dir=$project_root/sdks/go/verification/target/lib
+rm -rf "$go_target_dir"
+mkdir -p "$go_target_dir"
 
-ln -s $project_root/target/nix/release/libespresso_crypto_helper.$extension $go_build_dir/libespresso_crypto_helper-$triple.$extension
+ln -sv "$lib_path" "$go_target_dir/libespresso_crypto_helper-$triple.$extension"
+ln -sv "$lib_path" "$go_target_dir"
 
 cd $project_root/sdks/go
-go test -count=1 ./verification
+
+env LD_LIBRARY_PATH="${go_target_dir}:${LD_LIBRARY_PATH}" go test -count=1 ./verification
