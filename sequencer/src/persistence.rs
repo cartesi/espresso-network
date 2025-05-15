@@ -235,7 +235,7 @@ mod persistence_tests {
             .unwrap();
         assert_eq!(
             storage.load_restart_view().await.unwrap().unwrap(),
-            view2 + 2
+            view2 + 1
         );
     }
 
