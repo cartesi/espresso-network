@@ -1,22 +1,34 @@
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS builder
 
 ARG TARGETARCH
 
 RUN apt-get update \
-    && apt-get install -y curl libcurl4 wait-for-it tini npm libusb-dev \
+    && apt-get install -y curl libcurl4 nodejs npm libusb-1.0.0 \
     && rm -rf /var/lib/apt/lists/*
-ENTRYPOINT ["tini", "--"]
-RUN npm install -g yarn && yarn global add typescript ts-node
 
 WORKDIR /app
-
 COPY package.json yarn.lock ./
-RUN yarn
 
+RUN npm install -g yarn \
+  && yarn global add typescript ts-node \
+  && yarn \
+  && rm -rf /usr/local/share/.cache
+
+COPY target/$TARGETARCH/release/deploy /bin/deploy
+COPY scripts/multisig-upgrade-entrypoint /bin/multisig-upgrade-entrypoint
 COPY contracts/script/multisigTransactionProposals/safeSDK ./contracts/script/multisigTransactionProposals/safeSDK/
 
-COPY scripts/multisig-upgrade-entrypoint /bin/multisig-upgrade-entrypoint
-COPY target/$TARGETARCH/release/deploy /bin/deploy
+# Runner image: deploy binary, ts-node, multisig upgrade script
+FROM ubuntu:24.04
 
-WORKDIR /
-CMD [ "/bin/deploy"]
+RUN apt-get update && apt-get install -y tini libcurl4 nodejs libusb-1.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["tini", "--"]
+
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/share /usr/local/share
+COPY --from=builder /app/ /app/
+COPY --from=builder /bin/deploy /bin/deploy
+COPY --from=builder /bin/multisig-upgrade-entrypoint /bin/multisig-upgrade-entrypoint
+
+CMD ["/bin/deploy"]
