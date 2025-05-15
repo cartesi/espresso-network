@@ -174,7 +174,7 @@ func TestApiWithSingleEspressoDevNode(t *testing.T) {
 		t.Fatal("Constructing the client with 1 url should result in an error")
 	}
 
-	client, err := NewMultipleNodesClient([]string{"http://localhost:21000"})
+	client, err := NewMultipleNodesClient([]string{"http://localhost:21000", "http://localhost:21000"})
 	if err != nil {
 		t.Fatal("Constructing the client with more than 1 url should succeed")
 	}
