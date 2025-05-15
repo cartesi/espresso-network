@@ -210,4 +210,8 @@ where
             mem.epochs.insert(epoch);
         }))
     }
+
+    fn first_epoch(&mut self) -> Option<TYPES::Epoch> {
+        self.inner.first_epoch()
+    }
 }

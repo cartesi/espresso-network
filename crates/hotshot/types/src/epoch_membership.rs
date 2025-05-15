@@ -173,6 +173,17 @@ where
 
         let mut try_epoch = TYPES::Epoch::new(*epoch - 1);
         let mut maybe_err = Ok(());
+        let maybe_first_epoch = self.membership.read().await.first_epoch();
+        let Some(first_epoch) = maybe_first_epoch else {
+            let err = anytrace::error!(
+                "We got a catchup request for epoch {:?} but the first epoch is not set",
+                epoch
+            );
+            let _ = epoch_tx.broadcast_direct(Err(err)).await;
+            self.catchup_map.lock().await.remove(epoch);
+            tracing::error!("catchup for epoch {:?} failed: {:?}", epoch, err);
+            return;
+        };
 
         // First figure out which epochs we need to fetch
         'membership: loop {
@@ -184,8 +195,8 @@ where
                 }
                 try_epoch = TYPES::Epoch::new(*try_epoch - 1);
             } else {
-                if *try_epoch == 0 || *try_epoch == 1 {
-                    maybe_err = Err(anytrace::error!("We are trying to catchup to epoch 0! This means the initial stake table is missing!"));
+                if try_epoch == first_epoch || *try_epoch == first_epoch + 1 {
+                    maybe_err = Err(anytrace::error!("We are trying to catchup to the first or second epoch! This means the initial stake table is missing!"));
                     break 'membership;
                 }
                 loop {
