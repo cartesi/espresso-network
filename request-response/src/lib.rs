@@ -27,7 +27,7 @@ use tokio::{
 };
 use tokio_util::task::AbortOnDropHandle;
 use tracing::{debug, error, trace, warn};
-use util::{BoundedFuturePool, BoundedVecDeque};
+use util::{BoundedVecDeque, FuturePool, KeyedFuturePool, KeyedFuturePoolError};
 
 /// The data source trait. Is what we use to derive the response data for a request
 pub mod data_source;
@@ -52,10 +52,10 @@ pub type OutgoingRequestsMap<Req> =
     Arc<RwLock<HashMap<RequestHash, Weak<OutgoingRequestInner<Req>>>>>;
 
 /// A type alias for the list of tasks that are responding to requests
-pub type IncomingRequests = BoundedFuturePool<()>;
+pub type IncomingRequests<K> = KeyedFuturePool<K, ()>;
 
 /// A type alias for the list of tasks that are validating incoming responses
-pub type IncomingResponses = BoundedFuturePool<()>;
+pub type IncomingResponses = FuturePool<()>;
 
 /// The errors that can occur when making a request for data
 #[derive(thiserror::Error, Debug)]
@@ -109,6 +109,8 @@ pub struct RequestResponseConfig {
     pub request_batch_interval: Duration,
     /// The maximum (global) number of incoming requests that can be processed at any given time.
     pub max_incoming_requests: usize,
+    /// The maximum number of incoming requests that can be processed for a single key at any given time.
+    pub max_incoming_requests_per_key: usize,
     /// The maximum (global) number of incoming responses that can be processed at any given time.
     /// We need this because responses coming in need to be validated [asynchronously] that they
     /// satisfy the request they are responding to
@@ -462,8 +464,11 @@ impl<
     /// The task responsible for receiving messages from the receiver and handling them
     async fn receiving_task(self: Arc<Self>, mut receiver: R) {
         // Upper bound the number of outgoing and incoming responses
-        let mut incoming_requests = BoundedFuturePool::new(self.config.max_incoming_responses);
-        let mut incoming_responses = BoundedFuturePool::new(self.config.max_incoming_responses);
+        let mut incoming_requests = KeyedFuturePool::new(
+            self.config.max_incoming_requests,
+            self.config.max_incoming_requests_per_key,
+        );
+        let mut incoming_responses = FuturePool::new(self.config.max_incoming_responses);
 
         // While the receiver is open, we receive messages and handle them
         loop {
@@ -502,7 +507,7 @@ impl<
     fn handle_request(
         self: &Arc<Self>,
         request_message: RequestMessage<Req, K>,
-        incoming_requests: &mut IncomingRequests,
+        incoming_requests: &mut IncomingRequests<K>,
     ) {
         trace!("Handling request {:?}", request_message);
 
@@ -511,6 +516,7 @@ impl<
         // - Derive the response data (check if we have it)
         // - Send the response to the requester
         let self_clone = Arc::clone(self);
+        let requester_public_key = request_message.public_key.clone();
         let response_task = AbortOnDropHandle::new(tokio::spawn(async move {
             let result = timeout(self_clone.config.incoming_request_timeout, async move {
                 // Validate the request message. This includes:
@@ -559,8 +565,18 @@ impl<
 
         // Add the response task to the outgoing responses queue. This will automatically cancel an older task
         // if there are more than [`config.max_outgoing_responses`] responses in flight.
-        if let Err(e) = incoming_requests.insert(response_task) {
-            warn!("Failed to respond to request: {e:#}");
+        if let Err(err) = incoming_requests.insert(requester_public_key.clone(), response_task) {
+            // Derive an error string that makes more sense
+            let err = match err {
+                KeyedFuturePoolError::PerKeyPoolFull => {
+                    "we are already processing a request from this key"
+                },
+                KeyedFuturePoolError::GlobalPoolFull => {
+                    "we are already processing too many requests"
+                },
+            };
+
+            warn!("Failed to respond to request from {requester_public_key}: {err}");
         }
     }
 
@@ -611,8 +627,8 @@ impl<
 
         // Add the response task to the incoming responses queue. This will automatically cancel an older task
         // if there are more than [`config.max_incoming_responses`] responses being processed
-        if let Err(e) = incoming_responses.insert(response_task) {
-            warn!("Failed to process response: {e:#}");
+        if incoming_responses.insert(response_task).is_err() {
+            warn!("Failed to process response: too many responses being processed simultaneously");
         }
     }
 }
@@ -795,6 +811,7 @@ mod tests {
             request_batch_size: 10,
             request_batch_interval: Duration::from_millis(100),
             max_incoming_requests: 10,
+            max_incoming_requests_per_key: 1,
             incoming_response_timeout: Duration::from_secs(1),
             max_incoming_responses: 5,
         }

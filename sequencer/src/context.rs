@@ -177,6 +177,7 @@ impl<N: ConnectedNetwork<PubKey>, P: SequencerPersistence, V: Versions> Sequence
             request_batch_size: 5,
             request_batch_interval: Duration::from_secs(2),
             max_incoming_requests: 10,
+            max_incoming_requests_per_key: 1,
             max_incoming_responses: 20,
         };
 
