@@ -30,6 +30,11 @@ use crate::{
 type EpochMap<TYPES> =
     HashMap<<TYPES as NodeType>::Epoch, InactiveReceiver<Result<EpochMembership<TYPES>>>>;
 
+type EpochSender<TYPES> = (
+    <TYPES as NodeType>::Epoch,
+    Sender<Result<EpochMembership<TYPES>>>,
+);
+
 /// Struct to Coordinate membership catchup
 pub struct EpochMembershipCoordinator<TYPES: NodeType> {
     /// The underlying membhersip
@@ -297,7 +302,7 @@ where
     async fn catchup_cleanup(
         &mut self,
         req_epoch: TYPES::Epoch,
-        cancel_epochs: Vec<(TYPES::Epoch, Sender<Result<EpochMembership<TYPES>>>)>,
+        cancel_epochs: Vec<EpochSender<TYPES>>,
         err: Error,
     ) {
         // Cleanup in case of error
