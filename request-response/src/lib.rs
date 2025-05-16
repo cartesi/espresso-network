@@ -595,6 +595,8 @@ impl<
         response: ResponseMessage<Req>,
         incoming_responses: &mut IncomingResponses,
     ) {
+        trace!("Handling response {:?}", response);
+
         // Get the entry in the map, ignoring it if it doesn't exist
         let Some(outgoing_request) = self
             .outgoing_requests
