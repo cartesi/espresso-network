@@ -802,15 +802,14 @@ async fn run_dev_node_server<ApiVer: StaticVersionType + 'static>(
     let mut app = tide_disco::App::<_, ServerError>::with_state(client_states);
     let toml =
         toml::from_str::<toml::value::Value>(include_str!("../../api/espresso_dev_node.toml"))
-            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+            .map_err(io::Error::other)?;
 
-    let mut api = Api::<_, ServerError, ApiVer>::new(toml)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let mut api = Api::<_, ServerError, ApiVer>::new(toml).map_err(io::Error::other)?;
     api.get("devinfo", move |_, _| {
         let info = dev_info.clone();
         async move { Ok(info.clone()) }.boxed()
     })
-    .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?
+    .map_err(io::Error::other)?
     .at("sethotshotdown", move |req, state: &ApiState| {
         async move {
             let body = req
@@ -834,7 +833,7 @@ async fn run_dev_node_server<ApiVer: StaticVersionType + 'static>(
         }
         .boxed()
     })
-    .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?
+    .map_err(io::Error::other)?
     .at("sethotshotup", move |req, state| {
         async move {
             let chain_id = req
@@ -859,10 +858,9 @@ async fn run_dev_node_server<ApiVer: StaticVersionType + 'static>(
         }
         .boxed()
     })
-    .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    .map_err(io::Error::other)?;
 
-    app.register_module("api", api)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    app.register_module("api", api).map_err(io::Error::other)?;
 
     tracing::info!("Starting dev-node API on http://0.0.0.0:{port}");
 
