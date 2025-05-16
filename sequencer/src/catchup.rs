@@ -854,14 +854,41 @@ impl ParallelStateCatchup {
     }
 
     /// Perform an async operation on all remote providers, returning the first result to succeed
-    pub async fn on_remote_providers<C, F, RT>(&self, closure: C) -> anyhow::Result<RT>
+    pub async fn on_remote_providers<C, F, RT>(
+        &self,
+        closure: C,
+        operation_name: &str,
+    ) -> anyhow::Result<RT>
     where
         C: Fn(Arc<dyn StateCatchup>) -> F + Clone + Send + Sync + 'static,
         F: Future<Output = anyhow::Result<RT>> + Send + 'static,
-        RT: Send + Sync + 'static,
+        RT: Send + Sync + 'static + Debug,
     {
-        self.on_providers(|provider| !provider.is_local(), closure)
-            .await
+        let providers = self.providers.lock().clone();
+
+        tracing::trace!(
+            "Performing {} on providers {}",
+            operation_name,
+            providers
+                .iter()
+                .map(|p| p.name())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        let result = self
+            .on_providers(|provider| !provider.is_local(), closure)
+            .await;
+        tracing::trace!(
+            "Result of {} on providers {}: {:?}",
+            operation_name,
+            providers
+                .iter()
+                .map(|p| p.name())
+                .collect::<Vec<_>>()
+                .join(", "),
+            result
+        );
+        result
     }
 
     /// Perform an async operation on all providers matching the given predicate, returning the first result to succeed
@@ -955,13 +982,16 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones
-        self.on_remote_providers(clone! {(stake_table) move |provider| {
-            clone!{(stake_table) async move {
-                provider
-                    .try_fetch_leaf(retry, height, stake_table, success_threshold)
-                    .await
-            }}
-        }})
+        self.on_remote_providers(
+            clone! {(stake_table) move |provider| {
+                clone!{(stake_table) async move {
+                    provider
+                        .try_fetch_leaf(retry, height, stake_table, success_threshold)
+                        .await
+                }}
+            }},
+            "try_fetch_leaf",
+        )
         .await
     }
 
@@ -999,19 +1029,22 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones
-        self.on_remote_providers(clone! {(instance, accounts_vec) move |provider| {
-            clone!{(instance, accounts_vec) async move {
-                provider
-                .try_fetch_accounts(
-                    retry,
-                    &instance,
-                    height,
-                    view,
-                    fee_merkle_tree_root,
-                    &accounts_vec,
-                ).await
-            }}
-        }})
+        self.on_remote_providers(
+            clone! {(instance, accounts_vec) move |provider| {
+                clone!{(instance, accounts_vec) async move {
+                    provider
+                    .try_fetch_accounts(
+                        retry,
+                        &instance,
+                        height,
+                        view,
+                        fee_merkle_tree_root,
+                        &accounts_vec,
+                    ).await
+                }}
+            }},
+            "try_fetch_accounts",
+        )
         .await
     }
 
@@ -1055,24 +1088,27 @@ impl StateCatchup for ParallelStateCatchup {
 
         // If that fails, try the remote ones
         let remote_result = self
-            .on_remote_providers(clone! {(mt, instance) move |provider| {
-                let mut mt = mt.clone();
-                clone!{(instance) async move {
-                    // Perform the call
-                    provider
-                    .try_remember_blocks_merkle_tree(
-                        retry,
-                        &instance,
-                        height,
-                        view,
-                        &mut mt,
-                    )
-                    .await?;
+            .on_remote_providers(
+                clone! {(mt, instance) move |provider| {
+                    let mut mt = mt.clone();
+                    clone!{(instance) async move {
+                        // Perform the call
+                        provider
+                        .try_remember_blocks_merkle_tree(
+                            retry,
+                            &instance,
+                            height,
+                            view,
+                            &mut mt,
+                        )
+                        .await?;
 
-                    // Return the merkle tree
-                    Ok(mt)
-                }}
-            }})
+                        // Return the merkle tree
+                        Ok(mt)
+                    }}
+                }},
+                "try_remember_blocks_merkle_tree",
+            )
             .await?;
 
         // Update the original, local merkle tree
@@ -1099,9 +1135,10 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones
-        self.on_remote_providers(move |provider| async move {
-            provider.try_fetch_chain_config(retry, commitment).await
-        })
+        self.on_remote_providers(
+            move |provider| async move { provider.try_fetch_chain_config(retry, commitment).await },
+            "try_fetch_chain_config",
+        )
         .await
     }
 
@@ -1139,19 +1176,22 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones
-        self.on_remote_providers(clone! {(instance, accounts_vec) move |provider| {
-            clone!{(instance, accounts_vec) async move {
-                provider
-                .try_fetch_reward_accounts(
-                    retry,
-                    &instance,
-                    height,
-                    view,
-                    reward_merkle_tree_root,
-                    &accounts_vec,
-                ).await
-            }}
-        }})
+        self.on_remote_providers(
+            clone! {(instance, accounts_vec) move |provider| {
+                clone!{(instance, accounts_vec) async move {
+                    provider
+                    .try_fetch_reward_accounts(
+                        retry,
+                        &instance,
+                        height,
+                        view,
+                        reward_merkle_tree_root,
+                        &accounts_vec,
+                    ).await
+                }}
+            }},
+            "try_fetch_reward_accounts",
+        )
         .await
     }
 
@@ -1204,18 +1244,21 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones (with retry)
-        self.on_remote_providers(clone! {(instance, accounts_vec) move |provider| {
-            clone!{(instance, accounts_vec) async move {
-                provider
-                .fetch_accounts(
-                    &instance,
-                    height,
-                    view,
-                    fee_merkle_tree_root,
-                    accounts_vec,
-                ).await
-            }}
-        }})
+        self.on_remote_providers(
+            clone! {(instance, accounts_vec) move |provider| {
+                clone!{(instance, accounts_vec) async move {
+                    provider
+                    .fetch_accounts(
+                        &instance,
+                        height,
+                        view,
+                        fee_merkle_tree_root,
+                        accounts_vec,
+                    ).await
+                }}
+            }},
+            "fetch_accounts",
+        )
         .await
     }
 
@@ -1242,13 +1285,16 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones (with retry)
-        self.on_remote_providers(clone! {(stake_table) move |provider| {
-         clone!{(stake_table) async move {
-             provider
-                 .fetch_leaf(height, stake_table, success_threshold)
-                 .await
-         }}
-        }})
+        self.on_remote_providers(
+            clone! {(stake_table) move |provider| {
+             clone!{(stake_table) async move {
+                 provider
+                     .fetch_leaf(height, stake_table, success_threshold)
+                     .await
+             }}
+            }},
+            "fetch_leaf",
+        )
         .await
     }
 
@@ -1269,9 +1315,10 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones (with retry)
-        self.on_remote_providers(move |provider| async move {
-            provider.fetch_chain_config(commitment).await
-        })
+        self.on_remote_providers(
+            move |provider| async move { provider.fetch_chain_config(commitment).await },
+            "fetch_chain_config",
+        )
         .await
     }
 
@@ -1308,18 +1355,21 @@ impl StateCatchup for ParallelStateCatchup {
         }
 
         // If that fails, try the remote ones (with retry)
-        self.on_remote_providers(clone! {(instance, accounts_vec) move |provider| {
-            clone!{(instance, accounts_vec) async move {
-                provider
-                .fetch_reward_accounts(
-                    &instance,
-                    height,
-                    view,
-                    reward_merkle_tree_root,
-                    accounts_vec,
-                ).await
-            }}
-        }})
+        self.on_remote_providers(
+            clone! {(instance, accounts_vec) move |provider| {
+                clone!{(instance, accounts_vec) async move {
+                    provider
+                    .fetch_reward_accounts(
+                        &instance,
+                        height,
+                        view,
+                        reward_merkle_tree_root,
+                        accounts_vec,
+                    ).await
+                }}
+            }},
+            "fetch_reward_accounts",
+        )
         .await
     }
 
@@ -1363,23 +1413,26 @@ impl StateCatchup for ParallelStateCatchup {
 
         // If that fails, try the remote ones (with retry)
         let remote_result = self
-            .on_remote_providers(clone! {(mt, instance) move |provider| {
-                let mut mt = mt.clone();
-                clone!{(instance) async move {
-                    // Perform the call
-                    provider
-                    .remember_blocks_merkle_tree(
-                        &instance,
-                        height,
-                        view,
-                        &mut mt,
-                    )
-                    .await?;
+            .on_remote_providers(
+                clone! {(mt, instance) move |provider| {
+                    let mut mt = mt.clone();
+                    clone!{(instance) async move {
+                        // Perform the call
+                        provider
+                        .remember_blocks_merkle_tree(
+                            &instance,
+                            height,
+                            view,
+                            &mut mt,
+                        )
+                        .await?;
 
-                    // Return the merkle tree
-                    Ok(mt)
-                }}
-            }})
+                        // Return the merkle tree
+                        Ok(mt)
+                    }}
+                }},
+                "remember_blocks_merkle_tree",
+            )
             .await?;
 
         // Update the original, local merkle tree
