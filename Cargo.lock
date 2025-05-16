@@ -11775,7 +11775,7 @@ dependencies = [
  "dotenvy",
  "espresso-types",
  "futures",
- "reqwest",
+ "reqwest 0.12.15",
  "sequencer",
  "surf-disco",
  "tempfile",
