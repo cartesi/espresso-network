@@ -216,13 +216,15 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v31
 
+      - uses: actions/checkout@v4
+
       - name: Build verification module
         run: |
-          nix develop accept-flake-config -c just build-go-crypto-helper
+          nix develop --accept-flake-config -c just build-go-crypto-helper
 
       - name: Test
         run: |
-          nix develop accept-flake-config -c just test-go
+          nix develop --accept-flake-config -c just test-go
 
   test-integration:
     needs: [build-test-bins, build-test-artifacts-postgres]
