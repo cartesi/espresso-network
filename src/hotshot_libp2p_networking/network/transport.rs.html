@@ -173,7 +173,7 @@
 <a href=#173 id=173 data-nosnippet>173</a>                        .<span class="kw">await
 <a href=#174 id=174 data-nosnippet>174</a>                        </span>.map_err(|e| {
 <a href=#175 id=175 data-nosnippet>175</a>                            <span class="macro">warn!</span>(<span class="string">"Failed to authenticate with remote peer: {:?}"</span>, e);
-<a href=#176 id=176 data-nosnippet>176</a>                            IoError::new(IoErrorKind::Other, e)
+<a href=#176 id=176 data-nosnippet>176</a>                            IoError::other(e)
 <a href=#177 id=177 data-nosnippet>177</a>                        })<span class="question-mark">?</span>;
 <a href=#178 id=178 data-nosnippet>178</a>
 <a href=#179 id=179 data-nosnippet>179</a>                    <span class="comment">// Verify the remote peer's authentication
@@ -185,7 +185,7 @@
 <a href=#185 id=185 data-nosnippet>185</a>                    .<span class="kw">await
 <a href=#186 id=186 data-nosnippet>186</a>                    </span>.map_err(|e| {
 <a href=#187 id=187 data-nosnippet>187</a>                        <span class="macro">warn!</span>(<span class="string">"Failed to verify remote peer: {:?}"</span>, e);
-<a href=#188 id=188 data-nosnippet>188</a>                        IoError::new(IoErrorKind::Other, e)
+<a href=#188 id=188 data-nosnippet>188</a>                        IoError::other(e)
 <a href=#189 id=189 data-nosnippet>189</a>                    })<span class="question-mark">?</span>;
 <a href=#190 id=190 data-nosnippet>190</a>                } <span class="kw">else </span>{
 <a href=#191 id=191 data-nosnippet>191</a>                    <span class="comment">// If it is incoming, verify the remote peer's authentication first
@@ -197,7 +197,7 @@
 <a href=#197 id=197 data-nosnippet>197</a>                    .<span class="kw">await
 <a href=#198 id=198 data-nosnippet>198</a>                    </span>.map_err(|e| {
 <a href=#199 id=199 data-nosnippet>199</a>                        <span class="macro">warn!</span>(<span class="string">"Failed to verify remote peer: {:?}"</span>, e);
-<a href=#200 id=200 data-nosnippet>200</a>                        IoError::new(IoErrorKind::Other, e)
+<a href=#200 id=200 data-nosnippet>200</a>                        IoError::other(e)
 <a href=#201 id=201 data-nosnippet>201</a>                    })<span class="question-mark">?</span>;
 <a href=#202 id=202 data-nosnippet>202</a>
 <a href=#203 id=203 data-nosnippet>203</a>                    <span class="comment">// Authenticate with the remote peer
@@ -205,7 +205,7 @@
 <a href=#205 id=205 data-nosnippet>205</a>                        .<span class="kw">await
 <a href=#206 id=206 data-nosnippet>206</a>                        </span>.map_err(|e| {
 <a href=#207 id=207 data-nosnippet>207</a>                            <span class="macro">warn!</span>(<span class="string">"Failed to authenticate with remote peer: {:?}"</span>, e);
-<a href=#208 id=208 data-nosnippet>208</a>                            IoError::new(IoErrorKind::Other, e)
+<a href=#208 id=208 data-nosnippet>208</a>                            IoError::other(e)
 <a href=#209 id=209 data-nosnippet>209</a>                        })<span class="question-mark">?</span>;
 <a href=#210 id=210 data-nosnippet>210</a>                }
 <a href=#211 id=211 data-nosnippet>211</a>
