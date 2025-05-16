@@ -48,4 +48,4 @@ ln -sv "$lib_path" "$go_target_dir"
 
 cd $project_root/sdks/go
 
-env LD_LIBRARY_PATH="${go_target_dir}:${LD_LIBRARY_PATH}" go test -count=1 ./verification
+env LD_LIBRARY_PATH="${go_target_dir}:${LD_LIBRARY_PATH:-}" go test -count=1 ./verification
