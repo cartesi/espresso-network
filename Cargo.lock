@@ -10844,6 +10844,7 @@ dependencies = [
  "espresso-types",
  "futures",
  "reqwest",
+ "sequencer",
  "surf-disco",
  "tempfile",
  "tokio",
