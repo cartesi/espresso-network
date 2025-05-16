@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path"
 	"testing"
 	"time"
 
@@ -154,8 +153,7 @@ func TestApiWithSingleEspressoDevNode(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	tmpDirPath := path.Join(workingDir, tempDir)
-	dir, err := os.MkdirTemp(tmpDirPath, "espresso-dev-node")
+	dir, err := os.MkdirTemp("", "espresso-dev-node")
 	if err != nil {
 		panic(err)
 	}

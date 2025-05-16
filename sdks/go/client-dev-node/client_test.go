@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -15,12 +14,10 @@ import (
 )
 
 var workingDir = "../../../"
-var tempDir = "./target/nix/tmp"
 
 func TestFetchDevInfo(t *testing.T) {
 	ctx := context.Background()
-	tmpDirPath := path.Join(workingDir, tempDir)
-	dir, err := os.MkdirTemp(tmpDirPath, "espresso-dev-node")
+	dir, err := os.MkdirTemp("", "espresso-dev-node")
 	if err != nil {
 		panic(err)
 	}
