@@ -147,6 +147,6 @@ func waitForEspressoNode(ctx context.Context) error {
 		return err
 	}
 	// Wait a bit for dev node to be ready totally
-	time.Sleep(2 * time.Minute)
+	time.Sleep(30 * time.Second)
 	return nil
 }

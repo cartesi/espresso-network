@@ -53,6 +53,8 @@ impl VerificationResult {
     }
 }
 
+/// # Safety
+///
 /// In order to communicate validation failures we allocate a string in our rust code. Therefore we
 /// need to provide a way to our FFI consumer to free the memory we allocated in this way.
 ///
