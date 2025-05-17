@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>anyhow::bail;
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>async_trait::async_trait;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>espresso_types::{
-<a href=#7 id=7 data-nosnippet>7</a>    traits::MembershipPersistence,
+<a href=#7 id=7 data-nosnippet>7</a>    traits::{EventsPersistenceRead, MembershipPersistence},
 <a href=#8 id=8 data-nosnippet>8</a>    v0::traits::{EventConsumer, PersistenceOptions, SequencerPersistence},
 <a href=#9 id=9 data-nosnippet>9</a>    v0_3::{EventKey, IndexedStake, StakeTableEvent, Validator},
 <a href=#10 id=10 data-nosnippet>10</a>    Leaf2, NetworkConfig,
@@ -267,12 +267,18 @@
 <a href=#267 id=267 data-nosnippet>267</a>
 <a href=#268 id=268 data-nosnippet>268</a>    <span class="kw">async fn </span>store_events(
 <a href=#269 id=269 data-nosnippet>269</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#270 id=270 data-nosnippet>270</a>        _l1_block: u64,
+<a href=#270 id=270 data-nosnippet>270</a>        _l1: u64,
 <a href=#271 id=271 data-nosnippet>271</a>        _events: Vec&lt;(EventKey, StakeTableEvent)&gt;,
 <a href=#272 id=272 data-nosnippet>272</a>    ) -&gt; anyhow::Result&lt;()&gt; {
 <a href=#273 id=273 data-nosnippet>273</a>        <span class="prelude-val">Ok</span>(())
 <a href=#274 id=274 data-nosnippet>274</a>    }
-<a href=#275 id=275 data-nosnippet>275</a>    <span class="kw">async fn </span>load_events(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; anyhow::Result&lt;<span class="prelude-ty">Option</span>&lt;(u64, Vec&lt;(EventKey, StakeTableEvent)&gt;)&gt;&gt; {
-<a href=#276 id=276 data-nosnippet>276</a>        <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-<a href=#277 id=277 data-nosnippet>277</a>    }
-<a href=#278 id=278 data-nosnippet>278</a>}</code></pre></div></section></main></body></html>
+<a href=#275 id=275 data-nosnippet>275</a>    <span class="kw">async fn </span>load_events(
+<a href=#276 id=276 data-nosnippet>276</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
+<a href=#277 id=277 data-nosnippet>277</a>        _l1_block: u64,
+<a href=#278 id=278 data-nosnippet>278</a>    ) -&gt; anyhow::Result&lt;(
+<a href=#279 id=279 data-nosnippet>279</a>        <span class="prelude-ty">Option</span>&lt;EventsPersistenceRead&gt;,
+<a href=#280 id=280 data-nosnippet>280</a>        Vec&lt;(EventKey, StakeTableEvent)&gt;,
+<a href=#281 id=281 data-nosnippet>281</a>    )&gt; {
+<a href=#282 id=282 data-nosnippet>282</a>        <span class="prelude-val">Ok</span>((<span class="prelude-val">None</span>, Vec::new()))
+<a href=#283 id=283 data-nosnippet>283</a>    }
+<a href=#284 id=284 data-nosnippet>284</a>}</code></pre></div></section></main></body></html>
