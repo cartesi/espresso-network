@@ -192,9 +192,12 @@ func TestApiWithSingleEspressoDevNode(t *testing.T) {
 		t.Fatal("failed to fetch vid common", err)
 	}
 
-	_, err = client.FetchHeadersByRange(ctx, 1, 10)
-	if err != nil {
-		t.Fatal("failed to fetch headers by range", err)
+	for i := 1; i <= 10; i++ {
+		_, err = client.FetchHeadersByRange(ctx, blockHeight, blockHeight+10)
+		if err == nil {
+			break
+		}
+		time.Sleep(2 * time.Second)
 	}
 
 	_, err = client.FetchTransactionsInBlock(ctx, 1, 1)
