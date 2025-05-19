@@ -35,7 +35,7 @@ use hotshot_types::{
         network::ConnectedNetwork,
         node_implementation::{ConsensusTime, Versions},
     },
-    vid::avidm::{init_avidm_param, AvidMShare},
+    vid::avidm::AvidMShare,
 };
 use jf_merkle_tree::MerkleTreeScheme;
 use serde::de::Error as _;
@@ -44,7 +44,7 @@ use tagged_base64::TaggedBase64;
 use tide_disco::{method::ReadState, Api, Error as _, StatusCode};
 use tracing::warn;
 use vbs::version::{StaticVersion, StaticVersionType};
-use vid::avid_m::AvidMScheme;
+use vid::avid_m::namespaced::NsAvidMScheme;
 
 use super::{
     data_source::{
@@ -177,55 +177,107 @@ where
     )?;
 
     if api_ver.major == 1 {
-        api.get("getnamespaceproof", move |req, state| {
-            async move {
-                let height: usize = req.integer_param("height")?;
-                let ns_id = NamespaceId::from(req.integer_param::<_, u32>("namespace")?);
-                let (block, common) = try_join!(
-                    async move {
-                        state
-                            .get_block(height)
-                            .await
-                            .with_timeout(timeout)
-                            .await
-                            .context(FetchBlockSnafu {
-                                resource: height.to_string(),
-                            })
-                    },
-                    async move {
-                        state
-                            .get_vid_common(height)
-                            .await
-                            .with_timeout(timeout)
-                            .await
-                            .context(FetchBlockSnafu {
-                                resource: height.to_string(),
-                            })
-                    }
-                )?;
-
-                if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
-                    let proof = NsProof::new(block.payload(), &ns_index, common.common()).context(
-                        CustomSnafu {
-                            message: format!("failed to make proof for namespace {ns_id}"),
-                            status: StatusCode::NOT_FOUND,
+        if api_ver.minor >= 1 {
+            // >= V1.1 api returns both correct and incorrect encoding proofs
+            api.get("getnamespaceproof", move |req, state| {
+                async move {
+                    let height: usize = req.integer_param("height")?;
+                    let ns_id = NamespaceId::from(req.integer_param::<_, u32>("namespace")?);
+                    let (block, common) = try_join!(
+                        async move {
+                            state
+                                .get_block(height)
+                                .await
+                                .with_timeout(timeout)
+                                .await
+                                .context(FetchBlockSnafu {
+                                    resource: height.to_string(),
+                                })
                         },
+                        async move {
+                            state
+                                .get_vid_common(height)
+                                .await
+                                .with_timeout(timeout)
+                                .await
+                                .context(FetchBlockSnafu {
+                                    resource: height.to_string(),
+                                })
+                        }
                     )?;
 
-                    Ok(espresso_types::NamespaceProofQueryData {
-                        transactions: proof.export_all_txs(&ns_id),
-                        proof: Some(proof),
-                    })
-                } else {
-                    // ns_id not found in ns_table
-                    Ok(espresso_types::NamespaceProofQueryData {
-                        proof: None,
-                        transactions: Vec::new(),
-                    })
+                    if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
+                        let proof = NsProof::new(block.payload(), &ns_index, common.common())
+                            .context(CustomSnafu {
+                                message: format!("failed to make proof for namespace {ns_id}"),
+                                status: StatusCode::NOT_FOUND,
+                            })?;
+
+                        Ok(espresso_types::NamespaceProofQueryData {
+                            transactions: proof.export_all_txs(&ns_id),
+                            proof: Some(proof),
+                        })
+                    } else {
+                        // ns_id not found in ns_table
+                        Ok(espresso_types::NamespaceProofQueryData {
+                            proof: None,
+                            transactions: Vec::new(),
+                        })
+                    }
                 }
-            }
-            .boxed()
-        })?;
+                .boxed()
+            })?;
+        } else {
+            // V1.0 api only returns the correct encoding proof
+            api.get("getnamespaceproof", move |req, state| {
+                async move {
+                    let height: usize = req.integer_param("height")?;
+                    let ns_id = NamespaceId::from(req.integer_param::<_, u32>("namespace")?);
+                    let (block, common) = try_join!(
+                        async move {
+                            state
+                                .get_block(height)
+                                .await
+                                .with_timeout(timeout)
+                                .await
+                                .context(FetchBlockSnafu {
+                                    resource: height.to_string(),
+                                })
+                        },
+                        async move {
+                            state
+                                .get_vid_common(height)
+                                .await
+                                .with_timeout(timeout)
+                                .await
+                                .context(FetchBlockSnafu {
+                                    resource: height.to_string(),
+                                })
+                        }
+                    )?;
+
+                    if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
+                        let proof = NsProof::new(block.payload(), &ns_index, common.common())
+                            .context(CustomSnafu {
+                                message: format!("failed to make proof for namespace {ns_id}"),
+                                status: StatusCode::NOT_FOUND,
+                            })?;
+
+                        Ok(espresso_types::NamespaceProofQueryData {
+                            transactions: proof.export_all_txs(&ns_id),
+                            proof: Some(proof),
+                        })
+                    } else {
+                        // ns_id not found in ns_table
+                        Ok(espresso_types::NamespaceProofQueryData {
+                            proof: None,
+                            transactions: Vec::new(),
+                        })
+                    }
+                }
+                .boxed()
+            })?;
+        }
     } else {
         api.get("getnamespaceproof", move |req, state| {
             async move {
@@ -395,12 +447,6 @@ where
                 .await
                 .await;
 
-            // Get or fetch the VID common metadata for the given block number
-            let vid_common_metadata = state
-                .read(|state| state.get_vid_common_metadata(block_number as usize).boxed())
-                .await
-                .await;
-
             // Request the VID shares from other nodes. Use the VID common and common metadata to
             // verify that they are correct
             let vid_common_clone = vid_common.clone();
@@ -416,7 +462,7 @@ where
                 .map_err(|err| {
                     warn!("Failed to request VID shares from network: {err:#}");
                     hotshot_query_service::node::Error::Custom {
-                        message: format!("Failed to request VID shares from network"),
+                        message: "Failed to request VID shares from network".to_string(),
                         status: StatusCode::NOT_FOUND,
                     }
                 })?;
@@ -430,7 +476,7 @@ where
             };
 
             // Get the total VID weight based on the VID common data
-            let total_weight = match vid_common.common() {
+            let avidm_param = match vid_common.common() {
                 VidCommon::V0(_) => {
                     // TODO: This needs to be done via the stake table
                     return Err(hotshot_query_service::node::Error::Custom {
@@ -438,16 +484,8 @@ where
                         status: StatusCode::NOT_FOUND,
                     });
                 },
-                VidCommon::V1(v1) => v1.total_weights,
+                VidCommon::V1(v1) => v1,
             };
-
-            // Calculate the AvidM parameter from the total weight
-            let avidm_param = init_avidm_param(total_weight).map_err(|err| {
-                hotshot_query_service::node::Error::Custom {
-                    message: format!("Failed to initialize AvidM parameters: {err}"),
-                    status: StatusCode::INTERNAL_SERVER_ERROR,
-                }
-            })?;
 
             // Get the payload hash
             let VidCommitment::V1(local_payload_hash) = vid_common.payload_hash() else {
@@ -469,7 +507,20 @@ where
                 })
                 .collect();
 
-            Ok(avidm_shares)
+            match NsAvidMScheme::proof_of_incorrect_encoding(
+                avidm_param,
+                &local_payload_hash,
+                &avidm_shares,
+            ) {
+                Ok(proof) => Ok(proof),
+                Err(err) => {
+                    warn!("Failed to generate proof of incorrect encoding: {err:#}");
+                    Err(hotshot_query_service::node::Error::Custom {
+                        message: "Failed to generate proof of incorrect encoding".to_string(),
+                        status: StatusCode::INTERNAL_SERVER_ERROR,
+                    })
+                },
+            }
         }
         .boxed()
     })?;

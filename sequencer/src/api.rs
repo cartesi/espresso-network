@@ -391,7 +391,7 @@ impl<N: ConnectedNetwork<PubKey>, V: Versions, P: SequencerPersistence>
                     .lock()
                     .clone()
                     .into_iter()
-                    .map(|s| VidShare::V1(s))
+                    .map(VidShare::V1)
                     .collect())
             },
 

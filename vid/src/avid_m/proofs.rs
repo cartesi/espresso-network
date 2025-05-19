@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     avid_m::{
         config::AvidMConfig,
-        namespaced::{NsAvidMCommit, NsAvidMScheme},
+        namespaced::{NsAvidMCommit, NsAvidMScheme, NsAvidMShare},
         AvidMCommit, AvidMParam, AvidMScheme, AvidMShare, Config, MerkleProof, MerkleTree, F,
     },
     VerificationResult, VidError, VidResult, VidScheme,
@@ -28,7 +28,7 @@ use crate::{
 /// In short, the proof contains the recovered poly (from the received shares) and the merkle proofs (against the wrong root)
 /// being distributed by the malicious disperser.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct MalEncodingProof {
+pub struct AvidMBadEncodingProof {
     /// The recovered polynomial from VID shares.
     #[serde(with = "canonical")]
     recovered_poly: Vec<F>,
@@ -44,7 +44,7 @@ impl AvidMScheme {
         param: &AvidMParam,
         commit: &AvidMCommit,
         shares: &[AvidMShare],
-    ) -> VidResult<MalEncodingProof> {
+    ) -> VidResult<AvidMBadEncodingProof> {
         // First verify all the shares
         for share in shares.iter() {
             if AvidMScheme::verify_share(param, commit, share)?.is_err() {
@@ -87,14 +87,14 @@ impl AvidMScheme {
             return Err(VidError::InsufficientShares);
         }
 
-        Ok(MalEncodingProof {
+        Ok(AvidMBadEncodingProof {
             recovered_poly: witness,
             raw_shares,
         })
     }
 }
 
-impl MalEncodingProof {
+impl AvidMBadEncodingProof {
     /// Verify a proof of incorrect encoding
     pub fn verify(
         &self,
@@ -124,6 +124,108 @@ impl MalEncodingProof {
             visited_indices.insert(*index);
         }
         Ok(Ok(()))
+    }
+}
+
+/// A proof of incorrect encoding for a namespace.
+/// It consists of the index of the namespace, the merkle proof of the namespace payload against the namespaced VID commitment,
+/// and the proof of incorrect encoding.
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct NsAvidMBadEncodingProof {
+    /// The index of the namespace.
+    pub ns_index: usize,
+    /// The commitment of the namespaced VID.
+    pub ns_commit: AvidMCommit,
+    /// The outer merkle proof of the namespace against the namespaced VID commitment.
+    pub ns_mt_proof: MerkleProof,
+    /// The proof of incorrect encoding.
+    pub ns_proof: AvidMBadEncodingProof,
+}
+
+impl NsAvidMScheme {
+    /// Generate a proof of incorrect encoding for a namespace.
+    pub fn proof_of_incorrect_encoding_for_namespace(
+        param: &AvidMParam,
+        ns_index: usize,
+        commit: &NsAvidMCommit,
+        shares: &[NsAvidMShare],
+    ) -> VidResult<NsAvidMBadEncodingProof> {
+        if shares.is_empty() {
+            return Err(VidError::InsufficientShares);
+        }
+        if shares.iter().any(|share| !share.contains_ns(ns_index)) {
+            return Err(VidError::IndexOutOfBound);
+        }
+        let mt = MerkleTree::from_elems(
+            None,
+            shares[0].ns_commits().iter().map(|commit| commit.commit),
+        )?;
+        if mt.commitment() != commit.commit {
+            return Err(VidError::InvalidShare);
+        }
+        let (ns_commit, ns_mt_proof) = mt
+            .lookup(ns_index as u64)
+            .expect_ok()
+            .expect("MT lookup shouldn't fail");
+        let ns_commit = AvidMCommit { commit: *ns_commit };
+        let shares = shares
+            .iter()
+            .map(|share| share.inner_ns_share(ns_index))
+            .collect::<Vec<_>>();
+        Ok(NsAvidMBadEncodingProof {
+            ns_index,
+            ns_commit,
+            ns_mt_proof,
+            ns_proof: AvidMScheme::proof_of_incorrect_encoding(param, &ns_commit, &shares)?,
+        })
+    }
+
+    /// Generate a proof of incorrect encoding.
+    pub fn proof_of_incorrect_encoding(
+        param: &AvidMParam,
+        commit: &NsAvidMCommit,
+        shares: &[NsAvidMShare],
+    ) -> VidResult<NsAvidMBadEncodingProof> {
+        if shares.is_empty() {
+            return Err(VidError::InsufficientShares);
+        }
+        for ns_index in 0..shares[0].ns_commits().len() {
+            let result =
+                Self::proof_of_incorrect_encoding_for_namespace(param, ns_index, commit, shares);
+            // Early break if there's a bad namespace, or if the shares/param are invalid
+            if matches!(
+                result,
+                Ok(_)
+                    | Err(VidError::InvalidShare)
+                    | Err(VidError::IndexOutOfBound)
+                    | Err(VidError::InsufficientShares)
+                    | Err(VidError::InvalidParam)
+            ) {
+                return result;
+            }
+        }
+        Err(VidError::InvalidParam)
+    }
+}
+
+impl NsAvidMBadEncodingProof {
+    /// Verify an incorrect encoding proof.
+    pub fn verify(
+        &self,
+        param: &AvidMParam,
+        commit: &NsAvidMCommit,
+    ) -> VidResult<VerificationResult> {
+        if MerkleTree::verify(
+            &commit.commit,
+            self.ns_index as u64,
+            &self.ns_commit.commit,
+            &self.ns_mt_proof,
+        )?
+        .is_err()
+        {
+            return Ok(Err(()));
+        }
+        self.ns_proof.verify(param, commit)
     }
 }
 
@@ -191,7 +293,7 @@ mod tests {
 
     use crate::{
         avid_m::{
-            config::AvidMConfig, namespaced::NsAvidMScheme, proofs::MalEncodingProof,
+            config::AvidMConfig, namespaced::NsAvidMScheme, proofs::AvidMBadEncodingProof,
             radix2_domain, AvidMScheme, Config, MerkleTree, F,
         },
         utils::bytes_to_field,
@@ -243,7 +345,7 @@ mod tests {
         assert!(AvidMScheme::proof_of_incorrect_encoding(&param, &commit, &shares).is_err());
 
         let witness = AvidMScheme::pad_to_fields(&param, &payload);
-        let bad_proof = MalEncodingProof {
+        let bad_proof = AvidMBadEncodingProof {
             recovered_poly: witness.clone(),
             raw_shares: shares
                 .iter()
@@ -255,7 +357,7 @@ mod tests {
         // duplicate indices may fool the verification
         let mut bad_witness = vec![F::from(0u64); 5];
         bad_witness[0] = shares[0].content.payload[0][0];
-        let bad_proof2 = MalEncodingProof {
+        let bad_proof2 = AvidMBadEncodingProof {
             recovered_poly: bad_witness,
             raw_shares: std::iter::repeat_n(bad_proof.raw_shares[0].clone(), 6).collect(),
         };
