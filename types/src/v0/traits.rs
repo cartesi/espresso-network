@@ -380,6 +380,14 @@ pub trait PersistenceOptions: Clone + Send + Sync + Debug + 'static {
     async fn reset(self) -> anyhow::Result<()>;
 }
 
+/// Determine the read state based on the queried block range.
+// - If the persistence returned events up to the requested block, the read is complete.
+/// - Otherwise, indicate that the read is up to the last processed block.
+pub enum EventsPersistenceRead {
+    Complete,
+    UntilL1Block(u64),
+}
+
 #[async_trait]
 /// Trait used by `Memberships` implementations to interact with persistence layer.
 pub trait MembershipPersistence: Send + Sync + 'static {
@@ -401,10 +409,16 @@ pub trait MembershipPersistence: Send + Sync + 'static {
 
     async fn store_events(
         &self,
-        l1_block: u64,
+        l1_finalized: u64,
         events: Vec<(EventKey, StakeTableEvent)>,
     ) -> anyhow::Result<()>;
-    async fn load_events(&self) -> anyhow::Result<Option<(u64, Vec<(EventKey, StakeTableEvent)>)>>;
+    async fn load_events(
+        &self,
+        l1_finalized: u64,
+    ) -> anyhow::Result<(
+        Option<EventsPersistenceRead>,
+        Vec<(EventKey, StakeTableEvent)>,
+    )>;
 }
 
 #[async_trait]
@@ -738,7 +752,7 @@ pub trait SequencerPersistence: Sized + Send + Sync + Clone + 'static {
         self.append_quorum_proposal2(proposal).await
     }
 
-    async fn add_drb_result(
+    async fn store_drb_result(
         &self,
         epoch: <SeqTypes as NodeType>::Epoch,
         drb_result: DrbResult,
@@ -855,12 +869,12 @@ impl<P: SequencerPersistence> Storage<SeqTypes> for Arc<P> {
             .await
     }
 
-    async fn add_drb_result(
+    async fn store_drb_result(
         &self,
         epoch: <SeqTypes as NodeType>::Epoch,
         drb_result: DrbResult,
     ) -> anyhow::Result<()> {
-        (**self).add_drb_result(epoch, drb_result).await
+        (**self).store_drb_result(epoch, drb_result).await
     }
 
     async fn add_epoch_root(
