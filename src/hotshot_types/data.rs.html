@@ -1872,102 +1872,83 @@
 <a href=#1872 id=1872 data-nosnippet>1872</a>    </span><span class="kw">pub fn </span>builder_fee&lt;TYPES: NodeType, V: Versions&gt;(
 <a href=#1873 id=1873 data-nosnippet>1873</a>        num_storage_nodes: usize,
 <a href=#1874 id=1874 data-nosnippet>1874</a>        version: vbs::version::Version,
-<a href=#1875 id=1875 data-nosnippet>1875</a>        view_number: u64,
-<a href=#1876 id=1876 data-nosnippet>1876</a>    ) -&gt; <span class="prelude-ty">Option</span>&lt;BuilderFee&lt;TYPES&gt;&gt; {
-<a href=#1877 id=1877 data-nosnippet>1877</a>        <span class="doccomment">/// Arbitrary fee amount, this block doesn't actually come from a builder
-<a href=#1878 id=1878 data-nosnippet>1878</a>        </span><span class="kw">const </span>FEE_AMOUNT: u64 = <span class="number">0</span>;
-<a href=#1879 id=1879 data-nosnippet>1879</a>
-<a href=#1880 id=1880 data-nosnippet>1880</a>        <span class="kw">let </span>(pub_key, priv_key) =
-<a href=#1881 id=1881 data-nosnippet>1881</a>            &lt;TYPES::BuilderSignatureKey <span class="kw">as </span>BuilderSignatureKey&gt;::generated_from_seed_indexed(
-<a href=#1882 id=1882 data-nosnippet>1882</a>                [<span class="number">0_u8</span>; <span class="number">32</span>], <span class="number">0</span>,
-<a href=#1883 id=1883 data-nosnippet>1883</a>            );
-<a href=#1884 id=1884 data-nosnippet>1884</a>
-<a href=#1885 id=1885 data-nosnippet>1885</a>        <span class="kw">if </span>version &gt;= V::Marketplace::VERSION {
-<a href=#1886 id=1886 data-nosnippet>1886</a>            <span class="kw">match </span>TYPES::BuilderSignatureKey::sign_sequencing_fee_marketplace(
-<a href=#1887 id=1887 data-nosnippet>1887</a>                <span class="kw-2">&amp;</span>priv_key,
-<a href=#1888 id=1888 data-nosnippet>1888</a>                FEE_AMOUNT,
-<a href=#1889 id=1889 data-nosnippet>1889</a>                view_number,
-<a href=#1890 id=1890 data-nosnippet>1890</a>            ) {
-<a href=#1891 id=1891 data-nosnippet>1891</a>                <span class="prelude-val">Ok</span>(sig) =&gt; <span class="prelude-val">Some</span>(BuilderFee {
-<a href=#1892 id=1892 data-nosnippet>1892</a>                    fee_amount: FEE_AMOUNT,
-<a href=#1893 id=1893 data-nosnippet>1893</a>                    fee_account: pub_key,
-<a href=#1894 id=1894 data-nosnippet>1894</a>                    fee_signature: sig,
-<a href=#1895 id=1895 data-nosnippet>1895</a>                }),
-<a href=#1896 id=1896 data-nosnippet>1896</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
-<a href=#1897 id=1897 data-nosnippet>1897</a>            }
-<a href=#1898 id=1898 data-nosnippet>1898</a>        } <span class="kw">else if </span>version &gt;= V::Epochs::VERSION {
-<a href=#1899 id=1899 data-nosnippet>1899</a>            <span class="kw">let </span>(_null_block, null_block_metadata) =
-<a href=#1900 id=1900 data-nosnippet>1900</a>                &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::empty();
-<a href=#1901 id=1901 data-nosnippet>1901</a>
-<a href=#1902 id=1902 data-nosnippet>1902</a>            <span class="kw">match </span>TYPES::BuilderSignatureKey::sign_fee(<span class="kw-2">&amp;</span>priv_key, FEE_AMOUNT, <span class="kw-2">&amp;</span>null_block_metadata)
-<a href=#1903 id=1903 data-nosnippet>1903</a>            {
-<a href=#1904 id=1904 data-nosnippet>1904</a>                <span class="prelude-val">Ok</span>(sig) =&gt; <span class="prelude-val">Some</span>(BuilderFee {
-<a href=#1905 id=1905 data-nosnippet>1905</a>                    fee_amount: FEE_AMOUNT,
-<a href=#1906 id=1906 data-nosnippet>1906</a>                    fee_account: pub_key,
-<a href=#1907 id=1907 data-nosnippet>1907</a>                    fee_signature: sig,
-<a href=#1908 id=1908 data-nosnippet>1908</a>                }),
-<a href=#1909 id=1909 data-nosnippet>1909</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
-<a href=#1910 id=1910 data-nosnippet>1910</a>            }
-<a href=#1911 id=1911 data-nosnippet>1911</a>        } <span class="kw">else </span>{
-<a href=#1912 id=1912 data-nosnippet>1912</a>            <span class="kw">let </span>(_null_block, null_block_metadata) =
-<a href=#1913 id=1913 data-nosnippet>1913</a>                &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::empty();
-<a href=#1914 id=1914 data-nosnippet>1914</a>
-<a href=#1915 id=1915 data-nosnippet>1915</a>            <span class="kw">match </span>TYPES::BuilderSignatureKey::sign_fee_with_vid_commitment(
-<a href=#1916 id=1916 data-nosnippet>1916</a>                <span class="kw-2">&amp;</span>priv_key,
-<a href=#1917 id=1917 data-nosnippet>1917</a>                FEE_AMOUNT,
-<a href=#1918 id=1918 data-nosnippet>1918</a>                <span class="kw-2">&amp;</span>null_block_metadata,
-<a href=#1919 id=1919 data-nosnippet>1919</a>                <span class="kw-2">&amp;</span>commitment::&lt;V&gt;(num_storage_nodes)<span class="question-mark">?</span>,
-<a href=#1920 id=1920 data-nosnippet>1920</a>            ) {
-<a href=#1921 id=1921 data-nosnippet>1921</a>                <span class="prelude-val">Ok</span>(sig) =&gt; <span class="prelude-val">Some</span>(BuilderFee {
-<a href=#1922 id=1922 data-nosnippet>1922</a>                    fee_amount: FEE_AMOUNT,
-<a href=#1923 id=1923 data-nosnippet>1923</a>                    fee_account: pub_key,
-<a href=#1924 id=1924 data-nosnippet>1924</a>                    fee_signature: sig,
-<a href=#1925 id=1925 data-nosnippet>1925</a>                }),
-<a href=#1926 id=1926 data-nosnippet>1926</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
-<a href=#1927 id=1927 data-nosnippet>1927</a>            }
-<a href=#1928 id=1928 data-nosnippet>1928</a>        }
-<a href=#1929 id=1929 data-nosnippet>1929</a>    }
-<a href=#1930 id=1930 data-nosnippet>1930</a>}
-<a href=#1931 id=1931 data-nosnippet>1931</a>
-<a href=#1932 id=1932 data-nosnippet>1932</a><span class="doccomment">/// A packed bundle constructed from a sequence of bundles.
-<a href=#1933 id=1933 data-nosnippet>1933</a></span><span class="attr">#[derive(Debug, Eq, PartialEq, Clone)]
-<a href=#1934 id=1934 data-nosnippet>1934</a></span><span class="kw">pub struct </span>PackedBundle&lt;TYPES: NodeType&gt; {
-<a href=#1935 id=1935 data-nosnippet>1935</a>    <span class="doccomment">/// The combined transactions as bytes.
-<a href=#1936 id=1936 data-nosnippet>1936</a>    </span><span class="kw">pub </span>encoded_transactions: Arc&lt;[u8]&gt;,
-<a href=#1937 id=1937 data-nosnippet>1937</a>
-<a href=#1938 id=1938 data-nosnippet>1938</a>    <span class="doccomment">/// The metadata of the block.
-<a href=#1939 id=1939 data-nosnippet>1939</a>    </span><span class="kw">pub </span>metadata: &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::Metadata,
-<a href=#1940 id=1940 data-nosnippet>1940</a>
-<a href=#1941 id=1941 data-nosnippet>1941</a>    <span class="doccomment">/// The view number that this block is associated with.
-<a href=#1942 id=1942 data-nosnippet>1942</a>    </span><span class="kw">pub </span>view_number: TYPES::View,
-<a href=#1943 id=1943 data-nosnippet>1943</a>
-<a href=#1944 id=1944 data-nosnippet>1944</a>    <span class="doccomment">/// The view number that this block is associated with.
-<a href=#1945 id=1945 data-nosnippet>1945</a>    </span><span class="kw">pub </span>epoch_number: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-<a href=#1946 id=1946 data-nosnippet>1946</a>
-<a href=#1947 id=1947 data-nosnippet>1947</a>    <span class="doccomment">/// The sequencing fee for submitting bundles.
-<a href=#1948 id=1948 data-nosnippet>1948</a>    </span><span class="kw">pub </span>sequencing_fees: Vec1&lt;BuilderFee&lt;TYPES&gt;&gt;,
-<a href=#1949 id=1949 data-nosnippet>1949</a>
-<a href=#1950 id=1950 data-nosnippet>1950</a>    <span class="doccomment">/// The auction results for the block, if it was produced as the result of an auction
-<a href=#1951 id=1951 data-nosnippet>1951</a>    </span><span class="kw">pub </span>auction_result: <span class="prelude-ty">Option</span>&lt;TYPES::AuctionResult&gt;,
-<a href=#1952 id=1952 data-nosnippet>1952</a>}
-<a href=#1953 id=1953 data-nosnippet>1953</a>
-<a href=#1954 id=1954 data-nosnippet>1954</a><span class="kw">impl</span>&lt;TYPES: NodeType&gt; PackedBundle&lt;TYPES&gt; {
-<a href=#1955 id=1955 data-nosnippet>1955</a>    <span class="doccomment">/// Create a new [`PackedBundle`].
-<a href=#1956 id=1956 data-nosnippet>1956</a>    </span><span class="kw">pub fn </span>new(
-<a href=#1957 id=1957 data-nosnippet>1957</a>        encoded_transactions: Arc&lt;[u8]&gt;,
-<a href=#1958 id=1958 data-nosnippet>1958</a>        metadata: &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::Metadata,
-<a href=#1959 id=1959 data-nosnippet>1959</a>        view_number: TYPES::View,
-<a href=#1960 id=1960 data-nosnippet>1960</a>        epoch_number: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
-<a href=#1961 id=1961 data-nosnippet>1961</a>        sequencing_fees: Vec1&lt;BuilderFee&lt;TYPES&gt;&gt;,
-<a href=#1962 id=1962 data-nosnippet>1962</a>        auction_result: <span class="prelude-ty">Option</span>&lt;TYPES::AuctionResult&gt;,
-<a href=#1963 id=1963 data-nosnippet>1963</a>    ) -&gt; <span class="self">Self </span>{
-<a href=#1964 id=1964 data-nosnippet>1964</a>        <span class="self">Self </span>{
-<a href=#1965 id=1965 data-nosnippet>1965</a>            encoded_transactions,
-<a href=#1966 id=1966 data-nosnippet>1966</a>            metadata,
-<a href=#1967 id=1967 data-nosnippet>1967</a>            view_number,
-<a href=#1968 id=1968 data-nosnippet>1968</a>            epoch_number,
-<a href=#1969 id=1969 data-nosnippet>1969</a>            sequencing_fees,
-<a href=#1970 id=1970 data-nosnippet>1970</a>            auction_result,
-<a href=#1971 id=1971 data-nosnippet>1971</a>        }
-<a href=#1972 id=1972 data-nosnippet>1972</a>    }
-<a href=#1973 id=1973 data-nosnippet>1973</a>}</code></pre></div></section></main></body></html>
+<a href=#1875 id=1875 data-nosnippet>1875</a>    ) -&gt; <span class="prelude-ty">Option</span>&lt;BuilderFee&lt;TYPES&gt;&gt; {
+<a href=#1876 id=1876 data-nosnippet>1876</a>        <span class="doccomment">/// Arbitrary fee amount, this block doesn't actually come from a builder
+<a href=#1877 id=1877 data-nosnippet>1877</a>        </span><span class="kw">const </span>FEE_AMOUNT: u64 = <span class="number">0</span>;
+<a href=#1878 id=1878 data-nosnippet>1878</a>
+<a href=#1879 id=1879 data-nosnippet>1879</a>        <span class="kw">let </span>(pub_key, priv_key) =
+<a href=#1880 id=1880 data-nosnippet>1880</a>            &lt;TYPES::BuilderSignatureKey <span class="kw">as </span>BuilderSignatureKey&gt;::generated_from_seed_indexed(
+<a href=#1881 id=1881 data-nosnippet>1881</a>                [<span class="number">0_u8</span>; <span class="number">32</span>], <span class="number">0</span>,
+<a href=#1882 id=1882 data-nosnippet>1882</a>            );
+<a href=#1883 id=1883 data-nosnippet>1883</a>
+<a href=#1884 id=1884 data-nosnippet>1884</a>        <span class="kw">if </span>version &gt;= V::Epochs::VERSION {
+<a href=#1885 id=1885 data-nosnippet>1885</a>            <span class="kw">let </span>(_null_block, null_block_metadata) =
+<a href=#1886 id=1886 data-nosnippet>1886</a>                &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::empty();
+<a href=#1887 id=1887 data-nosnippet>1887</a>
+<a href=#1888 id=1888 data-nosnippet>1888</a>            <span class="kw">match </span>TYPES::BuilderSignatureKey::sign_fee(<span class="kw-2">&amp;</span>priv_key, FEE_AMOUNT, <span class="kw-2">&amp;</span>null_block_metadata)
+<a href=#1889 id=1889 data-nosnippet>1889</a>            {
+<a href=#1890 id=1890 data-nosnippet>1890</a>                <span class="prelude-val">Ok</span>(sig) =&gt; <span class="prelude-val">Some</span>(BuilderFee {
+<a href=#1891 id=1891 data-nosnippet>1891</a>                    fee_amount: FEE_AMOUNT,
+<a href=#1892 id=1892 data-nosnippet>1892</a>                    fee_account: pub_key,
+<a href=#1893 id=1893 data-nosnippet>1893</a>                    fee_signature: sig,
+<a href=#1894 id=1894 data-nosnippet>1894</a>                }),
+<a href=#1895 id=1895 data-nosnippet>1895</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+<a href=#1896 id=1896 data-nosnippet>1896</a>            }
+<a href=#1897 id=1897 data-nosnippet>1897</a>        } <span class="kw">else </span>{
+<a href=#1898 id=1898 data-nosnippet>1898</a>            <span class="kw">let </span>(_null_block, null_block_metadata) =
+<a href=#1899 id=1899 data-nosnippet>1899</a>                &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::empty();
+<a href=#1900 id=1900 data-nosnippet>1900</a>
+<a href=#1901 id=1901 data-nosnippet>1901</a>            <span class="kw">match </span>TYPES::BuilderSignatureKey::sign_fee_with_vid_commitment(
+<a href=#1902 id=1902 data-nosnippet>1902</a>                <span class="kw-2">&amp;</span>priv_key,
+<a href=#1903 id=1903 data-nosnippet>1903</a>                FEE_AMOUNT,
+<a href=#1904 id=1904 data-nosnippet>1904</a>                <span class="kw-2">&amp;</span>null_block_metadata,
+<a href=#1905 id=1905 data-nosnippet>1905</a>                <span class="kw-2">&amp;</span>commitment::&lt;V&gt;(num_storage_nodes)<span class="question-mark">?</span>,
+<a href=#1906 id=1906 data-nosnippet>1906</a>            ) {
+<a href=#1907 id=1907 data-nosnippet>1907</a>                <span class="prelude-val">Ok</span>(sig) =&gt; <span class="prelude-val">Some</span>(BuilderFee {
+<a href=#1908 id=1908 data-nosnippet>1908</a>                    fee_amount: FEE_AMOUNT,
+<a href=#1909 id=1909 data-nosnippet>1909</a>                    fee_account: pub_key,
+<a href=#1910 id=1910 data-nosnippet>1910</a>                    fee_signature: sig,
+<a href=#1911 id=1911 data-nosnippet>1911</a>                }),
+<a href=#1912 id=1912 data-nosnippet>1912</a>                <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">None</span>,
+<a href=#1913 id=1913 data-nosnippet>1913</a>            }
+<a href=#1914 id=1914 data-nosnippet>1914</a>        }
+<a href=#1915 id=1915 data-nosnippet>1915</a>    }
+<a href=#1916 id=1916 data-nosnippet>1916</a>}
+<a href=#1917 id=1917 data-nosnippet>1917</a>
+<a href=#1918 id=1918 data-nosnippet>1918</a><span class="doccomment">/// A packed bundle constructed from a sequence of bundles.
+<a href=#1919 id=1919 data-nosnippet>1919</a></span><span class="attr">#[derive(Debug, Eq, PartialEq, Clone)]
+<a href=#1920 id=1920 data-nosnippet>1920</a></span><span class="kw">pub struct </span>PackedBundle&lt;TYPES: NodeType&gt; {
+<a href=#1921 id=1921 data-nosnippet>1921</a>    <span class="doccomment">/// The combined transactions as bytes.
+<a href=#1922 id=1922 data-nosnippet>1922</a>    </span><span class="kw">pub </span>encoded_transactions: Arc&lt;[u8]&gt;,
+<a href=#1923 id=1923 data-nosnippet>1923</a>
+<a href=#1924 id=1924 data-nosnippet>1924</a>    <span class="doccomment">/// The metadata of the block.
+<a href=#1925 id=1925 data-nosnippet>1925</a>    </span><span class="kw">pub </span>metadata: &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::Metadata,
+<a href=#1926 id=1926 data-nosnippet>1926</a>
+<a href=#1927 id=1927 data-nosnippet>1927</a>    <span class="doccomment">/// The view number that this block is associated with.
+<a href=#1928 id=1928 data-nosnippet>1928</a>    </span><span class="kw">pub </span>view_number: TYPES::View,
+<a href=#1929 id=1929 data-nosnippet>1929</a>
+<a href=#1930 id=1930 data-nosnippet>1930</a>    <span class="doccomment">/// The view number that this block is associated with.
+<a href=#1931 id=1931 data-nosnippet>1931</a>    </span><span class="kw">pub </span>epoch_number: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
+<a href=#1932 id=1932 data-nosnippet>1932</a>
+<a href=#1933 id=1933 data-nosnippet>1933</a>    <span class="doccomment">/// The sequencing fee for submitting bundles.
+<a href=#1934 id=1934 data-nosnippet>1934</a>    </span><span class="kw">pub </span>sequencing_fees: Vec1&lt;BuilderFee&lt;TYPES&gt;&gt;,
+<a href=#1935 id=1935 data-nosnippet>1935</a>}
+<a href=#1936 id=1936 data-nosnippet>1936</a>
+<a href=#1937 id=1937 data-nosnippet>1937</a><span class="kw">impl</span>&lt;TYPES: NodeType&gt; PackedBundle&lt;TYPES&gt; {
+<a href=#1938 id=1938 data-nosnippet>1938</a>    <span class="doccomment">/// Create a new [`PackedBundle`].
+<a href=#1939 id=1939 data-nosnippet>1939</a>    </span><span class="kw">pub fn </span>new(
+<a href=#1940 id=1940 data-nosnippet>1940</a>        encoded_transactions: Arc&lt;[u8]&gt;,
+<a href=#1941 id=1941 data-nosnippet>1941</a>        metadata: &lt;TYPES::BlockPayload <span class="kw">as </span>BlockPayload&lt;TYPES&gt;&gt;::Metadata,
+<a href=#1942 id=1942 data-nosnippet>1942</a>        view_number: TYPES::View,
+<a href=#1943 id=1943 data-nosnippet>1943</a>        epoch_number: <span class="prelude-ty">Option</span>&lt;TYPES::Epoch&gt;,
+<a href=#1944 id=1944 data-nosnippet>1944</a>        sequencing_fees: Vec1&lt;BuilderFee&lt;TYPES&gt;&gt;,
+<a href=#1945 id=1945 data-nosnippet>1945</a>    ) -&gt; <span class="self">Self </span>{
+<a href=#1946 id=1946 data-nosnippet>1946</a>        <span class="self">Self </span>{
+<a href=#1947 id=1947 data-nosnippet>1947</a>            encoded_transactions,
+<a href=#1948 id=1948 data-nosnippet>1948</a>            metadata,
+<a href=#1949 id=1949 data-nosnippet>1949</a>            view_number,
+<a href=#1950 id=1950 data-nosnippet>1950</a>            epoch_number,
+<a href=#1951 id=1951 data-nosnippet>1951</a>            sequencing_fees,
+<a href=#1952 id=1952 data-nosnippet>1952</a>        }
+<a href=#1953 id=1953 data-nosnippet>1953</a>    }
+<a href=#1954 id=1954 data-nosnippet>1954</a>}</code></pre></div></section></main></body></html>
