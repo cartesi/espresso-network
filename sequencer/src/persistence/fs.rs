@@ -1272,6 +1272,7 @@ impl SequencerPersistence for Persistence {
             drb_input.epoch, file_path
         ))
     }
+
     async fn load_drb_input(&self, epoch: u64) -> anyhow::Result<DrbInput> {
         let inner = self.inner.read().await;
         let path = &inner.drb_dir_path();

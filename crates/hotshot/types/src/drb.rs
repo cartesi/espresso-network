@@ -14,7 +14,7 @@ use crate::traits::{
     storage::StoreDrbProgressFn,
 };
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DrbInput {
     /// The epoch we are calculating the result for
     pub epoch: u64,

@@ -176,6 +176,53 @@ mod persistence_tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
+    pub async fn test_store_drb_input<P: TestablePersistence>() {
+        use hotshot_types::drb::DrbInput;
+
+        setup_test();
+
+        let tmp = P::tmp_storage().await;
+        let storage = P::connect(&tmp).await;
+
+        // Initially, there is no saved info.
+        if !matches!(storage.load_drb_input(10).await, Err(_)) {
+            panic!("unexpected nonempty drb_input");
+        }
+
+        let drb_input_1 = DrbInput {
+            epoch: 10,
+            iteration: 10,
+            value: [0u8; 32],
+        };
+
+        let drb_input_2 = DrbInput {
+            epoch: 10,
+            iteration: 20,
+            value: [0u8; 32],
+        };
+
+        let drb_input_3 = DrbInput {
+            epoch: 10,
+            iteration: 30,
+            value: [0u8; 32],
+        };
+
+        storage.store_drb_input(drb_input_1.clone()).await.unwrap();
+
+        assert_eq!(storage.load_drb_input(10).await.unwrap(), drb_input_1);
+
+        storage.store_drb_input(drb_input_3.clone()).await.unwrap();
+
+        // check that the drb input is overwritten
+        assert_eq!(storage.load_drb_input(10).await.unwrap(), drb_input_3);
+
+        storage.store_drb_input(drb_input_2.clone()).await.unwrap();
+
+        // check that the drb input is not overwritten by the older value
+        assert_eq!(storage.load_drb_input(10).await.unwrap(), drb_input_3);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
     pub async fn test_epoch_info<P: TestablePersistence>() {
         setup_test();
 
