@@ -235,7 +235,6 @@ impl NodeParams {
 
 #[derive(Debug, Clone)]
 struct NodeInitializer<S: TestableSequencerDataSource> {
-    hotshot_initializer: HotShotInitializer<SeqTypes>,
     #[debug(skip)]
     hotshot_context: Arc<
         SystemContext<
@@ -372,22 +371,21 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
             MockSequencerVersions,
         >,
     ) -> NodeInitializer<S> {
-        let node_state = context.node_state();
-        let hotshot = context.consensus().read().await.hotshot.clone();
+        NodeInitializer {
+            hotshot_context: context.consensus().read().await.hotshot.clone(),
+            node_id: context.node_id(),
+        }
+    }
 
-        // Get stored consensus data. See `SequencerContext::init` for reference.
+    /// Get stored consensus data. See `SequencerContext::init` for reference.
+    async fn get_hotshot_initializer(&self, node_state: NodeState) -> HotShotInitializer<SeqTypes> {
         let mut storage_opt = S::persistence_options(&self.storage);
         let persistence = storage_opt.create().await.unwrap();
         let (initializer, _anchor_view) = persistence
             .load_consensus_state::<MockSequencerVersions>(node_state.clone())
             .await
             .unwrap();
-
-        NodeInitializer {
-            hotshot_context: hotshot,
-            hotshot_initializer: initializer,
-            node_id: context.node_id(),
-        }
+        initializer
     }
 
     fn start(&mut self) -> BoxFuture<()>
@@ -434,11 +432,12 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
             if let Some(initializer) = self.initializer.take() {
                 tracing::error!("storing hotshot");
                 let node_id = initializer.node_id;
+                let hotshot_initializer = self.get_hotshot_initializer(ctx.node_state()).await;
                 let handle = initializer
                     .hotshot_context
                     // TODO I think all the copied values are static, so should
                     // be safe, but double check.
-                    .into_self_cloned(initializer.hotshot_initializer, node_id)
+                    .into_self_cloned(hotshot_initializer, node_id)
                     .await;
 
                 ctx.replace_handle(handle).await;
