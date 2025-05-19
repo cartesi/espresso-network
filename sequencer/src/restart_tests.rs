@@ -477,7 +477,9 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
                 2 * Duration::from_millis(next_view_timeout) * (self.num_nodes as u32);
             match timeout(timeout_duration, self.check_progress()).await {
                 Ok(res) => res,
-                Err(_) => bail!("timed out waiting for progress on node {node_id}"),
+                Err(_) => bail!(
+                    "timed out waiting for progress on node {node_id} after {timeout_duration:#?}"
+                ),
             }
         }
         .boxed()
