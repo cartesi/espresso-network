@@ -39,9 +39,9 @@ pub use crate::bindings::{
     lightclientv2mock::{self, LightClientV2Mock},
     plonkverifier::PlonkVerifier,
     plonkverifierv2::PlonkVerifierV2,
-    staketable::{
-        self, EdOnBN254::EdOnBN254Point as EdOnBN254PointSol, StakeTable,
-        BN254::G2Point as G2PointSol,
+    staketablev2 as staketable,
+    staketablev2::{
+        EdOnBN254::EdOnBN254Point as EdOnBN254PointSol, StakeTable, BN254::G2Point as G2PointSol,
     },
     timelock::Timelock,
 };
@@ -183,12 +183,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use self::{
     staketable::{EdOnBN254::EdOnBN254Point, BN254::G2Point},
-    StakeTable::{
+    StakeTableV2::{
         ConsensusKeysUpdated, Delegated, Undelegated, ValidatorExit, ValidatorRegistered,
     },
 };
 
-impl PartialEq for ValidatorRegistered {
+impl PartialEq for staketable {
     fn eq(&self, other: &Self) -> bool {
         self.account == other.account
             && self.blsVk == other.blsVk

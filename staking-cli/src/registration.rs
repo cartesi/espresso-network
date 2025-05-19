@@ -8,7 +8,7 @@ use hotshot_contract_adapter::{
     evm::DecodeRevert as _,
     sol_types::{
         EdOnBN254PointSol, G1PointSol, G2PointSol,
-        StakeTable::{self, StakeTableErrors},
+        StakeTableV2::{self, StakeTableV2Errors},
     },
 };
 use jf_signature::constants::CS_ID_BLS_BN254;
@@ -36,21 +36,24 @@ pub async fn register_validator(
     bls_key_pair: BLSKeyPair,
     schnorr_vk: StateVerKey,
 ) -> Result<TransactionReceipt> {
-    let stake_table = StakeTable::new(stake_table_addr, &provider);
+    let stake_table = StakeTableV2::new(stake_table_addr, &provider);
     let (bls_vk_sol, sig_sol) = prepare_bls_payload(&bls_key_pair, validator_address);
     let schnorr_vk_sol: EdOnBN254PointSol = schnorr_vk.to_affine().into();
-    Ok(stake_table
-        .registerValidator(
-            bls_vk_sol,
-            schnorr_vk_sol,
-            sig_sol.into(),
-            commission.to_evm(),
-        )
-        .send()
-        .await
-        .maybe_decode_revert::<StakeTableErrors>()?
-        .get_receipt()
-        .await?)
+
+    // Check the stake table version
+    stake_table
+        ..Ok(stake_table
+            .registerValidator(
+                bls_vk_sol,
+                schnorr_vk_sol,
+                sig_sol.into(),
+                commission.to_evm(),
+            )
+            .send()
+            .await
+            .maybe_decode_revert::<StakeTableV2Errors>()?
+            .get_receipt()
+            .await?)
 }
 
 pub async fn update_consensus_keys(
@@ -60,14 +63,14 @@ pub async fn update_consensus_keys(
     bls_key_pair: BLSKeyPair,
     schnorr_vk: StateVerKey,
 ) -> Result<TransactionReceipt> {
-    let stake_table = StakeTable::new(stake_table_addr, &provider);
+    let stake_table = StakeTableV2::new(stake_table_addr, &provider);
     let (bls_vk_sol, sig_sol) = prepare_bls_payload(&bls_key_pair, validator_address);
     let schnorr_vk_sol: EdOnBN254PointSol = schnorr_vk.to_affine().into();
     Ok(stake_table
         .updateConsensusKeys(bls_vk_sol, schnorr_vk_sol, sig_sol.into())
         .send()
         .await
-        .maybe_decode_revert::<StakeTableErrors>()?
+        .maybe_decode_revert::<StakeTableV2Errors>()?
         .get_receipt()
         .await?)
 }
@@ -76,12 +79,12 @@ pub async fn deregister_validator(
     provider: impl Provider,
     stake_table_addr: Address,
 ) -> Result<TransactionReceipt> {
-    let stake_table = StakeTable::new(stake_table_addr, &provider);
+    let stake_table = StakeTableV2::new(stake_table_addr, &provider);
     Ok(stake_table
         .deregisterValidator()
         .send()
         .await
-        .maybe_decode_revert::<StakeTableErrors>()?
+        .maybe_decode_revert::<StakeTableV2Errors>()?
         .get_receipt()
         .await?)
 }
