@@ -1266,16 +1266,16 @@ impl SequencerPersistence for Persistence {
 
         let file_path = dir_path
             .join(drb_input.epoch.to_string())
-            .with_extension("txt");
-        fs::write(file_path, drb_input_bytes).context(format!(
-            "writing epoch drb_input file for epoch {:?}",
-            drb_input.epoch
+            .with_extension("bin");
+        fs::write(&file_path, drb_input_bytes).context(format!(
+            "writing epoch drb_input file for epoch {:?} at {:?}",
+            drb_input.epoch, file_path
         ))
     }
     async fn load_drb_input(&self, epoch: u64) -> anyhow::Result<DrbInput> {
         let inner = self.inner.read().await;
         let path = &inner.drb_dir_path();
-        let file_path = path.join(epoch.to_string()).with_extension("txt");
+        let file_path = path.join(epoch.to_string()).with_extension("bin");
         let bytes = fs::read(&file_path).context("read")?;
         Ok(bincode::deserialize(&bytes).context(format!(
             "failed to deserialize DrbInput for epoch {}",
