@@ -243,7 +243,6 @@ struct NodeInitializer<S: TestableSequencerDataSource> {
             MockSequencerVersions,
         >,
     >,
-    node_id: u64,
 }
 
 #[derive(Debug)]
@@ -373,7 +372,6 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
     ) -> NodeInitializer<S> {
         NodeInitializer {
             hotshot_context: context.consensus().read().await.hotshot.clone(),
-            node_id: context.node_id(),
         }
     }
 
@@ -431,13 +429,12 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
             // Check if we have a stored config for soft-restart.
             if let Some(initializer) = self.initializer.take() {
                 tracing::error!("storing hotshot");
-                let node_id = initializer.node_id;
                 let hotshot_initializer = self.get_hotshot_initializer(ctx.node_state()).await;
                 let handle = initializer
                     .hotshot_context
                     // TODO I think all the copied values are static, so should
                     // be safe, but double check.
-                    .into_self_cloned(hotshot_initializer, node_id)
+                    .into_self_cloned(hotshot_initializer, ctx.node_state().node_id)
                     .await;
 
                 ctx.replace_handle(handle).await;
