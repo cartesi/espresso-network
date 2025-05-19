@@ -51,8 +51,6 @@
       CARGO_TARGET_DIR = "target/nix";
       rustEnvVars = { inherit RUST_LOG RUST_BACKTRACE CARGO_TARGET_DIR; };
 
-      goVersion = 23; # Change this to update the whole stack
-
       solhintPkg = { buildNpmPackage, fetchFromGitHub }:
         buildNpmPackage rec {
           pname = "solhint";
