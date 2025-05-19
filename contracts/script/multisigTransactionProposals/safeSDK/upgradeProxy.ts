@@ -19,7 +19,7 @@ async function main() {
   dotenv.config();
 
   try {
-    const upgradeData: UpgradeData = processCommandLineArguments();
+    const [upgradeData, dryRun] = processCommandLineArguments();
     if (!upgradeData.rpcUrl) {
       upgradeData.rpcUrl = getEnvVar("RPC_URL");
     }
@@ -45,23 +45,26 @@ async function main() {
     const safeSdk = await Safe.create({ ethAdapter, safeAddress: upgradeData.safeAddress });
     const orchestratorSignerAddress = await orchestratorSigner.getAddress();
 
-    await proposeUpgradeTransaction(safeSdk, safeService, orchestratorSignerAddress, upgradeData);
+    await proposeUpgradeTransaction(safeSdk, safeService, orchestratorSignerAddress, upgradeData, dryRun);
 
-    console.log(
-      `The other owners of the Safe Multisig wallet need to sign the transaction via the Safe UI https://app.safe.global/transactions/queue?safe=sep:${upgradeData.safeAddress}`,
-    );
+    if (!dryRun) {
+      console.log(
+        `The other owners of the Safe Multisig wallet need to sign the transaction via the Safe UI https://app.safe.global/transactions/queue?safe=sep:${upgradeData.safeAddress}`,
+      );
+    }
   } catch (error) {
     throw new Error("An error occurred: " + error);
   }
 }
 
-export function processRustCommandLineArguments(args: string[]): UpgradeData {
+export function processRustCommandLineArguments(args: string[]): [UpgradeData, boolean] {
   let proxyAddress = "";
   let implementationAddress = "";
   let initData = "";
   let rpcUrl = "";
   let safeAddress = "";
   let useHardwareWallet = false;
+  let dryRun = false;
   // Parse named flags like --proxy, --impl, --init
   const map: Record<string, string> = {};
   for (let i = 0; i < args.length; i++) {
@@ -84,7 +87,7 @@ export function processRustCommandLineArguments(args: string[]): UpgradeData {
   rpcUrl = map["rpc-url"];
   safeAddress = map["safe-address"];
   useHardwareWallet = map["use-hardware-wallet"] === "true";
-
+  dryRun = map["dry-run"] === "true";
   // if any of the arguments are not provided, throw an error
   if (!proxyAddress || !implementationAddress || !initData || !rpcUrl || !safeAddress) {
     throw new Error("All arguments are required, --proxy, --impl, --init-data, --rpc-url, --safe-address");
@@ -93,7 +96,7 @@ export function processRustCommandLineArguments(args: string[]): UpgradeData {
   validateEthereumAddress(implementationAddress);
   validateEthereumAddress(safeAddress);
 
-  return {
+  let upgradeData: UpgradeData = {
     proxyAddress: proxyAddress,
     implementationAddress: implementationAddress,
     initData: initData,
@@ -101,15 +104,18 @@ export function processRustCommandLineArguments(args: string[]): UpgradeData {
     safeAddress: safeAddress,
     useHardwareWallet: useHardwareWallet,
   };
+
+  return [upgradeData, dryRun];
 }
 
-function processCommandLineArguments(): UpgradeData {
+function processCommandLineArguments(): [UpgradeData, boolean] {
   let proxyAddress = "";
   let implementationAddress = "";
   let initData = "";
   let rpcUrl = "";
   let safeAddress = "";
   let useHardwareWallet = false;
+  let dryRun = false;
   const args = process.argv.slice(2); // Remove the first two args (node command and script name)
   if (args.length === 0 || args.length < 3) {
     throw new Error(
@@ -133,8 +139,10 @@ function processCommandLineArguments(): UpgradeData {
     } catch (error) {
       console.error("USE_HARDWARE_WALLET is not set, defaulting to false");
     }
+    dryRun = args[4] === "true";
   }
-  return {
+
+  let upgradeData: UpgradeData = {
     proxyAddress: proxyAddress,
     implementationAddress: implementationAddress,
     initData: initData,
@@ -142,6 +150,8 @@ function processCommandLineArguments(): UpgradeData {
     safeAddress: safeAddress,
     useHardwareWallet: useHardwareWallet,
   };
+
+  return [upgradeData, dryRun];
 }
 
 /**
@@ -156,6 +166,7 @@ async function proposeUpgradeTransaction(
   safeService: SafeApiKit,
   signerAddress: string,
   upgradeData: UpgradeData,
+  dryRun: boolean,
 ) {
   // Prepare the transaction data to upgrade the proxy
   const abi = ["function upgradeToAndCall(address,bytes)"];
@@ -172,6 +183,11 @@ async function proposeUpgradeTransaction(
     data,
     upgradeData.useHardwareWallet,
   );
+
+  if (dryRun) {
+    console.log("Dry run, not proposing transaction");
+    process.exit(0);
+  }
 
   // Propose the transaction which can be signed by other owners via the Safe UI
   await safeService.proposeTransaction({

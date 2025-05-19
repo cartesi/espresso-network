@@ -21,16 +21,48 @@ describe("processRustCommandLineArguments", () => {
       rpcUrl,
       "--safe-address",
       safeAddress,
+      "--dry-run",
+      "true",
     ];
     const result = processRustCommandLineArguments(args);
-    expect(result).toEqual({
-      proxyAddress: proxyAddress,
-      implementationAddress: implementationAddress,
-      initData: initData,
-      rpcUrl: rpcUrl,
-      safeAddress: safeAddress,
-      useHardwareWallet: false,
-    });
+    expect(result).toEqual([
+      {
+        proxyAddress: proxyAddress,
+        implementationAddress: implementationAddress,
+        initData: initData,
+        rpcUrl: rpcUrl,
+        safeAddress: safeAddress,
+        useHardwareWallet: false,
+      },
+      true,
+    ]);
+
+    const args2 = [
+      "--proxy",
+      proxyAddress,
+      "--impl",
+      implementationAddress,
+      "--init-data",
+      initData,
+      "--rpc-url",
+      rpcUrl,
+      "--safe-address",
+      safeAddress,
+      "--use-hardware-wallet",
+      "true",
+    ];
+    const result2 = processRustCommandLineArguments(args2);
+    expect(result2).toEqual([
+      {
+        proxyAddress: proxyAddress,
+        implementationAddress: implementationAddress,
+        initData: initData,
+        rpcUrl: rpcUrl,
+        safeAddress: safeAddress,
+        useHardwareWallet: true,
+      },
+      false,
+    ]);
   });
 
   it("should throw an error if the arguments are not provided", () => {

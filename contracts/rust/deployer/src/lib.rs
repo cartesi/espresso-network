@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     io::Write,
+    path::PathBuf,
     process::{Command, Stdio},
 };
 
@@ -517,7 +518,9 @@ pub async fn upgrade_light_client_v2_multisig_owner(
     epoch_start_block: u64,
     rpc_url: String,
     multisig_address: Address,
+    dry_run: Option<bool>,
 ) -> Result<(String, bool)> {
+    let dry_run = dry_run.unwrap_or(false);
     match contracts.address(Contract::LightClientProxy) {
         // check if proxy already exists
         None => Err(anyhow!("LightClientProxy not found, can't upgrade")),
@@ -593,6 +596,7 @@ pub async fn upgrade_light_client_v2_multisig_owner(
                 init_data.to_string(),
                 rpc_url,
                 owner_addr,
+                Some(dry_run),
             )
             .await;
 
@@ -832,8 +836,21 @@ pub async fn call_upgrade_proxy_script(
     init_data: String,
     rpc_url: String,
     safe_address: Address,
+    dry_run: Option<bool>,
 ) -> Result<(String, bool), anyhow::Error> {
-    let output = Command::new("multisig-upgrade-entrypoint")
+    let dry_run = dry_run.unwrap_or(false);
+    tracing::info!("Dry run: {}", dry_run);
+
+    let script_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../../scripts/multisig-upgrade-entrypoint");
+
+    assert!(
+        script_path.exists(),
+        "Script not found at {:?}",
+        script_path
+    );
+
+    let output = Command::new(script_path)
         .arg("--from-rust")
         .arg("--proxy")
         .arg(proxy_addr.to_string())
@@ -845,6 +862,8 @@ pub async fn call_upgrade_proxy_script(
         .arg(rpc_url)
         .arg("--safe-address")
         .arg(safe_address.to_string())
+        .arg("--dry-run")
+        .arg(dry_run.to_string())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output();
@@ -1209,24 +1228,33 @@ mod tests {
     // SAFE_MULTISIG_ADDRESS=0x0000000000000000000000000000000000000000
     // SAFE_ORCHESTRATOR_PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000000
     // Ensure that the private key has proposal rights on the Safe Multisig Wallet and the SDK supports the network
-    async fn test_upgrade_light_client_to_v2_multisig_owner_helper(is_mock: bool) -> Result<()> {
-        dotenvy::from_filename_override(".env.deployer.rs.test").ok();
+    async fn test_upgrade_light_client_to_v2_multisig_owner_helper(
+        is_mock: bool,
+        dry_run: bool,
+    ) -> Result<()> {
+        assert!(
+            std::path::Path::new("../../../scripts/multisig-upgrade-entrypoint").exists(),
+            "Script not found!"
+        );
         let mut sepolia_rpc_url = String::new();
         let mut multisig_admin = Address::ZERO;
+        if !dry_run {
+            dotenvy::from_filename_override(".env.deployer.rs.test").ok();
 
-        for item in dotenvy::from_filename_iter(".env.deployer.rs.test")
-            .expect("Failed to read .env.deployer.rs.test")
-        {
-            let (key, val) = item?;
-            if key == "RPC_URL" {
-                sepolia_rpc_url = val.to_string();
-            } else if key == "SAFE_MULTISIG_ADDRESS" {
-                multisig_admin = val.parse::<Address>()?;
+            for item in dotenvy::from_filename_iter(".env.deployer.rs.test")
+                .expect("Failed to read .env.deployer.rs.test")
+            {
+                let (key, val) = item?;
+                if key == "RPC_URL" {
+                    sepolia_rpc_url = val.to_string();
+                } else if key == "SAFE_MULTISIG_ADDRESS" {
+                    multisig_admin = val.parse::<Address>()?;
+                }
             }
-        }
 
-        if sepolia_rpc_url.is_empty() || multisig_admin.is_zero() {
-            panic!("RPC_URL and SAFE_MULTISIG_ADDRESS must be set in .env.deployer.rs.test");
+            if sepolia_rpc_url.is_empty() || multisig_admin.is_zero() {
+                panic!("RPC_URL and SAFE_MULTISIG_ADDRESS must be set in .env.deployer.rs.test");
+            }
         }
 
         let provider = ProviderBuilder::new().on_anvil_with_wallet();
@@ -1273,9 +1301,10 @@ mod tests {
             epoch_start_block,
             sepolia_rpc_url,
             multisig_admin,
+            Some(dry_run),
         )
         .await?;
-        println!(
+        tracing::info!(
             "Result when trying to upgrade LightClientProxy via the multisig wallet: {:?}",
             result
         );
@@ -1288,9 +1317,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_upgrade_light_client_to_v2_multisig_owner_dry_run() -> Result<()> {
+        test_upgrade_light_client_to_v2_multisig_owner_helper(false, true).await
+    }
+
+    #[tokio::test]
     #[ignore]
-    async fn test_upgrade_light_client_to_v2_multisig_owner() -> Result<()> {
-        test_upgrade_light_client_to_v2_multisig_owner_helper(false).await
+    async fn test_upgrade_light_client_to_v2_multisig_owner_real_run() -> Result<()> {
+        test_upgrade_light_client_to_v2_multisig_owner_helper(false, false).await
     }
 
     #[tokio::test]
