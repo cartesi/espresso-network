@@ -1,4 +1,4 @@
 CREATE TABLE drb (
     epoch BIGINT PRIMARY KEY,
-    drb_input BLOB
+    drb_input BYTEA
 );
