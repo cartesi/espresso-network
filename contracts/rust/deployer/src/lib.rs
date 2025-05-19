@@ -588,11 +588,11 @@ pub async fn upgrade_light_client_v2_multisig_owner(
             tracing::info!("Init Data to be signed.\n Function: initializeV2\n Arguments:\n blocks_per_epoch: {:?}\n epoch_start_block: {:?}", blocks_per_epoch, epoch_start_block);
             // invoke upgrade on proxy via the safeSDK
             let result = call_upgrade_proxy_script(
-                proxy_addr.to_string(),
-                lcv2_addr.to_string(),
+                proxy_addr,
+                lcv2_addr,
                 init_data.to_string(),
                 rpc_url,
-                owner_addr.to_string(),
+                owner_addr,
             )
             .await;
 
@@ -827,24 +827,24 @@ pub async fn is_contract(provider: impl Provider, address: Address) -> Result<bo
 
 /// this depends on upgradeProxy.ts which has to be ran on a real network supported by the safeSDK
 pub async fn call_upgrade_proxy_script(
-    proxy_addr: String,
-    new_impl_addr: String,
+    proxy_addr: Address,
+    new_impl_addr: Address,
     init_data: String,
     rpc_url: String,
-    safe_address: String,
+    safe_address: Address,
 ) -> Result<(String, bool), anyhow::Error> {
     let output = Command::new("multisig-upgrade-entrypoint")
         .arg("--from-rust")
         .arg("--proxy")
-        .arg(proxy_addr)
+        .arg(proxy_addr.to_string())
         .arg("--impl")
-        .arg(new_impl_addr)
+        .arg(new_impl_addr.to_string())
         .arg("--init-data")
         .arg(init_data)
         .arg("--rpc-url")
         .arg(rpc_url)
         .arg("--safe-address")
-        .arg(safe_address)
+        .arg(safe_address.to_string())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .output();

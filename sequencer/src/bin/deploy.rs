@@ -99,10 +99,18 @@ struct Options {
     #[clap(long, default_value = "false")]
     deploy_light_client_v1: bool,
     /// Option to upgrade to LightClient V2
-    #[clap(long, default_value = "false")]
+    #[clap(
+        long,
+        default_value = "false",
+        conflicts_with = "upgrade_light_client_v2_multisig_owner"
+    )]
     upgrade_light_client_v2: bool,
     /// Option to upgrade to LightClient V2 with multisig ownership
-    #[clap(long, default_value = "false")]
+    #[clap(
+        long,
+        default_value = "false",
+        conflicts_with = "upgrade_light_client_v2"
+    )]
     upgrade_light_client_v2_multisig_owner: bool,
     #[clap(long, default_value = "false")]
     deploy_esp_token: bool,
@@ -162,19 +170,9 @@ struct Options {
     logging: logging::Config,
 }
 
-impl Options {
-    fn validate_upgrade_choice(&self) -> anyhow::Result<()> {
-        if self.upgrade_light_client_v2 && self.upgrade_light_client_v2_multisig_owner {
-            anyhow::bail!("Cannot use both --upgrade-light-client-v2 and --upgrade-light-client-v2-multisig-owner at the same time");
-        }
-        Ok(())
-    }
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let opt = Options::parse();
-    opt.validate_upgrade_choice()?;
     opt.logging.init();
 
     let mut contracts = Contracts::from(opt.contracts);
