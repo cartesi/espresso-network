@@ -21,6 +21,7 @@ use hotshot_types::{
     event::Event,
     message::UpgradeLock,
     simple_vote::HasEpoch,
+    stake_table::StakeTableEntries,
     traits::{
         block_contents::BlockHeader,
         node_implementation::{ConsensusTime, NodeImplementation, NodeType, Versions},
@@ -29,7 +30,6 @@ use hotshot_types::{
     },
     utils::{is_epoch_root, is_epoch_transition, is_last_block, option_epoch_from_block_number},
     vote::{Certificate, HasViewNumber},
-    StakeTableEntries,
 };
 use hotshot_utils::anytrace::*;
 use tokio::task::JoinHandle;
@@ -37,7 +37,7 @@ use tracing::instrument;
 
 use crate::{
     events::HotShotEvent,
-    helpers::{broadcast_event, wait_for_second_vid_share},
+    helpers::{broadcast_event, broadcast_view_change, wait_for_second_vid_share},
     quorum_vote::handlers::{handle_quorum_proposal_validated, submit_vote, update_shared_state},
 };
 
@@ -99,11 +99,11 @@ pub struct VoteDependencyHandle<TYPES: NodeType, I: NodeImplementation<TYPES>, V
     /// Signature key for light client state
     pub state_private_key: <TYPES::StateSignatureKey as StateSignatureKey>::StatePrivateKey,
 
-    /// View timeout from config.
-    pub timeout: u64,
+    /// First view in which epoch version takes effect
+    pub first_epoch: Option<(TYPES::View, TYPES::Epoch)>,
 
-    /// The time this view started
-    pub view_start_time: Instant,
+    /// Stake table capacity for light client use
+    pub stake_table_capacity: usize,
 }
 
 impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> HandleDepOutput
@@ -269,8 +269,6 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
                     &vid_share,
                     &da_cert,
                     &self.consensus,
-                    self.timeout,
-                    self.view_start_time,
                     &self.receiver.activate_cloned(),
                 )
                 .await
@@ -355,14 +353,11 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
             // We're voting for the proposal that will probably form the eQC. We don't want to change
             // the view here because we will probably change it when we form the eQC.
             // The main reason is to handle view change event only once in the transaction task.
-            tracing::trace!(
-                "Sending ViewChange for view {} and epoch {:?}",
-                leaf.view_number() + 1,
-                cur_epoch
-            );
-            broadcast_event(
-                Arc::new(HotShotEvent::ViewChange(leaf.view_number() + 1, cur_epoch)),
+            broadcast_view_change(
                 &self.sender,
+                leaf.view_number() + 1,
+                cur_epoch,
+                self.first_epoch,
             )
             .await;
         }
@@ -382,6 +377,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES> + 'static, V: Versions> Handl
                 is_vote_epoch_root,
                 self.epoch_height,
                 &self.state_private_key,
+                self.stake_table_capacity,
             )
             .await
         )
@@ -437,8 +433,11 @@ pub struct QuorumVoteTaskState<TYPES: NodeType, I: NodeImplementation<TYPES>, V:
     /// Signature key for light client state
     pub state_private_key: <TYPES::StateSignatureKey as StateSignatureKey>::StatePrivateKey,
 
-    /// View timeout from config.
-    pub timeout: u64,
+    /// First view in which epoch version takes effect
+    pub first_epoch: Option<(TYPES::View, TYPES::Epoch)>,
+
+    /// Stake table capacity for light client use
+    pub stake_table_capacity: usize,
 }
 
 impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskState<TYPES, I, V> {
@@ -545,8 +544,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
                 epoch_height: self.epoch_height,
                 consensus_metrics: Arc::clone(&self.consensus_metrics),
                 state_private_key: self.state_private_key.clone(),
-                timeout: self.timeout,
-                view_start_time: Instant::now(),
+                first_epoch: self.first_epoch,
+                stake_table_capacity: self.stake_table_capacity,
             },
         );
         self.vote_dependencies
@@ -701,7 +700,8 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
                 );
 
                 let total_weight = vid_total_weight::<TYPES>(
-                    self.membership
+                    &self
+                        .membership
                         .membership_for_epoch(target_epoch)
                         .await?
                         .stake_table()
@@ -755,6 +755,9 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> QuorumVoteTaskS
                     task.abort();
                 }
                 self.vote_dependencies = current_tasks;
+            },
+            HotShotEvent::SetFirstEpoch(view, epoch) => {
+                self.first_epoch = Some((*view, *epoch));
             },
             _ => {},
         }

@@ -9,7 +9,6 @@ edition = { workspace = true }
 default = ["fee", "pos"]
 fee = []
 pos = []
-marketplace = []
 
 [dependencies]
 alloy = { workspace = true }
@@ -21,10 +20,10 @@ committable = { workspace = true }
 espresso-types = { path = "../types" }
 futures = { workspace = true }
 hotshot = { workspace = true }
-hotshot-example-types = { workspace = true }
 hotshot-builder-api = { workspace = true }
 hotshot-builder-core = { workspace = true }
 hotshot-events-service = { workspace = true }
+hotshot-example-types = { workspace = true }
 hotshot-state-prover = { workspace = true }
 hotshot-types = { workspace = true }
 marketplace-builder-shared = { workspace = true }

@@ -4,7 +4,9 @@ use anyhow::Context;
 use async_broadcast::broadcast;
 use async_lock::{Mutex, RwLock};
 use espresso_types::{
-    eth_signature_key::EthKeyPair, v0_1::NoStorage, v0_3::StakeTableFetcher, v0_99::ChainConfig,
+    eth_signature_key::EthKeyPair,
+    v0_1::NoStorage,
+    v0_3::{ChainConfig, StakeTableFetcher},
     EpochCommittees, FeeAmount, NodeState, Payload, SeqTypes, ValidatedState,
 };
 use hotshot::traits::BlockPayload;
@@ -15,7 +17,6 @@ use hotshot_builder_core::{
         ReceivedTransaction,
     },
 };
-use hotshot_example_types::storage_types::TestStorage;
 use hotshot_types::{
     data::{fake_commitment, vid_commitment, ViewNumber},
     epoch_membership::EpochMembershipCoordinator,
@@ -61,7 +62,7 @@ pub fn build_instance_state<V: Versions>(
         l1_client.clone(),
         chain_config,
     );
-    let storage = TestStorage::default();
+
     let coordinator = EpochMembershipCoordinator::new(
         Arc::new(RwLock::new(EpochCommittees::new_stake(
             vec![],
@@ -69,7 +70,7 @@ pub fn build_instance_state<V: Versions>(
             fetcher,
         ))),
         100,
-        &storage,
+        &Arc::new(sequencer::persistence::no_storage::NoStorage),
     );
 
     NodeState::new(
@@ -248,7 +249,7 @@ mod test {
             test_helpers::{TestNetwork, TestNetworkConfigBuilder},
             Options,
         },
-        persistence::{self},
+        persistence,
         testing::TestConfigBuilder,
     };
     use sequencer_utils::test_utils::setup_test;

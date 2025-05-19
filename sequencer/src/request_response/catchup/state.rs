@@ -5,7 +5,7 @@ use committable::{Commitment, Committable};
 use espresso_types::{
     traits::{SequencerPersistence, StateCatchup},
     v0_1::{RewardAccount, RewardAccountProof, RewardMerkleCommitment},
-    v0_99::ChainConfig,
+    v0_3::ChainConfig,
     BackoffParams, BlockMerkleTree, EpochVersion, FeeAccount, FeeAccountProof, FeeMerkleCommitment,
     Leaf2, NodeState, PubKey, SeqTypes, SequencerVersions,
 };
@@ -13,9 +13,9 @@ use hotshot::traits::NodeImplementation;
 use hotshot_types::{
     data::ViewNumber,
     message::UpgradeLock,
+    stake_table::HSStakeTable,
     traits::{network::ConnectedNetwork, node_implementation::Versions},
     utils::verify_leaf_chain,
-    PeerConfig,
 };
 use jf_merkle_tree::{ForgetableMerkleTreeScheme, MerkleTreeScheme};
 use tokio::time::timeout;
@@ -37,7 +37,7 @@ impl<
         &self,
         _retry: usize,
         height: u64,
-        stake_table: Vec<PeerConfig<SeqTypes>>,
+        stake_table: HSStakeTable<SeqTypes>,
         success_threshold: U256,
     ) -> anyhow::Result<Leaf2> {
         // Timeout after a few batches
@@ -205,7 +205,7 @@ impl<
     async fn fetch_leaf(
         &self,
         height: u64,
-        stake_table: Vec<PeerConfig<SeqTypes>>,
+        stake_table: HSStakeTable<SeqTypes>,
         success_threshold: U256,
     ) -> anyhow::Result<Leaf2> {
         tracing::info!("Fetching leaf for height: {height}");
