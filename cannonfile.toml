@@ -1,0 +1,40 @@
+name = "espresso-network"
+version = "20250428-dev-node-decaf-pos"
+description = "Espresso Network"
+
+[deploy.PlonkVerifier]
+artifact = "PlonkVerifier"
+create2 = true
+ifExists = "continue"
+
+[deploy.PlonkVerifierV2]
+artifact = "PlonkVerifierV2"
+create2 = true
+ifExists = "continue"
+
+[deploy.FeeContract]
+artifact = "FeeContract"
+create2 = true
+ifExists = "continue"
+
+[deploy.EspToken]
+artifact = "EspToken"
+create2 = true
+ifExists = "continue"
+
+[deploy.StakeTable]
+artifact = "StakeTable"
+create2 = true
+ifExists = "continue"
+
+[deploy.LightClient]
+artifact = "LightClient"
+libraries.PlonkVerifier = "<%= contracts.PlonkVerifier.address %>"
+create2 = true
+ifExists = "continue"
+
+[deploy.LightClientV2]
+artifact = "LightClientV2"
+libraries.PlonkVerifierV2 = "<%= contracts.PlonkVerifierV2.address %>"
+create2 = true
+ifExists = "continue"
