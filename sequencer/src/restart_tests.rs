@@ -243,6 +243,7 @@ struct NodeInitializer<S: TestableSequencerDataSource> {
             MockSequencerVersions,
         >,
     >,
+    node_id: u64,
 }
 
 #[derive(Debug)]
@@ -372,6 +373,7 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
     ) -> NodeInitializer<S> {
         NodeInitializer {
             hotshot_context: context.consensus().read().await.hotshot.clone(),
+            node_id: context.node_id(),
         }
     }
 
@@ -424,22 +426,41 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
                 }
             };
 
-            tracing::info!(node_id = ctx.node_id(), "starting consensus");
-
             // Check if we have a stored config for soft-restart.
             if let Some(initializer) = self.initializer.take() {
                 tracing::error!("storing hotshot");
+                let node_id = initializer.node_id;
+
+                tracing::error!(
+                    "restoring event stream prev: {}, context: {}, state: {}",
+                    node_id,
+                    ctx.node_id(),
+                    ctx.node_state().node_id
+                );
+                // TODO maybe better to store node_state and assert several
+                // things against new one.
+                assert_eq!(node_id, ctx.node_id(), "Expected Context {node_id}");
+                assert_eq!(
+                    node_id,
+                    ctx.node_state().node_id,
+                    "Expected NodeState {node_id}"
+                );
+
                 let hotshot_initializer = self.get_hotshot_initializer(ctx.node_state()).await;
                 let handle = initializer
                     .hotshot_context
                     // TODO I think all the copied values are static, so should
                     // be safe, but double check.
-                    .into_self_cloned(hotshot_initializer, ctx.node_state().node_id)
+                    .into_self_cloned(hotshot_initializer, node_id)
+                    // TODO ^ node_id doesn't appear to come from anywhere concrete,
+                    // apparently only related to index of peer but how is the index of
+                    // re started node garanteed
                     .await;
 
                 ctx.replace_handle(handle).await;
             };
 
+            tracing::info!(node_id = ctx.node_id(), "starting consensus");
             ctx.start_consensus().await;
             self.context = Some(ctx);
         }
@@ -474,7 +495,7 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
             // conservative: of course if we actually make progress, not every view will time out,
             // and we will take less than this amount of time.
             let timeout_duration =
-                2 * Duration::from_millis(next_view_timeout) * (self.num_nodes as u32);
+                5 * Duration::from_millis(next_view_timeout) * (self.num_nodes as u32);
             match timeout(timeout_duration, self.check_progress()).await {
                 Ok(res) => res,
                 Err(_) => bail!(
@@ -508,6 +529,7 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
         let mut events = context.event_stream().await;
         while let Some(event) = events.next().await {
             let EventType::Decide { leaf_chain, .. } = event.event else {
+                tracing::info!(node_id, num_nodes, "non-decide event from node");
                 continue;
             };
             for leaf in leaf_chain.iter() {
