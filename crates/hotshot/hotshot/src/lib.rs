@@ -406,7 +406,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
         &self,
         initializer: HotShotInitializer<TYPES>,
         node_id: u64,
-    ) -> SystemContextHandle<TYPES, I, V> {
+    ) -> Arc<Self> {
         let Self {
             public_key,
             private_key,
@@ -433,7 +433,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
         // from the module and pass it into this method.
         let metrics = ConsensusMetricsValue::new(&NoMetrics);
 
-        let hotshot = Self::new_from_channels(
+        Self::new_from_channels(
             public_key,
             private_key,
             state_private_key,
@@ -448,9 +448,7 @@ impl<TYPES: NodeType, I: NodeImplementation<TYPES>, V: Versions> SystemContext<T
             (internal_sender, internal_reciever.activate()), // I think we don't need this one anyway
             (external_sender, external_reciever.activate()), // TODO probably not the correct place to activate
         )
-        .await;
-
-        Arc::clone(&hotshot).run_tasks().await
+        .await
     }
 
     /// "Starts" consensus by sending a `Qc2Formed`, `ViewChange` events

@@ -62,7 +62,7 @@ async fn test_restart_helper(network: (usize, usize), restart: (usize, usize), c
     setup_test();
 
     let mut network = TestNetwork::new(network.0, network.1, cdn).await;
-    network.start_event_task().await;
+    // network.start_event_task().await;
 
     // Let the network get going.
     network.check_progress().await;
@@ -428,7 +428,7 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
 
             // Check if we have a stored config for soft-restart.
             if let Some(initializer) = self.initializer.take() {
-                tracing::error!("storing hotshot");
+                tracing::error!("restoring hotshot");
                 let node_id = initializer.node_id;
 
                 tracing::error!(
@@ -452,9 +452,6 @@ impl<S: TestableSequencerDataSource> TestNode<S> {
                     // TODO I think all the copied values are static, so should
                     // be safe, but double check.
                     .into_self_cloned(hotshot_initializer, node_id)
-                    // TODO ^ node_id doesn't appear to come from anywhere concrete,
-                    // apparently only related to index of peer but how is the index of
-                    // re started node garanteed
                     .await;
 
                 ctx.replace_handle(handle).await;
