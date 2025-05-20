@@ -25,6 +25,3 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { workspace = true }
 tagged-base64 = { workspace = true }
-
-# https://tikv.github.io/doc/openssl/index.html
-openssl = { version = "0.10", features = ["vendored"] }
