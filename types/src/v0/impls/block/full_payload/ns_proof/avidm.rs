@@ -1,6 +1,9 @@
 //! This module contains the namespace proof implementation for the new AvidM scheme.
 
-use hotshot_types::{data::VidCommitment, vid::avidm::AvidMCommon};
+use hotshot_types::{
+    data::VidCommitment,
+    vid::avidm::{AvidMCommon, AvidMShare},
+};
 use vid::avid_m::namespaced::NsAvidMScheme;
 
 use crate::{
@@ -65,7 +68,11 @@ impl AvidMNsProof {
 }
 
 impl AvidMNsProofV1 {
-    pub fn new(payload: &Payload, index: &NsIndex, common: &AvidMCommon) -> Option<AvidMNsProofV1> {
+    pub fn new_correct_encoding(
+        payload: &Payload,
+        index: &NsIndex,
+        common: &AvidMCommon,
+    ) -> Option<AvidMNsProofV1> {
         let payload_byte_len = payload.byte_len();
         let index = index.0;
         let ns_table = payload.ns_table();
@@ -86,6 +93,51 @@ impl AvidMNsProofV1 {
                 Ok(proof) => Some(AvidMNsProofV1::CorrectEncoding(proof)),
                 Err(e) => {
                     tracing::error!("error generating namespace proof: {:?}", e);
+                    None
+                },
+            }
+        }
+    }
+
+    pub fn new_incorrect_encoding(
+        shares: &[AvidMShare],
+        ns_table: &NsTable,
+        ns_index: &NsIndex,
+        commit: &VidCommitment,
+        common: &AvidMCommon,
+    ) -> Option<AvidMNsProofV1> {
+        if shares.is_empty() {
+            tracing::error!("Error generating incorrect encoding proof: no shares provided");
+            return None;
+        }
+        let VidCommitment::V1(commit) = commit else {
+            tracing::error!("Error generating incorrect encoding proof: invalid vid commitment");
+            return None;
+        };
+        let payload_byte_len = crate::PayloadByteLen(shares[0].payload_byte_len());
+        let ns_index = ns_index.0;
+        let ns_table = ns_table
+            .iter()
+            .map(|index| ns_table.ns_range(&index, &payload_byte_len).0)
+            .collect::<Vec<_>>();
+
+        if ns_index >= ns_table.len() {
+            tracing::warn!("ns_index {:?} out of bounds", ns_index);
+            return None; // error: index out of bounds
+        }
+
+        if ns_table[ns_index].is_empty() {
+            None
+        } else {
+            match NsAvidMScheme::proof_of_incorrect_encoding_for_namespace(
+                common, ns_index, commit, shares,
+            ) {
+                Ok(proof) => Some(AvidMNsProofV1::IncorrectEncoding(proof)),
+                Err(e) => {
+                    tracing::error!(
+                        "error generating incorrect encoding proof for namespace index {ns_index}: {:?}",
+                        e
+                    );
                     None
                 },
             }

@@ -1,5 +1,5 @@
 use hotshot_query_service::VidCommon;
-use hotshot_types::data::VidCommitment;
+use hotshot_types::{data::VidCommitment, vid::avidm::AvidMShare};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -39,7 +39,35 @@ impl NsProof {
         }
     }
 
-    // pub fn new_bad_encoding() -> Option<NsProof> {}
+    pub fn v11_new_with_correct_encoding(
+        payload: &Payload,
+        index: &NsIndex,
+        common: &VidCommon,
+    ) -> Option<NsProof> {
+        match common {
+            VidCommon::V1(common) => Some(NsProof::V1_1(AvidMNsProofV1::new_correct_encoding(
+                payload, index, common,
+            )?)),
+            _ => None,
+        }
+    }
+
+    pub fn v11_new_with_incorrect_encoding(
+        shares: &[AvidMShare],
+        ns_table: &NsTable,
+        index: &NsIndex,
+        commit: &VidCommitment,
+        common: &VidCommon,
+    ) -> Option<NsProof> {
+        match common {
+            VidCommon::V1(common) => Some(NsProof::V1_1(AvidMNsProofV1::new_incorrect_encoding(
+                shares, ns_table, index, commit, common,
+            )?)),
+            _ => None,
+        }
+    }
+
+    // pub fn v11_new_with_incorrect_encoding(
 
     pub fn verify(
         &self,

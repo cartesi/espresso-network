@@ -207,16 +207,23 @@ where
                     )?;
 
                     if let Some(ns_index) = block.payload().ns_table().find_ns_id(&ns_id) {
-                        let proof = NsProof::new(block.payload(), &ns_index, common.common())
-                            .context(CustomSnafu {
-                                message: format!("failed to make proof for namespace {ns_id}"),
-                                status: StatusCode::NOT_FOUND,
-                            })?;
-
-                        Ok(espresso_types::NamespaceProofQueryData {
-                            transactions: proof.export_all_txs(&ns_id),
-                            proof: Some(proof),
-                        })
+                        match NsProof::v11_new_with_correct_encoding(
+                            block.payload(),
+                            &ns_index,
+                            common.common(),
+                        ) {
+                            Some(proof) => Ok(espresso_types::NamespaceProofQueryData {
+                                transactions: proof.export_all_txs(&ns_id),
+                                proof: Some(proof),
+                            }),
+                            None => {
+                                // incorrect encoding proof
+                                Err(availability::Error::Custom {
+                                    message: "Incorrect encoding not yet supported".to_string(),
+                                    status: StatusCode::NOT_FOUND,
+                                })
+                            },
+                        }
                     } else {
                         // ns_id not found in ns_table
                         Ok(espresso_types::NamespaceProofQueryData {
