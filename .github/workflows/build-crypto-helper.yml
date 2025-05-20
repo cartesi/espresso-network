@@ -59,8 +59,7 @@ jobs:
           if [ "$(uname -s)" == "Darwin" ]; then
             cp ./target/${{ matrix.target }}/release/libespresso_crypto_helper.dylib target/lib/libespresso_crypto_helper-${{ matrix.target }}.dylib
             shasum -a 256 target/lib/libespresso_crypto_helper-${{ matrix.target }}.dylib | awk '{print $1}' > target/lib/libespresso_crypto_helper-${{ matrix.target }}.dylib.sha256
-          fi
-          if [ "$(uname -s)" != "Darwin" ]; then
+          else
             cp ./target/${{ matrix.target }}/release/libespresso_crypto_helper.so target/lib/libespresso_crypto_helper-${{ matrix.target }}.so
             shasum -a 256 target/lib/libespresso_crypto_helper-${{ matrix.target }}.so | awk '{print $1}' > target/lib/libespresso_crypto_helper-${{ matrix.target }}.so.sha256
           fi
