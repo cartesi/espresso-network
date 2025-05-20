@@ -39,9 +39,10 @@ pub use crate::bindings::{
     lightclientv2mock::{self, LightClientV2Mock},
     plonkverifier::PlonkVerifier,
     plonkverifierv2::PlonkVerifierV2,
-    staketablev2 as staketable,
+    staketable::StakeTable,
     staketablev2::{
-        EdOnBN254::EdOnBN254Point as EdOnBN254PointSol, StakeTable, BN254::G2Point as G2PointSol,
+        self, EdOnBN254::EdOnBN254Point as EdOnBN254PointSol, StakeTableV2,
+        BN254::G2Point as G2PointSol,
     },
     timelock::Timelock,
 };
@@ -173,7 +174,7 @@ impl From<LightClientV2Mock::votingStakeTableStateReturn> for StakeTableStateSol
     }
 }
 
-impl From<G1PointSol> for staketable::BN254::G1Point {
+impl From<G1PointSol> for staketablev2::BN254::G1Point {
     fn from(v: G1PointSol) -> Self {
         unsafe { std::mem::transmute(v) }
     }
@@ -182,13 +183,14 @@ impl From<G1PointSol> for staketable::BN254::G1Point {
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use self::{
-    staketable::{EdOnBN254::EdOnBN254Point, BN254::G2Point},
+    staketablev2::{EdOnBN254::EdOnBN254Point, BN254::G2Point},
     StakeTableV2::{
-        ConsensusKeysUpdated, Delegated, Undelegated, ValidatorExit, ValidatorRegistered,
+        ConsensusKeysUpdated, ConsensusKeysUpdatedV2, Delegated, Undelegated, ValidatorExit,
+        ValidatorRegistered, ValidatorRegisteredV2,
     },
 };
 
-impl PartialEq for staketable {
+impl PartialEq for ValidatorRegistered {
     fn eq(&self, other: &Self) -> bool {
         self.account == other.account
             && self.blsVk == other.blsVk
@@ -197,11 +199,32 @@ impl PartialEq for staketable {
     }
 }
 
+impl PartialEq for ValidatorRegisteredV2 {
+    fn eq(&self, other: &Self) -> bool {
+        self.account == other.account
+            && self.blsVk == other.blsVk
+            && self.schnorrVk == other.schnorrVk
+            && self.commission == other.commission
+            && self.blsSig == other.blsSig
+            && self.schnorrSig == other.schnorrSig
+    }
+}
+
 impl PartialEq for ConsensusKeysUpdated {
     fn eq(&self, other: &Self) -> bool {
         self.account == other.account
             && self.blsVK == other.blsVK
             && self.schnorrVK == other.schnorrVK
+    }
+}
+
+impl PartialEq for ConsensusKeysUpdatedV2 {
+    fn eq(&self, other: &Self) -> bool {
+        self.account == other.account
+            && self.blsVK == other.blsVK
+            && self.schnorrVK == other.schnorrVK
+            && self.blsSig == other.blsSig
+            && self.schnorrSig == other.schnorrSig
     }
 }
 

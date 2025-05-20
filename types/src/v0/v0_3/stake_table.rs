@@ -4,8 +4,9 @@ use alloy::primitives::{Address, U256};
 use async_lock::Mutex;
 use derive_more::derive::{From, Into};
 use hotshot::types::{BLSPubKey, SignatureKey};
-use hotshot_contract_adapter::sol_types::StakeTable::{
-    ConsensusKeysUpdated, Delegated, Undelegated, ValidatorExit, ValidatorRegistered,
+use hotshot_contract_adapter::sol_types::StakeTableV2::{
+    ConsensusKeysUpdated, ConsensusKeysUpdatedV2, Delegated, Undelegated, ValidatorExit,
+    ValidatorRegistered, ValidatorRegisteredV2,
 };
 use hotshot_types::{
     data::EpochNumber, light_client::StateVerKey, network::PeerConfigKeys, PeerConfig,

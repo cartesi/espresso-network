@@ -136,7 +136,7 @@ impl TestSystem {
             self.commission,
             self.deployer_address,
             self.bls_key_pair.clone(),
-            self.state_key_pair.ver_key(),
+            self.state_key_pair.clone(),
         )
         .await?;
         assert!(receipt.status());

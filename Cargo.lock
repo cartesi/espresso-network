@@ -10391,6 +10391,7 @@ dependencies = [
  "anyhow",
  "ark-ec",
  "ark-ed-on-bn254",
+ "ark-serialize 0.4.2",
  "clap 4.5.37",
  "clap-serde",
  "clap-serde-derive",

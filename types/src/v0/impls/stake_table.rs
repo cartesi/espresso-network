@@ -14,8 +14,9 @@ use async_lock::{Mutex, RwLock};
 use committable::Committable;
 use futures::stream::{self, StreamExt};
 use hotshot::types::{BLSPubKey, SchnorrPubKey, SignatureKey as _};
-use hotshot_contract_adapter::sol_types::StakeTable::{
-    self, ConsensusKeysUpdated, Delegated, Undelegated, ValidatorExit, ValidatorRegistered,
+use hotshot_contract_adapter::sol_types::StakeTableV2::{
+    self, ConsensusKeysUpdated, ConsensusKeysUpdatedV2, Delegated, Undelegated, ValidatorExit,
+    ValidatorRegistered, ValidatorRegisteredV2,
 };
 use hotshot_types::{
     data::{vid_disperse::VID_TARGET_TOTAL_STAKE, EpochNumber},
@@ -506,7 +507,7 @@ impl StakeTableFetcher {
         from_block: Option<u64>,
         to_block: u64,
     ) -> anyhow::Result<StakeTableEvents> {
-        let stake_table_contract = StakeTable::new(contract, l1_client.provider.clone());
+        let stake_table_contract = StakeTableV2::new(contract, l1_client.provider.clone());
 
         // get the block number when the contract was initialized
         // to avoid fetching events from block number 0

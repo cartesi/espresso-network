@@ -20,7 +20,7 @@ contract StakeTableV2 is StakeTable {
         EdOnBN254.EdOnBN254Point schnorrVk,
         uint16 commission,
         BN254.G1Point blsSig,
-        EdOnBN254.EdOnBN254Point schnorrSig
+        bytes schnorrSig
     );
 
     /// @notice A validator updates their consensus keys
@@ -30,7 +30,7 @@ contract StakeTableV2 is StakeTable {
         BN254.G2Point blsVK,
         EdOnBN254.EdOnBN254Point schnorrVK,
         BN254.G1Point blsSig,
-        EdOnBN254.EdOnBN254Point schnorrSig
+        bytes schnorrSig
     );
 
     /// @notice The exit escrow period is updated
@@ -66,7 +66,7 @@ contract StakeTableV2 is StakeTable {
         BN254.G2Point memory blsVK,
         EdOnBN254.EdOnBN254Point memory schnorrVK,
         BN254.G1Point memory blsSig,
-        EdOnBN254.EdOnBN254Point memory schnorrSig,
+        bytes memory schnorrSig,
         uint16 commission
     ) external virtual {
         address validator = msg.sender;
@@ -100,7 +100,7 @@ contract StakeTableV2 is StakeTable {
         BN254.G2Point memory blsVK,
         EdOnBN254.EdOnBN254Point memory schnorrVK,
         BN254.G1Point memory blsSig,
-        EdOnBN254.EdOnBN254Point memory schnorrSig
+        bytes memory schnorrSig
     ) external virtual {
         address validator = msg.sender;
 
