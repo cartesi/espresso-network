@@ -582,6 +582,17 @@ where
         ))
     };
 
+    // TODO parse genesis file into a concrete type and remove all the version
+    // generics up to this point. Note that the example uses tuples to represent
+    // the version for simplicity, but an enum would probably be better.
+
+    let seq_versions = match concrete_version {
+        (2, 3) => SequencerVersions::<FeeVersion, EpochVersion>::new(),
+        (2, _) => SequencerVersions::<FeeVersion, V0_0>::new(),
+        (3, _) => SequencerVersions::<EpochVersion, V0_0>::new(),
+        _ => SequencerVersions::default(),
+    };
+
     let mut ctx = SequencerContext::init(
         network_config,
         validator_config,
