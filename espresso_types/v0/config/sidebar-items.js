@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["PublicHotShotConfig","PublicNetworkConfig","PublicValidatorConfig"]};
+window.SIDEBAR_ITEMS = {"fn":["default_stake_table_capacity"],"struct":["PublicHotShotConfig","PublicNetworkConfig","PublicValidatorConfig"]};
