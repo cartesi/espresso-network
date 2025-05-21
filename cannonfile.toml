@@ -102,3 +102,4 @@ args = [
     "<%= contracts.LightClientV2.address %>",
     "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), pad(settings.lightClientBlocksPerEpoch), pad(settings.lightClientEpochStartBlock)]) %>"
 ]
+fromCall.func = "owner"
