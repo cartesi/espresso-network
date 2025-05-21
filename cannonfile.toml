@@ -9,51 +9,70 @@ tokenInitCalldata = "0x485cc955000000000000000000000000f39fd6e51aad88f6f4ce6ab88
 # FeeContract.initialize(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266)
 feeInitCalldata = "0xc4d66de8000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"
 
+# LightClient.initialize(genesisState, genesisStake, maxHistoryRetentionSeconds, admin)
+lightClientInitCalldata = "0x9baa3cc9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d2f00000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+
 [deploy.PlonkVerifier]
 artifact = "PlonkVerifier"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.PlonkVerifierV2]
 artifact = "PlonkVerifierV2"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.FeeContract]
 artifact = "FeeContract"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.EspToken]
 artifact = "EspToken"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.StakeTable]
 artifact = "StakeTable"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.LightClient]
-artifact = "LightClient"
+artifact = "LightClientMock"
 libraries.PlonkVerifier = "<%= contracts.PlonkVerifier.address %>"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.LightClientV2]
-artifact = "LightClientV2"
+artifact = "LightClientV2Mock"
 libraries.PlonkVerifierV2 = "<%= contracts.PlonkVerifierV2.address %>"
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.EspTokenProxy]
 artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
 args = ["<%= contracts.EspToken.address %>", "<%= settings.tokenInitCalldata %>"]
 create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
 
 [deploy.FeeContractProxy]
 artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
 args = ["<%= contracts.FeeContract.address %>", "<%= settings.feeInitCalldata %>"]
 create2 = true
+salt = "<%= zeroHash %>"
+ifExists = "continue"
+
+[deploy.LightClientProxy]
+artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
+args = ["<%= contracts.LightClient.address %>", "<%= settings.lightClientInitCalldata %>"]
+create2 = true
+salt = "<%= zeroHash %>"
 ifExists = "continue"
