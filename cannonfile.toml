@@ -14,6 +14,8 @@ lightClientGenesisStakeBlsKeyComm = "<%= toHex(640450882889525591689382750627584
 lightClientGenesisStakeSchnorrKeyComm = "<%= toHex(1280444752930177982791997254719680985905658247245505815722065969671227685044n) %>"
 lightClientGenesisStakeAmountComm = "<%= toHex(20800575916199869666564862039153542082238860599565034691999240975959073142491n) %>"
 lightClientStateHistoryRetentionPeriod = "<%= toHex(60*60*24*10) %>"
+lightClientBlocksPerEpoch = "<%= toHex(30) %>"
+lightClientEpochStartBlock = "<%= toHex(1) %>"
 lightClientOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
 [deploy.PlonkVerifier]
@@ -82,10 +84,17 @@ ifExists = "continue"
 
 [deploy.LightClientProxy]
 artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
-args= [
+args = [
     "<%= contracts.LightClient.address %>",
     "<%= concat([toFunctionSelector('initialize((uint64,uint64,uint256),(uint256,uint256,uint256,uint256),uint32,address)'), pad(settings.lightClientGenesisStateViewNum), pad(settings.lightClientGenesisStateBlockHeight), pad(settings.lightClientGenesisStateBlockCommRoot), pad(settings.lightClientGenesisStakeThreshold), pad(settings.lightClientGenesisStakeBlsKeyComm), pad(settings.lightClientGenesisStakeSchnorrKeyComm), pad(settings.lightClientGenesisStakeAmountComm), pad(settings.lightClientStateHistoryRetentionPeriod), pad(settings.lightClientOwner)]) %>",
 ]
 create2 = true
 salt = "<%= zeroHash %>"
 ifExists = "continue"
+
+[invoke.UpgradeLightClientV2]
+target = "LightClientProxy"
+func = "upgradeToAndCall"
+args = [
+    "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), pad(settings.lightClientBlocksPerEpoch), pad(settings.lightClientEpochStartBlock)]) %>"
+]
