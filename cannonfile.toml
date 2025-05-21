@@ -62,6 +62,7 @@ ifExists = "continue"
 
 [deploy.EspTokenProxy]
 artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
+abiOf = ["EspToken"]
 args = [
     "<%= contracts.EspToken.address %>",
     "<%= concat([toFunctionSelector('initialize(address,address)'), pad(settings.espTokenOwner), pad(settings.espTokenInitialGrantRecipient)]) %>",
@@ -72,6 +73,7 @@ ifExists = "continue"
 
 [deploy.FeeContractProxy]
 artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
+abiOf = ["FeeContract"]
 args = [
     "<%= contracts.FeeContract.address %>",
     "<%= concat([toFunctionSelector('initialize(address)'), pad(settings.feeContractMultiSig)]) %>",
@@ -82,7 +84,8 @@ ifExists = "continue"
 
 [deploy.LightClientProxy]
 artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
-args= [
+abiOf = ["LightClient"]
+args = [
     "<%= contracts.LightClient.address %>",
     "<%= concat([toFunctionSelector('initialize((uint64,uint64,uint256),(uint256,uint256,uint256,uint256),uint32,address)'), pad(settings.lightClientGenesisStateViewNum), pad(settings.lightClientGenesisStateBlockHeight), pad(settings.lightClientGenesisStateBlockCommRoot), pad(settings.lightClientGenesisStakeThreshold), pad(settings.lightClientGenesisStakeBlsKeyComm), pad(settings.lightClientGenesisStakeSchnorrKeyComm), pad(settings.lightClientGenesisStakeAmountComm), pad(settings.lightClientStateHistoryRetentionPeriod), pad(settings.lightClientOwner)]) %>",
 ]
