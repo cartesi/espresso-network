@@ -6,17 +6,17 @@ description = "Espresso Network"
 espTokenOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 espTokenInitialGrantRecipient = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 feeContractMultiSig = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-lightClientGenesisStateViewNum = "0"
-lightClientGenesisStateBlockHeight = "0"
-lightClientGenesisStateBlockCommRoot = "0"
-lightClientGenesisStakeThreshold = "1"
-lightClientGenesisStakeBlsKeyComm = "6404508828895255916893827506275841427382744721239775140745462753544601985440"
-lightClientGenesisStakeSchnorrKeyComm = "1280444752930177982791997254719680985905658247245505815722065969671227685044"
-lightClientGenesisStakeAmountComm = "20800575916199869666564862039153542082238860599565034691999240975959073142491"
-lightClientStateHistoryRetentionPeriod = "864000"
-lightClientBlocksPerEpoch = "30"
-lightClientEpochStartBlock = "1"
-lightClientOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+lcGenesisStateViewNum = "0"
+lcGenesisStateBlockHeight = "0"
+lcGenesisStateBlockCommRoot = "0"
+lcGenesisStakeThreshold = "1"
+lcGenesisStakeBlsKeyComm = "6404508828895255916893827506275841427382744721239775140745462753544601985440"
+lcGenesisStakeSchnorrKeyComm = "1280444752930177982791997254719680985905658247245505815722065969671227685044"
+lcGenesisStakeAmountComm = "20800575916199869666564862039153542082238860599565034691999240975959073142491"
+lcStateHistoryRetentionPeriod = "864000"
+lcBlocksPerEpoch = "30"
+lcEpochStartBlock = "1"
+lcOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 stakeTableOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 stakeTableExitEscrowPeriod = "300"
 validator0Address = "0x6f6c6d0e7A6Bb0898333aadaeB4C87368041c9D6"
@@ -115,7 +115,7 @@ artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
 abiOf = ["LightClient"]
 args = [
     "<%= contracts.LightClient.address %>",
-    "<%= concat([toFunctionSelector('initialize((uint64,uint64,uint256),(uint256,uint256,uint256,uint256),uint32,address)'), defaultAbiCoder.encode(['uint64', 'uint64', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint32', 'address'], [settings.lightClientGenesisStateViewNum, settings.lightClientGenesisStateBlockHeight, settings.lightClientGenesisStateBlockCommRoot, settings.lightClientGenesisStakeThreshold, settings.lightClientGenesisStakeBlsKeyComm, settings.lightClientGenesisStakeSchnorrKeyComm, settings.lightClientGenesisStakeAmountComm, settings.lightClientStateHistoryRetentionPeriod, settings.lightClientOwner])]) %>",
+    "<%= concat([toFunctionSelector('initialize((uint64,uint64,uint256),(uint256,uint256,uint256,uint256),uint32,address)'), defaultAbiCoder.encode(['uint64', 'uint64', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint32', 'address'], [settings.lcGenesisStateViewNum, settings.lcGenesisStateBlockHeight, settings.lcGenesisStateBlockCommRoot, settings.lcGenesisStakeThreshold, settings.lcGenesisStakeBlsKeyComm, settings.lcGenesisStakeSchnorrKeyComm, settings.lcGenesisStakeAmountComm, settings.lcStateHistoryRetentionPeriod, settings.lcOwner])]) %>",
 ]
 create2 = true
 salt = "<%= zeroHash %>"
@@ -126,7 +126,7 @@ target = "LightClientProxy"
 func = "upgradeToAndCall"
 args = [
     "<%= contracts.LightClientV2.address %>",
-    "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), defaultAbiCoder.encode(['uint64', 'uint64'], [settings.lightClientBlocksPerEpoch, settings.lightClientEpochStartBlock])]) %>",
+    "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), defaultAbiCoder.encode(['uint64', 'uint64'], [settings.lcBlocksPerEpoch, settings.lcEpochStartBlock])]) %>",
 ]
 fromCall.func = "owner"
 
