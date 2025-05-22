@@ -20,7 +20,29 @@ lightClientOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 stakeTableOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 stakeTableExitEscrowPeriod = "<%= toHex(300) %>"
 validator0Address = "0x6f6c6d0e7A6Bb0898333aadaeB4C87368041c9D6"
+validator0EspBalance = "1000000000000000000000"
+validator0BlsVkX0 = "13205734095737159582742966969626189244327067686926245595379016360214526102381"
+validator0BlsVkX1 = "5948097197644355275884713835862355164412870456787471579648006490514401264962"
+validator0BlsVkY0 = "16830162360656893353695217754214812572692852607033375348711312477699351387781"
+validator0BlsVkY1 = "6422860073385367368093083745379964965643884784314002583281212299216183368459"
+validator0SchnorrVkX = "14169524201008310355610502881174889702398264130974627995931344265937718319764"
+validator0SchnorrVkY = "4294555762610431955131355460573756216513802256460686662788110993750656519599"
+validator0BlsSigX = "5379732802143485906807571343186017047701751927631328897646841023211650029483"
+validator0BlsSigY = "7887283733806703124945893967747744265158748504624989515318230393127221545941"
+validator0Comission = "100"
+validator0DelegateAmount = "100000000000000000000"
 validator1Address = "0xD208510A88Ed64FE278dC04d331901fD8aD99434"
+validator1EspBalance = "1000000000000000000000"
+validator1BlsVkX0 = "18003221838645820330863142302427037276175815651977449441358203556278229742819"
+validator1BlsVkX1 = "21728271165942270025002040767610283478565197312749221935580742378883837034343"
+validator1BlsVkY0 = "2498710058195674129665937554150299979999903899040374800133061898896297397189"
+validator1BlsVkY1 = "2084878412368613982142715914578367508141059496304320731418449909466124287453"
+validator1SchnorrVkX = "19226185941697410464760546160119894991774941981376228553668909756973853049001"
+validator1SchnorrVkY = "17023442620524102968461962940508762560723465839305393847098126605368727487582"
+validator1BlsSigX = "4747434723966699445421591289470792538661690422857319657305251614808798134669"
+validator1BlsSigY = "11186016598628722738324204677850444532575460626426367110756665617582592346704"
+validator1Comission = "110"
+validator1DelegateAmount = "200000000000000000000"
 
 [deploy.PlonkVerifier]
 artifact = "PlonkVerifier"
@@ -124,7 +146,7 @@ target = "EspTokenProxy"
 func = "transfer"
 args = [
     "<%= settings.validator0Address %>",
-    "1000000000000000000000"
+    "<%= settings.validator0EspBalance %>"
 ]
 fromCall.func = "owner"
 
@@ -133,7 +155,7 @@ target = "EspTokenProxy"
 func = "approve"
 args = [
     "<%= contracts.StakeTableProxy.address %>",
-    "1000000000000000000000"
+    "<%= settings.validator0DelegateAmount %>"
 ]
 from = "<%= settings.validator0Address %>"
 
@@ -141,10 +163,21 @@ from = "<%= settings.validator0Address %>"
 target = "StakeTableProxy"
 func = "registerValidator"
 args = [
-    "<%= defaultAbiCoder.encode(['uint256','uint256','uint256','uint256'],[13205734095737159582742966969626189244327067686926245595379016360214526102381,5948097197644355275884713835862355164412870456787471579648006490514401264962,16830162360656893353695217754214812572692852607033375348711312477699351387781,6422860073385367368093083745379964965643884784314002583281212299216183368459]) %>",
-    "<%= defaultAbiCoder.encode(['uint256','uint256'],[14169524201008310355610502881174889702398264130974627995931344265937718319764,4294555762610431955131355460573756216513802256460686662788110993750656519599]) %>",
-    "<%= defaultAbiCoder.encode(['uint256','uint256'],[5379732802143485906807571343186017047701751927631328897646841023211650029483,7887283733806703124945893967747744265158748504624989515318230393127221545941]) %>",
-    "100"
+    [
+        "<%= settings.validator0BlsVkX0 %>",
+        "<%= settings.validator0BlsVkX1 %>",
+        "<%= settings.validator0BlsVkY0 %>",
+        "<%= settings.validator0BlsVkY1 %>",
+    ],
+    [
+        "<%= settings.validator0SchnorrVkX %>",
+        "<%= settings.validator0SchnorrVkY %>",
+    ],
+    [
+        "<%= settings.validator0BlsSigX %>",
+        "<%= settings.validator0BlsSigY %>",
+    ],
+    "<%= settings.validator0Comission %>"
 ]
 from = "<%= settings.validator0Address %>"
 depends = ["deploy.StakeTableProxy"]
@@ -154,7 +187,7 @@ target = "StakeTableProxy"
 func = "delegate"
 args = [
     "<%= settings.validator0Address %>",
-    "100000000000000000000"
+    "<%= settings.validator0DelegateAmount %>"
 ]
 from = "<%= settings.validator0Address %>"
 depends = ["invoke.RegisterValidator0"]
@@ -164,7 +197,7 @@ target = "EspTokenProxy"
 func = "transfer"
 args = [
     "<%= settings.validator1Address %>",
-    "1000000000000000000000"
+    "<%= settings.validator1EspBalance %>"
 ]
 fromCall.func = "owner"
 
@@ -173,7 +206,7 @@ target = "EspTokenProxy"
 func = "approve"
 args = [
     "<%= contracts.StakeTableProxy.address %>",
-    "1000000000000000000000"
+    "<%= settings.validator1DelegateAmount %>"
 ]
 from = "<%= settings.validator1Address %>"
 
@@ -181,10 +214,21 @@ from = "<%= settings.validator1Address %>"
 target = "StakeTableProxy"
 func = "registerValidator"
 args = [
-    "<%= defaultAbiCoder.encode(['uint256','uint256','uint256','uint256'],[18003221838645820330863142302427037276175815651977449441358203556278229742819,21728271165942270025002040767610283478565197312749221935580742378883837034343,2498710058195674129665937554150299979999903899040374800133061898896297397189,2084878412368613982142715914578367508141059496304320731418449909466124287453]) %>",
-    "<%= defaultAbiCoder.encode(['uint256','uint256'],[19226185941697410464760546160119894991774941981376228553668909756973853049001,17023442620524102968461962940508762560723465839305393847098126605368727487582]) %>",
-    "<%= defaultAbiCoder.encode(['uint256','uint256'],[4747434723966699445421591289470792538661690422857319657305251614808798134669,11186016598628722738324204677850444532575460626426367110756665617582592346704]) %>",
-    "110"
+    [
+        "<%= settings.validator1BlsVkX0 %>",
+        "<%= settings.validator1BlsVkX1 %>",
+        "<%= settings.validator1BlsVkY0 %>",
+        "<%= settings.validator1BlsVkY1 %>",
+    ],
+    [
+        "<%= settings.validator1SchnorrVkX %>",
+        "<%= settings.validator1SchnorrVkY %>",
+    ],
+    [
+        "<%= settings.validator1BlsSigX %>",
+        "<%= settings.validator1BlsSigY %>",
+    ],
+    "<%= settings.validator1Comission %>"
 ]
 from = "<%= settings.validator1Address %>"
 
@@ -193,7 +237,7 @@ target = "StakeTableProxy"
 func = "delegate"
 args = [
     "<%= settings.validator1Address %>",
-    "200000000000000000000"
+    "<%= settings.validator1DelegateAmount %>"
 ]
 from = "<%= settings.validator1Address %>"
 depends = ["invoke.RegisterValidator1"]
