@@ -17,6 +17,8 @@ lightClientStateHistoryRetentionPeriod = "<%= toHex(60*60*24*10) %>"
 lightClientBlocksPerEpoch = "<%= toHex(30) %>"
 lightClientEpochStartBlock = "<%= toHex(1) %>"
 lightClientOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+stakeTableOwner = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+stakeTableExitEscrowPeriod = "<%= toHex(300) %>"
 
 [deploy.PlonkVerifier]
 artifact = "PlonkVerifier"
@@ -103,3 +105,14 @@ args = [
     "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), pad(settings.lightClientBlocksPerEpoch), pad(settings.lightClientEpochStartBlock)]) %>"
 ]
 fromCall.func = "owner"
+
+[deploy.StakeTableProxy]
+artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
+abiOf = ["StakeTable"]
+args = [
+    "<%= contracts.StakeTable.address %>",
+    "<%= concat([toFunctionSelector('initialize(address,address,uint256,address)'), pad(contracts.EspTokenProxy.address), pad(contracts.LightClientProxy.address), pad(settings.stakeTableExitEscrowPeriod), pad(settings.stakeTableOwner)]) %>"
+]
+create2 = true
+salt = "<%= zeroHash %>"
+ifExists = "continue"
