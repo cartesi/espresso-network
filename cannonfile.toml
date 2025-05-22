@@ -126,7 +126,7 @@ target = "LightClientProxy"
 func = "upgradeToAndCall"
 args = [
     "<%= contracts.LightClientV2.address %>",
-    "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), pad(settings.lightClientBlocksPerEpoch), pad(settings.lightClientEpochStartBlock)]) %>"
+    "<%= concat([toFunctionSelector('initializeV2(uint64,uint64)'), pad(settings.lightClientBlocksPerEpoch), pad(settings.lightClientEpochStartBlock)]) %>",
 ]
 fromCall.func = "owner"
 
@@ -135,7 +135,7 @@ artifact = "contracts/src/libraries/ERC1967Proxy.sol:ERC1967Proxy"
 abiOf = ["StakeTable"]
 args = [
     "<%= contracts.StakeTable.address %>",
-    "<%= concat([toFunctionSelector('initialize(address,address,uint256,address)'), pad(contracts.EspTokenProxy.address), pad(contracts.LightClientProxy.address), pad(settings.stakeTableExitEscrowPeriod), pad(settings.stakeTableOwner)]) %>"
+    "<%= concat([toFunctionSelector('initialize(address,address,uint256,address)'), pad(contracts.EspTokenProxy.address), pad(contracts.LightClientProxy.address), pad(settings.stakeTableExitEscrowPeriod), pad(settings.stakeTableOwner)]) %>",
 ]
 create2 = true
 salt = "<%= zeroHash %>"
@@ -146,7 +146,7 @@ target = "EspTokenProxy"
 func = "transfer"
 args = [
     "<%= settings.validator0Address %>",
-    "<%= settings.validator0EspBalance %>"
+    "<%= settings.validator0EspBalance %>",
 ]
 fromCall.func = "owner"
 
@@ -155,7 +155,7 @@ target = "EspTokenProxy"
 func = "approve"
 args = [
     "<%= contracts.StakeTableProxy.address %>",
-    "<%= settings.validator0DelegateAmount %>"
+    "<%= settings.validator0DelegateAmount %>",
 ]
 from = "<%= settings.validator0Address %>"
 
@@ -177,7 +177,7 @@ args = [
         "<%= settings.validator0BlsSigX %>",
         "<%= settings.validator0BlsSigY %>",
     ],
-    "<%= settings.validator0Comission %>"
+    "<%= settings.validator0Comission %>",
 ]
 from = "<%= settings.validator0Address %>"
 depends = ["deploy.StakeTableProxy"]
@@ -187,7 +187,7 @@ target = "StakeTableProxy"
 func = "delegate"
 args = [
     "<%= settings.validator0Address %>",
-    "<%= settings.validator0DelegateAmount %>"
+    "<%= settings.validator0DelegateAmount %>",
 ]
 from = "<%= settings.validator0Address %>"
 depends = ["invoke.RegisterValidator0"]
@@ -197,7 +197,7 @@ target = "EspTokenProxy"
 func = "transfer"
 args = [
     "<%= settings.validator1Address %>",
-    "<%= settings.validator1EspBalance %>"
+    "<%= settings.validator1EspBalance %>",
 ]
 fromCall.func = "owner"
 
@@ -206,7 +206,7 @@ target = "EspTokenProxy"
 func = "approve"
 args = [
     "<%= contracts.StakeTableProxy.address %>",
-    "<%= settings.validator1DelegateAmount %>"
+    "<%= settings.validator1DelegateAmount %>",
 ]
 from = "<%= settings.validator1Address %>"
 
@@ -228,7 +228,7 @@ args = [
         "<%= settings.validator1BlsSigX %>",
         "<%= settings.validator1BlsSigY %>",
     ],
-    "<%= settings.validator1Comission %>"
+    "<%= settings.validator1Comission %>",
 ]
 from = "<%= settings.validator1Address %>"
 
@@ -237,7 +237,7 @@ target = "StakeTableProxy"
 func = "delegate"
 args = [
     "<%= settings.validator1Address %>",
-    "<%= settings.validator1DelegateAmount %>"
+    "<%= settings.validator1DelegateAmount %>",
 ]
 from = "<%= settings.validator1Address %>"
 depends = ["invoke.RegisterValidator1"]
